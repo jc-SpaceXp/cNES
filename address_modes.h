@@ -1,3 +1,8 @@
+/*************************************************************
+* Don't think i need this file - added into cpu_struct.h 
+* (can move back here if cpu_struct needs de-cluttering
+**************************************************************/
+
 #ifndef __6502_ENUM__
 #define __6502_ENUM__
 
@@ -37,19 +42,5 @@ enum MODE {
 	ZPX,
 	ZPY,
 } address_modes;
-
-/* Functions: */
-/* Can use macro's instead: see test folder for different implementations */
-void execute_ABS(char *code, int length)
-{
-	/* All Absolute commands occur here: */
-	switch (opcode) {
-	case 0x7D:
-		/* ADC oper */
-		break;
-	default:
-		printf("A non ABS command was given\n");
-	}
-}
 
 #endif
