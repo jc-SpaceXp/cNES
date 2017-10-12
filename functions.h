@@ -500,7 +500,7 @@ void execute_JSR(size_t operand)
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
 	PUSH((uint8_t) ((NES->PC + 2) >> 8)); /* Push PCH (PC High byte onto stack) */
 	PUSH((uint8_t) (NES->PC + 2)); /* Push PCL (PC Low byte onto stack) - test i.e.  0xFA -> 0xA */
-	NES-> PC = operand;
+	NES->PC = operand;
 
 }
 
@@ -517,7 +517,7 @@ void execute_RTI(void)
 	/* PULL PC */
 	tmp = PULL(); /* PULL PCL */
 	operand = PULL(); /* PULL PCH */
-	NES-> PC = tmp | (operand << 8);
+	NES->PC = tmp | (operand << 8);
 }
 
 
@@ -529,7 +529,7 @@ void execute_RTS(void)
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
 	tmp = PULL(); /* Pull PCL */
 	operand = PULL(); /* Pull PCH */
-	NES-> PC = tmp | (operand << 8);
+	NES->PC = tmp | (operand << 8);
 	++NES->PC;
 
 }
@@ -679,6 +679,5 @@ void execute_NOP(void)
 {
 	;
 }
-
 
 #endif
