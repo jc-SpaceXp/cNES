@@ -1,0 +1,114 @@
++++++++++++++++++++++++++++++
++    NES DISASSEMBLER       +
++++++++++++++++++++++++++++++
+
+> Basic Info
+- CPU = 6502
+- Each instruction is two-bytes each (4 Hex values)
+- 3 8-bit General registers - A, X & Y
+- 16-bit program counter
+- 8-bit Stack Pointer (fixed @ RAM addresses $100)
+- 148 total instructions (Opcodes)
+- Little Endian architechture (read from largest adrress to lowest - LSB to MSB)
+
+
+> Op-Codes
+- most can be grouped via their first half-byte hex value:
+
+> Registers
+- A = accumalte register
+- X & Y are index registers
+- Arithmetic and logic is performed on A
+- special registers = PC, SP, and Program Status (8-bits wide)
+
+> Stack ( & Stack Pointer)
+- 16 bits long - upper 8 = 0x01 always
+- .. therefore stack is usually represented by its lower byte
+- starts @ 0xFF (top of stack) (technically 0x01FF in memory)
+- push item onto stack then stack pointer decrements (points to nothing)
+- read item from stack - increments stack pointer then push from stack
+
++++++++++++++++++++++++++++++
++    NES ADDRESSING MODES   +
++++++++++++++++++++++++++++++
+- The 6502 COU supports many addressing modes
+- can be split into two groups - indexed and non-indexed
+
+> Non-Indexed (Non memory ops)
+>> Acumulator
+- Instructions that have A as the target register i.e. LSR A
+>> Immediate
+- These instructions have their data defined by their next byte of their opcode
+- .. # indicates an immediate value
+>> Implied
+- Data and/or destination is madatory for the instruction i.e. CLC - implies clear of carry
+
+
+> Non-Indexed (Memory ops)
+>> Relative
+- used only in branch operations - byte after opcode is the branch offset
+- if branch is taken - new address = current PC + branch offset
+- offset = signed byte - max offset = +127
+>> Absolute
+- specifies memory address explicitly in the 2 bytes following the opcode
+- example: JMP #$4032 - pc = $4032 = 4C 32 40 in hex
+- absolute addressing takes up 3 bytes
+>> Zero-Page
+- only capable of addressing the first 256 bytes of the CPUs memory map
+- think of it beign absolute addressing the the first 256 bytes
+- comparison to absolute jump: 1 less byte to specify address & 1 less cycle to execute
+- most frequently used variables are often stored in the Zero-Page
+>> Indirect
+- JMP instruction is the only one that uses this addressing mode
+- 3 byte instruction - 2nd & 3rd byte are an absolute address
+- PC is then set to the address stored at the absolute address (2nd & 3rd byte)
+
+
+>> Indexed (Memory Ops)
+- X or Y are used as an extra offset to the address beign accessed
+>> Absolute Indexed
+- absolute address = absolute address + contents of X or Y
+- same as function as non-indexed absolute
+>> Zero-Paged Indexed
+- works just like an absolute indexed - except the target address is
+- .. limited to the first 256 bytes (0xFF)
+- carry is discarded in the calculation of the target address
+>> Indexed Indirect
+- can only be used with the X register
+- value @ X is added on to target address
+- value @ target address is stored via Little Endian i.e. 74 20 --> 20 74 (liite end)
+- then the target address becomes the little endian calculation from the index
+>> Indirect Index
+- only used with Y register
+- CPU wil fetch value @ addres from 2nd byte (converted to little endian)
+- .. and then adds Y value to the little endian to create a new target address
+- These instructions are 2 bytes long - 2nd byte is the zero-pag address
+
++++++++++++++++++++++++++++++
++    NES MEMORY MAP         +
++++++++++++++++++++++++++++++
+
+> Memory Map:
+--------------------------------------------------
+Address range   | Size  | Device                 -
+==================================================
+$00 00 - $07 FF | $0800 | 2Kb internal RAM
+==================================================
+$08 00 - $0F FF | $0800 | Mirrors of $0000 - $07FF
+$10 00 - $17 FF | $0800 | ^
+$18 00 - $1F FF | $0800 | ^
+==================================================
+
+
++++++++++++++++++++++++++++++
++    NES ROMS               +
++++++++++++++++++++++++++++++
+
+
++++++++++++++++++++++++++++++
++    NES REFERENCES         +
++++++++++++++++++++++++++++++
+> http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
+> http://www.emulator101.com/introduction-to-chip-8.html (whole CHIP-8 section)
+> http://www.e-tradition.net/bytes/6502/6502_instruction_set.html
+> https://www.dwheeler.com/6502/oneelkruns/asm1step.html
