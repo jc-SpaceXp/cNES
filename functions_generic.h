@@ -111,12 +111,13 @@ size_t get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU)
  * *************************/
 
 /* read_mem   : reads memory from RAM -- including mirrored memory RAM
- * Parameters : uint16_t address (will mask size_t operand into there)
+ * Parameters : uint16_t address (will cast size_t operand into there)
  */
 uint8_t read_RAM(uint16_t address)
 {
 	return NES->RAM[address & 0x07FF]; /* Needed for mirrored RAM */
 	/* Will always return the non-mirrored RAM address */
+	/* or could just return address as we've written to all mirrors */
 }
 
 
