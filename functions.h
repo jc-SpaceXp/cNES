@@ -1,11 +1,6 @@
 /*
- * Execute Functions 
+ * Execute Functions (Opcode functions)
  *
- * ALL get_op functions have:
- * Parameters: 1. enum MODE address_mode = addressing mode
- *             2. *code = opcode
- *             3. CPU6502 *NESCPU = contains NES
- *             ... CPU registers etc.
  */
 
 #ifndef __6502_FUNCTIONS__

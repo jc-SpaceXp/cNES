@@ -18,6 +18,18 @@ int bin_operand2[8]; /* other operand in ADC or SBC also in binary */
 int bin_result[8]; /* result of ADC or SBC is stored here */
 unsigned int power2; /* used in Base2 --> Base10 conversion */
 
+/*
+ * ALL get_op functions have:
+ * Parameters: 1. enum MODE address_mode = addressing mode
+ *             2. *code = opcode
+ *             3. CPU6502 *NESCPU = contains NES
+ *             ... CPU registers etc.
+ */
+
+/***************************
+ * FETCH OPCODE            *
+ * *************************/
+
 /* get_op_IMM_ZP : fetches operand based on IMM or ZP address modes
  */
 size_t get_op_IMM_ZP(uint8_t *ptr_code)
@@ -91,6 +103,29 @@ size_t get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU)
 	operand += NESCPU->Y; /* get target address */
 	NES->PC += 2; /* Update PC */
 	return operand;
+}
+
+
+/***************************
+ * READ & WRITE            *
+ * *************************/
+
+/* read_mem   : reads memory from RAM -- including mirrored memory RAM
+ * Parameters : uint16_t address (will mask size_t operand into there)
+ */
+uint8_t read_RAM(uint16_t address)
+{
+	return NES->RAM[address & 0x07FF]; /* Needed for mirrored RAM */
+	/* Will always return the non-mirrored RAM address */
+}
+
+
+void write_RAM(uint16_t address, uint8_t value)
+{
+	NES->RAM[address] = value; /* Non-mirror */
+	NES->RAM[address + 0x0800] = value; /* mirror 1 */
+	NES->RAM[address + 0x1600] = value; /* mirror 2 */
+	NES->RAM[address + 0x2400] = value; /* mirror 3 */
 }
 
 /***************************
