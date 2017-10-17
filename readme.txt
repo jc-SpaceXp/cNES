@@ -5,6 +5,8 @@ NEXT
 >> get_op functions can now use the general read functions
 > Increase RAM size to see if the read/write functions are ok
 > potentially add cycles to cpu_struct - believe its needed later for accurate CPU emulation
+> see tmp folder for updated: functions.h, functions_generic.h, execute.h and memory.h
+> tmp folder is currently a work in progress
 
 WORKING FUNCTIONS
 >> Gets_op function fetched correct target address - then all that is needed is to read the addres - NESCPU->RAM[operand]
