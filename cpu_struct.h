@@ -31,10 +31,10 @@ typedef struct {
 	uint8_t *SP; /* Stack Pointer */
 	uint16_t PC; /* Program counter */
 	/* Memory */
-	uint8_t RAM[NES_RAM_SIZE]; /* 2 Kb internal RAM */
+	uint8_t RAM[MEMORY_SIZE]; /* 2 Kb internal RAM */
 } CPU_6502;
 
-/* NES CPU Pointer */
+/* Global NES CPU Pointer */
 CPU_6502 *NES;
 
 /* Program Status Register
@@ -57,7 +57,7 @@ CPU_6502* NES_CPU(uint16_t pc_init)
 	CPU_6502 *i = malloc(sizeof(CPU_6502));
 	i->PC = pc_init;
 	i->SP = &(i->RAM[SP_START + SP_OFFSET]);
-	i->P = FLAG_I;
+	i->P = 0x00;
 	memset(i->RAM, 0, NES_RAM_SIZE); /* Initialise RAM to 0 */
 	return i;
 }
@@ -65,14 +65,13 @@ CPU_6502* NES_CPU(uint16_t pc_init)
 /* Return Status */
 void RET_NES_CPU(void)
 {
-	printf("Acc = %d\n", NES->A);
-	printf("X = %d\n", NES->X);
-	printf("Y = %d\n", NES->Y);
-	printf("SP = %d\n", *NES->SP); /* Should = 0 */
-	printf("Status Register = %.2x\n", NES->P);
-	printf("PC = %d\n", NES->PC);
+	printf("A:%.3d  ", NES->A);
+	printf("X:%.3d  ", NES->X);
+	printf("Y:%.3d  ", NES->Y);
+	printf("SP:%.3d  ", *NES->SP);
+	printf("P:%.2x  ", NES->P);
+	printf("PC:%.3d  ", NES->PC);
 }
-
 /* Includes addressing modes
  * Adressing Modes:
  *
