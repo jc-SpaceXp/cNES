@@ -1,24 +1,24 @@
->>> Functions.h <<<
-> Has been re-worked:
->> includes new functions get_op() (refactored into seperate address modes)
->>> which is now beign dived into there respective address modes
-   .. to elimate if/else-if chains to speed up fetching the operand
-
->> execute functions have much less code as a result
->> fixed INDX, INDY address modes as i was fetching the incorrect operand
->> about 50% through condensing all functions (done)
-
 NEXT
-> update execute.h to reflect changes in functions.h (done)
-> update NES Program counter (done)
-> potentially add cycles to cpu_struct - believe its needed later for accurate CPU emulation
 > make get_op functoins return NES->RAM[operand] rather than operand, which then 
   gets passed to NES->RAM[] in the execute functions -- therefore also need to
   update execute functions to reflect those changes
+>> get_op functions can now use the general read functions
 > Increase RAM size to see if the read/write functions are ok
-
+> potentially add cycles to cpu_struct - believe its needed later for accurate CPU emulation
 
 WORKING FUNCTIONS
 >> Gets_op function fetched correct target address - then all that is needed is to read the addres - NESCPU->RAM[operand]
 >> All get_op functions work
 >> Also all flag (set and update) functions work
+>> ADC works fine -- including the overflow - therefore can impliment SBC as ADC with the 2nd operand 2's complimented
+
+DONE
+> update execute.h to reflect changes in functions.h
+>> condensed all functions
+> update NES Program counter (for execute.c - included as a parameter now)
+
+>>> Memory.h <<<<
+- have option to either write to its address and each mirror (3 in total) or read from its absolute address (address & 0x07FF)
+- have currently decided to read and write to an absolute address (non-mirrored section - as the mirrored paths are unimportant in a software context)
+
+
