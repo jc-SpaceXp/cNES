@@ -19,7 +19,7 @@ emu.o: emu.c cpu.h opcode_execute.h
 	$(CC) $(CFLAGS) -c emu.c
 
 emu: emu.o cpu.o functions_generic.o functions.o opcode_execute.o
-	$(cc) -o emu emu.o cpu.o functions_generic.o functions.o opcode_execute.o
+	$(CC) -o emu emu.o cpu.o functions_generic.o functions.o opcode_execute.o
 
 clean:
 	rm *.o
