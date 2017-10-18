@@ -9,7 +9,7 @@ const char *filename = "Balloon_Fight.nes";
 
 int main(int argc, char **argv)
 {	
-	NES = NES_CPU(0xC000);  /* Initialise CPU - causes error */
+	NES = NES_CPU(0xC000);
 	/* can turn this into a load ROM function */
 	FILE *f = fopen(filename, "rb");
 	if (f == NULL) {
