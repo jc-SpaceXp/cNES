@@ -1,7 +1,7 @@
 /* Reads NES ROM and print's what instructions we encounter */
 /* in Numerical order */
 
-#include "disassembler.h"
+#include "opcode_debug.h"
 
 const char *filename = "Balloon_Fight.nes";
 
