@@ -7,6 +7,9 @@
 #include "functions_generic.h"
 #include "opcode_execute.h"
 
+/* CAN'T IMPLEMENT code[NES->PC] until ROM loading is working */
+/* one workaround is let NES->PC to = 0 prior to Execute_6502(); */
+/* However JMP and braches don't work as intended */
 void Execute_6502(unsigned char *code, uint16_t *PC)
 {
 	uint8_t *opcode = &code[*PC];
@@ -791,10 +794,4 @@ void Execute_6502(unsigned char *code, uint16_t *PC)
 	} else {
 		printf("\n");
 	}
-	/* Printf's come after execute instructions therefore it appears
-	 * that the PC jumps to it's next value prior to execution
-	 * but this isn' the case
-	 * will try to put printf's before switch block to alievate this
-	 * minor discrepency
-	 */
 }

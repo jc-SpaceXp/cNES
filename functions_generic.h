@@ -6,19 +6,8 @@
 #define __6502_GEN_FUNCTIONS__
 
 #include "cpu.h"
+#include "globals.h"
 #include <stdio.h>
-
-/* GLOBAL VARIABLES */
-size_t operand; /* either becomes unsigned char or unsigned short */
-uint8_t tmp; /* tmp variable - stores result of functions - use to make code cleaner */
-int counter; /* global loop counter */
-
-/* ADC & SBC array operands */
-int bin_operand1[8]; /* NES->A converted to binary */
-int bin_operand2[8]; /* other operand in ADC or SBC also in binary */
-int bin_result[8]; /* result of ADC or SBC is stored here */
-unsigned int power2; /* used in Base2 --> Base10 conversion */
-
 
 /*
  * ALL get_op functions have:
