@@ -1,18 +1,24 @@
-/* Reads NES ROM and print's what instructions we encounter */
-/* in Numerical order */
+/* Reads NES ROM and executes instructions we encounter */
 
+#include "functions_generic.h"
+#include "functions.h"
 #include "opcode_debug.h"
+#include <stdio.h>
 
 const char *filename = "Balloon_Fight.nes";
+/* for nestest.mes sey NES_CPU(0x) */
 
 int main(int argc, char **argv)
 {	
+	NES = NES_CPU(0x00); /* haven't implimented ROM loading thus PC needs to = 0 */
+
+	/* can turn this into a load ROM function */
 	FILE *f = fopen(filename, "rb");
 	if (f == NULL) {
 		fprintf(stderr, "Error: Couldn't open file\n");
 		exit (8);
 	}
-
+	
 	/* Getting file size */
 	fseek(f, 0L, SEEK_END);
 	int fsize = ftell(f);
@@ -22,9 +28,13 @@ int main(int argc, char **argv)
 	fread(buffer, fsize, 1, f);
 	fclose(f);
 
-	int pc = 0;
-	while (pc < fsize) {
-		pc += Disassemble6502(buffer, pc);
+	NES->P = 0x24;
+	/* an arbituairly high numb */
+	int i = 0;
+	while (i < 123) {
+		Debug_6502(buffer, &NES->PC);
+		RET_NES_CPU();
+		++i;
 	}
 	return 0;
 }

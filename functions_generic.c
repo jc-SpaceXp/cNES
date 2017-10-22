@@ -9,11 +9,11 @@
  * FETCH OPCODE            *
  * *************************/
 
-/* get_op_IMM_ZP : fetches operand based on IMM or ZP address modes
+/* get_op_IMM : fetches operand based on IMM address modes
  */
 size_t get_op_IMM(uint8_t *ptr_code)
 {
-	/* Immediate or Zero Page - XXX #Operand */
+	/* Immediate - XXX #Operand */
 	operand = *(ptr_code+1);
 	NES->PC += 2; /* Update PC */
 	return operand;
@@ -96,7 +96,7 @@ void RET_NES_CPU(void)
 	printf("Y:%.3d  ", NES->Y);
 	printf("SP:%.3d  ", *NES->SP);
 	printf("P:%.2x  ", NES->P);
-	printf("PC:%.3d  ", NES->PC);
+	printf("PC:%.4x\n", NES->PC);
 }
 
 /***************************

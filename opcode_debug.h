@@ -1,12 +1,8 @@
 /* Reads NES ROM and print's what instructions we encounter */
 /* in Numerical order */
-#ifndef __6502_disassembler
-#define __6502_disassembler
+#ifndef __6502_debug
+#define __6502_debug
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
+void Debug_6502(unsigned char *code, uint16_t *PC);
 
-int Disassemble6502(unsigned char *code, int pc);
-
-#endif /* __6502_disassembler */
+#endif /* __6502_debug */
