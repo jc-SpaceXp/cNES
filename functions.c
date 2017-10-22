@@ -7,6 +7,14 @@
 #include "functions_generic.h"
 #include <stdio.h>
 
+size_t operand;
+uint8_t tmp;
+int counter;
+
+int bin_operand1[8];
+int bin_operand2[8];
+int bin_result[8];
+unsigned int power2 = 1;
 /***************************
  * STORAGE                 *
  * *************************/
@@ -207,17 +215,21 @@ void execute_INY(void)
 }
 
 
-/* execute_SBC: SBC command - Subtract mem w/ A and C (A - M -C : then set flags)
+/* execute_SBC: SBC command - Subtract mem w/ A and C (A - M - C : then set flags)
  */
 void execute_SBC(enum MODES address_mode, size_t operand)
 {
-	/* HAVEN'T INCLUDED CARRY */
+	/* SBC = ADC w/ 2nd operand converted to 2's compliment */
+	Base10toBase2(NES->A, bin_operand1);
 	if (address_mode == IMM) {
 		/* Immediate - SBC #Operand */
-		NES->A -= operand;
+		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
+		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 		NES->A -= NES->RAM[operand];
 	}
+	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
+	NES->A = Base2toBase10(bin_result, 0);
 }
 
 /***************************
