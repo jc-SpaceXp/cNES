@@ -1,35 +1,25 @@
 /* Reads NES ROM and executes instructions we encounter */
 
+#include <stdio.h>
 #include "functions_generic.h"
 #include "functions.h"
 #include "opcode_execute.h"
-#include <stdio.h>
+#include "cart.h"
 
-const char *filename = "Balloon_Fight.nes";
+const char *filename = "nestest.nes";
+/* for nestest.mes sey NES_CPU(0x) */
 
 int main(int argc, char **argv)
 {	
-	NES = NES_CPU(0xC000);
-	/* can turn this into a load ROM function */
-	FILE *f = fopen(filename, "rb");
-	if (f == NULL) {
-		fprintf(stderr, "Error: Couldn't open file\n");
-		exit (8);
-	}
-	
-	/* Getting file size */
-	fseek(f, 0L, SEEK_END);
-	int fsize = ftell(f);
-	fseek(f, 0L, SEEK_SET);
+	NES = NES_CPU(0x8000); /* haven't implimented ROM loading thus PC needs to = 0 */
 
-	unsigned char *buffer = malloc(fsize);
-	fread(buffer, fsize, 1, f);
-	fclose(f);
+	Cartridge* cart = malloc(sizeof(Cartridge));
+	load_cart(cart, filename);
+	free(cart);
 
-	/* an arbituairly high numb */
 	int i = 0;
-	while (i < 5) {
-		Execute_6502(buffer, &NES->PC);
+	while (i < 123) {
+		Execute_6502(NES->PC);
 		RET_NES_CPU();
 		++i;
 	}
