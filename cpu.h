@@ -9,7 +9,6 @@
 #include <string.h>
 
 #define MEMORY_SIZE  65536
-#define NES_RAM_SIZE 2048
 /* Status_Flags */
 #define FLAG_C  0x01 /* Carry */
 #define FLAG_Z  0x02 /* Zero */
@@ -29,7 +28,7 @@ typedef struct {
 	/* Special Registers */
 	uint8_t P; /* Program status register - contains flags */
 	uint8_t *SP; /* Stack Pointer */
-	uint16_t PC; /* Program counter */
+	uint16_t PC; /* Program counter (Instruction Pointer) */
 	/* Memory */
 	uint8_t RAM[MEMORY_SIZE]; /* 2 Kb internal RAM */
 } CPU_6502;
@@ -50,6 +49,11 @@ typedef struct {
 /* Header Prototypes */
 CPU_6502* NES_CPU(uint16_t pc_init); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
 CPU_6502 *NES; /* Global NES CPU Pointer */
+
+uint8_t read_addr(CPU_6502* NES, uint16_t addr);
+uint16_t fetch_16(CPU_6502* NES, uint16_t addr);
+uint16_t fetch_16_IND(CPU_6502* NES, uint16_t addr);
+void write_addr(CPU_6502* NES, uint16_t addr, uint8_t val);
 
 /* Includes addressing modes
  * Adressing Modes:
