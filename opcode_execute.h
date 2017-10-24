@@ -3,6 +3,6 @@
 #ifndef __6502_execute
 #define __6502_execute
 
-void Execute_6502(unsigned char *code, uint16_t *PC);
+void Execute_6502(uint16_t PC);
 
 #endif /* __6502_execute */

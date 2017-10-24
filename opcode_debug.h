@@ -3,6 +3,6 @@
 #ifndef __6502_debug
 #define __6502_debug
 
-void Debug_6502(unsigned char *code, uint16_t *PC);
+void Debug_6502(uint16_t PC);
 
 #endif /* __6502_debug */

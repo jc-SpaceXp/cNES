@@ -9,9 +9,9 @@
 
 /* CAN'T IMPLEMENT code[NES->PC] until ROM loading is working */
 /* one workaround is let NES->PC to = 0 prior to Execute_6502(); */
-void Debug_6502(unsigned char *code, uint16_t *PC)
+void Debug_6502(uint16_t PC)
 {
-	uint8_t *opcode = &code[*PC];
+	uint8_t *opcode = &NES->RAM[PC];
 
 	switch (opcode[0]) {
 	case 0x00:
