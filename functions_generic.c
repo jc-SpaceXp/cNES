@@ -5,6 +5,7 @@
 #include "functions_generic.h"
 
 
+
 /***************************
  * FETCH OPCODE            *
  * *************************/
@@ -94,7 +95,7 @@ void RET_NES_CPU(void)
 	printf("A:%.2x  ", NES->A);
 	printf("X:%.2x  ", NES->X);
 	printf("Y:%.2x  ", NES->Y);
-	printf("SP:%.3d  ", *NES->SP);
+	printf("SP:%.2x  ", Stack);
 	printf("P:%.2x  ", NES->P);
 	printf("PC:%.4x\n", NES->PC);
 }
@@ -178,6 +179,8 @@ void full_adder(int *bin_sum1, int *bin_sum2, int cIN, uint8_t *cOUT, int *resul
  * STACK                   *
  * *************************/
 
+Stack = 0xFD;
+
 /* Genric Push function */
 void PUSH(uint8_t value)
 {
@@ -187,6 +190,7 @@ void PUSH(uint8_t value)
 		printf("Full stack - can't PUSH\n");
 	} else {
 		*NES->SP = value;
+		--Stack;
 		--NES->SP;
 	}
 }
@@ -200,6 +204,7 @@ uint8_t PULL(void)
 		printf("Empty stack - can't PULL\n");
 	} else {
 		++NES->SP;
+		++Stack;
 		return *NES->SP;
 	}
 	return 0; /* fail-safe - if-else branch should return a value */

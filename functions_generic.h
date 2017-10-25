@@ -9,6 +9,7 @@
 #include "globals.h"
 #include <stdio.h>
 
+
 /*
  * ALL get_op functions have:
  * Parameters: 1. enum MODE address_mode = addressing mode

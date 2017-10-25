@@ -36,9 +36,9 @@ void Debug_6502(uint16_t PC)
 		break;
 	case 0x08:
 		/* PHP */
-		printf("PHP\t");
+		printf("PHP\t\t");
 		PUSH(NES->P);
-		NES->P |= 0x30; /* Setting Bits 4 & 5 */
+		/* NES->P |= 0x30;  Setting Bits 4 & 5 - not needed  */
 		++NES->PC;
 		break;
 	case 0x09:
@@ -127,7 +127,7 @@ void Debug_6502(uint16_t PC)
 		break;
 	case 0x28:
 		/* PLP */
-		printf("PLP\t");
+		printf("PLP\t\t");
 		NES->P = PULL();
 		++NES->PC;
 		break;
@@ -217,7 +217,7 @@ void Debug_6502(uint16_t PC)
 		break;
 	case 0x48:
 		/* PHA */
-		printf("PHA\t");
+		printf("PHA\t\t");
 		PUSH(NES->A);
 		++NES->PC;
 		break;
@@ -311,7 +311,7 @@ void Debug_6502(uint16_t PC)
 		break;
 	case 0x68:
 		/* PLA */
-		printf("PLA\t");
+		printf("PLA\t\t");
 		NES->A = PULL();
 		++NES->PC;
 		break;
@@ -725,7 +725,6 @@ void Debug_6502(uint16_t PC)
 		break;
 	case 0xEA:
 		/* NOP */
-		printf("NOP\t");
 		execute_NOP();
 		++NES->PC;
 		break;

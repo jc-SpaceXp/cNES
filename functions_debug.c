@@ -98,7 +98,7 @@ void execute_STY(size_t operand)
  */
 void execute_TAX(void)
 {
-	printf("TAX\t");
+	printf("TAX\t\t");
 	NES->X = NES->A;
 	update_FLAG_N(NES->X);
 	update_FLAG_Z(NES->X);
@@ -109,7 +109,7 @@ void execute_TAX(void)
  */
 void execute_TAY(void)
 {
-	printf("TAY\t");
+	printf("TAY\t\t");
 	NES->Y = NES->A;
 	update_FLAG_N(NES->Y);
 	update_FLAG_Z(NES->Y);
@@ -120,7 +120,7 @@ void execute_TAY(void)
  */
 void execute_TSX(void)
 {
-	printf("TSX\t");
+	printf("TSX\t\t");
 	NES->X = *NES->SP;
 	update_FLAG_N(NES->X);
 	update_FLAG_Z(NES->X);
@@ -131,7 +131,7 @@ void execute_TSX(void)
  */
 void execute_TXA(void)
 {
-	printf("TXA\t");
+	printf("TXA\t\t");
 	NES->A = NES->X;
 	update_FLAG_N(NES->A);
 	update_FLAG_Z(NES->A);
@@ -142,7 +142,7 @@ void execute_TXA(void)
  */
 void execute_TXS(void)
 {
-	printf("TXS\t");
+	printf("TXS\t\t");
 	*NES->SP = NES->X;
 	update_FLAG_N(*NES->SP);
 	update_FLAG_Z(*NES->SP);
@@ -153,7 +153,7 @@ void execute_TXS(void)
  */
 void execute_TYA(void)
 {
-	printf("TYA\t");
+	printf("TYA\t\t");
 	NES->A = NES->Y;
 	update_FLAG_N(NES->A);
 	update_FLAG_Z(NES->A);
@@ -194,7 +194,7 @@ void execute_DEC(size_t operand)
 void execute_DEX(void)
 {
 	/* Implied Mode */
-	printf("DEX\t");
+	printf("DEX\t\t");
 	--(NES->X);
 }
 
@@ -204,7 +204,7 @@ void execute_DEX(void)
 void execute_DEY(void)
 {
 	/* Implied Mode */
-	printf("DEY\t");
+	printf("DEY\t\t");
 	--(NES->Y);
 }
 
@@ -222,7 +222,7 @@ void execute_INC(size_t operand)
  */
 void execute_INX(void)
 {
-	printf("INX\t");
+	printf("INX\t\t");
 	/* Implied Mode */
 	++(NES->X);
 }
@@ -232,7 +232,7 @@ void execute_INX(void)
  */
 void execute_INY(void)
 {
-	printf("INY\t");
+	printf("INY\t\t");
 	/* Implied Mode */
 	++(NES->Y);
 }
@@ -552,10 +552,17 @@ void execute_JSR(size_t operand)
 	printf("JSR $%.4x\t", operand);
 	/* Absolute - JSR operand */
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
-	PUSH((uint8_t) ((NES->PC + 2) >> 8)); /* Push PCH (PC High byte onto stack) */
-	PUSH((uint8_t) (NES->PC + 2)); /* Push PCL (PC Low byte onto stack) - test i.e.  0xFA -> 0xA */
-	NES->PC = operand;
+	PUSH((uint8_t) ((NES->PC) >> 8)); /* Push PCH (PC High byte onto stack) */
+	PUSH((uint8_t) (NES->PC)); /* Push PCL (PC Low byte onto stack) - test i.e.  0xFA -> 0xA */
 
+	NES->PC = operand;
+	/* NB: get_op_ABS_offset sets PC to += 3 therfore to push PC + 2
+	 * all we need to do is just push PC
+	 * if push PC + 2 we do PC + 5 in my case
+	 *
+	 * simply PC already points to the next instruction
+	 * before we overwrite it
+	 */
 }
 
 
@@ -582,11 +589,10 @@ void execute_RTS(void)
 {
 	/* Implied */
 	printf("RTS\t\t");
-	/* PC + 2 is pushed onto stack - always PUSH high byte first */
+	/* opposite of JSR - PULL PCL first */
 	tmp = PULL(); /* Pull PCL */
 	operand = PULL(); /* Pull PCH */
-	NES->PC = tmp | (operand << 8);
-	++NES->PC;
+	NES->PC = (operand << 8) | tmp ;
 
 }
 
@@ -702,7 +708,7 @@ void execute_SED(CPU_6502 *NESCPU)
 {
 	/* SED */
 	printf("SED\t\t");
-	NESCPU->P |= FLAG_Z;
+	NESCPU->P |= FLAG_D;
 }
 
 
@@ -747,6 +753,6 @@ void execute_BRK(void)
  */
 void execute_NOP(void)
 {
-	printf("NOP\t");
+	printf("NOP\t\t");
 	;
 }

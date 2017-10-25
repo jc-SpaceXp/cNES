@@ -501,9 +501,16 @@ void execute_JSR(size_t operand)
 {
 	/* Absolute - JSR operand */
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
-	PUSH((uint8_t) ((NES->PC + 2) >> 8)); /* Push PCH (PC High byte onto stack) */
-	PUSH((uint8_t) (NES->PC + 2)); /* Push PCL (PC Low byte onto stack) - test i.e.  0xFA -> 0xA */
-	NES->PC = operand;
+	PUSH((uint8_t) ((NES->PC) >> 8)); /* Push PCH (PC High byte onto stack) */
+	PUSH((uint8_t) NES->PC); /* Push PCL (PC Low byte onto stack) - test i.e.  0xFA -> 0xA */
+
+	/* NB: get_op_ABS_offset sets PC to += 3 therfore to push PC + 2
+	 * all we need to do is just push PC
+	 * if push PC + 2 we do PC + 5 in my case
+	 *
+	 * simply PC already points to the next instruction
+	 * before we overwrite it
+	 */
 
 }
 
@@ -520,7 +527,7 @@ void execute_RTI(void)
 	/* PULL PC */
 	tmp = PULL(); /* PULL PCL */
 	operand = PULL(); /* PULL PCH */
-	NES->PC = tmp | (operand << 8);
+	NES->PC = (operand << 8) | tmp;
 }
 
 
@@ -529,11 +536,10 @@ void execute_RTI(void)
 void execute_RTS(void)
 {
 	/* Implied */
-	/* PC + 2 is pushed onto stack - always PUSH high byte first */
+	/* opposite of JSR - PULL PCL first */
 	tmp = PULL(); /* Pull PCL */
 	operand = PULL(); /* Pull PCH */
-	NES->PC = tmp | (operand << 8);
-	++NES->PC;
+	NES->PC = (operand << 8) | tmp;
 
 }
 
@@ -637,7 +643,7 @@ void execute_SEC(CPU_6502 *NESCPU)
 void execute_SED(CPU_6502 *NESCPU)
 {
 	/* SED */
-	NESCPU->P |= FLAG_Z;
+	NESCPU->P |= FLAG_D;
 }
 
 

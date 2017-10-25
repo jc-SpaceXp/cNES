@@ -33,6 +33,8 @@ typedef struct {
 	uint8_t RAM[MEMORY_SIZE]; /* 2 Kb internal RAM */
 } CPU_6502;
 
+int Stack; /* only beign used for debugging */
+
 /* Program Status Register
  *
  * Bit 0 = Carry
