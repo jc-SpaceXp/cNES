@@ -6,7 +6,7 @@
  * #include "ppu.h" add after ppu.h & ppu.c are created
  */
 
-/* NES_CPU : Type 6501 CPU, used to initialise CPU
+/* NES_CPU : Type 6502 CPU, used to initialise CPU
  */
 CPU_6502* NES_CPU(uint16_t pc_init)
 {
