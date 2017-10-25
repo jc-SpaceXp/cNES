@@ -318,7 +318,7 @@ void execute_BIT(size_t operand)
 		NES->P &= ~(FLAG_V);
 	}
 	/* Setting Zero FLAG */
-	if (operand == 0) {
+	if (tmp == 0) {
 		NES->P |= FLAG_Z; /* set */
 	} else {
 		NES->P &= ~(FLAG_Z); /* clear */
@@ -433,19 +433,18 @@ void execute_ROR(enum MODES address_mode, size_t operand)
 /***************************
  * BRANCH                  *
  * *************************/
-/* all are in RELATIVE address mode : -128 to +127 on pc */
+/* all are in RELATIVE address mode : -126 to +129 on pc (due to +2 @ end) */
 /* No flag changes */
 
 /* execute_BCC: BCC command - Branch on Carry Clear (C = 0)
  */
 void execute_BCC(uint8_t *ptr_code)
 {
-	printf("BCC $%.2x\t", *(ptr_code+1));
 	if ((NES->P & FLAG_C) == 0x00) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
+	printf("BCC $%.2x\t", NES->PC);
 }
 
 
@@ -453,12 +452,11 @@ void execute_BCC(uint8_t *ptr_code)
  */
 void execute_BCS(uint8_t *ptr_code)
 {
-	printf("BCS $%.2x\t", *(ptr_code+1));
 	if ((NES->P & FLAG_C) == 0x01) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
+	printf("BCS $%.2x\t", NES->PC);
 }
 
 
@@ -466,12 +464,11 @@ void execute_BCS(uint8_t *ptr_code)
  */
 void execute_BEQ(uint8_t *ptr_code)
 {
-	printf("BEQ $%.2x\t", *(ptr_code+1));
 	if ((NES->P & FLAG_Z) == FLAG_Z) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
+	printf("BEQ $%.2x\t", NES->PC);
 }
 
 
@@ -479,12 +476,11 @@ void execute_BEQ(uint8_t *ptr_code)
  */
 void execute_BMI(uint8_t *ptr_code)
 {
-	printf("BMI $%.2x\t", *(ptr_code+1));
 	if ((NES->P & FLAG_N) == FLAG_N) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
+	printf("BMI $%.2x\t", NES->PC);
 }
 
 
@@ -492,12 +488,11 @@ void execute_BMI(uint8_t *ptr_code)
  */
 void execute_BNE(uint8_t *ptr_code)
 {
-	printf("BNE $%.2x\t", *(ptr_code+1));
 	if ((NES->P & FLAG_Z) == 0x00) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
+	printf("BNE $%.2x\t", NES->PC);
 }
 
 
@@ -505,12 +500,11 @@ void execute_BNE(uint8_t *ptr_code)
  */
 void execute_BPL(uint8_t *ptr_code)
 {
-	printf("BNE $%.2x\t", *(ptr_code+1));
 	if ((NES->P & FLAG_N) == 0x00) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
+	printf("BPL $%.2x\t", NES->PC);
 }
 
 
@@ -518,12 +512,11 @@ void execute_BPL(uint8_t *ptr_code)
  */
 void execute_BVC(uint8_t *ptr_code)
 {
-	printf("BVC $%.2x\t", *(ptr_code+1));
 	if ((NES->P & FLAG_V) == 0x00) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
+	printf("BVC $%.2x\t", NES->PC);
 }
 
 
@@ -531,12 +524,11 @@ void execute_BVC(uint8_t *ptr_code)
  */
 void execute_BVS(uint8_t *ptr_code)
 {
-	printf("BVS $%.2x\t", *(ptr_code+1));
 	if ((NES->P & FLAG_V) == FLAG_V) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
+	printf("BVS $%.2x\t", NES->PC);
 }
 
 
@@ -574,7 +566,7 @@ void execute_RTI(void)
 {
 	/* Implied */
 	/* PULL SR */
-	printf("RTI\t");
+	printf("RTI\t\t");
 	tmp = PULL();
 	NES->P = tmp;
 	/* PULL PC */
@@ -589,7 +581,7 @@ void execute_RTI(void)
 void execute_RTS(void)
 {
 	/* Implied */
-	printf("RTS\t");
+	printf("RTS\t\t");
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
 	tmp = PULL(); /* Pull PCL */
 	operand = PULL(); /* Pull PCH */
@@ -607,7 +599,7 @@ void execute_RTS(void)
 void execute_CLC(void)
 {
 	/* CLC */
-	printf("CLC\t");
+	printf("CLC\t\t");
 	NES->P &= ~(FLAG_C); /* set Flag C to: 11111110 then AND to P */
 }
 
@@ -617,7 +609,7 @@ void execute_CLC(void)
 void execute_CLD(void)
 {
 	/* CLD */
-	printf("CLD\t");
+	printf("CLD\t\t");
 	NES->P &= ~(FLAG_D);
 
 }
@@ -628,7 +620,7 @@ void execute_CLD(void)
 void execute_CLI(void)
 {
 	/* CLI */
-	printf("CLI\t");
+	printf("CLI\t\t");
 	NES->P &= ~(FLAG_I);
 }
 
@@ -638,7 +630,7 @@ void execute_CLI(void)
 void execute_CLV(void)
 {
 	/* CLV */
-	printf("CLV\t");
+	printf("CLV\t\t");
 	NES->P &= ~(FLAG_V);
 }
 
@@ -699,7 +691,7 @@ void execute_CPY(enum MODES address_mode, size_t operand)
 void execute_SEC(CPU_6502 *NESCPU)
 {
 	/* SEC */
-	printf("SEC\t");
+	printf("SEC\t\t");
 	NESCPU->P |= FLAG_C;
 }
 
@@ -709,7 +701,7 @@ void execute_SEC(CPU_6502 *NESCPU)
 void execute_SED(CPU_6502 *NESCPU)
 {
 	/* SED */
-	printf("SED\t");
+	printf("SED\t\t");
 	NESCPU->P |= FLAG_Z;
 }
 
@@ -719,7 +711,7 @@ void execute_SED(CPU_6502 *NESCPU)
 void execute_SEI(CPU_6502 *NESCPU)
 {
 	/* SEI */
-	printf("SEI\t");
+	printf("SEI\t\t");
 	NESCPU->P |= FLAG_I;
 }
 
@@ -741,7 +733,7 @@ void execute_BRK(void)
 	 */
 
 	/* PC is pushed onto stack - always PUSH high byte first */
-	printf("BRK\t");
+	printf("BRK\t\t");
 	PUSH((uint8_t) (NES->PC >> 8)); /* Push PCH (PC High byte onto stack) */
 	PUSH((uint8_t) NES->PC); /* Push PCL (PC Low byte onto stack) */
 	/* PUSH Staus Reg */

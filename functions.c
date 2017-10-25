@@ -287,7 +287,7 @@ void execute_BIT(size_t operand)
 		NES->P &= ~(FLAG_V);
 	}
 	/* Setting Zero FLAG */
-	if (operand == 0) {
+	if (tmp == 0) {
 		NES->P |= FLAG_Z; /* set */
 	} else {
 		NES->P &= ~(FLAG_Z); /* clear */
@@ -392,7 +392,7 @@ void execute_ROR(enum MODES address_mode, size_t operand)
 /***************************
  * BRANCH                  *
  * *************************/
-/* all are in RELATIVE address mode : -128 to +127 on pc */
+/* all are in RELATIVE address mode : -126 to +129 on pc (due to +2 @ end) */
 /* No flag changes */
 
 /* execute_BCC: BCC command - Branch on Carry Clear (C = 0)
@@ -401,9 +401,8 @@ void execute_BCC(uint8_t *ptr_code)
 {
 	if ((NES->P & FLAG_C) == 0x00) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
 }
 
 
@@ -413,9 +412,8 @@ void execute_BCS(uint8_t *ptr_code)
 {
 	if ((NES->P & FLAG_C) == 0x01) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
 }
 
 
@@ -425,9 +423,8 @@ void execute_BEQ(uint8_t *ptr_code)
 {
 	if ((NES->P & FLAG_Z) == FLAG_Z) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
 }
 
 
@@ -437,9 +434,8 @@ void execute_BMI(uint8_t *ptr_code)
 {
 	if ((NES->P & FLAG_N) == FLAG_N) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
 }
 
 
@@ -449,9 +445,8 @@ void execute_BNE(uint8_t *ptr_code)
 {
 	if ((NES->P & FLAG_Z) == 0x00) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
 }
 
 
@@ -461,9 +456,8 @@ void execute_BPL(uint8_t *ptr_code)
 {
 	if ((NES->P & FLAG_N) == 0x00) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
 }
 
 
@@ -473,9 +467,8 @@ void execute_BVC(uint8_t *ptr_code)
 {
 	if ((NES->P & FLAG_V) == 0x00) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
 }
 
 
@@ -485,9 +478,8 @@ void execute_BVS(uint8_t *ptr_code)
 {
 	if ((NES->P & FLAG_V) == FLAG_V) {
 		NES->PC += (int8_t) *(ptr_code+1);
-	} else {
-		NES->PC += 2;
 	}
+	NES->PC += 2;
 }
 
 

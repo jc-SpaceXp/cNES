@@ -7,11 +7,11 @@
 #include "cart.h"
 
 const char *filename = "nestest.nes";
-/* for nestest.mes sey NES_CPU(0x) */
+/* for nestest.mes set NES_CPU(0xC000) */
 
 int main(int argc, char **argv)
 {	
-	NES = NES_CPU(0x8000); /* haven't implimented ROM loading thus PC needs to = 0 */
+	NES = NES_CPU(0xC000);
 
 	Cartridge* cart = malloc(sizeof(Cartridge));
 	load_cart(cart, filename);

@@ -91,9 +91,9 @@ size_t get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU)
 /* Return Status */
 void RET_NES_CPU(void)
 {
-	printf("A:%.3d  ", NES->A);
-	printf("X:%.3d  ", NES->X);
-	printf("Y:%.3d  ", NES->Y);
+	printf("A:%.2x  ", NES->A);
+	printf("X:%.2x  ", NES->X);
+	printf("Y:%.2x  ", NES->Y);
 	printf("SP:%.3d  ", *NES->SP);
 	printf("P:%.2x  ", NES->P);
 	printf("PC:%.4x\n", NES->PC);
