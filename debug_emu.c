@@ -9,6 +9,12 @@
 const char *filename = "nestest.nes";
 /* for nestest.mes set NES_CPU(0xC000) */
 
+#define __LOG__
+
+/* comment out above and uncomment below to disable logging to a file
+#undef __LOG__
+*/
+
 int main(int argc, char **argv)
 {	
 	NES = NES_CPU(0xC000);
@@ -16,6 +22,10 @@ int main(int argc, char **argv)
 	Cartridge* cart = malloc(sizeof(Cartridge));
 	load_cart(cart, filename);
 	free(cart);
+
+#ifdef __LOG__
+	stdout = freopen("log-nestest.txt", "w", stdout);
+#endif /*__LOG__ */
 
 	int i = 0;
 	while (i < 123) {
