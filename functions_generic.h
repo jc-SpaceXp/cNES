@@ -9,7 +9,6 @@
 #include "globals.h"
 #include <stdio.h>
 
-
 /*
  * ALL get_op functions have:
  * Parameters: 1. enum MODE address_mode = addressing mode
@@ -35,16 +34,6 @@ size_t get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU);
  * *************************/
 void RET_NES_CPU(void); /* Return Status */
 
-
-/***************************
- * READ & WRITE            *
- * *************************/
-
-/* read_mem   : reads memory from RAM -- including mirrored memory RAM
- * Parameters : uint16_t address (will cast size_t operand into there)
- */
-uint8_t read_RAM(uint16_t address);
-void write_RAM(uint16_t address, uint8_t value);
 
 /***************************
  * ADD & SUB RELATED FUNCS *

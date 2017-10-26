@@ -226,9 +226,10 @@ void execute_SBC(enum MODES address_mode, size_t operand)
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
 		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
-		NES->A -= NES->RAM[operand];
 	}
-	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
+	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result); 
+	/* Carry 1 is forced so that the second operand is actually 2's compilement 
+	 * else if carry = 0 - off by one error */
 	NES->A = Base2toBase10(bin_result, 0);
 }
 
@@ -588,14 +589,19 @@ void execute_CLV(void)
  */
 void execute_CMP(enum MODES address_mode, size_t operand)
 {
+	/* CMP - same as SBC except result isn't stored and V flag isn't changed */
+	Base10toBase2(NES->A, bin_operand1);
 	if (address_mode == IMM) {
-		/* Immediate - CMP #Operand */
-		tmp = NES->A - operand;
+		/* Immediate - SBC #Operand */
+		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
-		tmp = NES->A - NES->RAM[operand];
+		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
-	update_FLAG_N(tmp);
-	update_FLAG_Z(tmp);
+	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
+	operand = Base2toBase10(bin_result, 0);
+	update_FLAG_N(operand);
+	update_FLAG_Z(operand);
+	set_or_clear_CARRY(tmp);
 }
 
 
@@ -603,14 +609,18 @@ void execute_CMP(enum MODES address_mode, size_t operand)
  */
 void execute_CPX(enum MODES address_mode, size_t operand)
 {
+	Base10toBase2(NES->X, bin_operand1);
 	if (address_mode == IMM) {
-		/* Immediate - CPX #Operand */
-		tmp = NES->X - operand;
+		/* Immediate - SBC #Operand */
+		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
-		tmp = NES->X - NES->RAM[operand];
+		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
-	update_FLAG_N(tmp);
-	update_FLAG_Z(tmp);
+	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
+	operand = Base2toBase10(bin_result, 0);
+	update_FLAG_N(operand);
+	update_FLAG_Z(operand);
+	set_or_clear_CARRY(tmp);
 }
 
 
@@ -618,14 +628,18 @@ void execute_CPX(enum MODES address_mode, size_t operand)
  */
 void execute_CPY(enum MODES address_mode, size_t operand)
 {
+	Base10toBase2(NES->Y, bin_operand1);
 	if (address_mode == IMM) {
-		/* Immediate - CPY #Operand */
-		tmp = NES->Y - operand;
+		/* Immediate - SBC #Operand */
+		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
-		tmp = NES->Y - NES->RAM[operand];
+		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
-	update_FLAG_N(tmp);
-	update_FLAG_Z(tmp);
+	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
+	operand = Base2toBase10(bin_result, 0);
+	update_FLAG_N(operand);
+	update_FLAG_Z(operand);
+	set_or_clear_CARRY(tmp);
 }
 
 

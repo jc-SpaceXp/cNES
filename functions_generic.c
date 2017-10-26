@@ -101,29 +101,6 @@ void RET_NES_CPU(void)
 }
 
 /***************************
- * READ & WRITE            *
- * *************************/
-
-/* read_mem   : reads memory from RAM -- including mirrored memory RAM
- * Parameters : uint16_t address (will cast size_t operand into there)
- */
-uint8_t read_RAM(uint16_t address)
-{
-	return NES->RAM[address & 0x07FF]; /* Needed for mirrored RAM */
-	/* Will always return the non-mirrored RAM address */
-	/* or could just return address as we've written to all mirrors */
-}
-
-
-void write_RAM(uint16_t address, uint8_t value)
-{
-	NES->RAM[address] = value; /* Non-mirror */
-	NES->RAM[address + 0x0800] = value; /* mirror 1 */
-	NES->RAM[address + 0x1600] = value; /* mirror 2 */
-	NES->RAM[address + 0x2400] = value; /* mirror 3 */
-}
-
-/***************************
  * ADD & SUB RELATED FUNCS *
  * *************************/
 

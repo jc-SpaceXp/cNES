@@ -7,8 +7,6 @@
 #include "functions_generic.h"
 #include "opcode_debug.h"
 
-/* CAN'T IMPLEMENT code[NES->PC] until ROM loading is working */
-/* one workaround is let NES->PC to = 0 prior to Execute_6502(); */
 void Debug_6502(uint16_t PC)
 {
 	uint8_t *opcode = &NES->RAM[PC];
@@ -313,6 +311,8 @@ void Debug_6502(uint16_t PC)
 		/* PLA */
 		printf("PLA\t\t");
 		NES->A = PULL();
+		update_FLAG_Z(NES->A);
+		update_FLAG_N(NES->A);
 		++NES->PC;
 		break;
 	case 0x69:

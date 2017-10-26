@@ -7,9 +7,6 @@
 #include "functions_generic.h"
 #include "opcode_execute.h"
 
-/* CAN'T IMPLEMENT code[NES->PC] until ROM loading is working */
-/* one workaround is let NES->PC to = 0 prior to Execute_6502(); */
-/* However JMP and braches don't work as intended */
 void Execute_6502(uint16_t PC)
 {
 	uint8_t *opcode = &NES->RAM[PC];
@@ -38,7 +35,7 @@ void Execute_6502(uint16_t PC)
 	case 0x08:
 		/* PHP */
 		PUSH(NES->P);
-		NES->P |= 0x30; /* Setting Bits 4 & 5 */
+		/* NES->P |= 0x30; IGNORING Setting Bits 4 & 5 */
 		++NES->PC;
 		break;
 	case 0x09:
@@ -310,6 +307,8 @@ void Execute_6502(uint16_t PC)
 	case 0x68:
 		/* PLA */
 		NES->A = PULL();
+		update_FLAG_N(NES->A);
+		update_FLAG_Z(NES->A);
 		++NES->PC;
 		break;
 	case 0x69:
@@ -785,13 +784,6 @@ void Execute_6502(uint16_t PC)
 		++NES->PC; /* This causes a problem that undocumented opcodes advance PC by 1 */
 		break;
 	}
-	/* Return format of hex code we've processed */
-	printf("%04x 0x%02x", NES->PC, *opcode);
-	if (sizeof(operand) == sizeof(uint8_t)) {
-		printf("%02x\n", *(opcode+1));
-	} else if (sizeof(operand) == sizeof(uint16_t)) {
-		printf("%02x%02x\n", *(opcode+1), *(opcode+2));
-	} else {
-		printf("\n");
-	}
+	/* Return format of hex code we've processed - only the opcode byte */
+	printf("%04x 0x%02x\n", NES->PC, *opcode);
 }

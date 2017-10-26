@@ -252,7 +252,6 @@ void execute_SBC(enum MODES address_mode, size_t operand)
 	} else {
 		printf("SBC $%.4x\t", operand);
 		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
-		NES->A -= NES->RAM[operand];
 	}
 	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
 	NES->A = Base2toBase10(bin_result, 0);
@@ -645,16 +644,21 @@ void execute_CLV(void)
  */
 void execute_CMP(enum MODES address_mode, size_t operand)
 {
+	/* CMP - same as SBC except result isn't stored and V flag isn't changed */
+	Base10toBase2(NES->A, bin_operand1);
 	if (address_mode == IMM) {
-		/* Immediate - CMP #Operand */
+		/* Immediate - SBC #Operand */
 		printf("CMP #%.4x\t", operand);
-		tmp = NES->A - operand;
+		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
 		printf("CMP $%.4x\t", operand);
-		tmp = NES->A - NES->RAM[operand];
+		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
-	update_FLAG_N(tmp);
-	update_FLAG_Z(tmp);
+	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
+	set_or_clear_CARRY(tmp);
+	operand = Base2toBase10(bin_result, 0);
+	update_FLAG_N(operand);
+	update_FLAG_Z(operand);
 }
 
 
@@ -662,16 +666,20 @@ void execute_CMP(enum MODES address_mode, size_t operand)
  */
 void execute_CPX(enum MODES address_mode, size_t operand)
 {
+	Base10toBase2(NES->X, bin_operand1);
 	if (address_mode == IMM) {
-		/* Immediate - CPX #Operand */
+		/* Immediate - SBC #Operand */
 		printf("CPX #%.4x\t", operand);
-		tmp = NES->X - operand;
+		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
 		printf("CPX $%.4x\t", operand);
-		tmp = NES->X - NES->RAM[operand];
+		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
-	update_FLAG_N(tmp);
-	update_FLAG_Z(tmp);
+	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
+	set_or_clear_CARRY(tmp);
+	operand = Base2toBase10(bin_result, 0);
+	update_FLAG_N(operand);
+	update_FLAG_Z(operand);
 }
 
 
@@ -679,16 +687,20 @@ void execute_CPX(enum MODES address_mode, size_t operand)
  */
 void execute_CPY(enum MODES address_mode, size_t operand)
 {
+	Base10toBase2(NES->Y, bin_operand1);
 	if (address_mode == IMM) {
-		/* Immediate - CPY #Operand */
+		/* Immediate - SBC #Operand */
 		printf("CPY #%.4x\t", operand);
-		tmp = NES->Y - operand;
+		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
 		printf("CPY $%.4x\t", operand);
-		tmp = NES->Y - NES->RAM[operand];
+		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
-	update_FLAG_N(tmp);
-	update_FLAG_Z(tmp);
+	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
+	set_or_clear_CARRY(tmp);
+	operand = Base2toBase10(bin_result, 0);
+	update_FLAG_N(operand);
+	update_FLAG_Z(operand);
 }
 
 
@@ -754,5 +766,4 @@ void execute_BRK(void)
 void execute_NOP(void)
 {
 	printf("NOP\t\t");
-	;
 }
