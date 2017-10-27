@@ -34,8 +34,7 @@ void Execute_6502(uint16_t PC)
 		break;
 	case 0x08:
 		/* PHP */
-		PUSH(NES->P);
-		/* NES->P |= 0x30; IGNORING Setting Bits 4 & 5 */
+		PUSH(NES->P | 0x30); /* Set Bits 4 & 5 to 1 for PHP */
 		++NES->PC;
 		break;
 	case 0x09:

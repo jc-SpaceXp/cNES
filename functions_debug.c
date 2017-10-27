@@ -584,8 +584,8 @@ void execute_JSR(size_t operand)
 void execute_RTI(void)
 {
 	/* Implied */
-	/* PULL SR */
 	printf("RTI\t\t");
+	/* PULL SR */
 	tmp = PULL();
 	NES->P = tmp;
 	/* PULL PC */
@@ -763,14 +763,14 @@ void execute_BRK(void)
 	 * RTI doesn the inverese POPs A & B
 	 */
 
-	/* PC is pushed onto stack - always PUSH high byte first */
+	/* PC + 2 is pushed onto stack - always PUSH high byte first */
 	printf("BRK\t\t");
-	PUSH((uint8_t) (NES->PC >> 8)); /* Push PCH (PC High byte onto stack) */
-	PUSH((uint8_t) NES->PC); /* Push PCL (PC Low byte onto stack) */
-	/* PUSH Staus Reg */
-	PUSH(NES->P);
-	/* Update SR bits 4/5 */
-	NES->P |= 0x30; /* Sets Bits 4 & 5 */
+	PUSH((uint8_t) ((NES->PC + 2) >> 8)); /* Push PCH (PC High byte onto stack) */
+	PUSH((uint8_t) (NES->PC + 2)); /* Push PCL (PC Low byte onto stack) */
+	/* PUSH Staus Reg - w/ bits 4 & 5 set */
+	PUSH(NES->P | 0x30);
+	/* Flag I is set */
+	NES->P |= FLAG_I;
 }
 
 
