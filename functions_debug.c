@@ -178,6 +178,10 @@ void execute_ADC(enum MODES address_mode, size_t operand)
 	}
 	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
 	NES->A = Base2toBase10(bin_result, 0);
+	update_FLAG_N(NES->A);
+	update_FLAG_V(bin_operand1, bin_operand2, bin_result);
+	update_FLAG_Z(NES->A);
+	/* Carry updated via full_adder() */
 }
 
 /* execute_DEC: DEC command - Decrement Mem by one
@@ -255,6 +259,9 @@ void execute_SBC(enum MODES address_mode, size_t operand)
 	}
 	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
 	NES->A = Base2toBase10(bin_result, 0);
+	update_FLAG_N(NES->A);
+	update_FLAG_V(bin_operand1, bin_operand2, bin_result);
+	update_FLAG_Z(NES->A);
 }
 
 /***************************
@@ -272,6 +279,8 @@ void execute_AND(enum MODES address_mode, size_t operand)
 		printf("AND $%.4x\t", operand);
 		NES->A &= NES->RAM[operand];
 	}
+	update_FLAG_N(NES->A);
+	update_FLAG_Z(NES->A);
 }
 
 
@@ -338,6 +347,8 @@ void execute_EOR(enum MODES address_mode, size_t operand)
 		printf("EOR $%.4x\t", operand);
 		NES->A ^= NES->RAM[operand];
 	}
+	update_FLAG_N(NES->A);
+	update_FLAG_Z(NES->A);
 }
 
 
@@ -372,6 +383,8 @@ void execute_ORA(enum MODES address_mode, size_t operand)
 		printf("ORA $%.4x\t", operand);
 		NES->A |= NES->RAM[operand];
 	}
+	update_FLAG_N(NES->A);
+	update_FLAG_Z(NES->A);
 }
 
 

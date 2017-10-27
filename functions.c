@@ -161,6 +161,10 @@ void execute_ADC(enum MODES address_mode, size_t operand)
 	}
 	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
 	NES->A = Base2toBase10(bin_result, 0);
+	update_FLAG_N(NES->A);
+	update_FLAG_V(bin_operand1, bin_operand2, bin_result);
+	update_FLAG_Z(NES->A);
+	/* Carry flag updated via full_adder() */
 }
 
 /* execute_DEC: DEC command - Decrement Mem by one
@@ -231,6 +235,9 @@ void execute_SBC(enum MODES address_mode, size_t operand)
 	/* Carry 1 is forced so that the second operand is actually 2's compilement 
 	 * else if carry = 0 - off by one error */
 	NES->A = Base2toBase10(bin_result, 0);
+	update_FLAG_N(NES->A);
+	update_FLAG_V(bin_operand1, bin_operand2, bin_result);
+	update_FLAG_Z(NES->A);
 }
 
 /***************************

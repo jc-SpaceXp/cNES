@@ -227,6 +227,8 @@ void update_FLAG_V(int *bin_array1, int *bin_array2, int *result)
 		NES->P &= ~(FLAG_V); /* Clear V */
 	} else if (bin_array1[7] != result[7]) {
 		NES->P |= FLAG_V; /* Set V */
+	} else {
+		NES->P &= ~(FLAG_V); /* Clear V */
 	}
 }
 
