@@ -108,6 +108,7 @@ void RET_NES_CPU(void)
  */
 void Base10toBase2(uint8_t quotient, int *bin_array)
 {
+	memset(bin_array, 0, 8*sizeof(int)); /* reset array to 0 */
 	while ((quotient != 0) && (bin_array != NULL)) {
 		*bin_array = quotient % 2;
 		quotient /= 2;
