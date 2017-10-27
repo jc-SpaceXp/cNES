@@ -686,11 +686,11 @@ void execute_SEI(CPU_6502 *NESCPU)
 void execute_BRK(void)
 {
 	/* 2 Pushes onto stack
-	 * A) PC ( 2 seperate pushes as stack = 8 bits vs 16 bit PC )
-	 * B) Status Register
+	 * A) PC + 2 (2 seperate pushes as stack = 8 bits vs 16 bit PC)
+	 * B) Status Register (w/ bits 4 & 5 set)
 	 *
 	 * - also set I in Status reg
-	 * RTI doesn the inverese POPs A & B
+	 * RTI does the inverese POPs A & B
 	 */
 
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
