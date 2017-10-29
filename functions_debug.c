@@ -24,10 +24,10 @@ unsigned int power2 = 1;
 void execute_LDA(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == IMM) {
-		printf("LDA #%.4x\t", operand);
+		printf("LDA #%.4X    ", operand);
 		NES->A = operand;
 	} else {
-		printf("LDA $%.4x\t", operand);
+		printf("LDA $%.4X    ", operand);
 		NES->A = NES->RAM[operand];
 	}
 	update_FLAG_N(NES->A);
@@ -40,10 +40,10 @@ void execute_LDA(enum MODES address_mode, size_t operand)
 void execute_LDX(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == IMM) {
-		printf("LDX #%.4x\t", operand);
+		printf("LDX #%.4X    ", operand);
 		NES->X = operand;
 	} else {
-		printf("LDX $%.4x\t", operand);
+		printf("LDX $%.4X    ", operand);
 		NES->X = NES->RAM[operand];
 	}
 	update_FLAG_N(NES->X);
@@ -56,10 +56,10 @@ void execute_LDX(enum MODES address_mode, size_t operand)
 void execute_LDY(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == IMM) {
-		printf("LDY #%.4x\t", operand);
+		printf("LDY #%.4X    ", operand);
 		NES->Y = operand;
 	} else {
-		printf("LDY $%.4x\t", operand);
+		printf("LDY $%.4X    ", operand);
 		NES->Y = NES->RAM[operand];
 	}
 	update_FLAG_N(NES->Y);
@@ -71,7 +71,7 @@ void execute_LDY(enum MODES address_mode, size_t operand)
  */
 void execute_STA(size_t operand)
 {
-	printf("STA $%.4x\t", operand);
+	printf("STA $%.4X    ", operand);
 	NES->RAM[operand] = NES->A;
 }
 
@@ -80,7 +80,7 @@ void execute_STA(size_t operand)
  */
 void execute_STX(size_t operand)
 {
-	printf("STX $%.4x\t", operand);
+	printf("STX $%.4X    ", operand);
 	NES->RAM[operand] = NES->X;
 }
 
@@ -89,7 +89,7 @@ void execute_STX(size_t operand)
  */
 void execute_STY(size_t operand)
 {
-	printf("STY $%.4x\t", operand);
+	printf("STY $%.4X    ", operand);
 	NES->RAM[operand] = NES->Y;
 }
 
@@ -98,7 +98,7 @@ void execute_STY(size_t operand)
  */
 void execute_TAX(void)
 {
-	printf("TAX\t\t");
+	printf("TAX          ");
 	NES->X = NES->A;
 	update_FLAG_N(NES->X);
 	update_FLAG_Z(NES->X);
@@ -109,7 +109,7 @@ void execute_TAX(void)
  */
 void execute_TAY(void)
 {
-	printf("TAY\t\t");
+	printf("TAY          ");
 	NES->Y = NES->A;
 	update_FLAG_N(NES->Y);
 	update_FLAG_Z(NES->Y);
@@ -120,7 +120,7 @@ void execute_TAY(void)
  */
 void execute_TSX(void)
 {
-	printf("TSX\t\t");
+	printf("TSX          ");
 	NES->X = *NES->SP;
 	update_FLAG_N(NES->X);
 	update_FLAG_Z(NES->X);
@@ -131,7 +131,7 @@ void execute_TSX(void)
  */
 void execute_TXA(void)
 {
-	printf("TXA\t\t");
+	printf("TXA          ");
 	NES->A = NES->X;
 	update_FLAG_N(NES->A);
 	update_FLAG_Z(NES->A);
@@ -142,7 +142,7 @@ void execute_TXA(void)
  */
 void execute_TXS(void)
 {
-	printf("TXS\t\t");
+	printf("TXS          ");
 	*NES->SP = NES->X;
 	update_FLAG_N(*NES->SP);
 	update_FLAG_Z(*NES->SP);
@@ -153,7 +153,7 @@ void execute_TXS(void)
  */
 void execute_TYA(void)
 {
-	printf("TYA\t\t");
+	printf("TYA          ");
 	NES->A = NES->Y;
 	update_FLAG_N(NES->A);
 	update_FLAG_Z(NES->A);
@@ -170,10 +170,10 @@ void execute_ADC(enum MODES address_mode, size_t operand)
 	Base10toBase2(NES->A, bin_operand1);
 	if (address_mode == IMM) {
 		/* Immediate - ADC #Operand */
-		printf("ADC #%.4x\t", operand);
+		printf("ADC #%.4X    ", operand);
 		Base10toBase2(operand, bin_operand2);
 	} else {
-		printf("ADC $%.4x\t", operand);
+		printf("ADC $%.4X    ", operand);
 		Base10toBase2(NES->RAM[operand], bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
@@ -188,7 +188,7 @@ void execute_ADC(enum MODES address_mode, size_t operand)
  */
 void execute_DEC(size_t operand)
 {
-	printf("DEC $%.4x\t", operand);
+	printf("DEC $%.4X    ", operand);
 	--(NES->RAM[operand]);
 }
 
@@ -198,7 +198,7 @@ void execute_DEC(size_t operand)
 void execute_DEX(void)
 {
 	/* Implied Mode */
-	printf("DEX\t\t");
+	printf("DEX          ");
 	--(NES->X);
 }
 
@@ -208,7 +208,7 @@ void execute_DEX(void)
 void execute_DEY(void)
 {
 	/* Implied Mode */
-	printf("DEY\t\t");
+	printf("DEY          ");
 	--(NES->Y);
 }
 
@@ -217,7 +217,7 @@ void execute_DEY(void)
  */
 void execute_INC(size_t operand)
 {
-	printf("INC $%.4x\t", operand);
+	printf("INC $%.4X    ", operand);
 	++(NES->RAM[operand]);
 }
 
@@ -226,7 +226,7 @@ void execute_INC(size_t operand)
  */
 void execute_INX(void)
 {
-	printf("INX\t\t");
+	printf("INX          ");
 	/* Implied Mode */
 	++(NES->X);
 }
@@ -236,7 +236,7 @@ void execute_INX(void)
  */
 void execute_INY(void)
 {
-	printf("INY\t\t");
+	printf("INY          ");
 	/* Implied Mode */
 	++(NES->Y);
 }
@@ -251,10 +251,10 @@ void execute_SBC(enum MODES address_mode, size_t operand)
 	Base10toBase2(NES->A, bin_operand1);
 	if (address_mode == IMM) {
 		/* Immediate - SBC #Operand */
-		printf("SBC #%.4x\t", operand);
+		printf("SBC #%.4X    ", operand);
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
-		printf("SBC $%.4x\t", operand);
+		printf("SBC $%.4X\t", operand);
 		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
@@ -273,10 +273,10 @@ void execute_SBC(enum MODES address_mode, size_t operand)
 void execute_AND(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == IMM) {
-		printf("AND #%.4x\t", operand);
+		printf("AND #%.4X    ", operand);
 		NES->A &= operand;
 	} else {
-		printf("AND $%.4x\t", operand);
+		printf("AND $%.4X    ", operand);
 		NES->A &= NES->RAM[operand];
 	}
 	update_FLAG_N(NES->A);
@@ -291,12 +291,12 @@ void execute_ASL(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == ACC) {
 		/* Accumulator - ASL #Operand */
-		printf("ASL A\t");
+		printf("ASL A    ");
 		tmp = NES->A & 0x80; /* Mask 7th bit */
 		NES->A = NES->A << 1;
 	} else {
 		/* Shift value @ address 1 bit to the left */
-		printf("ASL $%.4x\t", operand);
+		printf("ASL $%.4X    ", operand);
 		tmp = NES->RAM[operand] & 0x80; /* Mask 7th bit */
 		NES->RAM[operand] = NES->RAM[operand] << 1;
 	}
@@ -309,18 +309,18 @@ void execute_ASL(enum MODES address_mode, size_t operand)
  */
 void execute_BIT(size_t operand)
 {
-	printf("BIT $%.4x\t", operand);
+	printf("BIT $%.4X    ", operand);
 	tmp = NES->A & NES->RAM[operand];
 	/* Update Flags */
-	/* N = Bit 7, V = Bit 6 & Z = 1 (if result = 0) */
+	/* N = Bit 7, V = Bit 6 (of fetched operand) & Z = 1 (if AND result = 0) */
 	/* Setting 7th Bit */
-	if ((tmp & FLAG_N) == FLAG_N) {
+	if ((NES->RAM[operand] & FLAG_N) == FLAG_N) {
 		NES->P |= FLAG_N; /* set */
 	} else {
 		NES->P &= ~(FLAG_N); /* clear flag */
 	}
 	/* Setting 6th Bit */
-	if ((tmp & FLAG_V) == FLAG_V) {
+	if ((NES->RAM[operand] & FLAG_V) == FLAG_V) {
 		NES->P |= FLAG_V;
 	} else {
 		NES->P &= ~(FLAG_V);
@@ -341,10 +341,10 @@ void execute_EOR(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == IMM) {
 		/* Immediate - AND #Operand */
-		printf("EOR #%.4x\t", operand);
+		printf("EOR #%.4X    ", operand);
 		NES->A ^= operand;
 	} else {
-		printf("EOR $%.4x\t", operand);
+		printf("EOR $%.4X    ", operand);
 		NES->A ^= NES->RAM[operand];
 	}
 	update_FLAG_N(NES->A);
@@ -358,11 +358,11 @@ void execute_LSR(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == ACC) {
 		/* Accumulator - LSR #Operand */
-		printf("LSR A\t");
+		printf("LSR A    ");
 		tmp = NES->A & 0x01; /* Mask 0th bit */
 		NES->A = NES->A >> 1;
 	} else {
-		printf("LSR $%.4x\t", operand);
+		printf("LSR $%.4X    ", operand);
 		tmp = NES->RAM[operand] & 0x01; /* Mask 0th bit */
 		NES->RAM[operand] = NES->RAM[operand] >> 1;
 	}
@@ -377,10 +377,10 @@ void execute_ORA(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == IMM) {
 		/* Immediate - AND #Operand */
-		printf("ORA #%.4x\t", operand);
+		printf("ORA #%.4X    ", operand);
 		NES->A |= operand;
 	} else {
-		printf("ORA $%.4x\t", operand);
+		printf("ORA $%.4X    ", operand);
 		NES->A |= NES->RAM[operand];
 	}
 	update_FLAG_N(NES->A);
@@ -395,7 +395,7 @@ void execute_ROL(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == ACC) {
 		/* Accumulator - ROL #Operand */
-		printf("ROL A\t");
+		printf("ROL A    ");
 		tmp = NES->A & 0x80; /* Mask 7th bit */
 		NES->A = NES->A << 1;
 		/* Testing if Status Reg has a 1 in Carry Flag */
@@ -403,7 +403,7 @@ void execute_ROL(enum MODES address_mode, size_t operand)
 			NES->A |= (NES->P & FLAG_C);
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
 	} else {
-		printf("ROL $%.4x\t", operand);
+		printf("ROL $%.4X    ", operand);
 		tmp = NES->RAM[operand] & 0x80; /* Mask 7th bit */
 		NES->RAM[operand] = NES->RAM[operand] << 1;
 		if ((NES->P & FLAG_C) == 0x01) {
@@ -424,14 +424,14 @@ void execute_ROR(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == ACC) {
 		/* Accumulator - ROR #Operand */
-		printf("ROR A\t");
+		printf("ROR A    ");
 		tmp = NES->A & 0x01; /* Mask 0th bit */
 		NES->A = NES->A >> 1; /* Shift right */
 		if ((NES->P & FLAG_C) == 0x01) {
 			NES->A |= 0x80; /* Set 7th bit to 1 - if carry = 1 */
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
 	} else {
-		printf("ROR $%.4x\t", operand);
+		printf("ROR $%.4X    ", operand);
 		tmp = NES->RAM[operand] & 0x01;
 		NES->RAM[operand] = NES->RAM[operand] >> 1;
 		if ((NES->P & FLAG_C) == 0x01) {
@@ -456,7 +456,7 @@ void execute_BCC(uint8_t *ptr_code)
 		NES->PC += (int8_t) *(ptr_code+1);
 	}
 	NES->PC += 2;
-	printf("BCC $%.2x\t", NES->PC);
+	printf("BCC $%.2X    ", NES->PC);
 }
 
 
@@ -468,7 +468,7 @@ void execute_BCS(uint8_t *ptr_code)
 		NES->PC += (int8_t) *(ptr_code+1);
 	}
 	NES->PC += 2;
-	printf("BCS $%.2x\t", NES->PC);
+	printf("BCS $%.2X    ", NES->PC);
 }
 
 
@@ -480,7 +480,7 @@ void execute_BEQ(uint8_t *ptr_code)
 		NES->PC += (int8_t) *(ptr_code+1);
 	}
 	NES->PC += 2;
-	printf("BEQ $%.2x\t", NES->PC);
+	printf("BEQ $%.2X    ", NES->PC);
 }
 
 
@@ -492,7 +492,7 @@ void execute_BMI(uint8_t *ptr_code)
 		NES->PC += (int8_t) *(ptr_code+1);
 	}
 	NES->PC += 2;
-	printf("BMI $%.2x\t", NES->PC);
+	printf("BMI $%.2X    ", NES->PC);
 }
 
 
@@ -504,7 +504,7 @@ void execute_BNE(uint8_t *ptr_code)
 		NES->PC += (int8_t) *(ptr_code+1);
 	}
 	NES->PC += 2;
-	printf("BNE $%.2x\t", NES->PC);
+	printf("BNE $%.2X    ", NES->PC);
 }
 
 
@@ -516,7 +516,7 @@ void execute_BPL(uint8_t *ptr_code)
 		NES->PC += (int8_t) *(ptr_code+1);
 	}
 	NES->PC += 2;
-	printf("BPL $%.2x\t", NES->PC);
+	printf("BPL $%.2X    ", NES->PC);
 }
 
 
@@ -528,7 +528,7 @@ void execute_BVC(uint8_t *ptr_code)
 		NES->PC += (int8_t) *(ptr_code+1);
 	}
 	NES->PC += 2;
-	printf("BVC $%.2x\t", NES->PC);
+	printf("BVC $%.2X    ", NES->PC);
 }
 
 
@@ -540,7 +540,7 @@ void execute_BVS(uint8_t *ptr_code)
 		NES->PC += (int8_t) *(ptr_code+1);
 	}
 	NES->PC += 2;
-	printf("BVS $%.2x\t", NES->PC);
+	printf("BVS $%.2X    ", NES->PC);
 }
 
 
@@ -552,7 +552,7 @@ void execute_BVS(uint8_t *ptr_code)
  */
 void execute_JMP(size_t operand)
 {
-	printf("JMP $%.4x\t", operand);
+	printf("JMP $%.4X    ", operand);
 	NES->PC = operand;
 }
 
@@ -561,7 +561,7 @@ void execute_JMP(size_t operand)
  */
 void execute_JSR(size_t operand)
 {
-	printf("JSR $%.4x\t", operand);
+	printf("JSR $%.4X    ", operand);
 	/* Absolute - JSR operand */
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
 	PUSH((uint8_t) ((NES->PC) >> 8)); /* Push PCH (PC High byte onto stack) */
@@ -584,7 +584,7 @@ void execute_JSR(size_t operand)
 void execute_RTI(void)
 {
 	/* Implied */
-	printf("RTI\t\t");
+	printf("RTI          ");
 	/* PULL SR */
 	tmp = PULL();
 	NES->P = tmp;
@@ -600,7 +600,7 @@ void execute_RTI(void)
 void execute_RTS(void)
 {
 	/* Implied */
-	printf("RTS\t\t");
+	printf("RTS          ");
 	/* opposite of JSR - PULL PCL first */
 	tmp = PULL(); /* Pull PCL */
 	operand = PULL(); /* Pull PCH */
@@ -617,7 +617,7 @@ void execute_RTS(void)
 void execute_CLC(void)
 {
 	/* CLC */
-	printf("CLC\t\t");
+	printf("CLC          ");
 	NES->P &= ~(FLAG_C); /* set Flag C to: 11111110 then AND to P */
 }
 
@@ -627,7 +627,7 @@ void execute_CLC(void)
 void execute_CLD(void)
 {
 	/* CLD */
-	printf("CLD\t\t");
+	printf("CLD          ");
 	NES->P &= ~(FLAG_D);
 
 }
@@ -638,7 +638,7 @@ void execute_CLD(void)
 void execute_CLI(void)
 {
 	/* CLI */
-	printf("CLI\t\t");
+	printf("CLI          ");
 	NES->P &= ~(FLAG_I);
 }
 
@@ -648,7 +648,7 @@ void execute_CLI(void)
 void execute_CLV(void)
 {
 	/* CLV */
-	printf("CLV\t\t");
+	printf("CLV          ");
 	NES->P &= ~(FLAG_V);
 }
 
@@ -661,10 +661,10 @@ void execute_CMP(enum MODES address_mode, size_t operand)
 	Base10toBase2(NES->A, bin_operand1);
 	if (address_mode == IMM) {
 		/* Immediate - SBC #Operand */
-		printf("CMP #%.4x\t", operand);
+		printf("CMP #%.4X    ", operand);
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
-		printf("CMP $%.4x\t", operand);
+		printf("CMP $%.4X    ", operand);
 		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
@@ -682,10 +682,10 @@ void execute_CPX(enum MODES address_mode, size_t operand)
 	Base10toBase2(NES->X, bin_operand1);
 	if (address_mode == IMM) {
 		/* Immediate - SBC #Operand */
-		printf("CPX #%.4x\t", operand);
+		printf("CPX #%.4X    ", operand);
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
-		printf("CPX $%.4x\t", operand);
+		printf("CPX $%.4X    ", operand);
 		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
@@ -703,10 +703,10 @@ void execute_CPY(enum MODES address_mode, size_t operand)
 	Base10toBase2(NES->Y, bin_operand1);
 	if (address_mode == IMM) {
 		/* Immediate - SBC #Operand */
-		printf("CPY #%.4x\t", operand);
+		printf("CPY #%.4X    ", operand);
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
-		printf("CPY $%.4x\t", operand);
+		printf("CPY $%.4X    ", operand);
 		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
@@ -722,7 +722,7 @@ void execute_CPY(enum MODES address_mode, size_t operand)
 void execute_SEC(CPU_6502 *NESCPU)
 {
 	/* SEC */
-	printf("SEC\t\t");
+	printf("SEC          ");
 	NESCPU->P |= FLAG_C;
 }
 
@@ -732,7 +732,7 @@ void execute_SEC(CPU_6502 *NESCPU)
 void execute_SED(CPU_6502 *NESCPU)
 {
 	/* SED */
-	printf("SED\t\t");
+	printf("SED          ");
 	NESCPU->P |= FLAG_D;
 }
 
@@ -742,7 +742,7 @@ void execute_SED(CPU_6502 *NESCPU)
 void execute_SEI(CPU_6502 *NESCPU)
 {
 	/* SEI */
-	printf("SEI\t\t");
+	printf("SEI          ");
 	NESCPU->P |= FLAG_I;
 }
 
@@ -764,7 +764,7 @@ void execute_BRK(void)
 	 */
 
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
-	printf("BRK\t\t");
+	printf("BRK          ");
 	PUSH((uint8_t) ((NES->PC + 2) >> 8)); /* Push PCH (PC High byte onto stack) */
 	PUSH((uint8_t) (NES->PC + 2)); /* Push PCL (PC Low byte onto stack) */
 	/* PUSH Staus Reg - w/ bits 4 & 5 set */
@@ -778,5 +778,5 @@ void execute_BRK(void)
  */
 void execute_NOP(void)
 {
-	printf("NOP\t\t");
+	printf("NOP          ");
 }
