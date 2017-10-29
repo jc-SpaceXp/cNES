@@ -123,7 +123,8 @@ void Execute_6502(uint16_t PC)
 		break;
 	case 0x28:
 		/* PLP */
-		NES->P = PULL();
+		NES->P = PULL() & ~(0x10); /* B flag doesn't exist on P but can do in stack */
+		NES->P |= 0x20; /* Set bit 5 (always set) */
 		++NES->PC;
 		break;
 	case 0x29:

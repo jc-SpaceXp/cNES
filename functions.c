@@ -152,6 +152,15 @@ void execute_TYA(void)
  */
 void execute_ADC(enum MODES address_mode, size_t operand)
 {
+#ifdef __DECIMAL__ /* add #define __DECIMAL__ to SED - and #undef to CLD */
+	tmp = (NES->A >> 8) * 10; /* upper byte */
+	tmp += NES->A * 10; /* lower byte */
+	/* or make ADC_dec() as after this the else statement will
+	 * overwrite our answer
+	 * use #idef in opcode.c files instead
+	 */
+#endif /* __DECIMAL__ */
+
 	Base10toBase2(NES->A, bin_operand1);
 	if (address_mode == IMM) {
 		/* Immediate - ADC #Operand */
@@ -281,15 +290,15 @@ void execute_BIT(size_t operand)
 {
 	tmp = NES->A & NES->RAM[operand];
 	/* Update Flags */
-	/* N = Bit 7, V = Bit 6 & Z = 1 (if result = 0) */
+	/* N = Bit 7, V = Bit 6 (of fetched operand) & Z = 1 (if AND result = 0) */
 	/* Setting 7th Bit */
-	if ((tmp & FLAG_N) == FLAG_N) {
+	if ((NES->RAM[operand] & FLAG_N) == FLAG_N) {
 		NES->P |= FLAG_N; /* set */
 	} else {
 		NES->P &= ~(FLAG_N); /* clear flag */
 	}
 	/* Setting 6th Bit */
-	if ((tmp & FLAG_V) == FLAG_V) {
+	if ((NES->RAM[operand] & FLAG_V) == FLAG_V) {
 		NES->P |= FLAG_V;
 	} else {
 		NES->P &= ~(FLAG_V);

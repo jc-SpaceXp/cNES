@@ -125,7 +125,7 @@ void Debug_6502(uint16_t PC)
 	case 0x28:
 		/* PLP */
 		printf("PLP          ");
-		NES->P = PULL() & ~(0x10); /* Fixes line 103, breaks line 112 :/ */
+		NES->P = PULL() & ~(0x10); /* B flag may exist on stack not on P */
 		NES->P |= 0x20; /* bit 5 always set */
 		++NES->PC;
 		break;
