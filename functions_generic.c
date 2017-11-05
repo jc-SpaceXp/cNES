@@ -97,7 +97,8 @@ void RET_NES_CPU(void)
 	printf("Y:%.2X ", NES->Y);
 	printf("P:%.2X ", NES->P);
 	printf("SP:%.2X ", Stack);
-	printf("PC:%.4X\n", NES->PC);
+	printf("PC:%.4X ", NES->PC);
+	printf("*SP:%.2X\n", *NES->SP);
 }
 
 /***************************
