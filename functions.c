@@ -173,7 +173,7 @@ void execute_ADC(enum MODES address_mode, size_t operand)
 	update_FLAG_N(NES->A);
 	update_FLAG_V(bin_operand1, bin_operand2, bin_result);
 	update_FLAG_Z(NES->A);
-	/* Carry flag updated via full_adder() */
+	set_or_clear_CARRY(tmp);
 }
 
 /* execute_DEC: DEC command - Decrement Mem by one
@@ -181,6 +181,8 @@ void execute_ADC(enum MODES address_mode, size_t operand)
 void execute_DEC(size_t operand)
 {
 	--(NES->RAM[operand]);
+	update_FLAG_N(NES->RAM[operand]);
+	update_FLAG_Z(NES->RAM[operand]);
 }
 
 
@@ -190,6 +192,8 @@ void execute_DEX(void)
 {
 	/* Implied Mode */
 	--(NES->X);
+	update_FLAG_N(NES->X);
+	update_FLAG_Z(NES->X);
 }
 
 
@@ -199,6 +203,8 @@ void execute_DEY(void)
 {
 	/* Implied Mode */
 	--(NES->Y);
+	update_FLAG_N(NES->Y);
+	update_FLAG_Z(NES->Y);
 }
 
 
@@ -207,6 +213,8 @@ void execute_DEY(void)
 void execute_INC(size_t operand)
 {
 	++(NES->RAM[operand]);
+	update_FLAG_N(NES->RAM[operand]);
+	update_FLAG_Z(NES->RAM[operand]);
 }
 
 
@@ -216,6 +224,8 @@ void execute_INX(void)
 {
 	/* Implied Mode */
 	++(NES->X);
+	update_FLAG_N(NES->X);
+	update_FLAG_Z(NES->X);
 }
 
 
@@ -225,6 +235,8 @@ void execute_INY(void)
 {
 	/* Implied Mode */
 	++(NES->Y);
+	update_FLAG_N(NES->Y);
+	update_FLAG_Z(NES->Y);
 }
 
 
@@ -247,6 +259,7 @@ void execute_SBC(enum MODES address_mode, size_t operand)
 	update_FLAG_N(NES->A);
 	update_FLAG_V(bin_operand1, bin_operand2, bin_result);
 	update_FLAG_Z(NES->A);
+	set_or_clear_CARRY(tmp);
 }
 
 /***************************
