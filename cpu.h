@@ -28,12 +28,16 @@ typedef struct {
 	/* Special Registers */
 	uint8_t P; /* Program status register - contains flags */
 	uint8_t *SP; /* Stack Pointer */
+	/** Want to replace SP w/ Stack but doing so breaks my execution 
+	 * SP isn't called (see no reason why my code should break)
+	 * -- check if SP is used anywhere
+	 */
+	int Stack; /* only beign used for debugging */
 	uint16_t PC; /* Program counter (Instruction Pointer) */
 	/* Memory */
 	uint8_t RAM[MEMORY_SIZE]; /* 2 Kb internal RAM */
 } CPU_6502;
 
-int Stack; /* only beign used for debugging */
 
 /* Program Status Register
  *

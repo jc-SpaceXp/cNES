@@ -121,7 +121,7 @@ void execute_TAY(void)
 void execute_TSX(void)
 {
 	printf("TSX          ");
-	NES->X = *NES->SP;
+	NES->X = NES->Stack;
 	update_FLAG_N(NES->X);
 	update_FLAG_Z(NES->X);
 }
@@ -143,9 +143,7 @@ void execute_TXA(void)
 void execute_TXS(void)
 {
 	printf("TXS          ");
-	*NES->SP = NES->X;
-	update_FLAG_N(*NES->SP);
-	update_FLAG_Z(*NES->SP);
+	NES->Stack = NES->X;
 }
 
 

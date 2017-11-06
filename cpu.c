@@ -2,9 +2,7 @@
  * Contains CPU Architechture
  */
 #include "cpu.h"
-/*
- * #include "ppu.h" add after ppu.h & ppu.c are created
- */
+/* #include "ppu.h" */
 
 /* NES_CPU : Type 6502 CPU, used to initialise CPU
  */
@@ -12,7 +10,7 @@ CPU_6502* NES_CPU(uint16_t pc_init)
 {
 	CPU_6502 *i = malloc(sizeof(CPU_6502));
 	i->PC = pc_init;
-	i->SP = &(i->RAM[SP_START + SP_OFFSET]);
+	i->Stack = 0xFD; /* Hard coded will change */
 	i->P = 0x24;
 	i->A = 0;
 	i->X = 0;
@@ -28,7 +26,7 @@ uint8_t read_addr(CPU_6502* NES, uint16_t addr)
 	if (addr < 0x2000) {
 		return NES->RAM[addr & 0x7FF];
 	} /* else if (addr < 0x4000) {
-		return ppu-read;
+		return read_PPU_Reg(addr &0x2007);
 		*/
 	else {
 		return NES->RAM[addr]; /* catch-all */
@@ -56,7 +54,7 @@ void write_addr(CPU_6502* NES, uint16_t addr, uint8_t val)
 	if (addr < 0x2000) {
 		NES->RAM[addr & 0x7FF] = val;
 	} /* else if (addr < 0x4000) {
-		return ppu-read;
+		NES->RAM[addr &0x2007] =  val; Get a non-mirrored address
 	}  */
 	else {
 		NES->RAM[addr] = val;

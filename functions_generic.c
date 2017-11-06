@@ -96,9 +96,8 @@ void RET_NES_CPU(void)
 	printf("X:%.2X ", NES->X);
 	printf("Y:%.2X ", NES->Y);
 	printf("P:%.2X ", NES->P);
-	printf("SP:%.2X ", Stack);
-	printf("PC:%.4X ", NES->PC);
-	printf("*SP:%.2X\n", *NES->SP);
+	printf("SP:%.2X ", NES->Stack);
+	printf("PC:%.4X\n", NES->PC);
 }
 
 /***************************
@@ -158,19 +157,17 @@ void full_adder(int *bin_sum1, int *bin_sum2, int cIN, uint8_t *cOUT, int *resul
  * STACK                   *
  * *************************/
 
-Stack = 0xFD;
-
 /* Genric Push function */
 void PUSH(uint8_t value)
 {
 	/* SP_START - 1 - as Stack = Empty Descending */
-	if (NES->SP == &NES->RAM[SP_START - 1]) {
+	/* FIX LIMIT CHECK */
+	if (NES->Stack == 0x00) {
 		/* Overflow */
 		printf("Full stack - can't PUSH\n");
 	} else {
-		*NES->SP = value;
-		--Stack;
-		--NES->SP;
+		NES->RAM[SP_START + NES->Stack] = value;
+		--NES->Stack;
 	}
 }
 
@@ -178,13 +175,13 @@ void PUSH(uint8_t value)
 /* Genric Pop (Pull) function */
 uint8_t PULL(void)
 {
-	if (NES->SP == &NES->RAM[SP_START + SP_OFFSET]) {
+	/* FIX LIMIT CHECK */
+	if (NES->Stack == SP_START) {
 		/* Underflow */
 		printf("Empty stack - can't PULL\n");
 	} else {
-		++NES->SP;
-		++Stack;
-		return *NES->SP;
+		++NES->Stack;
+		return (NES->RAM[SP_START + NES->Stack]);
 	}
 	return 0; /* fail-safe - if-else branch should return a value */
 }
