@@ -551,7 +551,7 @@ void execute_RTI(void)
 	/* Implied */
 	/* PULL SR */
 	tmp = PULL();
-	NES->P = tmp;
+	NES->P = tmp | 0x20; /* Bit 5 is always set */
 	/* PULL PC */
 	tmp = PULL(); /* PULL PCL */
 	operand = PULL(); /* PULL PCH */
