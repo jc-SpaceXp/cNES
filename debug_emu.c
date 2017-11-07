@@ -28,7 +28,7 @@ int main(int argc, char **argv)
 #endif /*__LOG__ */
 
 	int i = 0;
-	while (i < 820) {
+	while (i < 2000) {
 		Debug_6502(NES->PC);
 		RET_NES_CPU();
 		++i;
