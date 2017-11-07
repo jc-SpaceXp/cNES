@@ -1,2 +1,4 @@
 *.o
 Balloon_Fight.nes
+debug_emu
+emu
