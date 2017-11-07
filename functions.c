@@ -288,16 +288,18 @@ void execute_ASL(enum MODES address_mode, size_t operand)
 		/* Accumulator - ASL #Operand */
 		tmp = NES->A & 0x80; /* Mask 7th bit */
 		NES->A = NES->A << 1;
+		update_FLAG_N(NES->A);
+		update_FLAG_Z(NES->A);
 	} else {
 		/* Shift value @ address 1 bit to the left */
 		tmp = NES->RAM[operand] & 0x80; /* Mask 7th bit */
 		NES->RAM[operand] = NES->RAM[operand] << 1;
+		update_FLAG_N(NES->RAM[operand]);
+		update_FLAG_Z(NES->RAM[operand]);
 	}
 	tmp = tmp >> 7; /* needed so that function below works */;
-	/* Update Flags */
+	/* Update Carry */
 	set_or_clear_CARRY(tmp);
-	update_FLAG_N(NES->A);
-	update_FLAG_Z(NES->A);
 }
 
 
@@ -354,14 +356,16 @@ void execute_LSR(enum MODES address_mode, size_t operand)
 		/* Accumulator - LSR #Operand */
 		tmp = NES->A & 0x01; /* Mask 0th bit */
 		NES->A = NES->A >> 1;
+		update_FLAG_N(NES->A); /* Should always clear N flag */
+		update_FLAG_Z(NES->A);
 	} else {
 		tmp = NES->RAM[operand] & 0x01; /* Mask 0th bit */
 		NES->RAM[operand] = NES->RAM[operand] >> 1;
+		update_FLAG_N(NES->RAM[operand]); /* Should always clear N flag */
+		update_FLAG_Z(NES->RAM[operand]);
 	}
 	/* Update Flags */
 	set_or_clear_CARRY(tmp);
-	update_FLAG_N(NES->A); /* Should always clear N flag */
-	update_FLAG_Z(NES->A);
 }
 	
 
@@ -394,6 +398,8 @@ void execute_ROL(enum MODES address_mode, size_t operand)
 		if ((NES->P & FLAG_C) == 0x01) {
 			NES->A |= (NES->P & FLAG_C);
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
+		update_FLAG_N(NES->A);
+		update_FLAG_Z(NES->A);
 	} else {
 		tmp = NES->RAM[operand] & 0x80; /* Mask 7th bit */
 		NES->RAM[operand] = NES->RAM[operand] << 1;
@@ -401,12 +407,12 @@ void execute_ROL(enum MODES address_mode, size_t operand)
 			NES->RAM[operand] |= (NES->P & FLAG_C);
 		}
 		NES->RAM[operand] |= (NES->P & FLAG_C);
+		update_FLAG_N(NES->RAM[operand]);
+		update_FLAG_Z(NES->RAM[operand]);
 	}
-	/* Update Flags */
+	/* Update Carry */
 	tmp = tmp >> 7; /* needed so that function below works */;
 	set_or_clear_CARRY(tmp);
-	update_FLAG_N(NES->A);
-	update_FLAG_Z(NES->A);
 }
 
 
@@ -422,17 +428,19 @@ void execute_ROR(enum MODES address_mode, size_t operand)
 		if ((NES->P & FLAG_C) == 0x01) {
 			NES->A |= 0x80; /* Set 7th bit to 1 - if carry = 1 */
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
+		update_FLAG_N(NES->A);
+		update_FLAG_Z(NES->A);
 	} else {
 		tmp = NES->RAM[operand] & 0x01;
 		NES->RAM[operand] = NES->RAM[operand] >> 1;
 		if ((NES->P & FLAG_C) == 0x01) {
 			NES->RAM[operand] |= 0x80; /* Set 7th bit to 1 - if carry = 1 */
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
+		update_FLAG_N(NES->RAM[operand]);
+		update_FLAG_Z(NES->RAM[operand]);
 	}
-	/* Update Flags */
+	/* Update Carry */
 	set_or_clear_CARRY(tmp);
-	update_FLAG_N(NES->A);
-	update_FLAG_Z(NES->A);
 }
 
 /***************************
