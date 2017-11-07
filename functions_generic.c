@@ -39,7 +39,8 @@ size_t get_op_ZP_offset(uint8_t *ptr_code, uint8_t offset)
 size_t get_op_ABS_offset(uint8_t *ptr_code, uint8_t offset)
 {
 	/* Absolute (modes) - XXX operand  or XXX operand, X/Y */
-	operand = ((uint16_t) (*(ptr_code+2) << 8) | *(ptr_code+1)) + offset;
+	operand = ((uint16_t) (*(ptr_code+2) << 8) | *(ptr_code+1));
+	operand = (uint16_t) (operand + offset);
 	NES->PC += 3; /* Update PC */
 	return operand;
 }
@@ -51,9 +52,14 @@ size_t get_op_IND(uint8_t *ptr_code, CPU_6502 *NESCPU)
 {
 	/* Indirect - JMP (operand) - 2 Byte address */
 	operand = ((uint16_t) (*(ptr_code+2) << 8) | *(ptr_code+1));
-	operand = NESCPU->RAM[operand]; /* PC low bute */
-	tmp = NESCPU->RAM[operand + 1]; /* PC high byte */
-	operand = (uint16_t) (tmp << 8) | operand; /* get target address (little endian) */
+	tmp = NESCPU->RAM[operand]; /* PC low bute */
+	if ((operand & 0x00FF) == 0x00FF) {
+		/* JUMP BUG */
+		operand = NESCPU->RAM[operand & 0xFF00]; /* PC high byte */
+	} else {
+		operand = NESCPU->RAM[operand + 1]; /* PC high byte */
+	}
+	operand = (uint16_t) (operand << 8) | tmp; /* get target address (little endian) */
 	NES->PC += 3; /* Update PC */
 	return operand;
 }

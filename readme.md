@@ -1,14 +1,14 @@
 # cNES
 
-A NES emulator written in C. Currently a work in progress. Wanted to make this project ......
+A NES emulator written in C. Currently a work in progress.
 
 ## Current Status
 - Implemented a rom loader with mapper 000 support
-- Working CPU with an 100% accurate nestest log up to line ~804
+- Working CPU with an 100% accurate nestest log up to line 5003
 - See TODO section
 
 ## Issues
-- Error in my nestest log at line ~804
+- Error in my nestest log at line 5004 (start of illegal opcodes)
 - No PPU or audio
 
 ## TODO
