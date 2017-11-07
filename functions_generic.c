@@ -26,7 +26,7 @@ size_t get_op_IMM(uint8_t *ptr_code)
 size_t get_op_ZP_offset(uint8_t *ptr_code, uint8_t offset)
 {
 	/* Zero Page X or Y - XXX operand, X/Y */
-	operand = *(ptr_code+1) + offset;
+	operand = (uint8_t) (*(ptr_code+1) + offset); /* Keeps operand on Zero Page */
 	NES->PC += 2; /* Update PC */
 	return operand;
 	/* return NES->RAM[operand] -- makes us not use address modes for commands */
@@ -63,9 +63,9 @@ size_t get_op_IND(uint8_t *ptr_code, CPU_6502 *NESCPU)
  */
 size_t get_op_INDX(uint8_t *ptr_code, CPU_6502 *NESCPU)
 {
-	/* Indirect X - XXX (operand, X ) - 2 Byte address */
-	operand = NESCPU->RAM[*(ptr_code+1) + NESCPU->X]; /* sum address (LSB) */
-	tmp = NESCPU->RAM[*(ptr_code+1) + NESCPU->X + 1]; /* Sum address + 1 (MSB) */
+	/* Indirect X - XXX (operand, X ) - 2 Byte address (Zero-Page) */
+	operand = NESCPU->RAM[(uint8_t) (*(ptr_code+1) + NESCPU->X)]; /* sum address (LSB) */
+	tmp = NESCPU->RAM[(uint8_t) (*(ptr_code+1) + NESCPU->X + 1)]; /* Sum address + 1 (MSB) */
 	operand = (uint16_t) (tmp << 8) | operand; /* get target address (little endian) */
 	NES->PC += 2; /* Update PC */
 	return operand;
@@ -76,9 +76,9 @@ size_t get_op_INDX(uint8_t *ptr_code, CPU_6502 *NESCPU)
  */
 size_t get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU)
 {
-	/* Indirect Y - XXX (operand), Y - 2 Byte address */
-	operand = NESCPU->RAM[*(ptr_code+1)]; /* sum address (LSB) */
-	tmp = NESCPU->RAM[*(ptr_code+1) + 1]; /* sum address + 1 (MSB) */
+	/* Indirect Y - XXX (operand), Y - 2 Byte address (Zero-Page) */
+	operand = NESCPU->RAM[(uint8_t) *(ptr_code+1)]; /* sum address (LSB) */
+	tmp = NESCPU->RAM[(uint8_t) (*(ptr_code+1) + 1)]; /* sum address + 1 (MSB) */
 	operand = (uint16_t) (tmp << 8) | operand; /* get little endian */
 	operand += NESCPU->Y; /* get target address */
 	NES->PC += 2; /* Update PC */
