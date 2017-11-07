@@ -80,7 +80,7 @@ size_t get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU)
 	operand = NESCPU->RAM[(uint8_t) *(ptr_code+1)]; /* sum address (LSB) */
 	tmp = NESCPU->RAM[(uint8_t) (*(ptr_code+1) + 1)]; /* sum address + 1 (MSB) */
 	operand = (uint16_t) (tmp << 8) | operand; /* get little endian */
-	operand += NESCPU->Y; /* get target address */
+	operand = (uint16_t) (NESCPU->Y + operand); /* get target address */
 	NES->PC += 2; /* Update PC */
 	return operand;
 }
