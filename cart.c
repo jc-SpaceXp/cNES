@@ -13,16 +13,17 @@ int load_cart(Cartridge* cart, const char *filename)
 
 	/* opening file and file testing */
 	FILE *rom = fopen(filename, "rb");
+
+	/* Error Detection */
+	if (rom == NULL) {
+		fprintf(stderr, "Error: couldn't open file.\n");
+		exit (8);
+	}
 	
 	/* Getting filesize */
 	fseek(rom, 0L, SEEK_END);
 	file_size = ftell(rom);
 	rewind(rom);
-
-	if (rom == NULL) {
-		fprintf(stderr, "Error: couldn't open file.\n");
-		exit (8);
-	}
 
 	if (file_size < 0x4010) {
 		fprintf(stderr, "Error: input file is too small.\n");
