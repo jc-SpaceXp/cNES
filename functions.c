@@ -547,15 +547,11 @@ void execute_JSR(size_t operand)
 {
 	/* Absolute - JSR operand */
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
-	PUSH((uint8_t) ((NES->PC) >> 8)); /* Push PCH (PC High byte onto stack) */
-	PUSH((uint8_t) NES->PC); /* Push PCL (PC Low byte onto stack) - test i.e.  0xFA -> 0xA */
+	PUSH((uint8_t) ((NES->PC - 1) >> 8)); /* Push PCH (PC High byte onto stack) */
+	PUSH((uint8_t) NES->PC - 1); /* Push PCL (PC Low byte onto stack) */
 
 	/* NB: get_op_ABS_offset sets PC to += 3 therfore to push PC + 2
-	 * all we need to do is just push PC
-	 * if push PC + 2 we do PC + 5 in my case
-	 *
-	 * simply PC already points to the next instruction
-	 * before we overwrite it
+	 * all we need to do is just push PC - 1
 	 */
 
 }
@@ -586,6 +582,7 @@ void execute_RTS(void)
 	tmp = PULL(); /* Pull PCL */
 	operand = PULL(); /* Pull PCH */
 	NES->PC = (operand << 8) | tmp;
+	++NES->PC;
 
 }
 

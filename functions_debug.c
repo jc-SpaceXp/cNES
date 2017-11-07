@@ -264,7 +264,7 @@ void execute_SBC(enum MODES address_mode, size_t operand)
 		printf("SBC #%.4X    ", operand);
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
-		printf("SBC $%.4X\t", operand);
+		printf("SBC $%.4X    ", operand);
 		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
@@ -302,7 +302,7 @@ void execute_ASL(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == ACC) {
 		/* Accumulator - ASL #Operand */
-		printf("ASL A    ");
+		printf("ASL A        ");
 		tmp = NES->A & 0x80; /* Mask 7th bit */
 		NES->A = NES->A << 1;
 	} else {
@@ -372,7 +372,7 @@ void execute_LSR(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == ACC) {
 		/* Accumulator - LSR #Operand */
-		printf("LSR A    ");
+		printf("LSR A        ");
 		tmp = NES->A & 0x01; /* Mask 0th bit */
 		NES->A = NES->A >> 1;
 	} else {
@@ -411,7 +411,7 @@ void execute_ROL(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == ACC) {
 		/* Accumulator - ROL #Operand */
-		printf("ROL A    ");
+		printf("ROL A        ");
 		tmp = NES->A & 0x80; /* Mask 7th bit */
 		NES->A = NES->A << 1;
 		/* Testing if Status Reg has a 1 in Carry Flag */
@@ -442,7 +442,7 @@ void execute_ROR(enum MODES address_mode, size_t operand)
 {
 	if (address_mode == ACC) {
 		/* Accumulator - ROR #Operand */
-		printf("ROR A    ");
+		printf("ROR A        ");
 		tmp = NES->A & 0x01; /* Mask 0th bit */
 		NES->A = NES->A >> 1; /* Shift right */
 		if ((NES->P & FLAG_C) == 0x01) {
@@ -584,16 +584,12 @@ void execute_JSR(size_t operand)
 	printf("JSR $%.4X    ", operand);
 	/* Absolute - JSR operand */
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
-	PUSH((uint8_t) ((NES->PC) >> 8)); /* Push PCH (PC High byte onto stack) */
-	PUSH((uint8_t) (NES->PC)); /* Push PCL (PC Low byte onto stack) - test i.e.  0xFA -> 0xA */
+	PUSH((uint8_t) ((NES->PC - 1) >> 8)); /* Push PCH (PC High byte onto stack) */
+	PUSH((uint8_t) (NES->PC - 1)); /* Push PCL (PC Low byte onto stack) */
 
 	NES->PC = operand;
 	/* NB: get_op_ABS_offset sets PC to += 3 therfore to push PC + 2
-	 * all we need to do is just push PC
-	 * if push PC + 2 we do PC + 5 in my case
-	 *
-	 * simply PC already points to the next instruction
-	 * before we overwrite it
+	 * all we need to do is just push PC - 1
 	 */
 }
 
@@ -625,6 +621,7 @@ void execute_RTS(void)
 	tmp = PULL(); /* Pull PCL */
 	operand = PULL(); /* Pull PCH */
 	NES->PC = (operand << 8) | tmp ;
+	++NES->PC;
 
 }
 
