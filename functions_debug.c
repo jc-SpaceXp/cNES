@@ -187,7 +187,7 @@ void execute_ADC(enum MODES address_mode, size_t operand)
 void execute_DEC(size_t operand)
 {
 	printf("DEC $%.4X    ", operand);
-	--(NES->RAM[operand]);
+	write_addr(NES, operand, read_addr(NES, operand) - 1);
 	update_FLAG_N(read_addr(NES, operand));
 	update_FLAG_Z(read_addr(NES, operand));
 }
@@ -222,7 +222,7 @@ void execute_DEY(void)
 void execute_INC(size_t operand)
 {
 	printf("INC $%.4X    ", operand);
-	write_addr(NES, operand, read_addr(NES, operand) + 1); /* SEE IF CORRECT */
+	write_addr(NES, operand, read_addr(NES, operand) + 1);
 	update_FLAG_N(read_addr(NES, operand));
 	update_FLAG_Z(read_addr(NES, operand));
 }
@@ -288,7 +288,7 @@ void execute_AND(enum MODES address_mode, size_t operand)
 		NES->A &= operand;
 	} else {
 		printf("AND $%.4X    ", operand);
-		NES->A &= NES->RAM[operand];
+		NES->A &= read_addr(NES, operand);
 	}
 	update_FLAG_N(NES->A);
 	update_FLAG_Z(NES->A);
@@ -310,10 +310,10 @@ void execute_ASL(enum MODES address_mode, size_t operand)
 	} else {
 		/* Shift value @ address 1 bit to the left */
 		printf("ASL $%.4X    ", operand);
-		tmp = NES->RAM[operand] & 0x80; /* Mask 7th bit */
-		NES->RAM[operand] = NES->RAM[operand] << 1;
-		update_FLAG_N(NES->RAM[operand]);
-		update_FLAG_Z(NES->RAM[operand]);
+		tmp = read_addr(NES, operand) & 0x80; /* Mask 7th bit */
+		write_addr(NES, operand, read_addr(NES, operand) << 1);
+		update_FLAG_N(read_addr(NES, operand));
+		update_FLAG_Z(read_addr(NES, operand));
 	}
 	tmp = tmp >> 7; /* needed so that function below works */;
 	/* Update Carry */
@@ -326,17 +326,17 @@ void execute_ASL(enum MODES address_mode, size_t operand)
 void execute_BIT(size_t operand)
 {
 	printf("BIT $%.4X    ", operand);
-	tmp = NES->A & NES->RAM[operand];
+	tmp = NES->A & read_addr(NES, operand);
 	/* Update Flags */
 	/* N = Bit 7, V = Bit 6 (of fetched operand) & Z = 1 (if AND result = 0) */
 	/* Setting 7th Bit */
-	if ((NES->RAM[operand] & FLAG_N) == FLAG_N) {
+	if ((read_addr(NES, operand) & FLAG_N) == FLAG_N) {
 		NES->P |= FLAG_N; /* set */
 	} else {
 		NES->P &= ~(FLAG_N); /* clear flag */
 	}
 	/* Setting 6th Bit */
-	if ((NES->RAM[operand] & FLAG_V) == FLAG_V) {
+	if ((read_addr(NES, operand) & FLAG_V) == FLAG_V) {
 		NES->P |= FLAG_V;
 	} else {
 		NES->P &= ~(FLAG_V);
@@ -361,7 +361,7 @@ void execute_EOR(enum MODES address_mode, size_t operand)
 		NES->A ^= operand;
 	} else {
 		printf("EOR $%.4X    ", operand);
-		NES->A ^= NES->RAM[operand];
+		NES->A ^= read_addr(NES, operand);
 	}
 	update_FLAG_N(NES->A);
 	update_FLAG_Z(NES->A);
@@ -381,10 +381,10 @@ void execute_LSR(enum MODES address_mode, size_t operand)
 		update_FLAG_Z(NES->A);
 	} else {
 		printf("LSR $%.4X    ", operand);
-		tmp = NES->RAM[operand] & 0x01; /* Mask 0th bit */
-		NES->RAM[operand] = NES->RAM[operand] >> 1;
-		update_FLAG_N(NES->RAM[operand]); /* Should always clear N flag */
-		update_FLAG_Z(NES->RAM[operand]);
+		tmp = read_addr(NES, operand) & 0x01; /* Mask 0th bit */
+		write_addr(NES, operand, read_addr(NES, operand) >> 1);
+		update_FLAG_N(read_addr(NES, operand)); /* Should always clear N flag */
+		update_FLAG_Z(read_addr(NES, operand));
 	}
 	/* Update Carry */
 	set_or_clear_CARRY(tmp);
@@ -401,7 +401,7 @@ void execute_ORA(enum MODES address_mode, size_t operand)
 		NES->A |= operand;
 	} else {
 		printf("ORA $%.4X    ", operand);
-		NES->A |= NES->RAM[operand];
+		NES->A |= read_addr(NES, operand);
 	}
 	update_FLAG_N(NES->A);
 	update_FLAG_Z(NES->A);
@@ -426,14 +426,13 @@ void execute_ROL(enum MODES address_mode, size_t operand)
 		update_FLAG_Z(NES->A);
 	} else {
 		printf("ROL $%.4X    ", operand);
-		tmp = NES->RAM[operand] & 0x80; /* Mask 7th bit */
-		NES->RAM[operand] = NES->RAM[operand] << 1;
+		tmp = read_addr(NES, operand) & 0x80; /* Mask 7th bit */
+		write_addr(NES, operand, read_addr(NES, operand) << 1);
 		if ((NES->P & FLAG_C) == 0x01) {
-			NES->RAM[operand] |= (NES->P & FLAG_C);
+			write_addr(NES, operand, read_addr(NES, operand) | 0x01);
 		}
-		NES->RAM[operand] |= (NES->P & FLAG_C);
-		update_FLAG_N(NES->RAM[operand]);
-		update_FLAG_Z(NES->RAM[operand]);
+		update_FLAG_N(read_addr(NES, operand));
+		update_FLAG_Z(read_addr(NES, operand));
 	}
 	/* Update Flag */
 	tmp = tmp >> 7; /* needed so that function below works */;
@@ -458,13 +457,14 @@ void execute_ROR(enum MODES address_mode, size_t operand)
 		update_FLAG_Z(NES->A);
 	} else {
 		printf("ROR $%.4X    ", operand);
-		tmp = NES->RAM[operand] & 0x01;
-		NES->RAM[operand] = NES->RAM[operand] >> 1;
+		tmp = read_addr(NES, operand) & 0x01;
+		write_addr(NES, operand, read_addr(NES, operand) >> 1);
 		if ((NES->P & FLAG_C) == 0x01) {
-			NES->RAM[operand] |= 0x80; /* Set 7th bit to 1 - if carry = 1 */
+			/* Set 7th bit to 1 - if carry = 1 */
+			write_addr(NES, operand, read_addr(NES, operand) | 0x80);
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
-		update_FLAG_N(NES->RAM[operand]);
-		update_FLAG_Z(NES->RAM[operand]);
+		update_FLAG_N(read_addr(NES, operand));
+		update_FLAG_Z(read_addr(NES, operand));
 	}
 	/* Update Carry */
 	set_or_clear_CARRY(tmp);
@@ -690,7 +690,7 @@ void execute_CMP(enum MODES address_mode, size_t operand)
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
 		printf("CMP $%.4X    ", operand);
-		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
+		Base10toBase2(read_addr(NES, operand) ^ 0xFF, bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
 	set_or_clear_CARRY(tmp);
@@ -711,7 +711,7 @@ void execute_CPX(enum MODES address_mode, size_t operand)
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
 		printf("CPX $%.4X    ", operand);
-		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
+		Base10toBase2(read_addr(NES, operand) ^ 0xFF, bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
 	set_or_clear_CARRY(tmp);
@@ -732,7 +732,7 @@ void execute_CPY(enum MODES address_mode, size_t operand)
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
 		printf("CPY $%.4X    ", operand);
-		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
+		Base10toBase2(read_addr(NES, operand) ^ 0xFF, bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, 1, &tmp, bin_result);
 	set_or_clear_CARRY(tmp);
