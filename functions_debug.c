@@ -28,7 +28,7 @@ void execute_LDA(enum MODES address_mode, size_t operand)
 		NES->A = operand;
 	} else {
 		printf("LDA $%.4X    ", operand);
-		NES->A = NES->RAM[operand];
+		NES->A = read_addr(NES, operand);
 	}
 	update_FLAG_N(NES->A);
 	update_FLAG_Z(NES->A);
@@ -44,7 +44,7 @@ void execute_LDX(enum MODES address_mode, size_t operand)
 		NES->X = operand;
 	} else {
 		printf("LDX $%.4X    ", operand);
-		NES->X = NES->RAM[operand];
+		NES->X = read_addr(NES, operand);
 	}
 	update_FLAG_N(NES->X);
 	update_FLAG_Z(NES->X);
@@ -60,7 +60,7 @@ void execute_LDY(enum MODES address_mode, size_t operand)
 		NES->Y = operand;
 	} else {
 		printf("LDY $%.4X    ", operand);
-		NES->Y = NES->RAM[operand];
+		NES->Y = read_addr(NES, operand);
 	}
 	update_FLAG_N(NES->Y);
 	update_FLAG_Z(NES->Y);
@@ -72,7 +72,7 @@ void execute_LDY(enum MODES address_mode, size_t operand)
 void execute_STA(size_t operand)
 {
 	printf("STA $%.4X    ", operand);
-	NES->RAM[operand] = NES->A;
+	write_addr(NES, operand, NES->A);
 }
 
 
@@ -81,7 +81,7 @@ void execute_STA(size_t operand)
 void execute_STX(size_t operand)
 {
 	printf("STX $%.4X    ", operand);
-	NES->RAM[operand] = NES->X;
+	write_addr(NES, operand, NES->X);
 }
 
 
@@ -90,7 +90,7 @@ void execute_STX(size_t operand)
 void execute_STY(size_t operand)
 {
 	printf("STY $%.4X    ", operand);
-	NES->RAM[operand] = NES->Y;
+	write_addr(NES, operand, NES->Y);
 }
 
 
