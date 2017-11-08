@@ -29,8 +29,6 @@ size_t get_op_ZP_offset(uint8_t *ptr_code, uint8_t offset)
 	operand = (uint8_t) (*(ptr_code+1) + offset); /* Keeps operand on Zero Page */
 	NES->PC += 2; /* Update PC */
 	return operand;
-	/* return NES->RAM[operand] -- makes us not use address modes for commands */
-	/* allows us to have one generic command */
 }
 
 
@@ -52,12 +50,12 @@ size_t get_op_IND(uint8_t *ptr_code, CPU_6502 *NESCPU)
 {
 	/* Indirect - JMP (operand) - 2 Byte address */
 	operand = ((uint16_t) (*(ptr_code+2) << 8) | *(ptr_code+1));
-	tmp = NESCPU->RAM[operand]; /* PC low bute */
+	tmp = read_addr(NES, operand); /* PC low bute */
 	if ((operand & 0x00FF) == 0x00FF) {
 		/* JUMP BUG */
-		operand = NESCPU->RAM[operand & 0xFF00]; /* PC high byte */
+		operand = read_addr(NES, operand & 0xFF00); /* PC high byte */
 	} else {
-		operand = NESCPU->RAM[operand + 1]; /* PC high byte */
+		operand = read_addr(NES, operand + 1); /* PC high byte */
 	}
 	operand = (uint16_t) (operand << 8) | tmp; /* get target address (little endian) */
 	NES->PC += 3; /* Update PC */
@@ -70,9 +68,9 @@ size_t get_op_IND(uint8_t *ptr_code, CPU_6502 *NESCPU)
 size_t get_op_INDX(uint8_t *ptr_code, CPU_6502 *NESCPU)
 {
 	/* Indirect X - XXX (operand, X ) - 2 Byte address (Zero-Page) */
-	operand = NESCPU->RAM[(uint8_t) (*(ptr_code+1) + NESCPU->X)]; /* sum address (LSB) */
-	tmp = NESCPU->RAM[(uint8_t) (*(ptr_code+1) + NESCPU->X + 1)]; /* Sum address + 1 (MSB) */
-	operand = (uint16_t) (tmp << 8) | operand; /* get target address (little endian) */
+	tmp = read_addr(NES, (uint8_t) (*(ptr_code+1) + NESCPU->X)); /* sum address (LSB) */
+	operand = read_addr(NES, (uint8_t) (*(ptr_code+1) + NESCPU->X + 1)); /* Sum address + 1 (MSB) */
+	operand = (uint16_t) (operand << 8) | tmp; /* get target address (little endian) */
 	NES->PC += 2; /* Update PC */
 	return operand;
 }
@@ -83,9 +81,9 @@ size_t get_op_INDX(uint8_t *ptr_code, CPU_6502 *NESCPU)
 size_t get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU)
 {
 	/* Indirect Y - XXX (operand), Y - 2 Byte address (Zero-Page) */
-	operand = NESCPU->RAM[(uint8_t) *(ptr_code+1)]; /* sum address (LSB) */
-	tmp = NESCPU->RAM[(uint8_t) (*(ptr_code+1) + 1)]; /* sum address + 1 (MSB) */
-	operand = (uint16_t) (tmp << 8) | operand; /* get little endian */
+	tmp = read_addr(NES, (uint8_t) *(ptr_code+1)); /* sum address (LSB) */
+	operand = read_addr(NES, (uint8_t) (*(ptr_code+1) + 1)); /* sum address + 1 (MSB) */
+	operand = (uint16_t) (operand << 8) | tmp; /* get little endian */
 	operand = (uint16_t) (NESCPU->Y + operand); /* get target address */
 	NES->PC += 2; /* Update PC */
 	return operand;
