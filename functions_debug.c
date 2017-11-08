@@ -172,7 +172,7 @@ void execute_ADC(enum MODES address_mode, size_t operand)
 		Base10toBase2(operand, bin_operand2);
 	} else {
 		printf("ADC $%.4X    ", operand);
-		Base10toBase2(NES->RAM[operand], bin_operand2);
+		Base10toBase2(read_addr(NES, operand), bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
 	NES->A = Base2toBase10(bin_result, 0);
@@ -188,8 +188,8 @@ void execute_DEC(size_t operand)
 {
 	printf("DEC $%.4X    ", operand);
 	--(NES->RAM[operand]);
-	update_FLAG_N(NES->RAM[operand]);
-	update_FLAG_Z(NES->RAM[operand]);
+	update_FLAG_N(read_addr(NES, operand));
+	update_FLAG_Z(read_addr(NES, operand));
 }
 
 
@@ -222,9 +222,9 @@ void execute_DEY(void)
 void execute_INC(size_t operand)
 {
 	printf("INC $%.4X    ", operand);
-	++(NES->RAM[operand]);
-	update_FLAG_N(NES->RAM[operand]);
-	update_FLAG_Z(NES->RAM[operand]);
+	write_addr(NES, operand, read_addr(NES, operand) + 1); /* SEE IF CORRECT */
+	update_FLAG_N(read_addr(NES, operand));
+	update_FLAG_Z(read_addr(NES, operand));
 }
 
 
@@ -265,7 +265,7 @@ void execute_SBC(enum MODES address_mode, size_t operand)
 		Base10toBase2(operand ^ 0xFF, bin_operand2);
 	} else {
 		printf("SBC $%.4X    ", operand);
-		Base10toBase2(NES->RAM[operand] ^ 0xFF, bin_operand2);
+		Base10toBase2(read_addr(NES, operand) ^ 0xFF, bin_operand2);
 	}
 	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &tmp, bin_result);
 	NES->A = Base2toBase10(bin_result, 0);
