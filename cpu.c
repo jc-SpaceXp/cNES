@@ -36,6 +36,9 @@ uint8_t read_addr(CPU_6502* NES, uint16_t addr)
 /* Same as get_op_ABS - to make ABS_offset add NES->X or NES-Y to addr 
  * in calling function ---> fetch_16LE(NES, addr + NEs->X)
  */
+
+
+/* No fetch_08 as that is read_addr(); */
 uint16_t fetch_16(CPU_6502* NES, uint16_t addr)
 {
 	/* returns Little Endian format */

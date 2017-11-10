@@ -18,6 +18,7 @@ size_t get_op_IMM(uint8_t *ptr_code)
 	operand = *(ptr_code+1);
 	NES->PC += 2; /* Update PC */
 	return operand;
+	//operand = read_addr(NES, NES->PC+1); - future reference CPU overhaul pt2
 }
 
 
@@ -29,6 +30,7 @@ size_t get_op_ZP_offset(uint8_t *ptr_code, uint8_t offset)
 	operand = (uint8_t) (*(ptr_code+1) + offset); /* Keeps operand on Zero Page */
 	NES->PC += 2; /* Update PC */
 	return operand;
+	//operand = read_addr(NES, (uint8_t) ((NES->PC + 1) + offset)); cpu overhaul pt2.
 }
 
 
@@ -39,8 +41,13 @@ size_t get_op_ABS_offset(uint8_t *ptr_code, uint8_t offset)
 	/* Absolute (modes) - XXX operand  or XXX operand, X/Y */
 	operand = ((uint16_t) (*(ptr_code+2) << 8) | *(ptr_code+1));
 	operand = (uint16_t) (operand + offset);
+	operand = (uint16_t) (operand + offset);
 	NES->PC += 3; /* Update PC */
 	return operand;
+	//operand = fetch_16(NES, (uint16_t) ((NES->PC + 1) + offset)));
+	// causes strange behaviour
+	// fetches right operand but using as is causes pc to point to illegal opcodes
+	//printf("OPERAND = %d  %d (NEW)\t", operand, fetch_16(NES, (uint16_t) ((NES->PC + 1) + offset)));
 }
 
 
@@ -88,6 +95,11 @@ size_t get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU)
 	NES->PC += 2; /* Update PC */
 	return operand;
 }
+
+/* using getch_16() for IND instructions and ABS causes some errors
+ * most likely due to the code layout
+ * will have to look into some more
+ */
 
 /***************************
  * STATUS                  *
