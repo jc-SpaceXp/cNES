@@ -41,7 +41,6 @@ size_t get_op_ABS_offset(uint8_t *ptr_code, uint8_t offset)
 	/* Absolute (modes) - XXX operand  or XXX operand, X/Y */
 	operand = ((uint16_t) (*(ptr_code+2) << 8) | *(ptr_code+1));
 	operand = (uint16_t) (operand + offset);
-	operand = (uint16_t) (operand + offset);
 	NES->PC += 3; /* Update PC */
 	return operand;
 	//operand = fetch_16(NES, (uint16_t) ((NES->PC + 1) + offset)));
