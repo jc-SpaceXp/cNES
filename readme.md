@@ -70,11 +70,17 @@ cNES is zlib licensed, as found in the [`LICENSE`](LICENSE) file.
 ## Acknowledgments
 
 https://wwww.github.com/mwpenny/pureNES
+  
 http://emulator101.com/
+  
 https://medium.com/@fogleman/i-made-an-nes-emulator-here-s-what-i-learned-about-the-original-nintendo-2e078c9b28fe
+  
 http://www.dustmop.io/blog/2015/04/28/nes-graphics-part-1/
+  
 https://opcode-defined.quora.com/
+  
 http://www.fceux.com/web/help/fceux.html?PPU.html
+  
 https://www.dwheeler.com/6502/oneelkruns/asm1step.html
   
 https://github.com/paramsingh/gameboi
