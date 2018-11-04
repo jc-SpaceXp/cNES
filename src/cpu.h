@@ -27,15 +27,28 @@ typedef struct {
 	uint8_t Y; /* Y Reg */
 	/* Special Registers */
 	uint8_t P; /* Program status register - contains flags */
-	uint8_t *SP; /* Stack Pointer */
-	/** Want to replace SP w/ Stack but doing so breaks my execution 
-	 * SP isn't called (see no reason why my code should break)
-	 * -- check if SP is used anywhere
-	 */
-	int Stack; /* only beign used for debugging */
+	unsigned int Cycle;
+	int Stack; /* only being used for debugging */
 	uint16_t PC; /* Program counter (Instruction Pointer) */
 	/* Memory */
 	uint8_t RAM[MEMORY_SIZE]; /* 2 Kb internal RAM */
+
+	unsigned NMI_PENDING; /* Needed to trigger NMI - takes values 0 & 1 */
+	unsigned DMA_PENDING; /* Needed to trigger NMI - takes values 0 & 1 */
+
+	uint8_t addr_lo;
+	uint8_t addr_hi;
+	uint16_t target_addr;
+	uint8_t operand;
+
+	/* Previous Values - for Disassembler */
+	uint8_t old_A;
+	uint8_t old_X;
+	uint8_t old_Y;
+	uint8_t old_P;
+	unsigned int old_Cycle;
+	int old_Stack;
+	uint16_t old_PC;
 } CPU_6502;
 
 
@@ -53,13 +66,15 @@ typedef struct {
 
 
 /* Header Prototypes */
-CPU_6502* NES_CPU(uint16_t pc_init); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
 CPU_6502 *NES; /* Global NES CPU Pointer */
+CPU_6502* NES_CPU(uint16_t pc_init); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
+void NES_PC(CPU_6502* NES); /* Set PC via reset vector */
 
 uint8_t read_addr(CPU_6502* NES, uint16_t addr);
 uint16_t fetch_16(CPU_6502* NES, uint16_t addr);
 uint16_t fetch_16_IND(CPU_6502* NES, uint16_t addr);
 void write_addr(CPU_6502* NES, uint16_t addr, uint8_t val);
+
 
 /* Includes addressing modes
  * Adressing Modes:

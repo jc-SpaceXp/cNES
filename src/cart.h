@@ -4,6 +4,7 @@
 #define KiB (1024)
 #include <stdint.h>
 #include "mappers.h"
+#include "ppu.h"
 
 /* setup pointers to RAM for PRG etc like done w/ SP ??? */
 
@@ -14,24 +15,17 @@ typedef enum {
 	PAL = 1,
 } VideoType;
 
-typedef enum {
-	VERT_MIRROR,
-	HORZ_MIRROR,
-	FOUR_MIRROR,
-} MirrorType;
-
 typedef struct {
 	uint8_t *data;
 	uint32_t size;
 } Memory;
 
 typedef struct Cartridge {
-	MirrorType mirror_mode;
 	VideoType video_mode;
-	Memory prg_rom, prg_ram, chr;
+	Memory prg_rom, prg_ram, chr_rom;
 } Cartridge;
 
 
-int load_cart(Cartridge* cart, const char *filename);
+int load_cart(Cartridge* cart, const char *filename, PPU_Struct *p);
 
 #endif /* __CART__ */

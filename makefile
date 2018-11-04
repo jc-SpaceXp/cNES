@@ -1,43 +1,45 @@
-CC = cc
+CC = gcc
 CFLAGS = -Wall -std=c99
+LDFLAGS = $(shell pkg-config --cflags --libs sdl2)
 
-all: emu debug_emu
+SRC= src
+OBJ= obj
 
-cpu.o: cpu.c cpu.h
-	$(CC) $(CFLAGS) -c cpu.c
+ALL_SRCS = $(wildcard $(SRC)/*.c)
+ALL_OBJS = $(notdir $(ALL_SRCS:.c=.o))
 
-cart.o: cart.c cart.h
-	$(CC) $(CFLAGS) -c cart.c
+NO_SDL_SRC := $(filter-out $(SRC)/gui.c, $(ALL_SRCS))
+NO_SDL_SRC := $(filter-out $(SRC)/emu.c, $(ALL_SRCS))
+NO_SDL_OBJ = $(notdir $(NO_SDL_SRC:.c=.o))
 
-mappers.o: mappers.c mappers.h
-	$(CC) $(CFLAGS) -c mappers.c
+all: emu
 
-functions_generic.o: functions_generic.c functions_generic.h
-	$(CC) $(CFLAGS) -c functions_generic.c
+$(NO_SDL_OBJ): %.o : $(SRC)/%.h
 
-functions.o: functions.c functions.h functions_generic.h
-	$(CC) $(CFLAGS) -c functions.c
+$(SRC)/cpu.c: $(SRC)/ppu.h
+$(SRC)/cart.c: $(SRC)/ppu.h $(SRC)/mappers.h
+$(SRC)/mappers.c: $(SRC)/cart.h
+$(SRC)/opcode_functions.c: $(SRC)/helper_functions.h
+$(SRC)/opcode_table.c: $(SRC)/opcode_functions.h
 
-opcode_execute.o: opcode_execute.c opcode_execute.h functions_generic.h functions.h
-	$(CC) $(CFLAGS) -c opcode_execute.c
+%.o : $(SRC)/%.c
+	@echo "--- Compiling $@"
+	$(CC) $(CFLAGS) -c $< -o $(OBJ)/$@
 
-emu.o: emu.c cpu.h cart.h opcode_execute.h
-	$(CC) $(CFLAGS) -c emu.c
+gui.o: $(SRC)/gui.*
+	@echo "--- Compiling SDL2 files (gui.c)"
+	$(CC) $(CFLAGS) -c $(SRC)/gui.c $(LDFLAGS) -o $(OBJ)/$@
+	@echo "--- Done: Compiling SDL2 files (gui.c)"
 
-emu: emu.o cpu.o cart.o mappers.o functions_generic.o functions.o opcode_execute.o
-	$(CC) -o emu emu.o cpu.o cart.o mappers.o functions_generic.o functions.o opcode_execute.o
+emu.o: $(SRC)/emu.c $(SRC)/ppu.h $(SRC)/cpu.h $(SRC)/opcode_table.h
+	@echo "--- Generating $@"
+	$(CC) $(CFLAGS) -c $< -o $(OBJ)/$@
 
-functions_debug.o: functions_debug.c functions.h functions_generic.h
-	$(CC) $(CFLAGS) -c functions_debug.c
-
-opcode_debug.o: opcode_debug.c opcode_debug.h functions_generic.h functions.h
-	$(CC) $(CFLAGS) -c opcode_debug.c
-
-debug_emu.o: debug_emu.c cpu.h opcode_debug.h
-	$(CC) $(CFLAGS) -c debug_emu.c
-
-debug_emu: debug_emu.o cpu.o cart.o mappers.o functions_generic.o functions_debug.o opcode_debug.o
-	$(CC) -o debug_emu debug_emu.o cpu.o cart.o mappers.o functions_generic.o functions_debug.o opcode_debug.o
+emu: $(ALL_OBJS)
+	@echo "--- Linking target"
+	$(CC) $(LDFLAGS) -o emu $(addprefix obj/,$(ALL_OBJS))
+	@echo "--- Done: Linking target"
 
 clean:
-	rm *.o
+	@echo "--- Cleaning build"
+	rm $(OBJ)/*.o emu

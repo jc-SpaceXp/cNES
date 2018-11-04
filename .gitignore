@@ -1,4 +1,4 @@
-*.o
-Balloon_Fight.nes
-debug_emu
+obj/
+*.nes
+*.txt
 emu
