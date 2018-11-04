@@ -69,8 +69,13 @@ cNES is zlib licensed, as found in the [`LICENSE`](LICENSE) file.
 
 ## Acknowledgments
 
+https://wwww.github.com/mwpenny/pureNES
+http://emulator101.com/
+https://medium.com/@fogleman/i-made-an-nes-emulator-here-s-what-i-learned-about-the-original-nintendo-2e078c9b28fe
+http://www.dustmop.io/blog/2015/04/28/nes-graphics-part-1/
+https://opcode-defined.quora.com/
+http://www.fceux.com/web/help/fceux.html?PPU.html
 https://www.dwheeler.com/6502/oneelkruns/asm1step.html
-
   
 https://github.com/paramsingh/gameboi
 
@@ -86,8 +91,7 @@ So I attempted to see if I could render the title screen (of Donkey Kong). This 
 me build my first iteration of my PPU. They also calculated a fixed nametable (no scrolling),
 I used their project to help render the title screen of Donkey Kong which it did but not correctly.
 Nonetheless it was an important breakthrough and my project wouldn't be where it is now without
-this project. Earlier in my project I used this project's cartridge.c file as a template on how
-to code my cart.c
+this project.
   
 https://github.com/SourMesen/Mesen
   

@@ -25,12 +25,12 @@ char append_int[6]; // Disassembler
  * *************************/
 
 /* get_op: fetches operand based on address modes */
-void get_op_IMM(uint8_t *ptr_code);
-void get_op_ZP_offset(uint8_t *ptr_code, uint8_t offset);
-void get_op_ABS_offset(uint8_t *ptr_code, uint8_t offset);
-void get_op_IND(uint8_t *ptr_code, CPU_6502 *NESCPU);
-void get_op_INDX(uint8_t *ptr_code, CPU_6502 *NESCPU);
-void get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU);
+void get_op_IMM(CPU_6502* CPU);
+void get_op_ZP_offset(uint8_t offset, CPU_6502* CPU);
+void get_op_ABS_offset(uint8_t offset, CPU_6502* CPU);
+void get_op_IND(CPU_6502* CPU);
+void get_op_INDX(CPU_6502* CPU);
+void get_op_INDY(CPU_6502* CPU);
 unsigned PAGE_CROSS(unsigned val1, unsigned val2);
 
 /***************************

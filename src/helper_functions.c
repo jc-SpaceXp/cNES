@@ -12,104 +12,95 @@
 
 /* get_op_IMM : fetches operand based on IMM address modes
  */
-void get_op_IMM(uint8_t *ptr_code) // change to uint8_t
+void get_op_IMM(CPU_6502* CPU) // change to uint8_t
 {
 	/* Immediate - XXX #Operand */
-	//operand = (uint8_t) *(ptr_code+1); /* Keeps operand on Zero Page */
-	NES->operand = (uint8_t) read_addr(NES, NES->PC+1);
-	NES->PC += 2; /* Update PC */
+	CPU->operand = read_addr(CPU, CPU->PC + 1);
+	CPU->PC += 2; /* Update PC */
 }
 
 
 /* get_op_ZP_offest : fetches operand based on ZPX/ZPY address modes
  */
-void get_op_ZP_offset(uint8_t *ptr_code, uint8_t offset)
+void get_op_ZP_offset(uint8_t offset, CPU_6502* CPU)
 {
 	/* Zero Page X or Y - XXX operand, X/Y */
-	NES->target_addr = (uint8_t) (*(ptr_code+1) + offset); /* Keeps operand on Zero Page */
-	sprintf(append_int, "%.2X", NES->target_addr - offset);
+	CPU->target_addr = (uint8_t) (read_addr(CPU, CPU->PC + 1) + offset);
+	/* Debugger */
+	sprintf(append_int, "%.2X", CPU->target_addr - offset);
 	strcpy(end, "$");
 	strcat(end, append_int);
-	NES->PC += 2; /* Update PC */
-	//operand = read_addr(NES, (uint8_t) ((NES->PC + 1) + offset)); cpu overhaul pt2.
-	//operand = (uint8_t) read_addr(NES, (NES->PC + 1 + offset)); //cpu overhaul pt2.
+	CPU->PC += 2; /* Update PC */
 }
 
 
 /* get_op_ABS_offest : fetches operand based on ABS/ABSX/ABSY address modes
  */
-void get_op_ABS_offset(uint8_t *ptr_code, uint8_t offset)
+void get_op_ABS_offset(uint8_t offset, CPU_6502* CPU)
 {
 	/* Absolute (modes) - XXX operand  or XXX operand, X/Y */
-	NES->target_addr = ((uint16_t) (*(ptr_code+2) << 8) | *(ptr_code+1));
-	NES->target_addr = (uint16_t) (NES->target_addr + offset);
-	NES->PC += 3; /* Update PC */
+	CPU->target_addr = fetch_16(CPU, CPU->PC + 1);
+	CPU->target_addr = (uint16_t) (CPU->target_addr + offset);
 	/* Debugger */
-	sprintf(append_int, "%.4X", NES->target_addr - offset);
+	sprintf(append_int, "%.4X", CPU->target_addr - offset);
 	strcpy(end, "$");
 	strcat(end, append_int);
-	//operand = fetch_16(NES, (uint16_t) ((NES->PC + 1) + offset)));
-	// causes strange behaviour
-	// fetches right operand but using as is causes pc to point to illegal opcodes
-	//printf("OPERAND = %d  %d (NEW)\t", operand, fetch_16(NES, (uint16_t) ((NES->PC + 1) + offset)));
+	CPU->PC += 3; /* Update PC */
 }
 
 
 /* get_op_IND : fetches operand based on IND address mode
  */
-void get_op_IND(uint8_t *ptr_code, CPU_6502 *NESCPU)
+void get_op_IND(CPU_6502* CPU)
 {
 	/* Indirect - JMP (operand) - 2 Byte address */
-	NESCPU->target_addr = ((uint16_t) (*(ptr_code+2) << 8) | *(ptr_code+1));
-	NESCPU->addr_lo = read_addr(NESCPU, NESCPU->target_addr); /* PC low bute */
-	if ((NESCPU->target_addr & 0x00FF) == 0x00FF) {
+	CPU->target_addr = fetch_16(CPU, CPU->PC + 1);
+	CPU->addr_lo = read_addr(CPU, CPU->target_addr); /* PC low bute */
+	if ((CPU->target_addr & 0x00FF) == 0x00FF) {
 		/* JUMP BUG */
-		NESCPU->addr_hi = read_addr(NESCPU, NESCPU->target_addr & 0xFF00); /* PC high byte */
+		CPU->addr_hi = read_addr(CPU, CPU->target_addr & 0xFF00); /* PC high byte */
 	} else {
-		NESCPU->addr_hi = read_addr(NESCPU, NESCPU->target_addr + 1); /* PC high byte */
+		CPU->addr_hi = read_addr(CPU, CPU->target_addr + 1); /* PC high byte */
 	}
-	NESCPU->target_addr = (uint16_t) (NESCPU->addr_hi << 8) | NESCPU->addr_lo; /* get target address (little endian) */
+	CPU->target_addr = (uint16_t) (CPU->addr_hi << 8) | CPU->addr_lo; /* get target address (little endian) */
 	/* Debugger */
-	sprintf(append_int, "%.X", NESCPU->target_addr);
+	sprintf(append_int, "%.X", CPU->target_addr);
 	strcpy(end, "($");
 	strcat(end, append_int);
 	strcat(end, ")");
-	NES->PC += 3; /* Update PC */
+	CPU->PC += 3; /* Update PC */
 }
 
 
 /* get_op_INDX : fetches operand based on INDX address mode
  */
-void get_op_INDX(uint8_t *ptr_code, CPU_6502 *NESCPU)
+void get_op_INDX(CPU_6502* CPU)
 {
 	/* Indirect X - XXX (operand, X ) - 2 Byte address (Zero-Page) */
-	NES->addr_lo = read_addr(NES, (uint8_t) (*(ptr_code+1) + NESCPU->X)); /* sum address (LSB) */
-	NES->addr_hi = read_addr(NES, (uint8_t) (*(ptr_code+1) + NESCPU->X + 1)); /* Sum address + 1 (MSB) */
-	NES->target_addr = (uint16_t) (NES->addr_hi << 8) | NES->addr_lo; /* get target address (little endian) */
+	CPU->target_addr = fetch_16(CPU, CPU->PC + 1 + CPU->X);
 	/* Debugger */
-	sprintf(append_int, "%.2X", *(ptr_code+1));
+	sprintf(append_int, "%.2X", read_addr(CPU, CPU->PC + 1));
 	strcpy(end, "($");
 	strcat(end, append_int);
 	strcat(end, ",X)");
-	NES->PC += 2; /* Update PC */
+	CPU->PC += 2; /* Update PC */
 }
 
 
 /* get_op_INDY : fetches operand based on INDY address mode
  */
-void get_op_INDY(uint8_t *ptr_code, CPU_6502 *NESCPU)
+void get_op_INDY(CPU_6502* CPU)
 {
 	/* Indirect Y - XXX (operand), Y - 2 Byte address (Zero-Page) */
-	NES->addr_lo = read_addr(NES, (uint8_t) *(ptr_code+1)); /* sum address (LSB) */
-	NES->addr_hi = read_addr(NES, (uint8_t) (*(ptr_code+1) + 1)); /* sum address + 1 (MSB) */
-	NES->target_addr = (uint16_t) (NES->addr_hi << 8) | NES->addr_lo; /* get little endian */
-	NES->target_addr = (uint16_t) (NESCPU->Y + NES->target_addr); /* get target address */
+	CPU->target_addr = read_addr(CPU, CPU->PC + 1); // Zero-lage address
+	CPU->target_addr = fetch_16(CPU, CPU->target_addr);
+	CPU->target_addr = (uint16_t) (CPU->Y + CPU->target_addr); /* get target address */
 	/* Debugger */
-	sprintf(append_int, "%.2X", *(ptr_code+1));
+	sprintf(append_int, "%.2X", read_addr(CPU, CPU->PC + 1));
 	strcpy(end, "($");
 	strcat(end, append_int);
 	strcat(end, "),Y");
-	NES->PC += 2; /* Update PC */
+	CPU->PC += 2; /* Update PC */
 }
 
 /* using getch_16() for IND instructions and ABS causes some errors
