@@ -69,7 +69,7 @@ cNES is zlib licensed, as found in the [`LICENSE`](LICENSE) file.
 
 ## Acknowledgments
 
-https://wwww.github.com/mwpenny/pureNES
+https://github.com/mwpenny/pureNES
   
 http://emulator101.com/
   
