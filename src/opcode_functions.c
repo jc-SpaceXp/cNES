@@ -42,7 +42,7 @@ void execute_LDX(enum MODES address_mode, CPU_6502* CPU)
 	if (address_mode == IMM) {
 		CPU->X = CPU->operand;
 		strcpy(instruction, "LDX #$");
-		sprintf(append_int, "%.2X", NES->operand);
+		sprintf(append_int, "%.2X", CPU->operand);
 		strcat(instruction, append_int);
 	} else {
 		//printf("LDX $%.4X    ", operand);
@@ -188,7 +188,7 @@ void execute_ADC(enum MODES address_mode, CPU_6502* CPU)
 		Base10toBase2(read_addr(CPU, CPU->target_addr), bin_operand2);
 	}
 	unsigned carry_out = 0;
-	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &carry_out, bin_result);
+	full_adder(bin_operand1, bin_operand2, CPU->P & FLAG_C, &carry_out, bin_result);
 	CPU->A = Base2toBase10(bin_result, 0);
 	update_FLAG_N(CPU->A);
 	update_FLAG_V(bin_operand1, bin_operand2, bin_result);
@@ -287,7 +287,7 @@ void execute_SBC(enum MODES address_mode, CPU_6502* CPU)
 		Base10toBase2(read_addr(CPU, CPU->target_addr) ^ 0xFF, bin_operand2);
 	}
 	unsigned carry_out = 0;
-	full_adder(bin_operand1, bin_operand2, NES->P & FLAG_C, &carry_out, bin_result);
+	full_adder(bin_operand1, bin_operand2, CPU->P & FLAG_C, &carry_out, bin_result);
 	CPU->A = Base2toBase10(bin_result, 0);
 	update_FLAG_N(CPU->A);
 	update_FLAG_V(bin_operand1, bin_operand2, bin_result);
@@ -516,137 +516,137 @@ void execute_ROR(enum MODES address_mode, CPU_6502* CPU)
 
 /* execute_BCC: BCC command - Branch on Carry Clear (C = 0)
  */
-void execute_BCC(uint8_t *ptr_code)
+void execute_BCC(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", NES->PC + 2 + (int8_t) *(ptr_code+1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
 	strcpy(instruction, "BCC $");
 	strcat(instruction, append_int);
 
-	if ((NES->P & FLAG_C) == 0x00) {
-		NES->PC += (int8_t) *(ptr_code+1);
-		NES->Cycle += 1 + PAGE_CROSS(NES->old_PC + 2, NES->PC + 2);
+	if ((CPU->P & FLAG_C) == 0x00) {
+		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
 	}
-	NES->PC += 2;
+	CPU->PC += 2;
 }
 
 
 /* execute_BCS: BCS command - Branch on Carry Set (C = 1)
  */
-void execute_BCS(uint8_t *ptr_code)
+void execute_BCS(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", NES->PC + 2 + (int8_t) *(ptr_code+1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
 	strcpy(instruction, "BCS $");
 	strcat(instruction, append_int);
 
-	if ((NES->P & FLAG_C) == 0x01) {
-		NES->PC += (int8_t) *(ptr_code+1);
-		NES->Cycle += 1 + PAGE_CROSS(NES->old_PC + 2, NES->PC + 2);
+	if ((CPU->P & FLAG_C) == 0x01) {
+		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
 	}
-	NES->PC += 2;
+	CPU->PC += 2;
 }
 
 
 /* execute_BEQ: BEQ command - Branch on Zero result (Z = 1)
  */
-void execute_BEQ(uint8_t *ptr_code)
+void execute_BEQ(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", NES->PC + 2 + (int8_t) *(ptr_code+1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
 	strcpy(instruction, "BEQ $");
 	strcat(instruction, append_int);
 
-	if ((NES->P & FLAG_Z) == FLAG_Z) {
-		NES->PC += (int8_t) *(ptr_code+1);
-		NES->Cycle += 1 + PAGE_CROSS(NES->old_PC + 2, NES->PC + 2);
+	if ((CPU->P & FLAG_Z) == FLAG_Z) {
+		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
 	}
-	NES->PC += 2;
+	CPU->PC += 2;
 }
 
 
 /* execute_BMI: BMI command - Branch on Minus result (N = 1)
  */
-void execute_BMI(uint8_t *ptr_code)
+void execute_BMI(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", NES->PC + 2 + (int8_t) *(ptr_code+1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
 	strcpy(instruction, "BMI $");
 	strcat(instruction, append_int);
 
-	if ((NES->P & FLAG_N) == FLAG_N) {
-		NES->PC += (int8_t) *(ptr_code+1);
-		NES->Cycle += 1 + PAGE_CROSS(NES->old_PC + 2, NES->PC + 2);
+	if ((CPU->P & FLAG_N) == FLAG_N) {
+		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
 	}
-	NES->PC += 2;
+	CPU->PC += 2;
 }
 
 
 /* execute_BNE: BNE command - Branch on NOT Zero result (Z = 0)
  */
-void execute_BNE(uint8_t *ptr_code)
+void execute_BNE(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", NES->PC + 2 + (int8_t) *(ptr_code+1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
 	strcpy(instruction, "BNE $");
 	strcat(instruction, append_int);
 
-	if ((NES->P & FLAG_Z) == 0x00) {
-		NES->PC += (int8_t) *(ptr_code+1);
-		NES->Cycle += 1 + PAGE_CROSS(NES->old_PC + 2, NES->PC + 2);
+	if ((CPU->P & FLAG_Z) == 0x00) {
+		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
 	}
-	NES->PC += 2;
+	CPU->PC += 2;
 }
 
 
 /* execute_BPL: BPL command - Branch on Plus result (N = 0)
  */
-void execute_BPL(uint8_t *ptr_code)
+void execute_BPL(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", NES->PC + 2 + (int8_t) *(ptr_code+1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
 	strcpy(instruction, "BPL $");
 	strcat(instruction, append_int);
 
-	if ((NES->P & FLAG_N) == 0x00) {
-		NES->PC += (int8_t) *(ptr_code+1);
-		NES->Cycle += 1 + PAGE_CROSS(NES->old_PC + 2, NES->PC + 2);
+	if ((CPU->P & FLAG_N) == 0x00) {
+		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
 	}
-	NES->PC += 2;
+	CPU->PC += 2;
 }
 
 
 /* execute_BVC: BVC command - Branch on Overflow Clear (V = 0)
  */
-void execute_BVC(uint8_t *ptr_code)
+void execute_BVC(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", NES->PC + 2 + (int8_t) *(ptr_code+1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
 	strcpy(instruction, "BVC $");
 	strcat(instruction, append_int);
 
-	if ((NES->P & FLAG_V) == 0x00) {
-		NES->PC += (int8_t) *(ptr_code+1);
-		NES->Cycle += 1 + PAGE_CROSS(NES->old_PC + 2, NES->PC + 2);
+	if ((CPU->P & FLAG_V) == 0x00) {
+		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
 	}
-	NES->PC += 2;
+	CPU->PC += 2;
 }
 
 
 /* execute_BVS: BVS command - Branch on Overflow Set (V = 1)
  */
-void execute_BVS(uint8_t *ptr_code)
+void execute_BVS(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", NES->PC + 2 + (int8_t) *(ptr_code+1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
 	strcpy(instruction, "BVS $");
 	strcat(instruction, append_int);
 
-	if ((NES->P & FLAG_V) == FLAG_V) {
-		NES->PC += (int8_t) *(ptr_code+1);
-		NES->Cycle += 1 + PAGE_CROSS(NES->old_PC + 2, NES->PC + 2);
+	if ((CPU->P & FLAG_V) == FLAG_V) {
+		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
 	}
-	NES->PC += 2;
+	CPU->PC += 2;
 }
 
 

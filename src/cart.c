@@ -11,7 +11,6 @@ int load_cart(Cartridge* cart, const char *filename, PPU_Struct *p)
 	uint8_t mapper;
 	long file_size;
 
-	/* opening file and file testing */
 	FILE *rom = fopen(filename, "rb");
 
 	/* Error Detection */
@@ -90,7 +89,7 @@ int load_cart(Cartridge* cart, const char *filename, PPU_Struct *p)
 
 	fclose(rom);
 
-	/* Switch-case for mapper number */
+	/* Mapper select */
 	switch(mapper) {
 	case 0:
 		mapper_000(cart);

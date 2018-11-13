@@ -14,12 +14,12 @@
 void CPU_6502_STEP(uint16_t PC)
 {
 	transfer_cpu();
-	uint8_t *opcode = &NES->RAM[PC];
+	uint8_t opcode = read_addr(NES, PC);
 
 
 	/* Process NMI */
 	if (!NES->NMI_PENDING) {
-		switch (opcode[0]) {
+		switch (opcode) {
 		case 0x00:
 			/* BRK */
 			execute_BRK();
@@ -78,7 +78,7 @@ void CPU_6502_STEP(uint16_t PC)
 			break;
 		case 0x10:
 			/* BPL */
-			execute_BPL(opcode);
+			execute_BPL(NES);
 			NES->Cycle += 2; // Branch not taken, +1 if taken (in execute function)
 			break;
 		case 0x11:
@@ -201,7 +201,7 @@ void CPU_6502_STEP(uint16_t PC)
 			break;
 		case 0x30:
 			/* BMI */
-			execute_BMI(opcode);
+			execute_BMI(NES);
 			NES->Cycle += 2; // Branch not taken, additional cycles added in execution function
 			break;
 		case 0x31:
@@ -316,7 +316,7 @@ void CPU_6502_STEP(uint16_t PC)
 			break;
 		case 0x50:
 			/* BVC */
-			execute_BVC(opcode);
+			execute_BVC(NES);
 			NES->Cycle += 2; // Branch no taken, penalties calc in exec function
 			break;
 		case 0x51:
@@ -433,7 +433,7 @@ void CPU_6502_STEP(uint16_t PC)
 			break;
 		case 0x70:
 			/* BVS */
-			execute_BVS(opcode);
+			execute_BVS(NES);
 			NES->Cycle += 2; // Branch not taken, penalties in exec function
 			break;
 		case 0x71:
@@ -542,7 +542,7 @@ void CPU_6502_STEP(uint16_t PC)
 			break;
 		case 0x90:
 			/* BCC */
-			execute_BCC(opcode);
+			execute_BCC(NES);
 			NES->Cycle += 2; // Branch not taken, penalties in exec function
 			break;
 		case 0x91:
@@ -672,7 +672,7 @@ void CPU_6502_STEP(uint16_t PC)
 			break;
 		case 0xB0:
 			/* BCS */
-			execute_BCS(opcode);
+			execute_BCS(NES);
 			NES->Cycle += 2; // Branch not taken, penalties added in exec function
 			break;
 		case 0xB1:
@@ -815,7 +815,7 @@ void CPU_6502_STEP(uint16_t PC)
 			break;
 		case 0xD0:
 			/* BNE */
-			execute_BNE(opcode);
+			execute_BNE(NES);
 			NES->Cycle += 2;
 			break;
 		case 0xD1:
@@ -936,7 +936,7 @@ void CPU_6502_STEP(uint16_t PC)
 			break;
 		case 0xF0:
 			/* BEQ */
-			execute_BEQ(opcode);
+			execute_BEQ(NES);
 			NES->Cycle += 2; // Branch not taken, +1 if taken (in execute_BEQ)
 			break;
 		case 0xF1:
@@ -991,8 +991,7 @@ void CPU_6502_STEP(uint16_t PC)
 			break;
 		default:
 			/* Invalid command */
-			printf("Undocumented opcode: 0x%.2x\t", *opcode);
-			++NES->PC; /* This causes a problem that undocumented opcodes advance PC by 1 */
+			printf("Undocumented opcode: 0x%.2x\t", opcode); // Sits here forever
 			break;
 		}
 	} else {

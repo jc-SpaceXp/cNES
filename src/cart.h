@@ -6,7 +6,6 @@
 #include "mappers.h"
 #include "ppu.h"
 
-/* setup pointers to RAM for PRG etc like done w/ SP ??? */
 
 /* FLAG 9 in iNES header */
 /* tydef union?? */

@@ -56,14 +56,14 @@ void execute_ROR(enum MODES address_mode, CPU_6502* CPU);
  * BRANCH                  *
  * *************************/
 
-void execute_BCC(uint8_t *ptr_code);
-void execute_BCS(uint8_t *ptr_code);
-void execute_BEQ(uint8_t *ptr_code);
-void execute_BMI(uint8_t *ptr_code);
-void execute_BNE(uint8_t *ptr_code);
-void execute_BPL(uint8_t *ptr_code);
-void execute_BVC(uint8_t *ptr_code);
-void execute_BVS(uint8_t *ptr_code);
+void execute_BCC(CPU_6502* CPU);
+void execute_BCS(CPU_6502* CPU);
+void execute_BEQ(CPU_6502* CPU);
+void execute_BMI(CPU_6502* CPU);
+void execute_BNE(CPU_6502* CPU);
+void execute_BPL(CPU_6502* CPU);
+void execute_BVC(CPU_6502* CPU);
+void execute_BVS(CPU_6502* CPU);
 
 /***************************
  * JUMP                    *

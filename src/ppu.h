@@ -10,6 +10,17 @@
 #define PPUCTRL_ADDR 0x2000 /* ADD Define addr consts???? */
 #define KiB (1024)
 
+/*
+typedef struct {
+	unsigned index; // OAM index
+	uint8_t y;
+	//uint8_t tile_index; // Address in VRAM (needs to be shifted left 4)
+	uint16_t addr; // Pattern table lo address in VRAM
+	uint8_t attr; // Attribute byte
+	uint8_t x;
+} Sprite;
+*/
+
 
 /* Struct */
 
@@ -28,8 +39,26 @@ typedef struct {
 
 	uint8_t buffer_2007; /* Read buffer for register 2007 */
 
+	/* Memory */
 	uint8_t VRAM[16 * KiB]; /* PPU memory space (VRAM) */
 	uint8_t OAM[256]; /* OAM Address Space (Sprite RAM) */
+
+	/* Sprites */
+	uint8_t scanline_OAM[32]; // Secondary OAM, change to scanline
+	uint8_t OAM_read_buffer;
+	unsigned sprites_found; // Number of sprites found in next scanlie: MAX 8
+	unsigned sprite_index; // Max 63 (0 indexed)
+	bool stop_early;
+	bool sprite_zero_hit;
+	unsigned sprite_zero_scanline; // Scanlines of sprite 0 if any
+	unsigned sprite_zero_scanline_tmp; // Scanlines of sprite 0 if any
+	unsigned hit_scanline; // Needed because Y is calculated 1 scanline ahead
+	unsigned hit_cycle; // Needed because Y is calculated 1 scanline ahead
+	uint16_t sprite_addr;
+	uint8_t sprite_at_latches[8]; // Holds attribute byte data for 8 sprites
+	uint8_t sprite_pt_lo_shift_reg[8];
+	uint8_t sprite_pt_hi_shift_reg[8];
+	uint8_t sprite_x_counter[8]; /* X pos of sprite (decremented every 8 cycles */
 
 	/* BACKROUND */
 	uint16_t vram_addr; /* VRAM address - LoopyV (v) */
@@ -69,6 +98,12 @@ typedef struct {
 	//const uint8_t DEBUG_256; // Debug a page area
 } PPU_Struct;
 
+enum Memory {
+	PRIMARY_OAM,
+	SECONDARY_OAM,
+	PATTERN_TABLE_1
+} ppu_mem;
+
 /* Global defintions */
 const uint8_t reverse_bits[256];
 static const unsigned int palette[64];
@@ -81,7 +116,8 @@ void ppu_reset(int start, PPU_Struct *p); /* Emulates reset/warm-up of PPU */
 /* Debug Functions */
 void append_ppu_info(void);
 void debug_ppu_regs(void);
-void PPU_MEM_DEBUG(void);
+void PPU_MEM_DEBUG(void); // rename to VRAM viewer
+void OAM_viewer(enum Memory ppu_mem); // rename to VRAM viewer
 
 /* Read & Write Functions */
 //uint8_t read_PPU();
@@ -137,6 +173,7 @@ void fetch_pt_hi(PPU_Struct *p);
 
 void render_pixel(PPU_Struct *p);
 
+void ppu_transfer_oam(PPU_Struct* p, unsigned index);
 
 void ppu_tick(PPU_Struct *p);
 void ppu_step(PPU_Struct *p, CPU_6502* NESCPU);

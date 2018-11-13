@@ -63,6 +63,7 @@ int main(int argc, char **argv)
 	nes_screen = screen_init();
 
 	while (i < 419123) { // 5 Frames DK
+	//while (NES->Cycle < 980972) { // 5 Frames DK
 		ppu_cpu_ratio();
 		++i;
 	}
@@ -85,7 +86,10 @@ int main(int argc, char **argv)
 	}
 
 	*/
-	PPU_MEM_DEBUG(); // PPU memory viewer
+	//PPU_MEM_DEBUG(); // PPU memory viewer
+	//cpu_ram_viewer();
+	//OAM_viewer(PRIMARY_OAM);
+	OAM_viewer(SECONDARY_OAM);
 	SDL_Delay(5000);
 	SDL_Quit();
 	return 0;

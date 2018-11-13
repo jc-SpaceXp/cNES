@@ -81,6 +81,17 @@ PPU_Struct *ppu_init()
 	ppu->pt_lo_shift_reg = 0;
 	ppu->pt_hi_shift_reg = 0;
 
+	/* Sprite stuff */
+	ppu->sprites_found = 0;
+	ppu->sprite_index = 0; // Fetch sprite #0 1st
+	ppu->stop_early = false;
+	ppu->sprite_zero_hit = false;
+	ppu->sprite_zero_scanline = 600;
+	ppu->sprite_zero_scanline_tmp = 600;
+	ppu->hit_scanline = 600; // Impossible values
+	ppu->hit_cycle = 600; // Impossible values
+	//ppu->sprite_zero.x = p->OAM[3] + 2; // Delay of 2 ticks for sprite #0 hit
+
 	/* NTSC */
 	ppu->nmi_start = 241;
 	return ppu;
@@ -132,6 +143,33 @@ void PPU_MEM_DEBUG(void)
 		printf("%.4X: ", addr << 4);
 		for (int x = 0; x < 16; x++) {
 			printf("%.2X ", PPU->VRAM[mem]);
+			//printf("%.2X ", PPU->scanline_OAM[mem]);
+			//printf("%.2X ", PPU->OAM[mem]);
+			++mem;
+		}
+		printf("\n");
+		++addr;
+	}
+}
+
+
+void OAM_viewer(enum Memory ppu_mem)
+{
+	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
+	unsigned int addr = 0; // Byte count. 16 Bytes per line
+	unsigned int mem = 0;  // Start address
+	unsigned int addr_limit; // Byte count. 16 Bytes per line
+	if (ppu_mem == PRIMARY_OAM) {
+		addr_limit = 16; // Byte count. 16 Bytes per line
+	} else if (ppu_mem == SECONDARY_OAM) {
+		addr_limit = 2;
+	}
+	while (addr < addr_limit) {
+		printf("%.4X: ", addr << 4);
+		for (int x = 0; x < 16; x++) {
+			// need condirional here as well
+			//printf("%.2X ", PPU->OAM[mem]);
+			printf("%.2X ", PPU->scanline_OAM[mem]);
 			++mem;
 		}
 		printf("\n");
@@ -335,6 +373,20 @@ void write_2007(uint8_t data, PPU_Struct *p)
 void write_4014(uint8_t data, PPU_Struct *p, CPU_6502* NESCPU)
 {
 	NESCPU->DMA_PENDING = 1;
+	/*
+	printf("\n##################### CPU RAM #######################\n");
+	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
+	unsigned int addr = 0;
+	unsigned int mem = 0;
+	while (addr < 100) {
+		printf("%.4X: ", addr << 4);
+		for (int x = 0; x < 16; x++) {
+			printf("%.2X ", NESCPU->RAM[mem]);
+			++mem;
+		}
+		printf("\n");
+		++addr;
+	} */
 	for (int i = 0; i < 256; i++) {
 		write_2004(NESCPU->RAM[(data << 8) + i], p);
 	}
@@ -381,18 +433,18 @@ uint16_t ppu_base_pt_address(PPU_Struct *p)
 uint16_t ppu_sprite_pattern_table_addr(PPU_Struct *p)
 {
 	if ((p->PPU_CTRL >> 3) & 0x01) {
-		return 0x0000;
-	} else {
 		return 0x1000;
+	} else {
+		return 0x0000;
 	}
 }
 
 uint8_t ppu_sprite_height(PPU_Struct *p)
 {
 	if ((p->PPU_CTRL >> 5) & 0x01) {
-		return 8; /* 8 x 8 */
-	} else {
 		return 16; /* 8 x 16 */
+	} else {
+		return 8; /* 8 x 8 */
 	}
 }
 
@@ -486,37 +538,33 @@ void fetch_pt_hi(PPU_Struct *p)
 
 void render_pixel(PPU_Struct *p)
 {
-	unsigned palette_addr;
+	unsigned bg_palette_addr;
 	/* Defines the which colour palette to use */
 	if ((p->nt_addr_current & 0x03) == 0x03) { // Right quadrants
 		if ((p->nt_addr_current & 0x40) == 0x40) {
-			palette_addr = p->at_current >> 6; // Bottom quadrant
+			bg_palette_addr = p->at_current >> 6; // Bottom quadrant
 		} else {
-			palette_addr = p->at_current >> 2; // Top quadrant
+			bg_palette_addr = p->at_current >> 2; // Top quadrant
 		}
 	} else { // Left quadrants
 		if ((p->nt_addr_current & 0x40) == 0x40) {
-			palette_addr = p->at_current >> 4; // Bottom quadrant
+			bg_palette_addr = p->at_current >> 4; // Bottom quadrant
 		} else {
-			palette_addr = p->at_current & 0x0003; // Top quadrant
+			bg_palette_addr = p->at_current & 0x0003; // Top quadrant
 		}
 	}
-	palette_addr &= 0x03;
-	palette_addr <<= 2;
+	bg_palette_addr &= 0x03;
+	bg_palette_addr <<= 2;
 
-	palette_addr += 0x3F00; // Palette mem starts here
+	bg_palette_addr += 0x3F00; // Palette mem starts here
 	//printf("PAL_ADDR: %X", palette_addr);
 
-	unsigned palette_offset = ((p->pt_hi_shift_reg & 0x01) << 1) | (p->pt_lo_shift_reg & 0x01);
-	if (!palette_offset) {
-		if (palette_addr < 0x3F10) {
-			palette_addr = 0x3F00; // Take background colour
-		} else {
-			palette_addr = 0x3F10; // Take background colour
-		}
+	unsigned bg_palette_offset = ((p->pt_hi_shift_reg & 0x01) << 1) | (p->pt_lo_shift_reg & 0x01);
+	if (!bg_palette_offset) {
+		bg_palette_addr = 0x3F00; // Take background colour
 	}
 
-	unsigned RGB = p->VRAM[palette_addr + palette_offset]; // Get values
+	unsigned RGB = p->VRAM[bg_palette_addr + bg_palette_offset]; // Get values
 
 	/* Reverse Bits */
 	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
@@ -524,6 +572,39 @@ void render_pixel(PPU_Struct *p)
 	/* Shift each cycle */
 	p->pt_hi_shift_reg >>= 1;
 	p->pt_lo_shift_reg >>= 1;
+
+	/* Sprite Stuff */
+	unsigned sprite_palette_offset[8] = {0, 0, 0, 0, 0, 0, 0};
+	// Is sprite active
+	for (int i = 0; i < 8; i++) {
+		if (p->sprite_x_counter[i] != 0) {
+			p->sprite_x_counter[i] -= 1;
+		} else {
+			sprite_palette_offset[i] = ((p->sprite_pt_hi_shift_reg[i] & 0x01) << 1) | (p->sprite_pt_lo_shift_reg[i] & 0x01);
+			//printf("DEBUG HI|LO AFTER: %X\n", sprite_palette_offset[0]);
+			p->sprite_pt_lo_shift_reg[i] >>= 1;
+			p->sprite_pt_hi_shift_reg[i] >>= 1;
+		}
+	}
+	if (p->scanline == p->sprite_zero_scanline && (p->sprite_zero_hit == false)) { // If sprite is on scanline
+		if (bg_palette_offset != 0 && sprite_palette_offset[0] != 0 && (p->PPU_STATUS & 0x40) != 0x40 && p->cycle != 256) {
+			//printf("1L OVERLAP HERE: %d\n", p->cycle);
+			p->hit_scanline = p->scanline;
+			p->hit_cycle = p->cycle + 1; // Sprite #0 hit is delayed by 1 tick (cycle)
+			p->sprite_zero_hit = true;
+			//p->PPU_STATUS |= 0x40; // Sprite #0 hit
+		}
+	} if ((p->scanline == p->hit_scanline) && (p->cycle == p->hit_cycle)) {
+		//printf("OVERLAP HERE: %d\n", p->cycle);
+		p->PPU_STATUS |= 0x40; // Sprite #0 hit
+	} 
+}
+
+void ppu_transfer_oam(PPU_Struct* p, unsigned index)
+{
+	for (int i = 0; i < 4; i++) {
+		p->scanline_OAM[(p->sprites_found * 4) + i] = p->OAM[(index * 4) + i]; // Copy remaining bytes
+	}
 }
 
 /*************************
@@ -564,11 +645,11 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 		p->PPU_STATUS &= ~(0x80);
 	}
 
-	/* Process scanlines */
+	/* Process BG Scanlines */
 	if(ppu_show_bg(p)) {
 		if (p->scanline <= 239) { /* Visible scanlines */
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
-				// write to pixel buffer each cycle
+				// BG STUFF
 				render_pixel(p); // Render pixel every cycle
 				switch ((p->cycle - 1) & 0x07) {
 				case 0:
@@ -693,6 +774,119 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 					inc_horz_scroll(p);
 					break;
 				}
+			}
+		}
+	}
+	/* Process Sprites */
+	if (ppu_show_sprite(p)) {
+		if (p->scanline <= 239) { /* Visible scanlines */
+			if (p->cycle <= 64 && (p->cycle != 0)) {
+				for (int i = 0; i < 32; i++) {
+					p->scanline_OAM[i] = 0xFF; // Reset secondary OAM
+				}
+				/* Reset */
+				p->sprite_index = 0;
+				p->sprites_found = 0;
+				p->stop_early = false;
+				p->sprite_zero_scanline = p->sprite_zero_scanline_tmp;
+			} else if (p->cycle <= 256) {
+				// sprite evaluation
+				int y_offset = 0;
+				switch (p->cycle % 2) {
+				case 1: // Odd cycles
+					p->OAM_read_buffer = p->OAM[p->sprite_index * 4];
+					break;
+				case 0: //Even cycles
+					y_offset = p->scanline + 1 - p->OAM_read_buffer; // +1 for sprites on next scanline
+					//y_offset = p->scanline - p->OAM_read_buffer; // +1 for sprites on next scanline
+					if ((p->OAM_read_buffer < 0xEF) && (y_offset >= 0) && (y_offset < ppu_sprite_height(p)) && (p->sprites_found <= 8) && !p->stop_early) {
+						ppu_transfer_oam(p, p->sprite_index);
+						if (p->sprite_index == 0 && p->cycle == 66) {
+							p->sprite_zero_scanline_tmp = p->scanline + 1;
+						}
+						p->sprites_found++;
+						//printf("SPRITE FOUND: #%d total: %d \t\t", p->sprite_index, p->sprites_found);
+					}
+
+					++p->sprite_index;
+					if (p->sprite_index == 64) {
+						p->sprite_index = 0; // above reset should cover this
+						p->stop_early = true;
+					}
+
+					if (p->sprites_found == 8 && (y_offset >= 0) && (y_offset < ppu_sprite_height(p))) {
+						// Trigger sprite overflow flag
+						p->PPU_STATUS |= 0x20;
+					}
+
+					break;
+				}
+			} else if (p->cycle <= 320) { // Sprite data fetches
+				unsigned count; // Counts 8 secondary OAM
+				if (p->cycle == 257) {
+					p->sprite_index = 0; // Using to access scanline_OAM
+					count = 0;
+				}
+				int offset = 0;
+				switch ((p->cycle - 1) & 0x07) {
+				case 0:
+					// Garbage NT byte
+					break;
+				case 1:
+					// When not in range the sprite is filled w/ FF
+					p->sprite_addr = ppu_sprite_pattern_table_addr(p) | (uint16_t) p->scanline_OAM[(count * 4) + 1] << 4; // Read tile numb
+					offset = p->scanline - p->scanline_OAM[count * 4];
+					if (offset < 0) { // Keep address static until we reach the scanline in range
+						offset = 0;
+					}
+					p->sprite_addr += offset;
+					//printf("SPRITE ADDR %.4X\n", p->sprite_addr);
+				case 2:
+					// Garbage AT byte
+					p->sprite_at_latches[count] = p->scanline_OAM[(count * 4) + 2];
+					break;
+				case 3:
+					// Read X Pos (In NES it's re-read until the 8th cycle)
+					p->sprite_x_counter[count] = p->scanline_OAM[(count * 4) + 3];
+				case 4:
+					// Fetch sprite low pt
+					if ((p->sprite_at_latches[count] & 0x40) == 0x40) { // Flip horizontal pixels
+						p->sprite_pt_lo_shift_reg[count] = p->VRAM[p->sprite_addr];
+					} else {
+						p->sprite_pt_lo_shift_reg[count] = reverse_bits[p->VRAM[p->sprite_addr]];
+					}
+					break;
+				case 6:
+					// Fetch sprite hi pt
+					if ((p->sprite_at_latches[count] & 0x40) == 0x40) { // Flip horizontal pixels
+						p->sprite_pt_hi_shift_reg[count] = p->VRAM[p->sprite_addr + 8];
+					} else {
+						p->sprite_pt_hi_shift_reg[count] = reverse_bits[p->VRAM[p->sprite_addr + 8]];
+					}
+					break;
+				case 7: /* 8th Cycle */
+					count++;
+					for (int i = p->sprites_found; i < 8; i++) { // Less than 8 sprites, zero out pattern table for remainding sprites
+						p->sprite_pt_lo_shift_reg[i] = 0; // Empty slots should have transparent/bg pixel values
+						p->sprite_pt_hi_shift_reg[i] = 0; // Empty slots should have transparent/bg pixel values
+					}
+					//printf("DEBUG LO BEFORE %X\n", p->sprite_pt_lo_shift_reg[0]);
+					//printf("DEBUG HI BEFORE %X\n", p->sprite_pt_hi_shift_reg[0]);
+					break;
+				}
+			}
+		} else if (p->scanline == 261) { /* Pre-render scanline */
+			// only sprite fetches occur
+	
+			p->sprite_index = 0;
+			// Clear sprite #0 hit
+			if (p->cycle == 1) {
+				p->PPU_STATUS &= ~(0x40); 
+				p->sprite_zero_hit = false;
+				p->sprite_zero_scanline = 600;
+				p->sprite_zero_scanline_tmp = 600;
+				p->hit_scanline = 600;
+				p->hit_cycle = 600;
 			}
 		}
 	}
