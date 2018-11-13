@@ -567,7 +567,7 @@ void render_pixel(PPU_Struct *p)
 	unsigned RGB = p->VRAM[bg_palette_addr + bg_palette_offset]; // Get values
 
 	/* Reverse Bits */
-	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
+	//pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
 
 	/* Shift each cycle */
 	p->pt_hi_shift_reg >>= 1;
@@ -576,12 +576,21 @@ void render_pixel(PPU_Struct *p)
 	/* Sprite Stuff */
 	unsigned sprite_palette_offset[8] = {0, 0, 0, 0, 0, 0, 0};
 	// Is sprite active
-	for (int i = 0; i < 8; i++) {
+	for (int i = 7; i >= 0; i--) { // Low priority sprites first (high priority overwrites them)
 		if (p->sprite_x_counter[i] != 0) {
 			p->sprite_x_counter[i] -= 1;
 		} else {
 			sprite_palette_offset[i] = ((p->sprite_pt_hi_shift_reg[i] & 0x01) << 1) | (p->sprite_pt_lo_shift_reg[i] & 0x01);
 			//printf("DEBUG HI|LO AFTER: %X\n", sprite_palette_offset[0]);
+			// Render sprites
+			unsigned sprite_palette_addr = p->sprite_at_latches[i] & 0x03;
+			sprite_palette_addr <<= 2;
+			sprite_palette_addr += 0x3F10;
+			if ((((p->sprite_at_latches[i] & 0x20) == 0) || !bg_palette_offset) && sprite_palette_offset[i]) { // front priority 
+				RGB = p->VRAM[sprite_palette_addr + sprite_palette_offset[i]]; // Output sprite
+			} else if (((p->sprite_at_latches[i] & 0x20) == 0x20) && bg_palette_offset) {
+				RGB = p->VRAM[bg_palette_addr + bg_palette_offset]; // Get values
+			}
 			p->sprite_pt_lo_shift_reg[i] >>= 1;
 			p->sprite_pt_hi_shift_reg[i] >>= 1;
 		}
@@ -598,6 +607,8 @@ void render_pixel(PPU_Struct *p)
 		//printf("OVERLAP HERE: %d\n", p->cycle);
 		p->PPU_STATUS |= 0x40; // Sprite #0 hit
 	} 
+	// Send pixels to pixel buffer
+	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
 }
 
 void ppu_transfer_oam(PPU_Struct* p, unsigned index)
@@ -797,7 +808,7 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 					p->OAM_read_buffer = p->OAM[p->sprite_index * 4];
 					break;
 				case 0: //Even cycles
-					y_offset = p->scanline + 1 - p->OAM_read_buffer; // +1 for sprites on next scanline
+					y_offset = p->scanline - p->OAM_read_buffer; // Sprites are delayed by one scanline not rendered a scanline earlier
 					//y_offset = p->scanline - p->OAM_read_buffer; // +1 for sprites on next scanline
 					if ((p->OAM_read_buffer < 0xEF) && (y_offset >= 0) && (y_offset < ppu_sprite_height(p)) && (p->sprites_found <= 8) && !p->stop_early) {
 						ppu_transfer_oam(p, p->sprite_index);
