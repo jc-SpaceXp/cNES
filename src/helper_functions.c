@@ -12,20 +12,20 @@
 
 /* get_op_IMM : fetches operand based on IMM address modes
  */
-void get_op_IMM(CPU_6502* CPU) // change to uint8_t
+void get_IMM_byte(CPU_6502* CPU) // change to uint8_t
 {
 	/* Immediate - XXX #Operand */
-	CPU->operand = read_addr(CPU, CPU->PC + 1);
+	CPU->operand = read_byte_from_cpu_ram(CPU, CPU->PC + 1);
 	CPU->PC += 2; /* Update PC */
 }
 
 
 /* get_op_ZP_offest : fetches operand based on ZPX/ZPY address modes
  */
-void get_op_ZP_offset(uint8_t offset, CPU_6502* CPU)
+void get_ZP_offset_address(uint8_t offset, CPU_6502* CPU)
 {
 	/* Zero Page X or Y - XXX operand, X/Y */
-	CPU->target_addr = (uint8_t) (read_addr(CPU, CPU->PC + 1) + offset);
+	CPU->target_addr = (uint8_t) (read_byte_from_cpu_ram(CPU, CPU->PC + 1) + offset);
 	/* Debugger */
 	sprintf(append_int, "%.2X", CPU->target_addr - offset);
 	strcpy(end, "$");
@@ -36,10 +36,10 @@ void get_op_ZP_offset(uint8_t offset, CPU_6502* CPU)
 
 /* get_op_ABS_offest : fetches operand based on ABS/ABSX/ABSY address modes
  */
-void get_op_ABS_offset(uint8_t offset, CPU_6502* CPU)
+void get_ABS_offset_address(uint8_t offset, CPU_6502* CPU)
 {
 	/* Absolute (modes) - XXX operand  or XXX operand, X/Y */
-	CPU->target_addr = fetch_16(CPU, CPU->PC + 1);
+	CPU->target_addr = return_little_endian(CPU, CPU->PC + 1);
 	CPU->target_addr = (uint16_t) (CPU->target_addr + offset);
 	/* Debugger */
 	sprintf(append_int, "%.4X", CPU->target_addr - offset);
@@ -51,16 +51,16 @@ void get_op_ABS_offset(uint8_t offset, CPU_6502* CPU)
 
 /* get_op_IND : fetches operand based on IND address mode
  */
-void get_op_IND(CPU_6502* CPU)
+void get_IND_address(CPU_6502* CPU)
 {
 	/* Indirect - JMP (operand) - 2 Byte address */
-	CPU->target_addr = fetch_16(CPU, CPU->PC + 1);
-	CPU->addr_lo = read_addr(CPU, CPU->target_addr); /* PC low bute */
+	CPU->target_addr = return_little_endian(CPU, CPU->PC + 1);
+	CPU->addr_lo = read_byte_from_cpu_ram(CPU, CPU->target_addr); /* PC low bute */
 	if ((CPU->target_addr & 0x00FF) == 0x00FF) {
 		/* JUMP BUG */
-		CPU->addr_hi = read_addr(CPU, CPU->target_addr & 0xFF00); /* PC high byte */
+		CPU->addr_hi = read_byte_from_cpu_ram(CPU, CPU->target_addr & 0xFF00); /* PC high byte */
 	} else {
-		CPU->addr_hi = read_addr(CPU, CPU->target_addr + 1); /* PC high byte */
+		CPU->addr_hi = read_byte_from_cpu_ram(CPU, CPU->target_addr + 1); /* PC high byte */
 	}
 	CPU->target_addr = (uint16_t) (CPU->addr_hi << 8) | CPU->addr_lo; /* get target address (little endian) */
 	/* Debugger */
@@ -74,12 +74,12 @@ void get_op_IND(CPU_6502* CPU)
 
 /* get_op_INDX : fetches operand based on INDX address mode
  */
-void get_op_INDX(CPU_6502* CPU)
+void get_INDX_address(CPU_6502* CPU)
 {
 	/* Indirect X - XXX (operand, X ) - 2 Byte address (Zero-Page) */
-	CPU->target_addr = fetch_16(CPU, CPU->PC + 1 + CPU->X);
+	CPU->target_addr = return_little_endian(CPU, CPU->PC + 1 + CPU->X);
 	/* Debugger */
-	sprintf(append_int, "%.2X", read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.2X", read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(end, "($");
 	strcat(end, append_int);
 	strcat(end, ",X)");
@@ -89,14 +89,14 @@ void get_op_INDX(CPU_6502* CPU)
 
 /* get_op_INDY : fetches operand based on INDY address mode
  */
-void get_op_INDY(CPU_6502* CPU)
+void get_INDY_address(CPU_6502* CPU)
 {
 	/* Indirect Y - XXX (operand), Y - 2 Byte address (Zero-Page) */
-	CPU->target_addr = read_addr(CPU, CPU->PC + 1); // Zero-lage address
-	CPU->target_addr = fetch_16(CPU, CPU->target_addr);
+	CPU->target_addr = read_byte_from_cpu_ram(CPU, CPU->PC + 1); // Zero-lage address
+	CPU->target_addr = return_little_endian(CPU, CPU->target_addr);
 	CPU->target_addr = (uint16_t) (CPU->Y + CPU->target_addr); /* get target address */
 	/* Debugger */
-	sprintf(append_int, "%.2X", read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.2X", read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(end, "($");
 	strcat(end, append_int);
 	strcat(end, "),Y");
@@ -109,9 +109,9 @@ void get_op_INDY(CPU_6502* CPU)
  */
 
 // Determines if a page cross has occured for a certain instruction
-unsigned PAGE_CROSS(unsigned val1, unsigned val2)
+unsigned page_cross_penalty(unsigned address_1, unsigned address_2)
 {
-	return ((val1 & 0xFF00) == (val2 & 0xFF00)) ? 0 : 1;
+	return ((address_1 & 0xFF00) == (address_2 & 0xFF00)) ? 0 : 1;
 }
 
 /***************************
@@ -119,7 +119,7 @@ unsigned PAGE_CROSS(unsigned val1, unsigned val2)
  * *************************/
 
 /* Return Status */
-void RET_NES_CPU(void)
+void log_cpu_info(void)
 {
 	printf("%-6.4X ", NES->old_PC);
 	printf("%-20s ", instruction);
@@ -131,7 +131,7 @@ void RET_NES_CPU(void)
 	printf("CPU:%.4d", NES->old_Cycle);
 }
 
-void transfer_cpu(void)
+void update_cpu_info(void)
 {
 	NES->old_A = NES->A;
 	NES->old_X = NES->X;
@@ -200,7 +200,7 @@ void full_adder(int *bin_sum1, int *bin_sum2, int cIN, unsigned *cOUT, int *resu
  * *************************/
 
 /* Genric Push function */
-void PUSH(uint8_t value)
+void stack_push(uint8_t value)
 {
 	/* SP_START - 1 - as Stack = Empty Descending */
 	/* FIX LIMIT CHECK */
@@ -215,7 +215,7 @@ void PUSH(uint8_t value)
 
 
 /* Genric Pop (Pull) function */
-uint8_t PULL(void)
+uint8_t stack_pull(void)
 {
 	/* FIX LIMIT CHECK */
 	if (NES->Stack == SP_START) {
@@ -249,7 +249,7 @@ void update_FLAG_Z(uint8_t result)
 void update_FLAG_N(uint8_t result)
 {
 	/* Negative Flag Test */
-	if (result >= 0x00 && result <= 0x7F) {
+	if (result <= 0x7F) {
 		NES->P &= ~(FLAG_N); /* Clear N */
 	} else {
 		NES->P |= FLAG_N; /* Set N */

@@ -28,7 +28,7 @@ void execute_LDA(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "LDA ");
 		strcat(instruction, end);
-		CPU->A = read_addr(CPU, CPU->target_addr);
+		CPU->A = read_byte_from_cpu_ram(CPU, CPU->target_addr);
 	}
 	update_FLAG_N(CPU->A);
 	update_FLAG_Z(CPU->A);
@@ -48,7 +48,7 @@ void execute_LDX(enum MODES address_mode, CPU_6502* CPU)
 		//printf("LDX $%.4X    ", operand);
 		strcpy(instruction, "LDX ");
 		strcat(instruction, end);
-		CPU->X = read_addr(CPU, CPU->target_addr);
+		CPU->X = read_byte_from_cpu_ram(CPU, CPU->target_addr);
 	}
 	update_FLAG_N(CPU->X);
 	update_FLAG_Z(CPU->X);
@@ -67,7 +67,7 @@ void execute_LDY(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "LDY ");
 		strcat(instruction, end);
-		CPU->Y = read_addr(CPU, CPU->target_addr);
+		CPU->Y = read_byte_from_cpu_ram(CPU, CPU->target_addr);
 	}
 	update_FLAG_N(CPU->Y);
 	update_FLAG_Z(CPU->Y);
@@ -80,7 +80,7 @@ void execute_STA(CPU_6502* CPU)
 {
 	strcpy(instruction, "STA ");
 	strcat(instruction, end);
-	write_addr(CPU, CPU->target_addr, CPU->A);
+	write_byte_to_cpu_ram(CPU, CPU->target_addr, CPU->A);
 }
 
 
@@ -90,7 +90,7 @@ void execute_STX(CPU_6502* CPU)
 {
 	strcpy(instruction, "STX ");
 	strcat(instruction, end);
-	write_addr(CPU, CPU->target_addr, CPU->X);
+	write_byte_to_cpu_ram(CPU, CPU->target_addr, CPU->X);
 }
 
 
@@ -100,7 +100,7 @@ void execute_STY(CPU_6502* CPU)
 {
 	strcpy(instruction, "STY ");
 	strcat(instruction, end);
-	write_addr(CPU, CPU->target_addr, CPU->Y);
+	write_byte_to_cpu_ram(CPU, CPU->target_addr, CPU->Y);
 }
 
 
@@ -185,7 +185,7 @@ void execute_ADC(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "ADC ");
 		strcat(instruction, end);
-		Base10toBase2(read_addr(CPU, CPU->target_addr), bin_operand2);
+		Base10toBase2(read_byte_from_cpu_ram(CPU, CPU->target_addr), bin_operand2);
 	}
 	unsigned carry_out = 0;
 	full_adder(bin_operand1, bin_operand2, CPU->P & FLAG_C, &carry_out, bin_result);
@@ -202,9 +202,10 @@ void execute_DEC(CPU_6502* CPU)
 {
 	strcpy(instruction, "DEC ");
 	strcat(instruction, end);
-	write_addr(CPU, CPU->target_addr, read_addr(CPU, CPU->target_addr) - 1);
-	update_FLAG_N(read_addr(CPU, CPU->target_addr));
-	update_FLAG_Z(read_addr(CPU, CPU->target_addr));
+	write_byte_to_cpu_ram(CPU, CPU->target_addr,
+						  read_byte_from_cpu_ram(CPU, CPU->target_addr) - 1);
+	update_FLAG_N(read_byte_from_cpu_ram(CPU, CPU->target_addr));
+	update_FLAG_Z(read_byte_from_cpu_ram(CPU, CPU->target_addr));
 }
 
 
@@ -238,9 +239,10 @@ void execute_INC(CPU_6502* CPU)
 {
 	strcpy(instruction, "INC ");
 	strcat(instruction, end);
-	write_addr(CPU, CPU->target_addr, read_addr(CPU, CPU->target_addr) + 1);
-	update_FLAG_N(read_addr(CPU, CPU->target_addr));
-	update_FLAG_Z(read_addr(CPU, CPU->target_addr));
+	write_byte_to_cpu_ram(CPU, CPU->target_addr,
+						  read_byte_from_cpu_ram(CPU, CPU->target_addr) + 1);
+	update_FLAG_N(read_byte_from_cpu_ram(CPU, CPU->target_addr));
+	update_FLAG_Z(read_byte_from_cpu_ram(CPU, CPU->target_addr));
 }
 
 
@@ -284,7 +286,7 @@ void execute_SBC(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "SBC ");
 		strcat(instruction, end);
-		Base10toBase2(read_addr(CPU, CPU->target_addr) ^ 0xFF, bin_operand2);
+		Base10toBase2(read_byte_from_cpu_ram(CPU, CPU->target_addr) ^ 0xFF, bin_operand2);
 	}
 	unsigned carry_out = 0;
 	full_adder(bin_operand1, bin_operand2, CPU->P & FLAG_C, &carry_out, bin_result);
@@ -311,7 +313,7 @@ void execute_AND(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "AND ");
 		strcat(instruction, end);
-		CPU->A &= read_addr(CPU, CPU->target_addr);
+		CPU->A &= read_byte_from_cpu_ram(CPU, CPU->target_addr);
 	}
 	update_FLAG_N(CPU->A);
 	update_FLAG_Z(CPU->A);
@@ -335,10 +337,11 @@ void execute_ASL(enum MODES address_mode, CPU_6502* CPU)
 		/* Shift value @ address 1 bit to the left */
 		strcpy(instruction, "ASL ");
 		strcat(instruction, end);
-		high_bit = read_addr(CPU, CPU->target_addr) & 0x80; /* Mask 7th bit */
-		write_addr(CPU, CPU->target_addr, read_addr(CPU, CPU->target_addr) << 1);
-		update_FLAG_N(read_addr(CPU, CPU->target_addr));
-		update_FLAG_Z(read_addr(CPU, CPU->target_addr));
+		high_bit = read_byte_from_cpu_ram(CPU, CPU->target_addr) & 0x80; /* Mask 7th bit */
+		write_byte_to_cpu_ram(CPU, CPU->target_addr,
+							  read_byte_from_cpu_ram(CPU, CPU->target_addr) << 1);
+		update_FLAG_N(read_byte_from_cpu_ram(CPU, CPU->target_addr));
+		update_FLAG_Z(read_byte_from_cpu_ram(CPU, CPU->target_addr));
 	}
 	high_bit = high_bit >> 7; /* needed so that function below works */;
 	/* Update Carry */
@@ -352,17 +355,17 @@ void execute_BIT(CPU_6502* CPU)
 {
 	strcpy(instruction, "BIT ");
 	strcat(instruction, end);
-	int tmp = CPU->A & read_addr(CPU, CPU->target_addr);
+	int tmp = CPU->A & read_byte_from_cpu_ram(CPU, CPU->target_addr);
 	/* Update Flags */
 	/* N = Bit 7, V = Bit 6 (of fetched operand) & Z = 1 (if AND result = 0) */
 	/* Setting 7th Bit */
-	if ((read_addr(CPU, CPU->target_addr) & FLAG_N) == FLAG_N) {
+	if ((read_byte_from_cpu_ram(CPU, CPU->target_addr) & FLAG_N) == FLAG_N) {
 		CPU->P |= FLAG_N; /* set */
 	} else {
 		CPU->P &= ~(FLAG_N); /* clear flag */
 	}
 	/* Setting 6th Bit */
-	if ((read_addr(CPU, CPU->target_addr) & FLAG_V) == FLAG_V) {
+	if ((read_byte_from_cpu_ram(CPU, CPU->target_addr) & FLAG_V) == FLAG_V) {
 		CPU->P |= FLAG_V;
 	} else {
 		CPU->P &= ~(FLAG_V);
@@ -390,7 +393,7 @@ void execute_EOR(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "EOR ");
 		strcat(instruction, end);
-		CPU->A ^= read_addr(CPU, CPU->target_addr);
+		CPU->A ^= read_byte_from_cpu_ram(CPU, CPU->target_addr);
 	}
 	update_FLAG_N(CPU->A);
 	update_FLAG_Z(CPU->A);
@@ -412,10 +415,11 @@ void execute_LSR(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "LSR ");
 		strcat(instruction, end);
-		low_bit = read_addr(CPU, CPU->target_addr) & 0x01; /* Mask 0th bit */
-		write_addr(CPU, CPU->target_addr, read_addr(CPU, CPU->target_addr) >> 1);
-		update_FLAG_N(read_addr(CPU, CPU->target_addr)); /* Should always clear N flag */
-		update_FLAG_Z(read_addr(CPU, CPU->target_addr));
+		low_bit = read_byte_from_cpu_ram(CPU, CPU->target_addr) & 0x01; /* Mask 0th bit */
+		write_byte_to_cpu_ram(CPU, CPU->target_addr,
+							  read_byte_from_cpu_ram(CPU, CPU->target_addr) >> 1);
+		update_FLAG_N(read_byte_from_cpu_ram(CPU, CPU->target_addr)); /* Should always clear N flag */
+		update_FLAG_Z(read_byte_from_cpu_ram(CPU, CPU->target_addr));
 	}
 	/* Update Carry */
 	set_or_clear_CARRY(low_bit);
@@ -435,7 +439,7 @@ void execute_ORA(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "ORA ");
 		strcat(instruction, end);
-		CPU->A |= read_addr(CPU, CPU->target_addr);
+		CPU->A |= read_byte_from_cpu_ram(CPU, CPU->target_addr);
 	}
 	update_FLAG_N(CPU->A);
 	update_FLAG_Z(CPU->A);
@@ -462,13 +466,15 @@ void execute_ROL(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "ROL ");
 		strcat(instruction, end);
-		high_bit = read_addr(CPU, CPU->target_addr) & 0x80; /* Mask 7th bit */
-		write_addr(CPU, CPU->target_addr, read_addr(CPU, CPU->target_addr) << 1);
+		high_bit = read_byte_from_cpu_ram(CPU, CPU->target_addr) & 0x80; /* Mask 7th bit */
+		write_byte_to_cpu_ram(CPU, CPU->target_addr,
+							  read_byte_from_cpu_ram(CPU, CPU->target_addr) << 1);
 		if ((CPU->P & FLAG_C) == 0x01) {
-			write_addr(CPU, CPU->target_addr, read_addr(CPU, CPU->target_addr) | 0x01);
+			write_byte_to_cpu_ram(CPU, CPU->target_addr,
+								  read_byte_from_cpu_ram(CPU, CPU->target_addr) | 0x01);
 		}
-		update_FLAG_N(read_addr(CPU, CPU->target_addr));
-		update_FLAG_Z(read_addr(CPU, CPU->target_addr));
+		update_FLAG_N(read_byte_from_cpu_ram(CPU, CPU->target_addr));
+		update_FLAG_Z(read_byte_from_cpu_ram(CPU, CPU->target_addr));
 	}
 	/* Update Flag */
 	high_bit = high_bit >> 7; /* needed so that function below works */;
@@ -495,14 +501,16 @@ void execute_ROR(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "ROR ");
 		strcat(instruction, end);
-		low_bit = read_addr(CPU, CPU->target_addr) & 0x01;
-		write_addr(CPU, CPU->target_addr, read_addr(CPU, CPU->target_addr) >> 1);
+		low_bit = read_byte_from_cpu_ram(CPU, CPU->target_addr) & 0x01;
+		write_byte_to_cpu_ram(CPU, CPU->target_addr,
+							  read_byte_from_cpu_ram(CPU, CPU->target_addr) >> 1);
 		if ((CPU->P & FLAG_C) == 0x01) {
 			/* Set 7th bit to 1 - if carry = 1 */
-			write_addr(CPU, CPU->target_addr, read_addr(CPU, CPU->target_addr) | 0x80);
+			write_byte_to_cpu_ram(CPU, CPU->target_addr,
+								  read_byte_from_cpu_ram(CPU, CPU->target_addr) | 0x80);
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
-		update_FLAG_N(read_addr(CPU, CPU->target_addr));
-		update_FLAG_Z(read_addr(CPU, CPU->target_addr));
+		update_FLAG_N(read_byte_from_cpu_ram(CPU, CPU->target_addr));
+		update_FLAG_Z(read_byte_from_cpu_ram(CPU, CPU->target_addr));
 	}
 	/* Update Carry */
 	set_or_clear_CARRY(low_bit);
@@ -519,13 +527,13 @@ void execute_ROR(enum MODES address_mode, CPU_6502* CPU)
 void execute_BCC(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(instruction, "BCC $");
 	strcat(instruction, append_int);
 
 	if ((CPU->P & FLAG_C) == 0x00) {
-		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
-		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
+		CPU->PC += (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
 	CPU->PC += 2;
 }
@@ -536,13 +544,13 @@ void execute_BCC(CPU_6502* CPU)
 void execute_BCS(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(instruction, "BCS $");
 	strcat(instruction, append_int);
 
 	if ((CPU->P & FLAG_C) == 0x01) {
-		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
-		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
+		CPU->PC += (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
 	CPU->PC += 2;
 }
@@ -553,13 +561,13 @@ void execute_BCS(CPU_6502* CPU)
 void execute_BEQ(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(instruction, "BEQ $");
 	strcat(instruction, append_int);
 
 	if ((CPU->P & FLAG_Z) == FLAG_Z) {
-		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
-		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
+		CPU->PC += (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
 	CPU->PC += 2;
 }
@@ -570,13 +578,13 @@ void execute_BEQ(CPU_6502* CPU)
 void execute_BMI(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(instruction, "BMI $");
 	strcat(instruction, append_int);
 
 	if ((CPU->P & FLAG_N) == FLAG_N) {
-		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
-		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
+		CPU->PC += (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
 	CPU->PC += 2;
 }
@@ -587,13 +595,13 @@ void execute_BMI(CPU_6502* CPU)
 void execute_BNE(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(instruction, "BNE $");
 	strcat(instruction, append_int);
 
 	if ((CPU->P & FLAG_Z) == 0x00) {
-		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
-		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
+		CPU->PC += (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
 	CPU->PC += 2;
 }
@@ -604,13 +612,13 @@ void execute_BNE(CPU_6502* CPU)
 void execute_BPL(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(instruction, "BPL $");
 	strcat(instruction, append_int);
 
 	if ((CPU->P & FLAG_N) == 0x00) {
-		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
-		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
+		CPU->PC += (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
 	CPU->PC += 2;
 }
@@ -621,13 +629,13 @@ void execute_BPL(CPU_6502* CPU)
 void execute_BVC(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(instruction, "BVC $");
 	strcat(instruction, append_int);
 
 	if ((CPU->P & FLAG_V) == 0x00) {
-		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
-		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
+		CPU->PC += (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
 	CPU->PC += 2;
 }
@@ -638,13 +646,13 @@ void execute_BVC(CPU_6502* CPU)
 void execute_BVS(CPU_6502* CPU)
 {
 	/* Debugger */
-	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_addr(CPU, CPU->PC + 1));
+	sprintf(append_int, "%.4X", CPU->PC + 2 + (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1));
 	strcpy(instruction, "BVS $");
 	strcat(instruction, append_int);
 
 	if ((CPU->P & FLAG_V) == FLAG_V) {
-		CPU->PC += (int8_t) read_addr(CPU, CPU->PC + 1);
-		CPU->Cycle += 1 + PAGE_CROSS(CPU->old_PC + 2, CPU->PC + 2);
+		CPU->PC += (int8_t) read_byte_from_cpu_ram(CPU, CPU->PC + 1);
+		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
 	CPU->PC += 2;
 }
@@ -673,8 +681,8 @@ void execute_JSR(CPU_6502* CPU)
 	strcat(instruction, append_int);
 	/* Absolute - JSR operand */
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
-	PUSH((uint8_t) ((CPU->PC - 1) >> 8)); /* Push PCH (PC High byte onto stack) */
-	PUSH((uint8_t) (CPU->PC - 1)); /* Push PCL (PC Low byte onto stack) */
+	stack_push((uint8_t) ((CPU->PC - 1) >> 8)); /* Push PCH (PC High byte onto stack) */
+	stack_push((uint8_t) (CPU->PC - 1)); /* Push PCL (PC Low byte onto stack) */
 
 	CPU->PC = CPU->target_addr;
 	/* NB: get_op_ABS_offset sets PC to += 3 therfore to push PC + 2
@@ -691,11 +699,11 @@ void execute_RTI(CPU_6502* CPU)
 	/* Implied */
 	strcpy(instruction, "RTI");
 	/* PULL SR */
-	CPU->addr_lo = PULL(); // Isn't actually PCL, used as a tmp for now
+	CPU->addr_lo = stack_pull(); // Isn't actually PCL, used as a tmp for now
 	CPU->P = CPU->addr_lo | 0x20; /* Bit 5 is always set */
 	/* PULL PC */
-	CPU->addr_lo = PULL(); /* PULL PCL */
-	CPU->addr_hi = PULL(); /* PULL PCH */
+	CPU->addr_lo = stack_pull(); /* PULL PCL */
+	CPU->addr_hi = stack_pull(); /* PULL PCH */
 	CPU->PC = CPU->addr_lo | (CPU->addr_hi << 8);
 }
 
@@ -707,8 +715,8 @@ void execute_RTS(CPU_6502* CPU)
 	/* Implied */
 	strcpy(instruction, "RTS");
 	/* opposite of JSR - PULL PCL first */
-	CPU->addr_lo = PULL(); /* Pull PCL */
-	CPU->addr_hi = PULL(); /* Pull PCH */
+	CPU->addr_lo = stack_pull(); /* Pull PCL */
+	CPU->addr_hi = stack_pull(); /* Pull PCH */
 	CPU->PC = (CPU->addr_hi << 8) | CPU->addr_lo ;
 	++CPU->PC;
 
@@ -774,7 +782,7 @@ void execute_CMP(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "CMP ");
 		strcat(instruction, end);
-		Base10toBase2(read_addr(CPU, CPU->target_addr) ^ 0xFF, bin_operand2);
+		Base10toBase2(read_byte_from_cpu_ram(CPU, CPU->target_addr) ^ 0xFF, bin_operand2);
 	}
 	unsigned carry_out = 0;
 	full_adder(bin_operand1, bin_operand2, 1, &carry_out, bin_result);
@@ -800,7 +808,7 @@ void execute_CPX(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "CPX ");
 		strcat(instruction, end);
-		Base10toBase2(read_addr(CPU, CPU->target_addr) ^ 0xFF, bin_operand2);
+		Base10toBase2(read_byte_from_cpu_ram(CPU, CPU->target_addr) ^ 0xFF, bin_operand2);
 	}
 	unsigned carry_out = 0;
 	full_adder(bin_operand1, bin_operand2, 1, &carry_out, bin_result);
@@ -825,7 +833,7 @@ void execute_CPY(enum MODES address_mode, CPU_6502* CPU)
 	} else {
 		strcpy(instruction, "CPY ");
 		strcat(instruction, end);
-		Base10toBase2(read_addr(CPU, CPU->target_addr) ^ 0xFF, bin_operand2);
+		Base10toBase2(read_byte_from_cpu_ram(CPU, CPU->target_addr) ^ 0xFF, bin_operand2);
 	}
 	unsigned carry_out = 0;
 	full_adder(bin_operand1, bin_operand2, 1, &carry_out, bin_result);
@@ -884,11 +892,11 @@ void execute_BRK(void)
 
 	/* PC + 2 is pushed onto stack - always PUSH high byte first */
 	strcpy(instruction, "BRK");
-	PUSH((uint8_t) ((NES->PC + 2) >> 8)); /* Push PCH (PC High byte onto stack) */
-	PUSH((uint8_t) (NES->PC + 2)); /* Push PCL (PC Low byte onto stack) */
-	PUSH(NES->P | 0x30);           /* PUSH Staus Reg - w/ bits 4 & 5 set */
+	stack_push((uint8_t) ((NES->PC + 2) >> 8)); /* Push PCH (PC High byte onto stack) */
+	stack_push((uint8_t) (NES->PC + 2)); /* Push PCL (PC Low byte onto stack) */
+	stack_push(NES->P | 0x30);           /* PUSH Staus Reg - w/ bits 4 & 5 set */
 	NES->P |= FLAG_I;              /* Flag I is set */
-	NES->PC = (read_addr(NES, 0xFFFF) << 8) | read_addr(NES, 0xFFFE);
+	NES->PC = return_little_endian(NES, 0xFFFE);
 }
 
 
@@ -904,13 +912,13 @@ void execute_IRQ(void)
 {
 	strcpy(instruction, "IRQ");
 	/* PC is pushed onto stack, high byte first */
-	PUSH((uint8_t) ((NES->PC + 2) >> 8)); /* Push PCH (PC High byte onto stack) */
-	PUSH((uint8_t) (NES->PC + 2)); /* Push PCL (PC Low byte onto stack) */
+	stack_push((uint8_t) ((NES->PC + 2) >> 8)); /* Push PCH (PC High byte onto stack) */
+	stack_push((uint8_t) (NES->PC + 2)); /* Push PCL (PC Low byte onto stack) */
 	/* PUSH Staus Reg - w/ bits 4 & 5 clear */
-	PUSH(NES->P & ~(0x30));
+	stack_push(NES->P & ~(0x30));
 	/* Flag I is set */
 	NES->P |= FLAG_I;
-	NES->PC = (read_addr(NES, 0xFFFF) << 8) | read_addr(NES, 0xFFFE);
+	NES->PC = return_little_endian(NES, 0xFFFE);
 }
 
 
@@ -919,13 +927,13 @@ void execute_NMI(void)
 	strcpy(end, " + NMI");
 	strcat(instruction, end);
 	/* PC is pushed onto stack, high byte first */
-	PUSH((uint8_t) (NES->PC >> 8)); /* Push PCH (PC High byte onto stack) */
-	PUSH((uint8_t) NES->PC); /* Push PCL (PC Low byte onto stack) */
+	stack_push((uint8_t) (NES->PC >> 8)); /* Push PCH (PC High byte onto stack) */
+	stack_push((uint8_t) NES->PC); /* Push PCL (PC Low byte onto stack) */
 	/* PUSH Staus Reg - w/ bits 4 & 5 clear */
-	PUSH(NES->P & ~(0x30));
+	stack_push(NES->P & ~(0x30));
 	/* Flag I is set */
 	NES->P |= FLAG_I;
-	NES->PC = (read_addr(NES, 0xFFFB) << 8) | read_addr(NES, 0xFFFA);
+	NES->PC = return_little_endian(NES, 0xFFFA);
 	NES->NMI_PENDING = 0;
 }
 

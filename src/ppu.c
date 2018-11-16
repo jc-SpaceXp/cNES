@@ -121,16 +121,16 @@ void append_ppu_info(void)
 
 void debug_ppu_regs(void)
 {
-	printf("2000: %.2X\n", read_addr(NES, 0x2000));
-	printf("2001: %.2X\n", read_addr(NES, 0x2001));
-	printf("2002: %.2X\n", read_addr(NES, 0x2002));
-	printf("2003: %.2X\n", read_addr(NES, 0x2003));
-	printf("2004: %.2X\n", read_addr(NES, 0x2004));
-	printf("2005: %.2X\n", read_addr(NES, 0x2005));
-	printf("2006: %.2X\n", read_addr(NES, 0x2006));
-	printf("2007: %.2X\n", read_addr(NES, 0x2007));
-	printf("3F00: %.2X\n", read_addr(NES, 0x3F00));
-	printf("3F01: %.2X\n\n", read_addr(NES, 0x3F01));
+	printf("2000: %.2X\n", read_byte_from_cpu_ram(NES, 0x2000));
+	printf("2001: %.2X\n", read_byte_from_cpu_ram(NES, 0x2001));
+	printf("2002: %.2X\n", read_byte_from_cpu_ram(NES, 0x2002));
+	printf("2003: %.2X\n", read_byte_from_cpu_ram(NES, 0x2003));
+	printf("2004: %.2X\n", read_byte_from_cpu_ram(NES, 0x2004));
+	printf("2005: %.2X\n", read_byte_from_cpu_ram(NES, 0x2005));
+	printf("2006: %.2X\n", read_byte_from_cpu_ram(NES, 0x2006));
+	printf("2007: %.2X\n", read_byte_from_cpu_ram(NES, 0x2007));
+	printf("3F00: %.2X\n", read_byte_from_cpu_ram(NES, 0x3F00));
+	printf("3F01: %.2X\n\n", read_byte_from_cpu_ram(NES, 0x3F01));
 }
 
 // pass a struct into the argument, then arg.start is mem and arg.count = byte
@@ -566,9 +566,6 @@ void render_pixel(PPU_Struct *p)
 
 	unsigned RGB = p->VRAM[bg_palette_addr + bg_palette_offset]; // Get values
 
-	/* Reverse Bits */
-	//pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
-
 	/* Shift each cycle */
 	p->pt_hi_shift_reg >>= 1;
 	p->pt_lo_shift_reg >>= 1;
@@ -647,7 +644,7 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 	if (p->scanline == p->nmi_start) {
 		if ((p->PPU_CTRL & 0x80) == 0x80) { /* if PPU CTRL has execute NMI on VBlank */
 			p->PPU_STATUS |= 0x80; /* In VBlank */
-			if ((p->cycle - 3) == 5) { // 7 --> delay by One PPU Cycle, was 7 now 5
+			if ((p->cycle - 3) == 5) {
 				NESCPU->NMI_PENDING = 1;
 			}
 		}
@@ -690,7 +687,7 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 					break;
 				}
 				if (p->cycle == 256) {
-					inc_vert_scroll(p); // causes seg fault
+					inc_vert_scroll(p);
 				}
 			} else if (p->cycle == 257) {
 				// Copy horz scroll bits from t
@@ -709,11 +706,11 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 				case 6:
 					fetch_pt_hi(p);
 					/* Load latched values into upper byte of shift regs */
-					p->pt_hi_shift_reg >>= 8; // Think i need this to set up the shift reg properly
-					p->pt_lo_shift_reg >>= 8; // It fills the first 16 pixels properly
+					p->pt_hi_shift_reg >>= 8;
+					p->pt_lo_shift_reg >>= 8;
 					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
 					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
-					p->at_current = p->at_next; // Current is 1st loaded w/ garbage
+					p->at_current = p->at_next; // at_current is 1st loaded w/ garbage
 					p->at_next = p->at_latch;
 					p->nt_addr_current = p->nt_addr_next;
 					p->nt_addr_next = p->nt_addr_tmp;
@@ -724,7 +721,7 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 					break;
 				}
 			}
-		} else if (p->scanline == 240) {
+		} else if (p->scanline == 240 && p->cycle == 0) {
 			draw_pixels(pixels, nes_screen); // Render frame
 		} else if (p->scanline == 261) {
 			// Pre-render scanline
@@ -749,7 +746,7 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 					break;
 				}
 				if (p->cycle == 256) {
-					inc_vert_scroll(p); // causes seg fault
+					inc_vert_scroll(p);
 				}
 			} else if (p->cycle == 257) {
 				// Copy horz scroll bits from t
@@ -771,11 +768,11 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 				case 6:
 					fetch_pt_hi(p);
 					/* Load latched values into upper byte of shift regs */
-					p->pt_hi_shift_reg >>= 8; // Think i need this to set up the shift reg properly
-					p->pt_lo_shift_reg >>= 8; // It fills the first 16 pixels properly
+					p->pt_hi_shift_reg >>= 8;
+					p->pt_lo_shift_reg >>= 8;
 					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
 					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
-					p->at_current = p->at_next; // Current is 1st loaded w/ garbage
+					p->at_current = p->at_next; // at_current is 1st loaded w/ garbage
 					p->at_next = p->at_latch;
 					p->nt_addr_current = p->nt_addr_next;
 					p->nt_addr_next = p->nt_addr_tmp;
@@ -851,6 +848,7 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 						offset = 0;
 					}
 					p->sprite_addr += offset;
+					break;
 					//printf("SPRITE ADDR %.4X\n", p->sprite_addr);
 				case 2:
 					// Garbage AT byte
@@ -859,6 +857,7 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 				case 3:
 					// Read X Pos (In NES it's re-read until the 8th cycle)
 					p->sprite_x_counter[count] = p->scanline_OAM[(count * 4) + 3];
+					break;
 				case 4:
 					// Fetch sprite low pt
 					if ((p->sprite_at_latches[count] & 0x40) == 0x40) { // Flip horizontal pixels

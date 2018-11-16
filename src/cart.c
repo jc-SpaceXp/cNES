@@ -4,7 +4,7 @@
 
 
 /* iNES format */
-int load_cart(Cartridge* cart, const char *filename, PPU_Struct *p)
+int load_cart(Cartridge* cart, const char *filename, CPU_6502* CPU, PPU_Struct *p)
 {
 	uint8_t header[16];
 	int trainer;
@@ -92,7 +92,7 @@ int load_cart(Cartridge* cart, const char *filename, PPU_Struct *p)
 	/* Mapper select */
 	switch(mapper) {
 	case 0:
-		mapper_000(cart);
+		mapper_000(cart, CPU, p);
 		break;
 	default:
 		printf("mapper not implemented yet\n");

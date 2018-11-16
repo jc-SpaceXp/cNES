@@ -67,13 +67,13 @@ typedef struct {
 
 /* Header Prototypes */
 CPU_6502* NES; /* Global NES CPU Pointer */
-CPU_6502* NES_CPU(uint16_t pc_init); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
-void NES_PC(CPU_6502* NES); /* Set PC via reset vector */
+CPU_6502* cpu_init(uint16_t pc_init); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
+void set_pc(CPU_6502* NES); /* Set PC via reset vector */
 
-uint8_t read_addr(CPU_6502* NES, uint16_t addr);
-uint16_t fetch_16(CPU_6502* NES, uint16_t addr);
-void write_addr(CPU_6502* NES, uint16_t addr, uint8_t val);
-void cpu_ram_viewer(void);
+uint8_t read_byte_from_cpu_ram(CPU_6502* NES, uint16_t addr);
+uint16_t return_little_endian(CPU_6502* NES, uint16_t addr);
+void write_byte_to_cpu_ram(CPU_6502* NES, uint16_t addr, uint8_t val);
+void cpu_ram_viewer(CPU_6502* NES);
 
 /* Includes addressing modes
  * Adressing Modes:

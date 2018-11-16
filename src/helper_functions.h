@@ -25,19 +25,19 @@ char append_int[6]; // Disassembler
  * *************************/
 
 /* get_op: fetches operand based on address modes */
-void get_op_IMM(CPU_6502* CPU);
-void get_op_ZP_offset(uint8_t offset, CPU_6502* CPU);
-void get_op_ABS_offset(uint8_t offset, CPU_6502* CPU);
-void get_op_IND(CPU_6502* CPU);
-void get_op_INDX(CPU_6502* CPU);
-void get_op_INDY(CPU_6502* CPU);
-unsigned PAGE_CROSS(unsigned val1, unsigned val2);
+void get_IMM_byte(CPU_6502* CPU);
+void get_ZP_offset_address(uint8_t offset, CPU_6502* CPU);
+void get_ABS_offset_address(uint8_t offset, CPU_6502* CPU);
+void get_IND_address(CPU_6502* CPU);
+void get_INDX_address(CPU_6502* CPU);
+void get_INDY_address(CPU_6502* CPU);
+unsigned page_cross_penalty(unsigned address_1, unsigned address_2);
 
 /***************************
  * OTHER                   *
  * *************************/
-void RET_NES_CPU(void); /* Return Status */
-void transfer_cpu(void);
+void log_cpu_info(void); /* Return Status */
+void update_cpu_info(void);
 
 /***************************
  * ADD & SUB RELATED FUNCS *
@@ -51,8 +51,8 @@ void full_adder(int *bin_sum1, int *bin_sum2, int cIN, unsigned *cOUT, int *resu
  * STACK                   *
  * *************************/
 
-void PUSH(uint8_t value); /* Genric Push function */
-uint8_t PULL(void); /* Genric Pop (Pull) function */
+void stack_push(uint8_t value); /* Genric Push function */
+uint8_t stack_pull(void); /* Genric Pop (Pull) function */
 
 /***************************
  * FLAGS                   *

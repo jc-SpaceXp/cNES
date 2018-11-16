@@ -6,7 +6,7 @@
 
 /* NES_CPU : Type 6502 CPU, used to initialise CPU
  */
-CPU_6502* NES_CPU(uint16_t pc_init)
+CPU_6502* cpu_init(uint16_t pc_init)
 {
 	CPU_6502 *i = malloc(sizeof(CPU_6502));
 	i->PC = pc_init;
@@ -22,12 +22,12 @@ CPU_6502* NES_CPU(uint16_t pc_init)
 }
 
 /* rename to set_PC */
-void NES_PC(CPU_6502* NES)
+void set_pc(CPU_6502* NES)
 {
-	NES->PC = fetch_16(NES, 0xFFFC);
+	NES->PC = return_little_endian(NES, 0xFFFC);
 }
 
-uint8_t read_addr(CPU_6502* NES, uint16_t addr)
+uint8_t read_byte_from_cpu_ram(CPU_6502* NES, uint16_t addr)
 {
 	if (addr < 0x2000) {
 		return NES->RAM[addr & 0x7FF];
@@ -39,12 +39,12 @@ uint8_t read_addr(CPU_6502* NES, uint16_t addr)
 }
 
 /* Return 16 bit address in little endian format */
-uint16_t fetch_16(CPU_6502* NES, uint16_t addr)
+uint16_t return_little_endian(CPU_6502* NES, uint16_t addr)
 {
-	return ((read_addr(NES, addr + 1) << 8) | read_addr(NES, addr));
+	return ((read_byte_from_cpu_ram(NES, addr + 1) << 8) | read_byte_from_cpu_ram(NES, addr));
 }
 
-void write_addr(CPU_6502* NES, uint16_t addr, uint8_t val)
+void write_byte_to_cpu_ram(CPU_6502* NES, uint16_t addr, uint8_t val)
 {
 	if (addr < 0x2000) {
 		NES->RAM[addr & 0x7FF] = val;
@@ -58,7 +58,7 @@ void write_addr(CPU_6502* NES, uint16_t addr, uint8_t val)
 	}
 }
 
-void cpu_ram_viewer(void)
+void cpu_ram_viewer(CPU_6502* NES)
 {
 	printf("\n##################### CPU RAM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");

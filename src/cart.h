@@ -25,6 +25,6 @@ typedef struct Cartridge {
 } Cartridge;
 
 
-int load_cart(Cartridge* cart, const char *filename, PPU_Struct *p);
+int load_cart(Cartridge* cart, const char *filename, CPU_6502* CPU, PPU_Struct *p);
 
 #endif /* __CART__ */
