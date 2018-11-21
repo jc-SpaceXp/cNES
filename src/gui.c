@@ -4,7 +4,7 @@
 const unsigned SCREEN_HEIGHT = 240;
 const unsigned SCREEN_WIDTH = 256;
 
-Display* screen_init()
+Display* screen_init(void)
 {
 	Display* nes = malloc(sizeof(Display));
 
