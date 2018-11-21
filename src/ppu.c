@@ -178,7 +178,6 @@ uint8_t read_ppu_reg(uint16_t addr, PPU_Struct *p)
 	case (0x2004):
 		/* OAM Data (read & write) */
 		return p->cpu_ppu_io->oam_data;
-		break;
 	case (0x2007):
 		/* PPU DATA */
 		read_2007(p);
