@@ -16,7 +16,7 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* CPU, PPU_Struct* p
 	/* Error Detection */
 	if (rom == NULL) {
 		fprintf(stderr, "Error: couldn't open file.\n");
-		exit (8);
+		return 8;
 	}
 	
 	/* Getting filesize */
@@ -27,20 +27,20 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* CPU, PPU_Struct* p
 	if (file_size < 0x4010) {
 		fprintf(stderr, "Error: input file is too small.\n");
 		fclose(rom);
-		exit (8);
+		return 8;
 	}
 
 	/* loading first 16 bytes of .nes file into header */
 	if (fread(header, 1, 16, rom) != 16) {
 		fprintf(stderr, "Error: unable to read ROM header.\n");
 		fclose(rom);
-		exit (8);
+		return 8;
 	}
 	
 	if (memcmp(header, "NES\x1A", 4)) {
 		fprintf(stderr, "Error: invalid nes file.\n");
 		fclose(rom);
-		exit (8);
+		return 8;
 	}
 
 	/* parsing header */
