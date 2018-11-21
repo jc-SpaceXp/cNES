@@ -39,7 +39,7 @@ void ppu_cpu_ratio(void)
 #endif /* __DEBUG__ */
 }
 
-int main(int argc, char** argv)
+int main(void)
 {
 #define __RESET__
 	CpuPpuShare* cpu_ppu = mmio_init();
