@@ -12,6 +12,7 @@ NO_SDL_SRC := $(filter-out $(SRC)/gui.c, $(ALL_SRCS))
 NO_SDL_SRC := $(filter-out $(SRC)/emu.c, $(ALL_SRCS))
 NO_SDL_OBJ = $(notdir $(NO_SDL_SRC:.c=.o))
 
+.PHONY: all
 all: emu
 
 $(NO_SDL_OBJ): %.o : $(SRC)/%.h
@@ -41,6 +42,7 @@ emu: $(ALL_OBJS)
 	$(CC) $(LDFLAGS) -o emu $(addprefix obj/,$(ALL_OBJS))
 	@echo "--- Done: Linking target"
 
+.PHONY: clean
 clean:
 	@echo "--- Cleaning build"
 	rm $(OBJ)/*.o emu
