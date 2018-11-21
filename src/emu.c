@@ -41,13 +41,28 @@ void ppu_cpu_ratio(void)
 
 int main(void)
 {
+	int ret = -1;
+	Cartridge* cart = NULL;
 #define __RESET__
-	CpuPpuShare* cpu_ppu = mmio_init();
-	CPU = cpu_init(0xC000, cpu_ppu);
-	PPU = ppu_init(cpu_ppu);
 
-	Cartridge* cart = malloc(sizeof(Cartridge));
-	load_cart(cart, filename, CPU, PPU);
+	CpuPpuShare* cpu_ppu = mmio_init();
+	if (!cpu_ppu)
+		goto program_exit;
+	CPU = cpu_init(0xC000, cpu_ppu);
+	if (!CPU)
+		goto program_exit;
+	PPU = ppu_init(cpu_ppu);
+	if (!PPU)
+		goto program_exit;
+
+	cart = malloc(sizeof(Cartridge));
+	if (!cart) {
+		fprintf(stderr, "Failed to allocate memory for Cartridge\n");
+		goto program_exit;
+	}
+	if (load_cart(cart, filename, CPU, PPU))
+		goto program_exit;
+
 	free(cart);
 	cart = NULL;
 
@@ -57,10 +72,11 @@ int main(void)
 	stdout = freopen("trace_log.txt", "w", stdout);
 #endif /*__LOG__ */
 
-	unsigned i = 0;
 	nes_screen = screen_init();
+	if (!nes_screen)
+		goto program_exit;
 
-	
+	unsigned i = 0;
 	while (i < 10000000) { // SMB1 start of demo
 	//while (i < 23507) { // milk and nuts munmap_chunck() error 23500 = no error w/ quit
 	//while (CPU->Cycle < 6373063) { // NMI test end
@@ -91,7 +107,16 @@ int main(void)
 	//cpu_mem_viewer(CPU);
 	//OAM_viewer(PRIMARY_OAM);
 	OAM_viewer(SECONDARY_OAM);
+
+	ret = 0;
+program_exit:
+	free(cart);
+	if (nes_screen)
+		screen_clear(nes_screen);
+	free(nes_screen);
 	free(PPU);
 	free(CPU);
-	return 0;
+	free(cpu_ppu);
+
+	return ret;
 }

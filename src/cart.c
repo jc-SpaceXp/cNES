@@ -80,11 +80,20 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* CPU, PPU_Struct* p
 
 	/* Loading data into PRG_ROM */
 	fseek(rom, trainer, SEEK_CUR); /* fseek has gone past header now needs to skip trainer */
-	cart->prg_rom.data = (uint8_t*) malloc(cart->prg_rom.size);
+	cart->prg_rom.data = malloc(cart->prg_rom.size);
+	if (!cart->prg_rom.data) {
+		fclose(rom);
+		return 8;
+	}
 	fread(cart->prg_rom.data, 1, cart->prg_rom.size, rom);
 
 	/* loading data into chr_rom */
-	cart->chr_rom.data = (uint8_t*) malloc(cart->chr_rom.size);
+	cart->chr_rom.data = malloc(cart->chr_rom.size);
+	if (!cart->chr_rom.data) {
+		free(cart->prg_rom.data);
+		fclose(rom);
+		return 8;
+	}
 	fread(cart->chr_rom.data, 1, cart->chr_rom.size, rom);
 
 	fclose(rom);

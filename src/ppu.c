@@ -43,6 +43,7 @@ PPU_Struct* ppu_init(CpuPpuShare* cp)
 	PPU_Struct* ppu = malloc(sizeof(PPU_Struct));
 	if (!ppu) {
 		fprintf(stderr, "Failed to allocate enough memory for PPU\n");
+		return ppu;
 	}
 	ppu->cpu_ppu_io = cp;
 	ppu->buffer_2007 = 0;

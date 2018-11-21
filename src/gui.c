@@ -7,6 +7,10 @@ const unsigned SCREEN_WIDTH = 256;
 Display* screen_init(void)
 {
 	Display* nes = malloc(sizeof(Display));
+	if (!nes) {
+		fprintf(stderr, "Failed to allocate enough memory for Display\n");
+		return nes;
+	}
 
 	nes->window = NULL;
 	nes->renderer = NULL;
