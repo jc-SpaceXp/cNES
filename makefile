@@ -24,22 +24,25 @@ $(SRC)/mappers.c: $(SRC)/cart.h
 $(SRC)/opcode_functions.c: $(SRC)/helper_functions.h
 $(SRC)/opcode_table.c: $(SRC)/opcode_functions.h
 
-%.o : $(SRC)/%.c
+$(OBJ):
+	mkdir -p $@
+
+%.o : $(SRC)/%.c | $(OBJ)
 	@echo "--- Compiling $@"
 	$(CC) $(CFLAGS) -c $< -o $(OBJ)/$@
 
-gui.o: $(SRC)/gui.*
+gui.o: $(SRC)/gui.* | $(OBJ)
 	@echo "--- Compiling SDL2 files (gui.c)"
 	$(CC) $(CFLAGS) -c $(SRC)/gui.c $(LDFLAGS) -o $(OBJ)/$@
 	@echo "--- Done: Compiling SDL2 files (gui.c)"
 
-emu.o: $(SRC)/emu.c $(SRC)/ppu.h $(SRC)/cpu.h $(SRC)/opcode_table.h
+emu.o: $(SRC)/emu.c $(SRC)/ppu.h $(SRC)/cpu.h $(SRC)/opcode_table.h | $(OBJ)
 	@echo "--- Generating $@"
 	$(CC) $(CFLAGS) -c $< -o $(OBJ)/$@
 
 emu: $(ALL_OBJS)
 	@echo "--- Linking target"
-	$(CC) $(LDFLAGS) -o emu $(addprefix obj/,$(ALL_OBJS))
+	$(CC) -o emu $(addprefix obj/,$(ALL_OBJS)) $(LDFLAGS)
 	@echo "--- Done: Linking target"
 
 .PHONY: clean
