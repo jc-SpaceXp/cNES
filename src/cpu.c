@@ -63,7 +63,7 @@ uint8_t read_from_cpu(Cpu6502* NES, uint16_t addr)  // add a ppu_pointer?
 	if (addr < 0x2000) {
 		return NES->RAM[addr & 0x7FF];
 	} else if (addr < 0x4000) {
-		read_ppu_reg(addr & 0x2007, PPU);
+		return read_ppu_reg(addr & 0x2007, PPU);
 	} else {
 		return NES->RAM[addr]; /* catch-all */
 	}
