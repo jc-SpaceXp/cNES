@@ -1,51 +1,44 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -g
-LDFLAGS = $(shell pkg-config --cflags --libs sdl2)
+CC := gcc
+CFLAGS := -Wall -Wextra -std=c99 -g
+CFLAGS += $(shell pkg-config --cflags sdl2)
+LDFLAGS := $(shell pkg-config --libs sdl2)
+DEPFLAGS = -MMD -MP -MF $(@:$(OBJDIR)/%.o=$(DEPDIR)/%.d)
 
-SRC= src
-OBJ= obj
+SRCDIR := src
+BUILDDIR := build
+OBJDIR := $(BUILDDIR)/obj
+DEPDIR := $(BUILDDIR)/dep
 
-ALL_SRCS = $(wildcard $(SRC)/*.c)
-ALL_OBJS = $(notdir $(ALL_SRCS:.c=.o))
+SRCS := $(SRCDIR)/cart.c \
+        $(SRCDIR)/cpu.c \
+        $(SRCDIR)/emu.c \
+        $(SRCDIR)/gui.c \
+        $(SRCDIR)/helper_functions.c \
+        $(SRCDIR)/mappers.c \
+        $(SRCDIR)/opcode_functions.c \
+        $(SRCDIR)/opcode_table.c \
+        $(SRCDIR)/ppu.c
 
-NO_SDL_SRC := $(filter-out $(SRC)/gui.c, $(ALL_SRCS))
-NO_SDL_SRC := $(filter-out $(SRC)/emu.c, $(ALL_SRCS))
-NO_SDL_OBJ = $(notdir $(NO_SDL_SRC:.c=.o))
+OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
+DEPS := $(SRCS:%.c=$(DEPDIR)/%.d)
 
 .PHONY: all
 all: emu
 
-$(NO_SDL_OBJ): %.o : $(SRC)/%.h
+$(OBJDIR)/%.o : %.c
+	@mkdir -p $(@D)
+	@mkdir -p $(DEPDIR)/$(<D)
+	$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
 
-$(SRC)/cpu.c: $(SRC)/cpu.h
-$(SRC)/ppu.c: $(SRC)/gui.h
-$(SRC)/cart.c: $(SRC)/ppu.h $(SRC)/mappers.h
-$(SRC)/mappers.c: $(SRC)/cart.h
-$(SRC)/opcode_functions.c: $(SRC)/helper_functions.h
-$(SRC)/opcode_table.c: $(SRC)/opcode_functions.h
-
-$(OBJ):
-	mkdir -p $@
-
-%.o : $(SRC)/%.c | $(OBJ)
-	@echo "--- Compiling $@"
-	$(CC) $(CFLAGS) -c $< -o $(OBJ)/$@
-
-gui.o: $(SRC)/gui.* | $(OBJ)
-	@echo "--- Compiling SDL2 files (gui.c)"
-	$(CC) $(CFLAGS) -c $(SRC)/gui.c $(LDFLAGS) -o $(OBJ)/$@
-	@echo "--- Done: Compiling SDL2 files (gui.c)"
-
-emu.o: $(SRC)/emu.c $(SRC)/ppu.h $(SRC)/cpu.h $(SRC)/opcode_table.h | $(OBJ)
-	@echo "--- Generating $@"
-	$(CC) $(CFLAGS) -c $< -o $(OBJ)/$@
-
-emu: $(ALL_OBJS)
+emu: $(OBJS)
 	@echo "--- Linking target"
-	$(CC) -o emu $(addprefix obj/,$(ALL_OBJS)) $(LDFLAGS)
+	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 	@echo "--- Done: Linking target"
 
 .PHONY: clean
 clean:
 	@echo "--- Cleaning build"
-	rm $(OBJ)/*.o emu
+	rm -f emu
+	rm -rf $(BUILDDIR)
+
+-include $(DEPS)
