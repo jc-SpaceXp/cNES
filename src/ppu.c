@@ -4,7 +4,7 @@
 
 
 /* Reverse bits lookup table for an 8 bit number */
-const uint8_t reverse_bits[256] = {
+static const uint8_t reverse_bits[256] = {
 	0x00, 0x80, 0x40, 0xc0, 0x20, 0xa0, 0x60, 0xe0, 0x10, 0x90, 0x50, 0xd0, 0x30, 0xb0, 0x70, 0xf0,
 	0x08, 0x88, 0x48, 0xc8, 0x28, 0xa8, 0x68, 0xe8, 0x18, 0x98, 0x58, 0xd8, 0x38, 0xb8, 0x78, 0xf8,
 	0x04, 0x84, 0x44, 0xc4, 0x24, 0xa4, 0x64, 0xe4, 0x14, 0x94, 0x54, 0xd4, 0x34, 0xb4, 0x74, 0xf4,
@@ -80,6 +80,8 @@ PPU_Struct *ppu_init()
 	/* Set PPU Latches and shift reg to 0 */
 	ppu->pt_lo_shift_reg = 0;
 	ppu->pt_hi_shift_reg = 0;
+	ppu->pt_lo_latch = 0;
+	ppu->pt_hi_latch = 0;
 
 	/* Sprite stuff */
 	ppu->sprites_found = 0;
@@ -97,17 +99,28 @@ PPU_Struct *ppu_init()
 	return ppu;
 }
 
+void debug_entry(PPU_Struct *p)
+{
+	// EXIT POINT
+	printf("b4: cyc: %d scan: %d\n", p->cycle, p->scanline);
+}
+
+void debug_exit(PPU_Struct *p)
+{
+	// EXIT POINT
+	printf("a4: cyc: %d scan: %d\n", p->cycle, p->scanline);
+}
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
-void ppu_reset(int start, PPU_Struct *p)
+void ppu_reset(int start, PPU_Struct *p, Cpu6502* CPU)
 {
 	if (start && !p->RESET_1 && !p->RESET_2) {
 		p->PPU_STATUS &= ~(0x80);  // clear VBL flag if set
 		p->RESET_1 = true;
-	} else if (p->RESET_1 && (NES->Cycle >= 27383)) {
+	} else if (p->RESET_1 && (CPU->Cycle >= 27383)) {
 		p->PPU_STATUS |= 0x80;
 		p->RESET_1 = false;
 		p->RESET_2 = true;
-	} else if (p->RESET_2 && (NES->Cycle >= 57164)) {
+	} else if (p->RESET_2 && (CPU->Cycle >= 57164)) {
 		p->PPU_STATUS |= 0x80;
 		p->RESET_2 = true;
 	}
@@ -115,22 +128,22 @@ void ppu_reset(int start, PPU_Struct *p)
 
 void append_ppu_info(void)
 {
-	printf(" PPU_CYC: %-3d", PPU->old_cycle);
-	printf(" SL: %d\n", (PPU->scanline));
+	printf(" PPU_CYC: %" PRIu16, PPU->old_cycle);
+	printf(" SL: %" PRIu32 "\n", (PPU->scanline));
 }
 
-void debug_ppu_regs(void)
+void debug_ppu_regs(Cpu6502* CPU)
 {
-	printf("2000: %.2X\n", read_byte_from_cpu_ram(NES, 0x2000));
-	printf("2001: %.2X\n", read_byte_from_cpu_ram(NES, 0x2001));
-	printf("2002: %.2X\n", read_byte_from_cpu_ram(NES, 0x2002));
-	printf("2003: %.2X\n", read_byte_from_cpu_ram(NES, 0x2003));
-	printf("2004: %.2X\n", read_byte_from_cpu_ram(NES, 0x2004));
-	printf("2005: %.2X\n", read_byte_from_cpu_ram(NES, 0x2005));
-	printf("2006: %.2X\n", read_byte_from_cpu_ram(NES, 0x2006));
-	printf("2007: %.2X\n", read_byte_from_cpu_ram(NES, 0x2007));
-	printf("3F00: %.2X\n", read_byte_from_cpu_ram(NES, 0x3F00));
-	printf("3F01: %.2X\n\n", read_byte_from_cpu_ram(NES, 0x3F01));
+	printf("2000: %.2X\n", read_from_cpu(CPU, 0x2000));
+	printf("2001: %.2X\n", read_from_cpu(CPU, 0x2001));
+	printf("2002: %.2X\n", read_from_cpu(CPU, 0x2002));
+	printf("2003: %.2X\n", read_from_cpu(CPU, 0x2003));
+	printf("2004: %.2X\n", read_from_cpu(CPU, 0x2004));
+	printf("2005: %.2X\n", read_from_cpu(CPU, 0x2005));
+	printf("2006: %.2X\n", read_from_cpu(CPU, 0x2006));
+	printf("2007: %.2X\n", read_from_cpu(CPU, 0x2007));
+	printf("3F00: %.2X\n", read_from_cpu(CPU, 0x3F00));
+	printf("3F01: %.2X\n\n", read_from_cpu(CPU, 0x3F01));
 }
 
 // pass a struct into the argument, then arg.start is mem and arg.count = byte
@@ -158,7 +171,7 @@ void OAM_viewer(enum Memory ppu_mem)
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
 	unsigned int addr = 0; // Byte count. 16 Bytes per line
 	unsigned int mem = 0;  // Start address
-	unsigned int addr_limit; // Byte count. 16 Bytes per line
+	unsigned int addr_limit = 0; // Byte count. 16 Bytes per line
 	if (ppu_mem == PRIMARY_OAM) {
 		addr_limit = 16; // Byte count. 16 Bytes per line
 	} else if (ppu_mem == SECONDARY_OAM) {
@@ -197,7 +210,7 @@ uint8_t read_PPU_Reg(uint16_t addr, PPU_Struct *p)
 }
 
 /* CPU uses this function */
-void write_PPU_Reg(uint16_t addr, uint8_t data, PPU_Struct *p)
+void write_PPU_Reg(uint16_t addr, uint8_t data, PPU_Struct *p, Cpu6502* CPU)
 {
 	switch (addr) {
 	case (0x2000):
@@ -231,7 +244,7 @@ void write_PPU_Reg(uint16_t addr, uint8_t data, PPU_Struct *p)
 		write_2007(data, p);
 		break;
 	case (0x4014):
-		write_4014(data, p, NES);
+		write_4014(data, p, CPU);
 		break;
 	}
 }
@@ -370,23 +383,9 @@ void write_2007(uint8_t data, PPU_Struct *p)
 }
 
 
-void write_4014(uint8_t data, PPU_Struct *p, CPU_6502* NESCPU)
+void write_4014(uint8_t data, PPU_Struct *p, Cpu6502* NESCPU)
 {
-	NESCPU->DMA_PENDING = 1;
-	/*
-	printf("\n##################### CPU RAM #######################\n");
-	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
-	unsigned int addr = 0;
-	unsigned int mem = 0;
-	while (addr < 100) {
-		printf("%.4X: ", addr << 4);
-		for (int x = 0; x < 16; x++) {
-			printf("%.2X ", NESCPU->RAM[mem]);
-			++mem;
-		}
-		printf("\n");
-		++addr;
-	} */
+	NESCPU->dma_pending = true;
 	for (int i = 0; i < 256; i++) {
 		write_2004(NESCPU->RAM[(data << 8) + i], p);
 	}
@@ -632,26 +631,30 @@ void ppu_tick(PPU_Struct *p)
 	}
 }
 
-void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
+void ppu_step(PPU_Struct *p, Cpu6502* NESCPU)
 {
+	//debug_entry(p);
 //#ifdef __RESET__
-	ppu_reset(1, p);
+	ppu_reset(1, p, NESCPU);
 //#endif
 
 	ppu_tick(p); // Idle cycle thus can run tick to increment cycle from 0 to 1 initially
 
-	/* NMI Calc */
+	/* NMI Calc - call function update_vblank() */
 	if (p->scanline == p->nmi_start) {
 		if ((p->PPU_CTRL & 0x80) == 0x80) { /* if PPU CTRL has execute NMI on VBlank */
 			p->PPU_STATUS |= 0x80; /* In VBlank */
-			if ((p->cycle - 3) == 5) {
-				NESCPU->NMI_PENDING = 1;
+			if (p->cycle  == 1) { // 6 works for SMB1
+				NESCPU->nmi_pending = true;
+				printf("NMI pending\n");
+				// Add printf here and in execute_NMI()
 			}
 		}
 		return;
 	}  else if (p->scanline == 261) { /* Pre-render scanline */
 		p->PPU_STATUS &= ~(0x80);
 	}
+
 
 	/* Process BG Scanlines */
 	if(ppu_show_bg(p)) {
@@ -785,6 +788,8 @@ void ppu_step(PPU_Struct *p, CPU_6502* NESCPU)
 			}
 		}
 	}
+	//debug_exit(p);
+
 	/* Process Sprites */
 	if (ppu_show_sprite(p)) {
 		if (p->scanline <= 239) { /* Visible scanlines */

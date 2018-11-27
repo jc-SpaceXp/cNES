@@ -7,11 +7,11 @@
 #include "cart.h"
 #include "ppu.h"
 
-//const char *filename = "nestest.nes";
-const char *filename = "super_mario_bros.nes";
-//const char *filename = "donkey_kong.nes";
-//const char *filename = "balloon.nes";
-//const char *filename = "nmi.nes";
+//const char* filename = "nestest.nes";
+//const char* filename = "super_mario_bros.nes";
+//const char* filename = "donkey_kong.nes";
+const char* filename = "balloon.nes";
+//const char* filename = "nmi.nes";
 
 #define __DEBUG__ // Add print statements for each instruction
 #define __LOG__
@@ -22,45 +22,51 @@ const char *filename = "super_mario_bros.nes";
 
 void ppu_cpu_ratio(void)
 {
-	// 3 : 1 PPU to CPU ratio
 	PPU->old_cycle = PPU->cycle;
-	ppu_step(PPU, NES);
-	ppu_step(PPU, NES);
-	ppu_step(PPU, NES);
-	cpu_step(NES->PC);
-	for (unsigned i = 1; i < (NES->Cycle - NES->old_Cycle); i++) {
-		ppu_step(PPU, NES);
-		ppu_step(PPU, NES);
-		ppu_step(PPU, NES);
+	update_cpu_info(CPU);
+
+	// 3 : 1 PPU to CPU ratio
+	//debug_entry(PPU);
+	cpu_step(CPU->PC, CPU); // Causes undefined behaviour on exit
+	//debug_exit(PPU); // .. modifies PPU data upon exit sometimes
+	// no idea why this would be happening
+	for (unsigned i = 0; i < (CPU->Cycle - CPU->old_Cycle); i++) {
+		ppu_step(PPU, CPU);
+		ppu_step(PPU, CPU);
+		ppu_step(PPU, CPU);
 	}
 #ifdef __DEBUG__
-	log_cpu_info();
+	log_cpu_info(CPU);
 	append_ppu_info();
 #endif /* __DEBUG__ */
 }
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 #define __RESET__
-	NES = cpu_init(0xC000);
+	CPU = cpu_init(0xC000);
 	PPU = ppu_init();
 
 	Cartridge* cart = malloc(sizeof(Cartridge));
-	load_cart(cart, filename, NES, PPU);
+	load_cart(cart, filename, CPU, PPU);
 	free(cart);
+	cart = NULL;
 
-	set_pc(NES); /* Set PC to reset vector */
+	set_pc(CPU); /* Set PC to reset vector */
 
 #ifdef __LOG__
 	stdout = freopen("trace_log.txt", "w", stdout);
 #endif /*__LOG__ */
 
-	int i = 0;
+	unsigned i = 0;
 	nes_screen = screen_init();
 
 	
-	while (i < 1000000) { // 5 Frames DK
-	//while (NES->Cycle < 980972) { // 5 Frames DK
+	//1000000 for quick SMB1 test
+	//while (i < 80000000) { // 5 Frames DK
+	while (i < 10000000) { // SMB1 start of demo
+	//while (NES->Cycle < 22040403) { // DK overflow?
+	//while (CPU->Cycle < 8198933) { // Balloon fight overflow
 		ppu_cpu_ratio();
 		++i;
 	}
@@ -79,14 +85,14 @@ int main(int argc, char **argv)
 		ppu_cpu_ratio();
 	}
 	*/
+	screen_clear(nes_screen);
+	nes_screen = NULL;
 
 	//PPU_MEM_DEBUG(); // PPU memory viewer
-	//cpu_ram_viewer();
+	//cpu_ram_viewer(NES);
 	//OAM_viewer(PRIMARY_OAM);
 	OAM_viewer(SECONDARY_OAM);
-	free(PPU);
-	free(NES);
-	SDL_Delay(5000);
-	SDL_Quit();
+	//free(PPU); // Casuses seg fault
+	//free(NES);
 	return 0;
 }

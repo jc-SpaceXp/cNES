@@ -16,7 +16,8 @@ all: emu
 
 $(NO_SDL_OBJ): %.o : $(SRC)/%.h
 
-$(SRC)/cpu.c: $(SRC)/ppu.h
+$(SRC)/cpu.c: $(SRC)/cpu.h
+$(SRC)/ppu.c: $(SRC)/gui.h
 $(SRC)/cart.c: $(SRC)/ppu.h $(SRC)/mappers.h
 $(SRC)/mappers.c: $(SRC)/cart.h
 $(SRC)/opcode_functions.c: $(SRC)/helper_functions.h

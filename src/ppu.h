@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include "cpu.h"
-#include "opcode_functions.h"
 #include "gui.h"
 
 #define PPUCTRL_ADDR 0x2000 /* ADD Define addr consts???? */
@@ -92,6 +91,7 @@ typedef struct {
 	const uint32_t nmi_end; /* Scanline in which NMI end */
 	uint16_t cycle; /* PPU Cycles, each PPU mem access takes 2 cycles */
 	uint16_t old_cycle; /* Runs much quicker when 16 wide instead of 32 and fixes a weird overflow bug */
+	// HASN'T FIXED WEIRD OVERFLOW
 
 	// Debug constants
 	//const uint8_t DEBUG_ALL; //1024
@@ -105,24 +105,26 @@ enum Memory {
 } ppu_mem;
 
 /* Global defintions */
-const uint8_t reverse_bits[256];
+static const uint8_t reverse_bits[256];
 static const unsigned int palette[64];
 
 /* Initialise Function */
 PPU_Struct *PPU; /* Global NES PPU Pointer */
 PPU_Struct *ppu_init();
-void ppu_reset(int start, PPU_Struct *p); /* Emulates reset/warm-up of PPU */
+void debug_entry(PPU_Struct *p);
+void debug_exit(PPU_Struct *p);
+void ppu_reset(int start, PPU_Struct *p, Cpu6502* CPU); /* Emulates reset/warm-up of PPU */
 
 /* Debug Functions */
 void append_ppu_info(void);
-void debug_ppu_regs(void);
+void debug_ppu_regs(Cpu6502* CPU);
 void PPU_MEM_DEBUG(void); // rename to VRAM viewer
 void OAM_viewer(enum Memory ppu_mem); // rename to VRAM viewer
 
 /* Read & Write Functions */
 //uint8_t read_PPU();
 uint8_t read_PPU_Reg(uint16_t addr, PPU_Struct *p); /* For addresses exposed to CPU */
-void write_PPU_Reg(uint16_t addr, uint8_t data, PPU_Struct *p); /* For addresses exposed to CPU */
+void write_PPU_Reg(uint16_t addr, uint8_t data, PPU_Struct *p, Cpu6502* CPU); /* For addresses exposed to CPU */
 
 void write_vram(uint8_t data, PPU_Struct *p);
 
@@ -135,7 +137,7 @@ void write_2004(uint8_t data, PPU_Struct *p); /* OAM_DATA */
 void write_2005(uint8_t data, PPU_Struct *p); /* PPU_SCROLL */
 void write_2006(uint8_t data, PPU_Struct *p); /* PPU_ADDR */
 void write_2007(uint8_t data, PPU_Struct *p); /* PPU_DATA */
-void write_4014(uint8_t data, PPU_Struct *p, CPU_6502* NESCPU); /* DMA_DATA */
+void write_4014(uint8_t data, PPU_Struct *p, Cpu6502* NESCPU); /* DMA_DATA */
 
 
 /* PPU_CTRL FUNCTIONS */
@@ -176,7 +178,7 @@ void render_pixel(PPU_Struct *p);
 void ppu_transfer_oam(PPU_Struct* p, unsigned index);
 
 void ppu_tick(PPU_Struct *p);
-void ppu_step(PPU_Struct *p, CPU_6502* NESCPU);
+void ppu_step(PPU_Struct *p, Cpu6502* NESCPU);
 
 
 #endif /* __NES_PPU__ */

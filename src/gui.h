@@ -1,24 +1,28 @@
 #ifndef __NES_GUI__
 #define __NES_GUI__
 
+#include "SDL2/SDL.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include <SDL2/SDL.h>
 
 const unsigned SCREEN_WIDTH;
 const unsigned SCREEN_HEIGHT;
-uint32_t pixels[256 * 240]; // pixels[256][240][3], [3] --> 0 = red, 1 = blue
+uint32_t pixels[256 * 240];
 
 typedef struct {
 	SDL_Window* window;
-	//static SDL_Surface* surface;
 	SDL_Renderer* renderer;
 	SDL_Texture* framebuffer;
-} SCREEN;
+} Display;
 
-SCREEN *nes_screen;
-SCREEN *screen_init(void);
+Display* nes_screen;
+Display* screen_init(void);
+void screen_clear(Display* nes);
 //int SDL_init(SDL_Window **window, SDL_Renderer **renderer, SDL_Texture **framebuffer);
-void draw_pixels(uint32_t *pixels, SCREEN *nes); // Draws frame to screen
+void draw_pixels(uint32_t* pixels, Display* nes); // Draws frame to screen
+/*
+void draw_texture(uint32_t *pixels, Display *nes); // Draws frame to screen
+void draw_display(Display *nes); // Draws frame to screen
+*/
 
 #endif /* __NES_GUI__ */

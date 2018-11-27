@@ -3,6 +3,6 @@
 #ifndef __OPCODE_TABLE__
 #define __OPCODE_TABLE__
 
-void cpu_step(uint16_t PC);
+void cpu_step(uint16_t PC, Cpu6502* CPU);
 
 #endif /* __OPCODE_TABLE__ */

@@ -4,9 +4,9 @@
 const unsigned SCREEN_HEIGHT = 240;
 const unsigned SCREEN_WIDTH = 256;
 
-SCREEN *screen_init()
+Display* screen_init()
 {
-	SCREEN* nes = malloc(sizeof(SCREEN));
+	Display* nes = malloc(sizeof(Display));
 
 	nes->window = NULL;
 	nes->renderer = NULL;
@@ -20,7 +20,14 @@ SCREEN *screen_init()
 	return nes;
 }
 
-void draw_pixels(uint32_t *pixels, SCREEN *nes)
+void screen_clear(Display* nes)
+{
+	SDL_DestroyRenderer(nes->renderer);
+	SDL_DestroyWindow(nes->window);
+	SDL_Quit();
+}
+
+void draw_pixels(uint32_t* pixels, Display* nes)
 {
 	SDL_UpdateTexture(nes->framebuffer, NULL, pixels, SCREEN_WIDTH * sizeof(uint32_t));
 
@@ -28,3 +35,17 @@ void draw_pixels(uint32_t *pixels, SCREEN *nes)
 	SDL_RenderCopy(nes->renderer, nes->framebuffer, NULL, NULL);
 	SDL_RenderPresent(nes->renderer);
 }
+
+/*
+void draw_texture(uint32_t *pixels, Display *nes)
+{
+	SDL_UpdateTexture(nes->framebuffer, NULL, pixels, SCREEN_WIDTH * sizeof(uint32_t));
+}
+
+void draw_display(Display *nes)
+{
+	SDL_RenderClear(nes->renderer);
+	SDL_RenderCopy(nes->renderer, nes->framebuffer, NULL, NULL);
+	SDL_RenderPresent(nes->renderer);
+}
+*/

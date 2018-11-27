@@ -6,7 +6,6 @@
 #define __HELPER_FUNCTIONS__
 
 #include "cpu.h"
-#include "globals.h"
 #include <stdio.h>
 
 /*
@@ -25,34 +24,26 @@ char append_int[6]; // Disassembler
  * *************************/
 
 /* get_op: fetches operand based on address modes */
-void get_IMM_byte(CPU_6502* CPU);
-void get_ZP_offset_address(uint8_t offset, CPU_6502* CPU);
-void get_ABS_offset_address(uint8_t offset, CPU_6502* CPU);
-void get_IND_address(CPU_6502* CPU);
-void get_INDX_address(CPU_6502* CPU);
-void get_INDY_address(CPU_6502* CPU);
+void get_IMM_byte(Cpu6502* CPU);
+void get_ZP_offset_address(uint8_t offset, Cpu6502* CPU);
+void get_ABS_offset_address(uint8_t offset, Cpu6502* CPU);
+void get_IND_address(Cpu6502* CPU);
+void get_INDX_address(Cpu6502* CPU);
+void get_INDY_address(Cpu6502* CPU);
 unsigned page_cross_penalty(unsigned address_1, unsigned address_2);
 
 /***************************
  * OTHER                   *
  * *************************/
-void log_cpu_info(void); /* Return Status */
-void update_cpu_info(void);
-
-/***************************
- * ADD & SUB RELATED FUNCS *
- * *************************/
-
-void Base10toBase2(uint8_t quotient, int *bin_array);
-unsigned int Base2toBase10(int *bin_array, unsigned int dec_out);
-void full_adder(int *bin_sum1, int *bin_sum2, int cIN, unsigned *cOUT, int *result);
+void log_cpu_info(Cpu6502* CPU); /* Return Status */
+void update_cpu_info(Cpu6502* CPU);
 
 /***************************
  * STACK                   *
  * *************************/
 
-void stack_push(uint8_t value); /* Genric Push function */
-uint8_t stack_pull(void); /* Genric Pop (Pull) function */
+void stack_push(Cpu6502* NES, uint8_t value); /* Genric Push function */
+uint8_t stack_pull(Cpu6502* NES); /* Genric Pop (Pull) function */
 
 /***************************
  * FLAGS                   *
@@ -61,10 +52,9 @@ uint8_t stack_pull(void); /* Genric Pop (Pull) function */
 /* Bits : 7 ----------> 0 */
 /* Flags: N V - - D I Z C */
 
-void update_FLAG_Z(uint8_t result);
-void update_FLAG_N(uint8_t result);
-void update_FLAG_V(int *bin_array1, int *bin_array2, int *result);
-void update_FLAG_C(uint8_t cOUT);
-void set_or_clear_CARRY(unsigned value);
+void update_flag_z(Cpu6502* NES, uint8_t result);
+void update_flag_n(Cpu6502* NES, uint8_t result);
+void update_flag_v(Cpu6502* NES, bool overflow);
+void update_flag_c(Cpu6502* NES, int carry_out);
 
 #endif /* __HELPER_FUNCTIONS__ */

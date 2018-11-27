@@ -4,14 +4,14 @@
 
 
 /* iNES format */
-int load_cart(Cartridge* cart, const char *filename, CPU_6502* CPU, PPU_Struct *p)
+int load_cart(Cartridge* cart, const char* filename, Cpu6502* CPU, PPU_Struct* p)
 {
 	uint8_t header[16];
-	int trainer;
+	unsigned trainer;
 	uint8_t mapper;
 	long file_size;
 
-	FILE *rom = fopen(filename, "rb");
+	FILE* rom = fopen(filename, "rb");
 
 	/* Error Detection */
 	if (rom == NULL) {
@@ -60,7 +60,7 @@ int load_cart(Cartridge* cart, const char *filename, CPU_6502* CPU, PPU_Struct *
 		p->mirroring = 4;
 	}
 
-	if ((header[6] & 0x04) == 0x04) {
+	if (header[6] & 0x04) {
 		trainer = 512;
 	} else {
 		trainer = 0;

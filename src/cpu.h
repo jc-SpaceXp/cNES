@@ -6,9 +6,10 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 
-#define MEMORY_SIZE  65536 // Memory size in KiB??
+#define MEMORY_SIZE  65536U // Total memory available to the CPU
 /* Status_Flags */
 #define FLAG_C  0x01 /* Carry */
 #define FLAG_Z  0x02 /* Zero */
@@ -17,8 +18,14 @@
 #define FLAG_V  0x40 /* Overflow */
 #define FLAG_N  0x80 /* Negative */
 /* Stack Pointer Definitions - Empty Descending Stack */
-#define SP_START   0x0100 /* Stack pointer upper byte is fixed to 1 */
-#define SP_OFFSET  0xFF
+#define SP_START   0x0100U /* Stack pointer upper byte is fixed to 1 */
+#define SP_OFFSET  0xFFU
+
+/* Interrupt Vectors (lo address) */
+#define BRK_VECTOR 0xFFFEU  // IRQ and BRK vector: 0xFFFE and 0xFFFF
+#define IRQ_VECTOR 0xFFFEU  // IRQ and BRK vector: 0xFFFE and 0xFFFF
+#define NMI_VECTOR 0xFFFAU  // NMI vector: 0xFFFA and 0xFFFB
+#define RST_VECTOR 0xFFFCU  // Reset vector: 0xFFFC and 0xFFFD
 
 typedef struct {
 	/* Registers */
@@ -27,14 +34,15 @@ typedef struct {
 	uint8_t Y; /* Y Reg */
 	/* Special Registers */
 	uint8_t P; /* Program status register - contains flags */
-	unsigned int Cycle;
+	unsigned Cycle;
 	int Stack; /* only being used for debugging */
 	uint16_t PC; /* Program counter (Instruction Pointer) */
 	/* Memory */
 	uint8_t RAM[MEMORY_SIZE]; /* 2 Kb internal RAM */
 
-	unsigned NMI_PENDING; /* Needed to trigger NMI - takes values 0 & 1 */
-	unsigned DMA_PENDING; /* Needed to trigger NMI - takes values 0 & 1 */
+	bool nmi_pending;  // PPU indidcates if an nmi is pending, CPU then services the request
+	bool dma_pending;  // PPU indidcates if an dma is pending, CPU then services the request
+	unsigned delay_nmi;
 
 	uint8_t addr_lo;
 	uint8_t addr_hi;
@@ -46,10 +54,10 @@ typedef struct {
 	uint8_t old_X;
 	uint8_t old_Y;
 	uint8_t old_P;
-	unsigned int old_Cycle;
+	unsigned old_Cycle;
 	int old_Stack;
 	uint16_t old_PC;
-} CPU_6502;
+} Cpu6502;
 
 
 /* Program Status Register
@@ -66,17 +74,16 @@ typedef struct {
 
 
 /* Header Prototypes */
-CPU_6502* NES; /* Global NES CPU Pointer */
-CPU_6502* cpu_init(uint16_t pc_init); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
-void set_pc(CPU_6502* NES); /* Set PC via reset vector */
+Cpu6502* CPU;
+Cpu6502* cpu_init(uint16_t pc_init); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
+void set_pc(Cpu6502* CPU); /* Set PC via reset vector */
 
-uint8_t read_byte_from_cpu_ram(CPU_6502* NES, uint16_t addr);
-uint16_t return_little_endian(CPU_6502* NES, uint16_t addr);
-void write_byte_to_cpu_ram(CPU_6502* NES, uint16_t addr, uint8_t val);
-void cpu_ram_viewer(CPU_6502* NES);
+uint8_t read_from_cpu(Cpu6502* CPU, uint16_t addr);  // Read byte from CPU mempry
+uint16_t return_little_endian(Cpu6502* CPU, uint16_t addr); // Returns 2 byte
+void write_to_cpu(Cpu6502* CPU, uint16_t addr, uint8_t val);
+void cpu_mem_viewer(Cpu6502* CPU);
 
-/* Includes addressing modes
- * Adressing Modes:
+/* Adressing Modes:
  *
  * 1. ABS = Absolute Mode
  * 2. ABSX = Absolute Mode indexed via X
@@ -92,8 +99,7 @@ void cpu_ram_viewer(CPU_6502* NES);
  * 12. ZPX = Zero Page Mode indexed via X
  * 13. ZPY = Zero Page Mode indexed via Y
  */
-
-enum MODES {
+typedef enum {
 	ABS,
 	ABSX,
 	ABSY,
@@ -107,6 +113,6 @@ enum MODES {
 	ZP,
 	ZPX,
 	ZPY,
-} address_mode;
+} AddressMode;
 
 #endif /* __6502_CPU__ */
