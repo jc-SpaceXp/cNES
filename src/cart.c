@@ -37,7 +37,7 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* CPU, PPU_Struct* p
 		exit (8);
 	}
 	
-	if (memcmp(header, "NES\x1A", 4) != 0) {
+	if (memcmp(header, "NES\x1A", 4)) {
 		fprintf(stderr, "Error: invalid nes file.\n");
 		fclose(rom);
 		exit (8);

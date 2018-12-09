@@ -210,7 +210,7 @@ void execute_DEX(Cpu6502 *CPU)
 {
 	/* Implied Mode */
 	strcpy(instruction, "DEX");
-	--(CPU->X);
+	--CPU->X;
 	update_flag_n(CPU, CPU->X);
 	update_flag_z(CPU, CPU->X);
 }
@@ -222,7 +222,7 @@ void execute_DEY(Cpu6502* CPU)
 {
 	/* Implied Mode */
 	strcpy(instruction, "DEY");
-	--(CPU->Y);
+	--CPU->Y;
 	update_flag_n(CPU, CPU->Y);
 	update_flag_z(CPU, CPU->Y);
 }
@@ -247,7 +247,7 @@ void execute_INX(Cpu6502* CPU)
 {
 	strcpy(instruction, "INX");
 	/* Implied Mode */
-	++(CPU->X);
+	++CPU->X;
 	update_flag_n(CPU, CPU->X);
 	update_flag_z(CPU, CPU->X);
 }
@@ -259,7 +259,7 @@ void execute_INY(Cpu6502* CPU)
 {
 	strcpy(instruction, "INY");
 	/* Implied Mode */
-	++(CPU->Y);
+	++CPU->Y;
 	update_flag_n(CPU, CPU->Y);
 	update_flag_z(CPU, CPU->Y);
 }
@@ -353,22 +353,22 @@ void execute_BIT(Cpu6502* CPU)
 	/* Update Flags */
 	/* N = Bit 7, V = Bit 6 (of fetched operand) & Z = 1 (if AND result = 0) */
 	/* Setting 7th Bit */
-	if ((read_from_cpu(CPU, CPU->target_addr) & FLAG_N) == FLAG_N) {
+	if ((read_from_cpu(CPU, CPU->target_addr) & FLAG_N)) {
 		CPU->P |= FLAG_N; /* set */
 	} else {
-		CPU->P &= ~(FLAG_N); /* clear flag */
+		CPU->P &= ~FLAG_N; /* clear flag */
 	}
 	/* Setting 6th Bit */
-	if ((read_from_cpu(CPU, CPU->target_addr) & FLAG_V) == FLAG_V) {
+	if ((read_from_cpu(CPU, CPU->target_addr) & FLAG_V)) {
 		CPU->P |= FLAG_V;
 	} else {
-		CPU->P &= ~(FLAG_V);
+		CPU->P &= ~FLAG_V;
 	}
 	/* Setting Zero FLAG */
 	if (tmp == 0) {
 		CPU->P |= FLAG_Z; /* set */
 	} else {
-		CPU->P &= ~(FLAG_Z); /* clear */
+		CPU->P &= ~FLAG_Z; /* clear */
 	}
 }
 
@@ -410,7 +410,7 @@ void execute_LSR(AddressMode mode, Cpu6502* CPU)
 		strcat(instruction, end);
 		low_bit = read_from_cpu(CPU, CPU->target_addr) & 0x01; /* Mask 0th bit */
 		write_to_cpu(CPU, CPU->target_addr,
-							  read_from_cpu(CPU, CPU->target_addr) >> 1);
+					 read_from_cpu(CPU, CPU->target_addr) >> 1);
 		update_flag_n(CPU, read_from_cpu(CPU, CPU->target_addr)); /* Should always clear N flag */
 		update_flag_z(CPU, read_from_cpu(CPU, CPU->target_addr));
 	}
@@ -451,7 +451,7 @@ void execute_ROL(AddressMode mode, Cpu6502* CPU)
 		high_bit = CPU->A & 0x80; /* Mask 7th bit */
 		CPU->A = CPU->A << 1;
 		/* Testing if Status Reg has a 1 in Carry Flag */
-		if ((CPU->P & FLAG_C) == 0x01) {
+		if (CPU->P & FLAG_C) {
 			CPU->A |= (CPU->P & FLAG_C);
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
 		update_flag_n(CPU, CPU->A);
@@ -461,10 +461,10 @@ void execute_ROL(AddressMode mode, Cpu6502* CPU)
 		strcat(instruction, end);
 		high_bit = read_from_cpu(CPU, CPU->target_addr) & 0x80; /* Mask 7th bit */
 		write_to_cpu(CPU, CPU->target_addr,
-							  read_from_cpu(CPU, CPU->target_addr) << 1);
-		if ((CPU->P & FLAG_C) == 0x01) {
+					 read_from_cpu(CPU, CPU->target_addr) << 1);
+		if (CPU->P & FLAG_C) {
 			write_to_cpu(CPU, CPU->target_addr,
-								  read_from_cpu(CPU, CPU->target_addr) | 0x01);
+						 read_from_cpu(CPU, CPU->target_addr) | 0x01);
 		}
 		update_flag_n(CPU, read_from_cpu(CPU, CPU->target_addr));
 		update_flag_z(CPU, read_from_cpu(CPU, CPU->target_addr));
@@ -486,7 +486,7 @@ void execute_ROR(AddressMode mode, Cpu6502* CPU)
 		strcpy(instruction, "ROR A");
 		low_bit = CPU->A & 0x01; /* Mask 0th bit */
 		CPU->A = CPU->A >> 1; /* Shift right */
-		if ((CPU->P & FLAG_C) == 0x01) {
+		if (CPU->P & FLAG_C) {
 			CPU->A |= 0x80; /* Set 7th bit to 1 - if carry = 1 */
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
 		update_flag_n(CPU, CPU->A);
@@ -496,11 +496,11 @@ void execute_ROR(AddressMode mode, Cpu6502* CPU)
 		strcat(instruction, end);
 		low_bit = read_from_cpu(CPU, CPU->target_addr) & 0x01;
 		write_to_cpu(CPU, CPU->target_addr,
-							  read_from_cpu(CPU, CPU->target_addr) >> 1);
-		if ((CPU->P & FLAG_C) == 0x01) {
+					 read_from_cpu(CPU, CPU->target_addr) >> 1);
+		if (CPU->P & FLAG_C) {
 			/* Set 7th bit to 1 - if carry = 1 */
 			write_to_cpu(CPU, CPU->target_addr,
-								  read_from_cpu(CPU, CPU->target_addr) | 0x80);
+						 read_from_cpu(CPU, CPU->target_addr) | 0x80);
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
 		update_flag_n(CPU, read_from_cpu(CPU, CPU->target_addr));
 		update_flag_z(CPU, read_from_cpu(CPU, CPU->target_addr));
@@ -524,7 +524,7 @@ void execute_BCC(Cpu6502* CPU)
 	strcpy(instruction, "BCC $");
 	strcat(instruction, append_int);
 
-	if ((CPU->P & FLAG_C) == 0x00) {
+	if ( !(CPU->P & FLAG_C) ) {
 		CPU->PC += (int8_t) read_from_cpu(CPU, CPU->PC + 1);
 		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
@@ -541,7 +541,7 @@ void execute_BCS(Cpu6502* CPU)
 	strcpy(instruction, "BCS $");
 	strcat(instruction, append_int);
 
-	if ((CPU->P & FLAG_C) == 0x01) {
+	if (CPU->P & FLAG_C) {
 		CPU->PC += (int8_t) read_from_cpu(CPU, CPU->PC + 1);
 		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
@@ -558,7 +558,7 @@ void execute_BEQ(Cpu6502* CPU)
 	strcpy(instruction, "BEQ $");
 	strcat(instruction, append_int);
 
-	if ((CPU->P & FLAG_Z) == FLAG_Z) {
+	if (CPU->P & FLAG_Z) {
 		CPU->PC += (int8_t) read_from_cpu(CPU, CPU->PC + 1);
 		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
@@ -575,7 +575,7 @@ void execute_BMI(Cpu6502* CPU)
 	strcpy(instruction, "BMI $");
 	strcat(instruction, append_int);
 
-	if ((CPU->P & FLAG_N) == FLAG_N) {
+	if (CPU->P & FLAG_N) {
 		CPU->PC += (int8_t) read_from_cpu(CPU, CPU->PC + 1);
 		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
@@ -592,7 +592,7 @@ void execute_BNE(Cpu6502* CPU)
 	strcpy(instruction, "BNE $");
 	strcat(instruction, append_int);
 
-	if ((CPU->P & FLAG_Z) == 0x00) {
+	if ( !(CPU->P & FLAG_Z) ) {
 		CPU->PC += (int8_t) read_from_cpu(CPU, CPU->PC + 1);
 		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
@@ -609,7 +609,7 @@ void execute_BPL(Cpu6502* CPU)
 	strcpy(instruction, "BPL $");
 	strcat(instruction, append_int);
 
-	if ((CPU->P & FLAG_N) == 0x00) {
+	if ( !(CPU->P & FLAG_N) ) {
 		CPU->PC += (int8_t) read_from_cpu(CPU, CPU->PC + 1);
 		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
@@ -626,7 +626,7 @@ void execute_BVC(Cpu6502* CPU)
 	strcpy(instruction, "BVC $");
 	strcat(instruction, append_int);
 
-	if ((CPU->P & FLAG_V) == 0x00) {
+	if ( !(CPU->P & FLAG_V) ) {
 		CPU->PC += (int8_t) read_from_cpu(CPU, CPU->PC + 1);
 		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
@@ -643,7 +643,7 @@ void execute_BVS(Cpu6502* CPU)
 	strcpy(instruction, "BVS $");
 	strcat(instruction, append_int);
 
-	if ((CPU->P & FLAG_V) == FLAG_V) {
+	if (CPU->P & FLAG_V) {
 		CPU->PC += (int8_t) read_from_cpu(CPU, CPU->PC + 1);
 		CPU->Cycle += 1 + page_cross_penalty(CPU->old_PC + 2, CPU->PC + 2);
 	}
@@ -725,7 +725,7 @@ void execute_CLC(Cpu6502* CPU)
 {
 	/* CLC */
 	strcpy(instruction, "CLC");
-	CPU->P &= ~(FLAG_C); /* set Flag C to: 11111110 then AND to P */
+	CPU->P &= ~FLAG_C;
 }
 
 
@@ -735,7 +735,7 @@ void execute_CLD(Cpu6502* CPU)
 {
 	/* CLD */
 	strcpy(instruction, "CLD");
-	CPU->P &= ~(FLAG_D);
+	CPU->P &= ~FLAG_D;
 
 }
 

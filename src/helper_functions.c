@@ -102,11 +102,6 @@ void get_INDY_address(Cpu6502* CPU)
 	CPU->PC += 2; /* Update PC */
 }
 
-/* using getch_16() for IND instructions and ABS causes some errors
- * most likely due to the code layout
- * will have to look into some more
- */
-
 // Determines if a page cross has occured for a certain instruction
 unsigned page_cross_penalty(unsigned address_1, unsigned address_2)
 {
@@ -187,7 +182,7 @@ void update_flag_z(Cpu6502* NES, uint8_t result)
 	if (!result) {
 		NES->P |= FLAG_Z; /* Set Z */
 	} else {
-		NES->P &= ~(FLAG_Z); /* Clear Z */
+		NES->P &= ~FLAG_Z; /* Clear Z */
 	}
 }
 
@@ -198,7 +193,7 @@ void update_flag_n(Cpu6502* NES, uint8_t result)
 	if (result >> 7) {
 		NES->P |= FLAG_N; /* Set N */
 	} else {
-		NES->P &= ~(FLAG_N); /* Clear N */
+		NES->P &= ~FLAG_N; /* Clear N */
 	}
 }
 

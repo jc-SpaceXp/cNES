@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
+CFLAGS = -Wall -Wextra -std=c99 -g
 LDFLAGS = $(shell pkg-config --cflags --libs sdl2)
 
 SRC= src

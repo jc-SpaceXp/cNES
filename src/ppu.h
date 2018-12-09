@@ -6,23 +6,9 @@
 #include "cpu.h"
 #include "gui.h"
 
-#define PPUCTRL_ADDR 0x2000 /* ADD Define addr consts???? */
 #define KiB (1024)
 
-/*
-typedef struct {
-	unsigned index; // OAM index
-	uint8_t y;
-	//uint8_t tile_index; // Address in VRAM (needs to be shifted left 4)
-	uint16_t addr; // Pattern table lo address in VRAM
-	uint8_t attr; // Attribute byte
-	uint8_t x;
-} Sprite;
-*/
-
-
 /* Struct */
-
 typedef struct {
 	/* Registers  - maybe make these pointers to the CPU mem space */
 	uint8_t PPU_CTRL;   /* $2000 */
@@ -63,8 +49,7 @@ typedef struct {
 	uint16_t vram_addr; /* VRAM address - LoopyV (v) */
 	uint16_t vram_tmp_addr; /* Temp VRAM address - LoopyT (t) */
 	uint8_t fineX; /* Fine X Scroll - only lower 4 bits are used */
-	bool toggle_w; /* 1st/2nd Write toggle */
-	uint8_t temp;
+	bool write_toggle; /* 1st/2nd Write toggle */
 
 	/* Latches & Shift registers */
 	uint8_t pt_lo_latch; /* Most recent fetch pt_lo fetch */
@@ -81,8 +66,8 @@ typedef struct {
 	uint16_t nt_addr_current; /* Current tile address for pixels 1 - 8 in pipeline */
 
 	//int palette[4]; /* Stores the 4 colour palette */
-	bool RESET_1;
-	bool RESET_2;
+	bool reset_1;
+	bool reset_2;
 
 	unsigned mirroring; // 0 = Horz, 1 = vert, 4 = 4 screen
 
@@ -92,10 +77,6 @@ typedef struct {
 	uint16_t cycle; /* PPU Cycles, each PPU mem access takes 2 cycles */
 	uint16_t old_cycle; /* Runs much quicker when 16 wide instead of 32 and fixes a weird overflow bug */
 	// HASN'T FIXED WEIRD OVERFLOW
-
-	// Debug constants
-	//const uint8_t DEBUG_ALL; //1024
-	//const uint8_t DEBUG_256; // Debug a page area
 } PPU_Struct;
 
 enum Memory {
@@ -176,6 +157,8 @@ void fetch_pt_hi(PPU_Struct *p);
 void render_pixel(PPU_Struct *p);
 
 void ppu_transfer_oam(PPU_Struct* p, unsigned index);
+void reset_secondary_oam(PPU_Struct* p);
+void sprite_evaluation(PPU_Struct* p);
 
 void ppu_tick(PPU_Struct *p);
 void ppu_step(PPU_Struct *p, Cpu6502* NESCPU);

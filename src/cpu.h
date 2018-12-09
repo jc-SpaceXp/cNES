@@ -27,6 +27,20 @@
 #define NMI_VECTOR 0xFFFAU  // NMI vector: 0xFFFA and 0xFFFB
 #define RST_VECTOR 0xFFFCU  // Reset vector: 0xFFFC and 0xFFFD
 
+#if 0
+
+// New "ShareBus" idea, instead on #including .cpu.h in ppu.c
+// and then including ppu.h in cpu.c, we can just include cpu.h
+// into ppu.h so that we can pass this struct whic both the cpu and
+// ppu can freely operate on w/o carefully tring to define functions
+// that have access to both live structures during execution
+typedef struct {
+	uint8_t ppu_addr;
+	uint8_t ppu_ctrl;
+} SharedBus;
+
+#endif
+
 typedef struct {
 	/* Registers */
 	uint8_t A; /* Accumulator */

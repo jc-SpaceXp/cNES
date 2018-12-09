@@ -13,9 +13,7 @@
 
 void cpu_step(uint16_t PC, Cpu6502* CPU)
 {
-	//update_cpu_info();
-	uint8_t opcode = read_from_cpu(CPU, PC); // rename
-
+	uint8_t opcode = read_from_cpu(CPU, PC);
 
 	/* Process NMI */
 	if (!CPU->nmi_pending) {
@@ -996,7 +994,7 @@ void cpu_step(uint16_t PC, Cpu6502* CPU)
 		}
 	} else {
 		execute_NMI(CPU);
-		printf("NMI COUNT: %d\n", ++CPU->delay_nmi);
+		//printf("NMI COUNT: %d\n", ++CPU->delay_nmi);
 		CPU->Cycle += 7;
 	}
 
@@ -1006,6 +1004,6 @@ void cpu_step(uint16_t PC, Cpu6502* CPU)
 			CPU->Cycle += 1;
 		}
 		CPU->Cycle += 513;
-		CPU->dma_pending = 0;
+		CPU->dma_pending = false;
 	}
 }

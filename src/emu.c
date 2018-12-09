@@ -64,9 +64,9 @@ int main(int argc, char** argv)
 	
 	//1000000 for quick SMB1 test
 	//while (i < 80000000) { // 5 Frames DK
-	while (i < 10000000) { // SMB1 start of demo
+	//while (i < 10000000) { // SMB1 start of demo
 	//while (NES->Cycle < 22040403) { // DK overflow?
-	//while (CPU->Cycle < 8198933) { // Balloon fight overflow
+	while (CPU->Cycle < 8198933) { // Balloon fight overflow
 		ppu_cpu_ratio();
 		++i;
 	}
