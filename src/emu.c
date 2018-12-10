@@ -8,9 +8,9 @@
 #include "ppu.h"
 
 //const char* filename = "nestest.nes";
-//const char* filename = "super_mario_bros.nes";
+const char* filename = "super_mario_bros.nes";
 //const char* filename = "donkey_kong.nes";
-const char* filename = "balloon.nes";
+//const char* filename = "balloon.nes";
 //const char* filename = "nmi.nes";
 
 #define __DEBUG__ // Add print statements for each instruction
@@ -26,10 +26,7 @@ void ppu_cpu_ratio(void)
 	update_cpu_info(CPU);
 
 	// 3 : 1 PPU to CPU ratio
-	//debug_entry(PPU);
-	cpu_step(CPU->PC, CPU); // Causes undefined behaviour on exit
-	//debug_exit(PPU); // .. modifies PPU data upon exit sometimes
-	// no idea why this would be happening
+	cpu_step(CPU->PC, CPU);
 	for (unsigned i = 0; i < (CPU->Cycle - CPU->old_Cycle); i++) {
 		ppu_step(PPU, CPU);
 		ppu_step(PPU, CPU);
@@ -64,9 +61,9 @@ int main(int argc, char** argv)
 	
 	//1000000 for quick SMB1 test
 	//while (i < 80000000) { // 5 Frames DK
-	//while (i < 10000000) { // SMB1 start of demo
-	//while (NES->Cycle < 22040403) { // DK overflow?
-	while (CPU->Cycle < 8198933) { // Balloon fight overflow
+	while (i < 10000000) { // SMB1 start of demo
+	//while (CPU->Cycle < 22040403) { // DK overflow?
+	//while (CPU->Cycle < 8198933) { // Balloon fight overflow
 		ppu_cpu_ratio();
 		++i;
 	}
@@ -92,7 +89,7 @@ int main(int argc, char** argv)
 	//cpu_ram_viewer(NES);
 	//OAM_viewer(PRIMARY_OAM);
 	OAM_viewer(SECONDARY_OAM);
-	//free(PPU); // Casuses seg fault
-	//free(NES);
+	free(PPU);
+	free(CPU);
 	return 0;
 }

@@ -514,28 +514,26 @@ void render_pixel(PPU_Struct *p)
 {
 	unsigned bg_palette_addr;
 	/* Defines the which colour palette to use */
-	if ((p->nt_addr_current & 0x03) == 0x03) { // Right quadrants
-		if ((p->nt_addr_current & 0x40) == 0x40) {
-			bg_palette_addr = p->at_current >> 6; // Bottom quadrant
+	if (p->nt_addr_current & 0x02) { // Right quadrants
+		if (p->nt_addr_current & 0x40) {
+			bg_palette_addr = p->at_current >> 6; // Bottom right
 		} else {
-			bg_palette_addr = p->at_current >> 2; // Top quadrant
+			bg_palette_addr = p->at_current >> 2; // Top right
 		}
 	} else { // Left quadrants
-		if ((p->nt_addr_current & 0x40) == 0x40) {
-			bg_palette_addr = p->at_current >> 4; // Bottom quadrant
+		if (p->nt_addr_current & 0x40) {
+			bg_palette_addr = p->at_current >> 4; // Bottom left
 		} else {
-			bg_palette_addr = p->at_current & 0x0003; // Top quadrant
+			bg_palette_addr = p->at_current; // Top left
 		}
 	}
 	bg_palette_addr &= 0x03;
 	bg_palette_addr <<= 2;
-
-	bg_palette_addr += 0x3F00; // Palette mem starts here
-	//printf("PAL_ADDR: %X", palette_addr);
+	bg_palette_addr += 0x3F00; // bg palette mem starts here
 
 	unsigned bg_palette_offset = ((p->pt_hi_shift_reg & 0x01) << 1) | (p->pt_lo_shift_reg & 0x01);
 	if (!bg_palette_offset) {
-		bg_palette_addr = 0x3F00; // Take background colour
+		bg_palette_addr = 0x3F00; // Take background colour (transparent)
 	}
 
 	unsigned RGB = p->VRAM[bg_palette_addr + bg_palette_offset]; // Get values
@@ -672,7 +670,7 @@ void ppu_step(PPU_Struct *p, Cpu6502* NESCPU)
 			p->PPU_STATUS |= 0x80; /* In VBlank */
 			if (p->cycle  == 1) { // 6 works for SMB1
 				NESCPU->nmi_pending = true;
-				printf("NMI pending\n");
+				//printf("NMI pending\n");
 			}
 		}
 		return;
