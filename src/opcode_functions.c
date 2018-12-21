@@ -915,7 +915,7 @@ void execute_NMI(Cpu6502* CPU)
 	/* Flag I is set */
 	CPU->P |= FLAG_I;
 	CPU->PC = return_little_endian(CPU, 0xFFFA);
-	CPU->nmi_pending = 0;
+	CPU->cpu_ppu_io->nmi_pending = false;
 }
 
 

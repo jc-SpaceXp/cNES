@@ -16,7 +16,7 @@ void cpu_step(uint16_t PC, Cpu6502* CPU)
 	uint8_t opcode = read_from_cpu(CPU, PC);
 
 	/* Process NMI */
-	if (!CPU->nmi_pending) {
+	if (!CPU->cpu_ppu_io->nmi_pending) {
 		switch (opcode) {
 		case 0x00:
 			/* BRK */
@@ -998,12 +998,12 @@ void cpu_step(uint16_t PC, Cpu6502* CPU)
 		CPU->Cycle += 7;
 	}
 
-	if (CPU->dma_pending) {
+	if (CPU->cpu_ppu_io->dma_pending) {
 		execute_DMA();
-		if ((CPU->Cycle - 1) & 0x01) {
+		if ((CPU->Cycle - 1) & 0x01) {  // add 1 cycle for on odd cycles
 			CPU->Cycle += 1;
 		}
 		CPU->Cycle += 513;
-		CPU->dma_pending = false;
+		CPU->cpu_ppu_io->dma_pending = false;
 	}
 }

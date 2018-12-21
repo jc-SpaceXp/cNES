@@ -43,6 +43,27 @@ typedef struct {
 
 typedef struct {
 	/* Registers */
+	uint8_t ppu_ctrl;    // $2000
+	uint8_t ppu_mask;    // $2001
+	uint8_t ppu_status;  // $2002
+	uint8_t oam_addr;    // $2004
+	uint8_t oam_data;    // $2004
+	uint8_t ppu_scroll;  // $2005
+	uint8_t ppu_addr;    // $2006
+	uint8_t ppu_data;    // $2007
+	uint8_t oam_dma;     // $4014
+
+	/* Flags */
+	bool nmi_pending;  // PPU indidcates if an nmi is pending, CPU then services the request
+	bool dma_pending;  // PPU indidcates if an dma is pending, CPU then services the request
+	bool suppress_nmi;
+} CpuPpuShare;  // PPU MMIO 
+
+typedef struct {
+	/* Memory mapped I/O */
+	CpuPpuShare* cpu_ppu_io;
+
+	/* Registers */
 	uint8_t A; /* Accumulator */
 	uint8_t X; /* X Reg */
 	uint8_t Y; /* Y Reg */
@@ -53,10 +74,6 @@ typedef struct {
 	uint16_t PC; /* Program counter (Instruction Pointer) */
 	/* Memory */
 	uint8_t RAM[MEMORY_SIZE]; /* 2 Kb internal RAM */
-
-	bool nmi_pending;  // PPU indidcates if an nmi is pending, CPU then services the request
-	bool dma_pending;  // PPU indidcates if an dma is pending, CPU then services the request
-	unsigned delay_nmi;
 
 	uint8_t addr_lo;
 	uint8_t addr_hi;
@@ -86,10 +103,11 @@ typedef struct {
  * Bit 7 = N - Negative
  */
 
-
 /* Header Prototypes */
 Cpu6502* CPU;
-Cpu6502* cpu_init(uint16_t pc_init); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
+
+CpuPpuShare* mmio_init(void);
+Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
 void set_pc(Cpu6502* CPU); /* Set PC via reset vector */
 
 uint8_t read_from_cpu(Cpu6502* CPU, uint16_t addr);  // Read byte from CPU mempry

@@ -38,14 +38,13 @@ static const uint32_t palette[64] = {
 static const uint32_t palette[0x40] = { 0xFF666666, 0xFF002A88, 0xFF1412A7, 0xFF3B00A4, 0xFF5C007E, 0xFF6E0040, 0xFF6C0600, 0xFF561D00, 0xFF333500, 0xFF0B4800, 0xFF005200, 0xFF004F08, 0xFF00404D, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFADADAD, 0xFF155FD9, 0xFF4240FF, 0xFF7527FE, 0xFFA01ACC, 0xFFB71E7B, 0xFFB53120, 0xFF994E00, 0xFF6B6D00, 0xFF388700, 0xFF0C9300, 0xFF008F32, 0xFF007C8D, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFEFF, 0xFF64B0FF, 0xFF9290FF, 0xFFC676FF, 0xFFF36AFF, 0xFFFE6ECC, 0xFFFE8170, 0xFFEA9E22, 0xFFBCBE00, 0xFF88D800, 0xFF5CE430, 0xFF45E082, 0xFF48CDDE, 0xFF4F4F4F, 0xFF000000, 0xFF000000, 0xFFFFFEFF, 0xFFC0DFFF, 0xFFD3D2FF, 0xFFE8C8FF, 0xFFFBC2FF, 0xFFFEC4EA, 0xFFFECCC5, 0xFFF7D8A5, 0xFFE4E594, 0xFFCFEF96, 0xFFBDF4AB, 0xFFB3F3CC, 0xFFB5EBF2, 0xFFB8B8B8, 0xFF000000, 0xFF000000 };
 
 
-PPU_Struct *ppu_init()
+PPU_Struct* ppu_init(CpuPpuShare* cp)
 {
 	PPU_Struct* ppu = malloc(sizeof(PPU_Struct));
-	ppu->PPU_CTRL = 0x00;
-	ppu->PPU_MASK = 0x00;
-	ppu->PPU_MASK = 0x00;
-	ppu->OAM_ADDR = 0x00;;
-	ppu->PPU_STATUS = 0x00; // Had it on A0 before
+	if (!ppu) {
+		fprintf(stderr, "Failed to allocate enough memory for PPU\n");
+	}
+	ppu->cpu_ppu_io = cp;
 	ppu->buffer_2007 = 0;
 
 	ppu->reset_1 = false;
@@ -74,7 +73,7 @@ PPU_Struct *ppu_init()
 	ppu->nmi_start = 241;
 	return ppu;
 }
-
+#if 0
 void debug_entry(PPU_Struct *p)
 {
 	// EXIT POINT
@@ -86,19 +85,22 @@ void debug_exit(PPU_Struct *p)
 	// EXIT POINT
 	printf("a4: cyc: %d scan: %d\n", p->cycle, p->scanline);
 }
+#endif 
+
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
 void ppu_reset(int start, PPU_Struct *p, Cpu6502* CPU)
 {
+	// remove p->reset_1 and 2 and isntead use a static variable
 	if (start && !p->reset_1 && !p->reset_2) {
-		p->PPU_STATUS &= ~(0x80);  // clear VBL flag if set
+		p->cpu_ppu_io->ppu_status &= ~(0x80);  // clear VBL flag if set
 		p->reset_1 = true;
 	} else if (p->reset_1 && (CPU->Cycle >= 27383)) {
-		p->PPU_STATUS |= 0x80;
+		p->cpu_ppu_io->ppu_status |= 0x80;
 		p->reset_1 = false;
 		p->reset_2 = true;
 	} else if (p->reset_2 && (CPU->Cycle >= 57164)) {
-		p->PPU_STATUS |= 0x80;
-		p->reset_2 = true;
+		p->cpu_ppu_io->ppu_status |= 0x80;
+		p->reset_2 = false;  // changed frim true
 	}
 }
 
@@ -166,7 +168,7 @@ void OAM_viewer(enum Memory ppu_mem)
 	}
 }
 
-uint8_t read_PPU_Reg(uint16_t addr, PPU_Struct *p)
+uint8_t read_ppu_reg(uint16_t addr, PPU_Struct *p)
 {
 	switch (addr) {
 	case (0x2002):
@@ -175,7 +177,7 @@ uint8_t read_PPU_Reg(uint16_t addr, PPU_Struct *p)
 		break;
 	case (0x2004):
 		/* OAM Data (read & write) */
-		return p->OAM_DATA;
+		return p->cpu_ppu_io->oam_data;
 		break;
 	case (0x2007):
 		/* PPU DATA */
@@ -186,25 +188,26 @@ uint8_t read_PPU_Reg(uint16_t addr, PPU_Struct *p)
 }
 
 /* CPU uses this function */
-void write_PPU_Reg(uint16_t addr, uint8_t data, PPU_Struct *p, Cpu6502* CPU)
+void write_ppu_reg(uint16_t addr, uint8_t data, PPU_Struct *p, Cpu6502* CPU)
 {
 	switch (addr) {
 	case (0x2000):
 		/* PPU CTRL */
-		p->PPU_CTRL = data;
+		p->cpu_ppu_io->ppu_ctrl = data;
 		write_2000(data, p);
 		break;
 	case (0x2001):
 		/* PPU MASK */
-		p->PPU_MASK = data;
+		p->cpu_ppu_io->ppu_mask = data;
 		break;
 	case (0x2003):
 		/* OAM ADDR */
-		p->OAM_ADDR = data;
+		write_2003(data, p);
 		break;
 	case (0x2004):
 		/* OAM Data (read & write) */
-		p->OAM_DATA = data;
+		p->cpu_ppu_io->oam_data = data;
+		write_2004(data, p);
 		break;
 	case (0x2005):
 		/* PPU SCROLL (write * 2) */
@@ -216,7 +219,7 @@ void write_PPU_Reg(uint16_t addr, uint8_t data, PPU_Struct *p, Cpu6502* CPU)
 		break;
 	case (0x2007):
 		/* PPU DATA */
-		p->PPU_DATA = data;
+		p->cpu_ppu_io->ppu_data = data;
 		write_2007(data, p);
 		break;
 	case (0x4014):
@@ -277,10 +280,10 @@ void write_vram(uint8_t data, PPU_Struct *p)
 
 /* Read Functions */
 
-void read_2002(PPU_Struct *p)
+void read_2002(PPU_Struct* p)
 {
-	p->return_value = p->PPU_STATUS;
-	p->PPU_STATUS &= ~0x80;
+	p->return_value = p->cpu_ppu_io->ppu_status;
+	p->cpu_ppu_io->ppu_status &= ~0x80U;  // compiler complains
 	p->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
 }
 
@@ -306,15 +309,15 @@ void write_2000(uint8_t data, PPU_Struct *p)
 	p->vram_tmp_addr |= (data & 0x03) << 10;
 }
 
-inline void write_2003(uint8_t data, PPU_Struct *p)
+inline void write_2003(uint8_t data, PPU_Struct* p)
 {
-	p->OAM_ADDR = data;
+	p->cpu_ppu_io->oam_data = data;
 }
 
-void write_2004(uint8_t data, PPU_Struct *p)
+void write_2004(uint8_t data, PPU_Struct* p)
 {
-	p->OAM[p->OAM_ADDR] = data;
-	++p->OAM_ADDR;
+	p->OAM[p->cpu_ppu_io->oam_addr] = data;
+	++p->cpu_ppu_io->oam_addr;
 }
 
 void write_2005(uint8_t data, PPU_Struct *p)
@@ -329,7 +332,7 @@ void write_2005(uint8_t data, PPU_Struct *p)
 		// Second Write
 		p->vram_tmp_addr &= ~0x73E0; /* Clear bits that are to be set */
 		p->vram_tmp_addr |= ((data & 0xF8) << 2) | ((data & 0x07) << 12);
-		p->PPU_SCROLL = p->vram_tmp_addr;
+		p->cpu_ppu_io->ppu_scroll = p->vram_tmp_addr;
 	}
 	p->write_toggle = !p->write_toggle;
 }
@@ -345,7 +348,7 @@ void write_2006(uint8_t data, PPU_Struct *p)
 		p->vram_tmp_addr &= ~0x00FF; /* Clear Lower Byte */
 		p->vram_tmp_addr |= data; /* Lower byte */
 		p->vram_addr = p->vram_tmp_addr;
-		p->PPU_ADDR = p->vram_tmp_addr;
+		p->cpu_ppu_io->ppu_addr = p->vram_tmp_addr;
 	}
 	p->write_toggle = !p->write_toggle;
 }
@@ -360,7 +363,7 @@ void write_2007(uint8_t data, PPU_Struct *p)
 
 void write_4014(uint8_t data, PPU_Struct *p, Cpu6502* NESCPU)
 {
-	NESCPU->dma_pending = true;
+	p->cpu_ppu_io->dma_pending = true;
 	for (int i = 0; i < 256; i++) {
 		write_2004(NESCPU->RAM[(data << 8) + i], p);
 	}
@@ -369,18 +372,18 @@ void write_4014(uint8_t data, PPU_Struct *p, Cpu6502* NESCPU)
 /**
  * PPU_CTRL
  */
-uint8_t ppu_vram_addr_inc(PPU_Struct *p)
+uint8_t ppu_vram_addr_inc(PPU_Struct* p)
 {
-	if (!(p->PPU_CTRL & 0x04)) {
+	if (!(p->cpu_ppu_io->ppu_ctrl & 0x04)) {
 		return 1;
 	} else {
 		return 32;
 	}
 }
 
-uint16_t ppu_base_nt_address(PPU_Struct *p)
+uint16_t ppu_base_nt_address(PPU_Struct* p)
 {
-	switch(p->PPU_CTRL & 0x03) {
+	switch(p->cpu_ppu_io->ppu_ctrl & 0x03) {
 	case 0:
 		return 0x2000;
 	case 1:
@@ -395,27 +398,27 @@ uint16_t ppu_base_nt_address(PPU_Struct *p)
 }
 
 
-uint16_t ppu_base_pt_address(PPU_Struct *p)
+uint16_t ppu_base_pt_address(PPU_Struct* p)
 {
-	if ((p->PPU_CTRL >> 4) & 0x01) {
+	if ((p->cpu_ppu_io->ppu_ctrl >> 4) & 0x01) {
 		return 0x1000;
 	} else {
 		return 0x0000;
 	}
 }
 
-uint16_t ppu_sprite_pattern_table_addr(PPU_Struct *p)
+uint16_t ppu_sprite_pattern_table_addr(PPU_Struct* p)
 {
-	if ((p->PPU_CTRL >> 3) & 0x01) {
+	if ((p->cpu_ppu_io->ppu_ctrl >> 3) & 0x01) {
 		return 0x1000;
 	} else {
 		return 0x0000;
 	}
 }
 
-uint8_t ppu_sprite_height(PPU_Struct *p)
+uint8_t ppu_sprite_height(PPU_Struct* p)
 {
-	if ((p->PPU_CTRL >> 5) & 0x01) {
+	if ((p->cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
 		return 16; /* 8 x 16 */
 	} else {
 		return 8; /* 8 x 8 */
@@ -426,9 +429,9 @@ uint8_t ppu_sprite_height(PPU_Struct *p)
  * PPU_MASK
  */
 
-bool ppu_show_bg(PPU_Struct *p)
+bool ppu_show_bg(PPU_Struct* p)
 {
-	if (p->PPU_MASK & 0x08) {
+	if (p->cpu_ppu_io->ppu_mask & 0x08) {
 		return true;
 	} else {
 		return false;
@@ -438,7 +441,7 @@ bool ppu_show_bg(PPU_Struct *p)
 
 bool ppu_show_sprite(PPU_Struct *p)
 {
-	if (p->PPU_MASK & 0x10) {
+	if (p->cpu_ppu_io->ppu_mask & 0x10) {
 		return true;
 	} else {
 		return false;
@@ -565,7 +568,8 @@ void render_pixel(PPU_Struct *p)
 		}
 	}
 	if (p->scanline == p->sprite_zero_scanline && (p->sprite_zero_hit == false)) { // If sprite is on scanline
-		if (bg_palette_offset != 0 && sprite_palette_offset[0] != 0 && (p->PPU_STATUS & 0x40) != 0x40 && p->cycle != 256) {
+		if (bg_palette_offset != 0 && sprite_palette_offset[0] != 0
+				&& (p->cpu_ppu_io->ppu_status & 0x40) != 0x40 && p->cycle != 256) {
 			//printf("1L OVERLAP HERE: %d\n", p->cycle);
 			p->hit_scanline = p->scanline;
 			p->hit_cycle = p->cycle + 1; // Sprite #0 hit is delayed by 1 tick (cycle)
@@ -574,7 +578,7 @@ void render_pixel(PPU_Struct *p)
 		}
 	} if ((p->scanline == p->hit_scanline) && (p->cycle == p->hit_cycle)) {
 		//printf("OVERLAP HERE: %d\n", p->cycle);
-		p->PPU_STATUS |= 0x40; // Sprite #0 hit
+		p->cpu_ppu_io->ppu_status |= 0x40; // Sprite #0 hit
 	} 
 	// Send pixels to pixel buffer
 	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
@@ -630,7 +634,7 @@ void sprite_evaluation(PPU_Struct* p)
 
 		if ((p->sprites_found == 8) && (y_offset >= 0) && (y_offset < ppu_sprite_height(p))) {
 			// Trigger sprite overflow flag
-			p->PPU_STATUS |= 0x20;
+			p->cpu_ppu_io->ppu_status |= 0x20;
 		}
 		break;
 	}
@@ -666,16 +670,15 @@ void ppu_step(PPU_Struct *p, Cpu6502* NESCPU)
 
 	/* NMI Calc - call function update_vblank() */
 	if (p->scanline == p->nmi_start) {
-		if (p->PPU_CTRL & 0x80) { /* if PPU CTRL has execute NMI on VBlank */
-			p->PPU_STATUS |= 0x80; /* In VBlank */
+		if (p->cpu_ppu_io->ppu_ctrl & 0x80) { /* if PPU CTRL has execute NMI on VBlank */
+			p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
 			if (p->cycle  == 1) { // 6 works for SMB1
-				NESCPU->nmi_pending = true;
-				//printf("NMI pending\n");
+				p->cpu_ppu_io->nmi_pending = true;
 			}
 		}
-		return;
+		//return;  // maybe comment out
 	}  else if (p->scanline == 261) { /* Pre-render scanline */
-		p->PPU_STATUS &= ~0x80;
+		p->cpu_ppu_io->ppu_status &= ~0x80;
 	}
 
 
@@ -748,7 +751,7 @@ void ppu_step(PPU_Struct *p, Cpu6502* NESCPU)
 				}
 			}
 		} else if (p->scanline == 240 && p->cycle == 0) {
-			draw_pixels(pixels, nes_screen); // Render frame
+			draw_pixels(pixels, nes_screen);  // Render frame
 		} else if (p->scanline == 261) {
 			// Pre-render scanline
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
@@ -882,7 +885,7 @@ void ppu_step(PPU_Struct *p, Cpu6502* NESCPU)
 			p->sprite_index = 0;
 			// Clear sprite #0 hit
 			if (p->cycle == 1) {
-				p->PPU_STATUS &= ~0x40; 
+				p->cpu_ppu_io->ppu_status &= ~0x40; 
 				p->sprite_zero_hit = false;
 				p->sprite_zero_scanline = 600;
 				p->sprite_zero_scanline_tmp = 600;

@@ -10,15 +10,8 @@
 
 /* Struct */
 typedef struct {
-	/* Registers  - maybe make these pointers to the CPU mem space */
-	uint8_t PPU_CTRL;   /* $2000 */
-	uint8_t PPU_MASK;   /* $2001 */
-	uint8_t PPU_STATUS; /* $2002 */
-	uint8_t OAM_ADDR;   /* $2003 */
-	uint8_t OAM_DATA;   /* $2004 */
-	uint8_t PPU_SCROLL; /* $2005 */
-	uint8_t PPU_ADDR;   /* $2006 */
-	uint8_t PPU_DATA;   /* $2007 */
+	/* Memory mapped I/O */
+	CpuPpuShare* cpu_ppu_io;
 
 	uint8_t return_value;
 
@@ -75,8 +68,7 @@ typedef struct {
 	uint32_t nmi_start; /* Scanline in which NMI starts - set value depending on NTSC or PAL */
 	const uint32_t nmi_end; /* Scanline in which NMI end */
 	uint16_t cycle; /* PPU Cycles, each PPU mem access takes 2 cycles */
-	uint16_t old_cycle; /* Runs much quicker when 16 wide instead of 32 and fixes a weird overflow bug */
-	// HASN'T FIXED WEIRD OVERFLOW
+	uint16_t old_cycle;
 } PPU_Struct;
 
 enum Memory {
@@ -91,9 +83,9 @@ static const unsigned int palette[64];
 
 /* Initialise Function */
 PPU_Struct *PPU; /* Global NES PPU Pointer */
-PPU_Struct *ppu_init();
-void debug_entry(PPU_Struct *p);
-void debug_exit(PPU_Struct *p);
+PPU_Struct *ppu_init(CpuPpuShare* cp);
+//void debug_entry(PPU_Struct *p);
+//void debug_exit(PPU_Struct *p);
 void ppu_reset(int start, PPU_Struct *p, Cpu6502* CPU); /* Emulates reset/warm-up of PPU */
 
 /* Debug Functions */
@@ -104,8 +96,8 @@ void OAM_viewer(enum Memory ppu_mem); // rename to VRAM viewer
 
 /* Read & Write Functions */
 //uint8_t read_PPU();
-uint8_t read_PPU_Reg(uint16_t addr, PPU_Struct *p); /* For addresses exposed to CPU */
-void write_PPU_Reg(uint16_t addr, uint8_t data, PPU_Struct *p, Cpu6502* CPU); /* For addresses exposed to CPU */
+uint8_t read_ppu_reg(uint16_t addr, PPU_Struct *p); /* For addresses exposed to CPU */
+void write_ppu_reg(uint16_t addr, uint8_t data, PPU_Struct *p, Cpu6502* CPU); /* For addresses exposed to CPU */
 
 void write_vram(uint8_t data, PPU_Struct *p);
 
@@ -114,7 +106,8 @@ void read_2002(PPU_Struct *p);
 void read_2007(PPU_Struct *p);
 
 void write_2000(uint8_t data, PPU_Struct *p); /* PPU_CTRL */
-void write_2004(uint8_t data, PPU_Struct *p); /* OAM_DATA */
+void write_2003(uint8_t data, PPU_Struct *p); /* OAM_DATA */
+void write_2004(uint8_t data, PPU_Struct *p); /* OAM_ADDR */
 void write_2005(uint8_t data, PPU_Struct *p); /* PPU_SCROLL */
 void write_2006(uint8_t data, PPU_Struct *p); /* PPU_ADDR */
 void write_2007(uint8_t data, PPU_Struct *p); /* PPU_DATA */

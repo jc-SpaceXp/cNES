@@ -7,8 +7,9 @@
 #include "cart.h"
 #include "ppu.h"
 
+const char* filename = "milk_nuts.nes";
 //const char* filename = "nestest.nes";
-const char* filename = "super_mario_bros.nes";
+//const char* filename = "super_mario_bros.nes";
 //const char* filename = "donkey_kong.nes";
 //const char* filename = "balloon.nes";
 //const char* filename = "nmi.nes";
@@ -41,8 +42,9 @@ void ppu_cpu_ratio(void)
 int main(int argc, char** argv)
 {
 #define __RESET__
-	CPU = cpu_init(0xC000);
-	PPU = ppu_init();
+	CpuPpuShare* cpu_ppu = mmio_init();
+	CPU = cpu_init(0xC000, cpu_ppu);
+	PPU = ppu_init(cpu_ppu);
 
 	Cartridge* cart = malloc(sizeof(Cartridge));
 	load_cart(cart, filename, CPU, PPU);
@@ -59,11 +61,11 @@ int main(int argc, char** argv)
 	nes_screen = screen_init();
 
 	
-	//1000000 for quick SMB1 test
-	//while (i < 80000000) { // 5 Frames DK
 	while (i < 10000000) { // SMB1 start of demo
-	//while (CPU->Cycle < 22040403) { // DK overflow?
-	//while (CPU->Cycle < 8198933) { // Balloon fight overflow
+	//while (i < 23507) { // milk and nuts munmap_chunck() error 23500 = no error w/ quit
+	//while (CPU->Cycle < 6373063) { // NMI test end
+	//while (CPU->Cycle < 22040403) { // DK demo
+	//while (CPU->Cycle < 8198933) { // Balloon fight demo
 		ppu_cpu_ratio();
 		++i;
 	}
@@ -82,11 +84,11 @@ int main(int argc, char** argv)
 		ppu_cpu_ratio();
 	}
 	*/
-	screen_clear(nes_screen);
-	nes_screen = NULL;
+	//screen_clear(nes_screen);  //seg fault rn
+	//nes_screen = NULL;  //seg fault rn
 
 	//PPU_MEM_DEBUG(); // PPU memory viewer
-	//cpu_ram_viewer(NES);
+	//cpu_mem_viewer(CPU);
 	//OAM_viewer(PRIMARY_OAM);
 	OAM_viewer(SECONDARY_OAM);
 	free(PPU);

@@ -2,13 +2,43 @@
  * Contains CPU architechture and functions
  */
 #include "cpu.h"
-#include "ppu.h"
+#include "ppu.h"  // needed for read/write functions
+
+CpuPpuShare* mmio_init(void)
+{
+	CpuPpuShare* i = malloc(sizeof(CpuPpuShare));
+	if (!i) {
+		fprintf(stderr, "Failed to allocate enough memory for PPU I/O\n");
+		return i;
+	}
+
+	i->ppu_ctrl = 0;
+	i->ppu_mask = 0;
+	i->ppu_status = 0;
+	i->oam_addr = 0;
+	i->oam_data = 0;
+	i->ppu_scroll = 0;
+	i->ppu_addr = 0;
+	i->ppu_data = 0;
+	i->oam_dma = 0;
+
+	i->nmi_pending = false;
+	i->dma_pending = false;
+	i->suppress_nmi = false;
+	return i;
+}
 
 /* NES_CPU : Type 6502 CPU, used to initialise CPU
  */
-Cpu6502* cpu_init(uint16_t pc_init)
+Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp)
 {
 	Cpu6502* i = malloc(sizeof(Cpu6502));
+	if (!i) {
+		fprintf(stderr, "Failed to allocate enough memory for CPU\n");
+		return i;
+	}
+
+	i->cpu_ppu_io = cp;
 	i->PC = pc_init;
 	i->Stack = 0xFD; // After startup stack pointer is FD
 	i->Cycle = 0;
@@ -16,13 +46,11 @@ Cpu6502* cpu_init(uint16_t pc_init)
 	i->A = 0;
 	i->X = 0;
 	i->Y = 0;
-	i->nmi_pending = 0;
-	i->dma_pending = 0;
-	i->delay_nmi = 0;
 	i->old_Cycle = 0;
 	memset(i->RAM, 0, MEMORY_SIZE); // Zero out RAM
 	return i;
 }
+
 
 /* rename to set_PC */
 void set_pc(Cpu6502* NES)
@@ -30,12 +58,12 @@ void set_pc(Cpu6502* NES)
 	NES->PC = return_little_endian(NES, 0xFFFC);
 }
 
-uint8_t read_from_cpu(Cpu6502* NES, uint16_t addr)
+uint8_t read_from_cpu(Cpu6502* NES, uint16_t addr)  // add a ppu_pointer?
 {
 	if (addr < 0x2000) {
 		return NES->RAM[addr & 0x7FF];
 	} else if (addr < 0x4000) {
-		read_PPU_Reg(addr & 0x2007, PPU);
+		read_ppu_reg(addr & 0x2007, PPU);
 	} else {
 		return NES->RAM[addr]; /* catch-all */
 	}
@@ -53,9 +81,9 @@ void write_to_cpu(Cpu6502* NES, uint16_t addr, uint8_t val)
 		NES->RAM[addr & 0x7FF] = val;
 	} else if (addr < 0x4000) {
 		NES->RAM[addr & 0x2007] = val;
-		write_PPU_Reg(addr & 0x2007, val, PPU, NES);
+		write_ppu_reg(addr & 0x2007, val, PPU, NES);
 	} else if (addr == 0x4014) {
-		write_PPU_Reg(addr, val, PPU, NES);
+		write_ppu_reg(addr, val, PPU, NES);
 	} else {
 		NES->RAM[addr] = val;
 	}
