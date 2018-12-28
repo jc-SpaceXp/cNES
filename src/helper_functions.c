@@ -122,7 +122,7 @@ void log_cpu_info(Cpu6502* NES)
 	printf("Y:%.2X ", NES->old_Y);
 	printf("P:%.2X ", NES->old_P);
 	printf("SP:%.2X ", NES->old_Stack);
-	printf("CPU:%.4d", NES->old_Cycle);
+	printf("CPU:%.4u", NES->old_Cycle);
 }
 
 void update_cpu_info(Cpu6502* NES)
