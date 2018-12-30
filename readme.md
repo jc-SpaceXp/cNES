@@ -20,8 +20,7 @@ challenge and the result so far is an emulator that isn't perfect but one I'm pr
 ![BKG Test](screens/bkg_test.png)
 
 ## Todo
-* Add sprites (DMA has been added and works)
-* Add sprite logic (i.e. sprite #0 hit detection)
+* Make CPU execute instructions one clock cycle at a time
 * Move debugg triggering from emu.c to command line options
 * Process controller input
 * Add audio support
