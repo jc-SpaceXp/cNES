@@ -37,6 +37,9 @@ cNES can be compiled and used on Linux.
 With the requirements satisfied. It is as simple as:
 
         $ make
+        $ make DEBUG=1
+
+(With the latter making a DEBUG build)
   
 **Optional settings:**
   

@@ -9,7 +9,7 @@ ifeq ($(DEBUG), 1)
         CFLAGS += -g -D__DEBUG__
         CONFIG = debug
 else
-        CFLAGS += -DN__DEBUG__ 
+        CFLAGS += -DN__DEBUG__
         CONFIG = release
 endif
 

@@ -7,14 +7,13 @@
 #include "cart.h"
 #include "ppu.h"
 
-const char* filename = "milk_nuts.nes";
+//const char* filename = "milk_nuts.nes";
 //const char* filename = "nestest.nes";
 //const char* filename = "super_mario_bros.nes";
-//const char* filename = "donkey_kong.nes";
+const char* filename = "donkey_kong.nes";
 //const char* filename = "balloon.nes";
 //const char* filename = "nmi.nes";
 
-#define __DEBUG__ // Add print statements for each instruction
 #define __LOG__
 
 /* comment out above or uncomment below to disable logging to a file
