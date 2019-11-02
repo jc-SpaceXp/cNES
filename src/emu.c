@@ -1,11 +1,13 @@
 /* NES emulator executes here */
 
-#include <stdio.h>
-#include "helper_functions.h"
-#include "opcode_functions.h"
-#include "opcode_table.h"
+#include "emu.h"
 #include "cart.h"
+#include "cpu.h"
 #include "ppu.h"
+#include "gui.h"
+
+#include <stdio.h>
+#include <stdlib.h>
 
 //const char* filename = "milk_nuts.nes";
 //const char* filename = "nestest.nes";
@@ -20,22 +22,16 @@ const char* filename = "donkey_kong.nes";
 #undef __LOG__
 */
 
-void ppu_cpu_ratio(void)
+void ppu_cpu_ratio(Cpu6502* CPU, PPU_Struct* PPU, Display* nes_screen)
 {
 	PPU->old_cycle = PPU->cycle;
-	update_cpu_info(CPU);
 
 	// 3 : 1 PPU to CPU ratio
-	cpu_step(CPU->PC, CPU);
-	for (unsigned i = 0; i < (CPU->Cycle - CPU->old_Cycle); i++) {
-		ppu_step(PPU, CPU);
-		ppu_step(PPU, CPU);
-		ppu_step(PPU, CPU);
-	}
-#ifdef __DEBUG__
-	log_cpu_info(CPU);
-	append_ppu_info();
-#endif /* __DEBUG__ */
+	cpu_step(CPU);
+	//printf("CPU %X    PPU: %X\n", CPU->cpu_ppu_io->ppu_mask, PPU->cpu_ppu_io->ppu_mask);
+	ppu_step(PPU, CPU, nes_screen);
+	ppu_step(PPU, CPU, nes_screen);
+	ppu_step(PPU, CPU, nes_screen);
 }
 
 int main(void)
@@ -47,10 +43,10 @@ int main(void)
 	CpuPpuShare* cpu_ppu = mmio_init();
 	if (!cpu_ppu)
 		goto program_exit;
-	CPU = cpu_init(0xC000, cpu_ppu);
+	Cpu6502* CPU = cpu_init(0xC000, cpu_ppu);
 	if (!CPU)
 		goto program_exit;
-	PPU = ppu_init(cpu_ppu);
+	PPU_Struct* PPU = ppu_init(cpu_ppu);
 	if (!PPU)
 		goto program_exit;
 
@@ -65,29 +61,34 @@ int main(void)
 	free(cart);
 	cart = NULL;
 
-	set_pc(CPU); /* Set PC to reset vector */
+	init_pc(CPU); // Initialise PC to reset vector
+	//CPU->PC = 0xC000; // nestest
+	update_cpu_info(CPU);
 
 #ifdef __LOG__
 	stdout = freopen("trace_log.txt", "w", stdout);
 #endif /*__LOG__ */
 
-	nes_screen = screen_init();
+	Display* nes_screen = screen_init();
 	if (!nes_screen)
 		goto program_exit;
 
+#if 1
 	unsigned i = 0;
+	// 5005 nestest, 104615 SMB1, 42360 Donkey Kong @ 5 frames
 	while (i < 10000000) { // SMB1 start of demo
 	//while (i < 23507) { // milk and nuts munmap_chunck() error 23500 = no error w/ quit
+	//while (i < 200) {
 	//while (CPU->Cycle < 6373063) { // NMI test end
 	//while (CPU->Cycle < 22040403) { // DK demo
 	//while (CPU->Cycle < 8198933) { // Balloon fight demo
-		ppu_cpu_ratio();
+		ppu_cpu_ratio(CPU, PPU, nes_screen);
 		++i;
 	}
+#endif
 
+#if 0
 	/* SDL LOOOOOOP */
-	/*
-	nes_screen = screen_init();
 	int quit = 0;
 	SDL_Event e;
 	while (!quit) {
@@ -96,22 +97,23 @@ int main(void)
 				quit = 1;
 			}
 		}
-		ppu_cpu_ratio();
+		ppu_cpu_ratio(CPU, PPU, nes_screen);
 	}
-	*/
-	//screen_clear(nes_screen);  //seg fault rn
-	//nes_screen = NULL;  //seg fault rn
 
-	//PPU_MEM_DEBUG(); // PPU memory viewer
-	//cpu_mem_viewer(CPU);
-	//OAM_viewer(PRIMARY_OAM);
-	OAM_viewer(SECONDARY_OAM);
+	screen_clear(nes_screen);  //seg fault rn
+	nes_screen = NULL;  //seg fault rn
+#endif
+
+	//cpu_mem_16_byte_viewer(CPU, 0, 2048);
+	//ppu_mem_16_byte_viewer(PPU, 0, 2048);
+	//OAM_viewer(PPU, PRIMARY_OAM);
+	//OAM_viewer(PPU, SECONDARY_OAM);
 
 	ret = 0;
+
 program_exit:
 	free(cart);
-	if (nes_screen)
-		screen_clear(nes_screen);
+	if (nes_screen) { screen_clear(nes_screen); }
 	free(nes_screen);
 	free(PPU);
 	free(CPU);

@@ -23,10 +23,7 @@ SRCS := $(SRCDIR)/cart.c \
         $(SRCDIR)/cpu.c \
         $(SRCDIR)/emu.c \
         $(SRCDIR)/gui.c \
-        $(SRCDIR)/helper_functions.c \
         $(SRCDIR)/mappers.c \
-        $(SRCDIR)/opcode_functions.c \
-        $(SRCDIR)/opcode_table.c \
         $(SRCDIR)/ppu.c
 
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)

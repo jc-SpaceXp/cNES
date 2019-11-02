@@ -1,10 +1,14 @@
 #ifndef __CART__
 #define __CART__
 
+#ifndef KiB
 #define KiB (1024U)
+#endif /* KiB */
+
 #include <stdint.h>
+
+#include "extern_structs.h"
 #include "mappers.h"
-#include "ppu.h"
 
 /* FLAG 9 in iNES header */
 typedef enum {

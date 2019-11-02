@@ -1,4 +1,9 @@
 #include "ppu.h"
+#include "gui.h"
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <inttypes.h>
 
 /* Reverse bits lookup table for an 8 bit number */
 static const uint8_t reverse_bits[256] = {
@@ -37,6 +42,8 @@ static const uint32_t palette[64] = {
 // Mesen Palette
 static const uint32_t palette[0x40] = { 0xFF666666, 0xFF002A88, 0xFF1412A7, 0xFF3B00A4, 0xFF5C007E, 0xFF6E0040, 0xFF6C0600, 0xFF561D00, 0xFF333500, 0xFF0B4800, 0xFF005200, 0xFF004F08, 0xFF00404D, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFADADAD, 0xFF155FD9, 0xFF4240FF, 0xFF7527FE, 0xFFA01ACC, 0xFFB71E7B, 0xFFB53120, 0xFF994E00, 0xFF6B6D00, 0xFF388700, 0xFF0C9300, 0xFF008F32, 0xFF007C8D, 0xFF000000, 0xFF000000, 0xFF000000, 0xFFFFFEFF, 0xFF64B0FF, 0xFF9290FF, 0xFFC676FF, 0xFFF36AFF, 0xFFFE6ECC, 0xFFFE8170, 0xFFEA9E22, 0xFFBCBE00, 0xFF88D800, 0xFF5CE430, 0xFF45E082, 0xFF48CDDE, 0xFF4F4F4F, 0xFF000000, 0xFF000000, 0xFFFFFEFF, 0xFFC0DFFF, 0xFFD3D2FF, 0xFFE8C8FF, 0xFFFBC2FF, 0xFFFEC4EA, 0xFFFECCC5, 0xFFF7D8A5, 0xFFE4E594, 0xFFCFEF96, 0xFFBDF4AB, 0xFFB3F3CC, 0xFFB5EBF2, 0xFFB8B8B8, 0xFF000000, 0xFF000000 };
 
+uint32_t pixels[256 * 240];
+
 
 PPU_Struct* ppu_init(CpuPpuShare* cp)
 {
@@ -46,7 +53,13 @@ PPU_Struct* ppu_init(CpuPpuShare* cp)
 		return ppu;
 	}
 	ppu->cpu_ppu_io = cp;
-	ppu->buffer_2007 = 0;
+	ppu->cpu_ppu_io->VRAM = &(ppu->VRAM[0]); // used so CPU can access PPU VRAM w/o needing the PPU struct
+	ppu->cpu_ppu_io->OAM = &(ppu->OAM[0]); // used so CPU can access PPU VRAM w/o needing the PPU struct
+	ppu->cpu_ppu_io->buffer_2007 = 0;
+	ppu->cpu_ppu_io->vram_addr = &ppu->vram_addr;
+	ppu->cpu_ppu_io->vram_tmp_addr = &ppu->vram_tmp_addr;
+	ppu->cpu_ppu_io->mirroring = &ppu->mirroring;
+	ppu->cpu_ppu_io->fineX = &ppu->fineX;
 
 	ppu->reset_1 = false;
 	ppu->reset_2 = false;
@@ -105,9 +118,9 @@ void ppu_reset(int start, PPU_Struct *p, Cpu6502* CPU)
 	}
 }
 
-void append_ppu_info(void)
+void append_ppu_info(PPU_Struct* PPU)
 {
-	printf(" PPU_CYC: %" PRIu16, PPU->old_cycle);
+	printf(" PPU_CYC: %.3" PRIu16, PPU->old_cycle);
 	printf(" SL: %" PRIu32 "\n", PPU->scanline);
 }
 
@@ -125,14 +138,13 @@ void debug_ppu_regs(Cpu6502* CPU)
 	printf("3F01: %.2X\n\n", read_from_cpu(CPU, 0x3F01));
 }
 
-// pass a struct into the argument, then arg.start is mem and arg.count = byte
-void PPU_MEM_DEBUG(void)
+void ppu_mem_16_byte_viewer(PPU_Struct* PPU, unsigned start_addr, unsigned total_rows)
 {
+	printf("\n##################### PPU MEM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
-	unsigned int addr = 0; // Byte count
-	unsigned int mem = 0;  // Start address
-	while (addr < 1024) {
-		printf("%.4X: ", addr << 4);
+	unsigned mem = start_addr;
+	while (start_addr < total_rows) {
+		printf("%.4X: ", start_addr << 4);
 		for (int x = 0; x < 16; x++) {
 			printf("%.2X ", PPU->VRAM[mem]);
 			//printf("%.2X ", PPU->scanline_OAM[mem]);
@@ -140,13 +152,15 @@ void PPU_MEM_DEBUG(void)
 			++mem;
 		}
 		printf("\n");
-		++addr;
+		++start_addr;
 	}
 }
 
 
-void OAM_viewer(enum Memory ppu_mem)
+// fix like above
+void OAM_viewer(PPU_Struct* PPU, enum Memory ppu_mem)
 {
+	printf("\n##################### PPU OAM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
 	unsigned int addr = 0; // Byte count. 16 Bytes per line
 	unsigned int mem = 0;  // Start address
@@ -169,212 +183,224 @@ void OAM_viewer(enum Memory ppu_mem)
 	}
 }
 
-uint8_t read_ppu_reg(uint16_t addr, PPU_Struct *p)
+uint8_t read_ppu_reg(uint16_t addr, Cpu6502* CPU)
 {
+	uint8_t ret;
 	switch (addr) {
 	case (0x2002):
 		/* PPU STATUS */
-		read_2002(p);
+		read_2002(CPU);
+		ret = CPU->cpu_ppu_io->return_value;
 		break;
 	case (0x2004):
 		/* OAM Data (read & write) */
-		return p->cpu_ppu_io->oam_data;
+		ret = CPU->cpu_ppu_io->oam_data;
+		break;
 	case (0x2007):
 		/* PPU DATA */
-		read_2007(p);
+		read_2007(CPU);
+		ret = CPU->cpu_ppu_io->return_value;
 		break;
 	}
-	return p->return_value;
+	return ret;
 }
 
 /* CPU uses this function */
-void write_ppu_reg(uint16_t addr, uint8_t data, PPU_Struct *p, Cpu6502* CPU)
+void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* CPU)
 {
 	switch (addr) {
 	case (0x2000):
 		/* PPU CTRL */
-		p->cpu_ppu_io->ppu_ctrl = data;
-		write_2000(data, p);
+		CPU->cpu_ppu_io->ppu_ctrl = data;
+		write_2000(data, CPU);
 		break;
 	case (0x2001):
 		/* PPU MASK */
-		p->cpu_ppu_io->ppu_mask = data;
+		CPU->cpu_ppu_io->ppu_mask = data;
 		break;
 	case (0x2003):
 		/* OAM ADDR */
-		write_2003(data, p);
+		write_2003(data, CPU);
 		break;
 	case (0x2004):
 		/* OAM Data (read & write) */
-		p->cpu_ppu_io->oam_data = data;
-		write_2004(data, p);
+		CPU->cpu_ppu_io->oam_data = data;
+		write_2004(data, CPU);
 		break;
 	case (0x2005):
 		/* PPU SCROLL (write * 2) */
-		write_2005(data, p);
+		write_2005(data, CPU);
 		break;
 	case (0x2006):
 		/* PPU ADDR (write * 2) */
-		write_2006(data, p);
+		write_2006(data, CPU);
 		break;
 	case (0x2007):
 		/* PPU DATA */
-		p->cpu_ppu_io->ppu_data = data;
-		write_2007(data, p);
+		CPU->cpu_ppu_io->ppu_data = data;
+		write_2007(data, CPU);
 		break;
 	case (0x4014):
-		write_4014(data, p, CPU);
+		write_4014(data, CPU);
 		break;
 	}
 }
 
-void write_vram(uint8_t data, PPU_Struct *p)
+// VRAM is written to by the CPU
+void write_vram(uint8_t data, Cpu6502* CPU)
 {
-	uint16_t addr = p->vram_addr & 0x3FFF;
-	if (p->mirroring == 0) {
+	uint16_t addr = *(CPU->cpu_ppu_io->vram_addr) & 0x3FFF;
+	if (*(CPU->cpu_ppu_io->mirroring) == 0) {
 		// Horiz mirroring
 		if (addr >= 0x2000 && addr < 0x2800) {
 			if (addr < 0x2400) {
-				p->VRAM[addr] = data;
-				p->VRAM[addr + 0x0400] = data;
+				CPU->cpu_ppu_io->VRAM[addr] = data;
+				CPU->cpu_ppu_io->VRAM[addr + 0x0400] = data;
 			} else {
-				p->VRAM[addr] = data;
-				p->VRAM[addr - 0x0400] = data;
+				CPU->cpu_ppu_io->VRAM[addr] = data;
+				CPU->cpu_ppu_io->VRAM[addr - 0x0400] = data;
 			}
 		} else if (addr >= 2800 && addr < 0x3000) {
 			if (addr < 0x2C00) {
-				p->VRAM[addr] = data;
-				p->VRAM[addr + 0x0400] = data;
+				CPU->cpu_ppu_io->VRAM[addr] = data;
+				CPU->cpu_ppu_io->VRAM[addr + 0x0400] = data;
 			} else {
-				p->VRAM[addr] = data;
-				p->VRAM[addr - 0x0400] = data;
+				CPU->cpu_ppu_io->VRAM[addr] = data;
+				CPU->cpu_ppu_io->VRAM[addr - 0x0400] = data;
 			}
 		}
-	} else if (p->mirroring == 1) {
+	} else if (*(CPU->cpu_ppu_io->mirroring) == 1) {
 		// Vertical mirroring
 		if (addr >= 0x2000 && addr < 0x2800) {
-			p->VRAM[addr] = data;
-			p->VRAM[addr + 0x0800] = data;
+			CPU->cpu_ppu_io->VRAM[addr] = data;
+			CPU->cpu_ppu_io->VRAM[addr + 0x0800] = data;
 		} else if (addr >= 0x2800 && addr < 0x2C00) {
-			p->VRAM[addr] = data;
-			p->VRAM[addr - 0x0800] = data;
+			CPU->cpu_ppu_io->VRAM[addr] = data;
+			CPU->cpu_ppu_io->VRAM[addr - 0x0800] = data;
 		}
-	} else if (p->mirroring == 4) {
+	} else if (*(CPU->cpu_ppu_io->mirroring) == 4) {
 		// 4 Screen
-		p->VRAM[addr] = data; // Do nothing
+		CPU->cpu_ppu_io->VRAM[addr] = data; // Do nothing
 	}
 
 	/* Write to palettes */
 	if (addr >= 0x3F00 && addr < 0x3F10) {
-		p->VRAM[addr] = data;
+		CPU->cpu_ppu_io->VRAM[addr] = data;
 		if ((addr & 0x03) == 0) {
-			p->VRAM[addr + 0x10] = data; // If palette #0 mirror 4 palettes up
+			CPU->cpu_ppu_io->VRAM[addr + 0x10] = data; // If palette #0 mirror 4 palettes up
 		}
 	} else if (addr >= 0x3F10 && addr < 0x3F20) {
-		p->VRAM[addr] = data;
+		CPU->cpu_ppu_io->VRAM[addr] = data;
 		if ((addr & 0x03) == 0) {
-			p->VRAM[addr - 0x10] = data; // If palette #0 mirror 4 palettes down
+			CPU->cpu_ppu_io->VRAM[addr - 0x10] = data; // If palette #0 mirror 4 palettes down
 		}
 	}
 }
 
 /* Read Functions */
-
-void read_2002(PPU_Struct* p)
+void read_2002(Cpu6502* CPU)
 {
-	p->return_value = p->cpu_ppu_io->ppu_status;
-	p->cpu_ppu_io->ppu_status &= ~0x80U;  // compiler complains
-	p->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
+	CPU->cpu_ppu_io->return_value = CPU->cpu_ppu_io->ppu_status;
+	CPU->cpu_ppu_io->ppu_status &= ~0x80U;  // compiler complains
+	CPU->cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
 }
 
-void read_2007(PPU_Struct *p)
+void read_2007(Cpu6502* CPU)
 {
-	uint16_t addr = p->vram_addr & 0x3FFF;
+	uint16_t addr = *(CPU->cpu_ppu_io->vram_addr) & 0x3FFF;
 	//uint8_t ret = 0; // return value
 
-	p->return_value = p->buffer_2007;
-	p->buffer_2007 = p->VRAM[addr];
+	CPU->cpu_ppu_io->return_value = CPU->cpu_ppu_io->buffer_2007;
+	CPU->cpu_ppu_io->buffer_2007 = CPU->cpu_ppu_io->VRAM[addr];
 
 	if (addr >= 0x3F00) {
-		p->return_value = p->VRAM[addr];
+		CPU->cpu_ppu_io->return_value = CPU->cpu_ppu_io->VRAM[addr];
 	}
 
-	p->vram_addr += ppu_vram_addr_inc(p);
+	*(CPU->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(CPU);
 }
 
 /* Write Functions */
-void write_2000(uint8_t data, PPU_Struct *p)
+void write_2000(uint8_t data, Cpu6502* CPU)
 {
-	p->vram_tmp_addr &= ~0x0C00; /* Clear bits to be set */
-	p->vram_tmp_addr |= (data & 0x03) << 10;
+	*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x0C00; /* Clear bits to be set */
+	*(CPU->cpu_ppu_io->vram_tmp_addr) |= (data & 0x03) << 10;
 }
 
-inline void write_2003(uint8_t data, PPU_Struct* p)
+inline void write_2003(uint8_t data, Cpu6502* CPU)
 {
-	p->cpu_ppu_io->oam_data = data;
+	CPU->cpu_ppu_io->oam_addr = data;
 }
 
-void write_2004(uint8_t data, PPU_Struct* p)
+void write_2004(uint8_t data, Cpu6502* CPU)
 {
-	p->OAM[p->cpu_ppu_io->oam_addr] = data;
-	++p->cpu_ppu_io->oam_addr;
+	CPU->cpu_ppu_io->OAM[CPU->cpu_ppu_io->oam_addr] = data;
+	++CPU->cpu_ppu_io->oam_addr;
 }
 
-void write_2005(uint8_t data, PPU_Struct *p)
+void write_2005(uint8_t data, Cpu6502* CPU)
 {
 	// Valid address = 0x0000 to 0x3FFF
-	if (!p->write_toggle) {
+	if (!CPU->cpu_ppu_io->write_toggle) {
 		// First Write
-		p->vram_tmp_addr &= ~0x001F; /* Clear bits that are to be set */
-		p->vram_tmp_addr |= (data >> 3);
-		p->fineX = data & 0x07; /* same as data % 8 */
+		*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x001F; /* Clear bits that are to be set */
+		*(CPU->cpu_ppu_io->vram_tmp_addr) |= (data >> 3);
+		*(CPU->cpu_ppu_io->fineX) = data & 0x07; /* same as data % 8 */
 	} else {
 		// Second Write
-		p->vram_tmp_addr &= ~0x73E0; /* Clear bits that are to be set */
-		p->vram_tmp_addr |= ((data & 0xF8) << 2) | ((data & 0x07) << 12);
-		p->cpu_ppu_io->ppu_scroll = p->vram_tmp_addr;
+		*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x73E0; /* Clear bits that are to be set */
+		*(CPU->cpu_ppu_io->vram_tmp_addr) |= ((data & 0xF8) << 2) | ((data & 0x07) << 12);
+		CPU->cpu_ppu_io->ppu_scroll = *(CPU->cpu_ppu_io->vram_tmp_addr);
 	}
-	p->write_toggle = !p->write_toggle;
+	CPU->cpu_ppu_io->write_toggle = !CPU->cpu_ppu_io->write_toggle;
 }
 
 
-void write_2006(uint8_t data, PPU_Struct *p)
+void write_2006(uint8_t data, Cpu6502* CPU)
 {
 	// Valid address = 0x0000 to 0x3FFF
-	if (!p->write_toggle) {
-		p->vram_tmp_addr &= ~0x7F00; /* Clear Higher Byte */
-		p->vram_tmp_addr |= (uint16_t) ((data & 0x3F) << 8); /* 14th bit should be clear */
+	if (!CPU->cpu_ppu_io->write_toggle) {
+		*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x7F00; /* Clear Higher Byte */
+		*(CPU->cpu_ppu_io->vram_tmp_addr) |= (uint16_t) ((data & 0x3F) << 8); /* 14th bit should be clear */
 	} else {
-		p->vram_tmp_addr &= ~0x00FF; /* Clear Lower Byte */
-		p->vram_tmp_addr |= data; /* Lower byte */
-		p->vram_addr = p->vram_tmp_addr;
-		p->cpu_ppu_io->ppu_addr = p->vram_tmp_addr;
+		*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x00FF; /* Clear Lower Byte */
+		*(CPU->cpu_ppu_io->vram_tmp_addr) |= data; /* Lower byte */
+		*(CPU->cpu_ppu_io->vram_addr) = *(CPU->cpu_ppu_io->vram_tmp_addr);
+		CPU->cpu_ppu_io->ppu_addr = *(CPU->cpu_ppu_io->vram_tmp_addr);
 	}
-	p->write_toggle = !p->write_toggle;
+	CPU->cpu_ppu_io->write_toggle = !CPU->cpu_ppu_io->write_toggle;
 }
 
 
-void write_2007(uint8_t data, PPU_Struct *p)
+void write_2007(uint8_t data, Cpu6502* CPU)
 {
-	write_vram(data, p);
-	p->vram_addr += ppu_vram_addr_inc(p);
+	write_vram(data, CPU);
+	*(CPU->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(CPU);
 }
 
 
-void write_4014(uint8_t data, PPU_Struct *p, Cpu6502* NESCPU)
+void write_4014(uint8_t data, Cpu6502* CPU)
 {
-	p->cpu_ppu_io->dma_pending = true;
-	for (int i = 0; i < 256; i++) {
-		write_2004(NESCPU->RAM[(data << 8) + i], p);
-	}
+	CPU->cpu_ppu_io->dma_pending = true;
+	CPU->base_addr = data;
+
+	// OLD OAM transfer
+	//for (int i = 0; i < 256; i++) {
+		// Think it is bad to use the 2004 reg for a DMA transfer
+		// Uninententially set the oam_addr
+		// Shouldn't be an issue as oam_addr shouldbe set explicitly after by the programmer
+		//write_2004(CPU->MEM[(data << 8) + i], CPU);
+		//CPU->cpu_ppu_io->OAM[CPU->cpu_ppu_io->oam_addr + i] = CPU->MEM[(data << 8) + i];
+	//}
 }
 
 /**
  * PPU_CTRL
  */
-uint8_t ppu_vram_addr_inc(PPU_Struct* p)
+// use CPU to access shared CPU/PPU space as this is needed in CPU writes
+uint8_t ppu_vram_addr_inc(Cpu6502* CPU)
 {
-	if (!(p->cpu_ppu_io->ppu_ctrl & 0x04)) {
+	if (!(CPU->cpu_ppu_io->ppu_ctrl & 0x04)) {
 		return 1;
 	} else {
 		return 32;
@@ -659,12 +685,19 @@ void ppu_tick(PPU_Struct *p)
 	}
 }
 
-void ppu_step(PPU_Struct *p, Cpu6502* NESCPU)
+void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 {
 	//debug_entry(p);
 //#ifdef __RESET__
-	ppu_reset(1, p, NESCPU);
+	ppu_reset(1, p, CPU);
 //#endif
+
+#ifdef __DEBUG__
+	if (p->cpu_ppu_io->write_debug) {
+		p->cpu_ppu_io->write_debug = false;
+		append_ppu_info(p);
+	}
+#endif /* __DEBUG__ */
 
 	ppu_tick(p); // Idle cycle thus can run tick to increment cycle from 0 to 1 initially
 
@@ -674,6 +707,7 @@ void ppu_step(PPU_Struct *p, Cpu6502* NESCPU)
 			p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
 			if (p->cycle  == 1) { // 6 works for SMB1
 				p->cpu_ppu_io->nmi_pending = true;
+				p->cpu_ppu_io->nmi_cycles_left = 7;
 			}
 		}
 		//return;  // maybe comment out

@@ -1,8 +1,7 @@
 #ifndef __MAPPERS__
 #define __MAPPERS__
 
-#include "cpu.h"
-#include "ppu.h"
+#include "extern_structs.h"
 
 struct Cartridge; // Forward decleratrion
 

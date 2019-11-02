@@ -1,24 +1,29 @@
 /*
- * Contains CPU Architechture
+ * Contains CPU architechture and functions to help with
+ * fetching and decoding CPU instructions
  */
 #ifndef __6502_CPU__
 #define __6502_CPU__
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
+#include "extern_structs.h"
 
-#define MEMORY_SIZE  65536U // Total memory available to the CPU
-/* Status_Flags */
+#include <stdint.h>
+#include <stdbool.h>
+
+/* Status_Flags
+ * Bits : 7 ----------> 0
+ * Flags: N V - - D I Z C
+ * Note:  Bit 5 = Breakpoint (used in debugging - not used in NES)
+ */
 #define FLAG_C  0x01 /* Carry */
 #define FLAG_Z  0x02 /* Zero */
 #define FLAG_I  0x04 /* Interupt Enabled */
 #define FLAG_D  0x08 /* Decimal mode - not supported on NES */
 #define FLAG_V  0x40 /* Overflow */
 #define FLAG_N  0x80 /* Negative */
-/* Stack Pointer Definitions - Empty Descending Stack */
-#define SP_START   0x0100U /* Stack pointer upper byte is fixed to 1 */
+
+/* Stack pointer definitions (empty descending stack) */
+#define SP_START   0x0100U /* Stack pointer upper byte is fixed to 0x01 */
 #define SP_OFFSET  0xFFU
 
 /* Interrupt Vectors (lo address) */
@@ -27,124 +32,157 @@
 #define NMI_VECTOR 0xFFFAU  // NMI vector: 0xFFFA and 0xFFFB
 #define RST_VECTOR 0xFFFCU  // Reset vector: 0xFFFC and 0xFFFD
 
-#if 0
 
-// New "ShareBus" idea, instead on #including .cpu.h in ppu.c
-// and then including ppu.h in cpu.c, we can just include cpu.h
-// into ppu.h so that we can pass this struct whic both the cpu and
-// ppu can freely operate on w/o carefully tring to define functions
-// that have access to both live structures during execution
-typedef struct {
-	uint8_t ppu_addr;
-	uint8_t ppu_ctrl;
-} SharedBus;
+// 0 denotes illegal op codes
+static const uint8_t max_cycles_opcode_lut[256] = {
+	0x0007, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0003, 0x0002, 0x0002,      0,      0, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	0x0006, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0004, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	0x0006, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0003, 0x0002, 0x0002,      0, 0x0003, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	0x0006, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0004, 0x0002, 0x0002,      0, 0x0005, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	     0, 0x0006,      0,      0, 0x0003, 0x0003, 0x0003,      0, 0x0002,      0, 0x0002,      0, 0x0004, 0x0004, 0x0004,      0,
+	0x0004, 0x0006,      0,      0, 0x0004, 0x0004, 0x0004,      0, 0x0002, 0x0005, 0x0002,      0,      0, 0x0005,      0,      0,
+	0x0002, 0x0006, 0x0002,      0, 0x0003, 0x0003, 0x0003,      0, 0x0002, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0004,      0,
+	0x0004, 0x0006,      0,      0, 0x0004, 0x0004, 0x0004,      0, 0x0002, 0x0005, 0x0002,      0, 0x0005, 0x0005, 0x0005,      0,
+	0x0002, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0002, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	0x0002, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0002, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0
+};
 
-#endif
-
-typedef struct {
-	/* Registers */
-	uint8_t ppu_ctrl;    // $2000
-	uint8_t ppu_mask;    // $2001
-	uint8_t ppu_status;  // $2002
-	uint8_t oam_addr;    // $2004
-	uint8_t oam_data;    // $2004
-	uint8_t ppu_scroll;  // $2005
-	uint8_t ppu_addr;    // $2006
-	uint8_t ppu_data;    // $2007
-	uint8_t oam_dma;     // $4014
-
-	/* Flags */
-	bool nmi_pending;  // PPU indidcates if an nmi is pending, CPU then services the request
-	bool dma_pending;  // PPU indidcates if an dma is pending, CPU then services the request
-	bool suppress_nmi;
-} CpuPpuShare;  // PPU MMIO 
-
-typedef struct {
-	/* Memory mapped I/O */
-	CpuPpuShare* cpu_ppu_io;
-
-	/* Registers */
-	uint8_t A; /* Accumulator */
-	uint8_t X; /* X Reg */
-	uint8_t Y; /* Y Reg */
-	/* Special Registers */
-	uint8_t P; /* Program status register - contains flags */
-	unsigned Cycle;
-	int Stack; /* only being used for debugging */
-	uint16_t PC; /* Program counter (Instruction Pointer) */
-	/* Memory */
-	uint8_t RAM[MEMORY_SIZE]; /* 2 Kb internal RAM */
-
-	uint8_t addr_lo;
-	uint8_t addr_hi;
-	uint16_t target_addr;
-	uint8_t operand;
-
-	/* Previous Values - for Disassembler */
-	uint8_t old_A;
-	uint8_t old_X;
-	uint8_t old_Y;
-	uint8_t old_P;
-	unsigned old_Cycle;
-	int old_Stack;
-	uint16_t old_PC;
-} Cpu6502;
-
-
-/* Program Status Register
- *
- * Bit 0 = Carry
- * Bit 1 = Zero
- * Bit 2 = Interrupt enable/disable
- * Bit 3 = Decimal mode (not present in NES)
- * Bit 4 = - (Doesn't Store anything)
- * Bit 5 = Breakpoint (used in debugging - not used in NES)
- * Bit 6 = V - Overflow
- * Bit 7 = N - Negative
- */
-
-/* Header Prototypes */
-Cpu6502* CPU;
 
 CpuPpuShare* mmio_init(void);
 Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
-void set_pc(Cpu6502* CPU); /* Set PC via reset vector */
+void cpu_tick(Cpu6502* CPU);
+void cpu_step(Cpu6502* CPU);
 
+// Helper functions
+void init_pc(Cpu6502* CPU); /* Set PC via reset vector */
 uint8_t read_from_cpu(Cpu6502* CPU, uint16_t addr);  // Read byte from CPU mempry
 uint16_t return_little_endian(Cpu6502* CPU, uint16_t addr); // Returns 2 byte
 void write_to_cpu(Cpu6502* CPU, uint16_t addr, uint8_t val);
-void cpu_mem_viewer(Cpu6502* CPU);
+void cpu_mem_16_byte_viewer(Cpu6502* CPU, unsigned start_addr, unsigned total_rows);
+void cpu_debugger(Cpu6502* CPU);
+bool branch_not_taken(Cpu6502* CPU);
+void fetch_opcode(Cpu6502* CPU);
+bool fixed_cycles_on_store(Cpu6502* CPU);
+void log_cpu_info(Cpu6502* CPU);
+void update_cpu_info(Cpu6502* CPU);
+bool page_cross_occurs(unsigned low_byte, unsigned offset);
+/* Flags */
+void update_flag_z(Cpu6502* CPU, uint8_t result);
+void update_flag_n(Cpu6502* CPU, uint8_t result);
+void update_flag_v(Cpu6502* CPU, bool overflow);
+void update_flag_c(Cpu6502* CPU, int carry_out);
+/* Stack */
+void stack_push(Cpu6502* CPU, uint8_t value);
+uint8_t stack_pull(Cpu6502* CPU);
 
-/* Adressing Modes:
- *
- * 1. ABS = Absolute Mode
- * 2. ABSX = Absolute Mode indexed via X
- * 3. ABSY = Absolute Mode indexed via Y
- * 4. ACC = Accumulator Mode
- * 5. IMM = Immediate Mode
- * 6. IMP = Implied Mode
- * 7. IND = Indirect Mode
- * 8. INDX = Indexed Indirect Mode via X
- * 9. INDY = Indirect Index Mode via Y
- * 10. REL = Relative Mode
- * 11. ZP = Zero Page Mode
- * 12. ZPX = Zero Page Mode indexed via X
- * 13. ZPY = Zero Page Mode indexed via Y
- */
-typedef enum {
-	ABS,
-	ABSX,
-	ABSY,
-	ACC,
-	IMM,
-	IMP,
-	IND,
-	INDX,
-	INDY,
-	REL,
-	ZP,
-	ZPX,
-	ZPY,
-} AddressMode;
+// Decoders: generic / address mode decoders
+void bad_op_code(Cpu6502* CPU);  // needed for function pointer of illegal op codes
+void decode_ABS_read_store(Cpu6502* CPU);
+void decode_ABS_rmw(Cpu6502* CPU);
+void decode_ABSX_read_store(Cpu6502* CPU);
+void decode_ABSX_rmw(Cpu6502* CPU);
+void decode_ABSY_read_store(Cpu6502* CPU);
+void decode_ACC(Cpu6502* CPU);
+void decode_IMM_read_store(Cpu6502* CPU);
+void decode_IMP(Cpu6502* CPU);  // no decoding happens
+void decode_INDX_read_store(Cpu6502* CPU);
+void decode_INDY_read_store(Cpu6502* CPU);
+void decode_ZP_read_store(Cpu6502* CPU);
+void decode_ZP_rmw(Cpu6502* CPU);
+void decode_ZPX_read_store(Cpu6502* CPU);
+void decode_ZPX_rmw(Cpu6502* CPU);
+void decode_ZPY_read_store(Cpu6502* CPU);
+void decode_ABS_JMP(Cpu6502* CPU);
+void decode_IND_JMP(Cpu6502* CPU);
+void decode_SPECIAL(Cpu6502* CPU);  // no decoding happens (when specific decoders and generic ones don't apply)
+/* Specific decoders */
+void decode_PUSH(Cpu6502* CPU);
+void decode_PULL(Cpu6502* CPU);
+void decode_Bxx(Cpu6502* CPU); // branch instructions (REL address mode)
+void decode_RTS(Cpu6502* CPU);
+
+
+// Execute functions for op code
+// Storage:
+void execute_LDA(Cpu6502* CPU);
+void execute_LDX(Cpu6502* CPU);
+void execute_LDY(Cpu6502* CPU);
+void execute_STA(Cpu6502* CPU);
+void execute_STX(Cpu6502* CPU);
+void execute_STY(Cpu6502* CPU);
+void execute_TAX(Cpu6502* CPU);
+void execute_TAY(Cpu6502* CPU);
+void execute_TSX(Cpu6502* CPU);
+void execute_TXA(Cpu6502* CPU);
+void execute_TXS(Cpu6502* CPU);
+void execute_TYA(Cpu6502* CPU);
+
+// Math:
+void execute_ADC(Cpu6502* CPU);
+void execute_DEC(Cpu6502* CPU);
+void execute_DEX(Cpu6502* CPU);
+void execute_DEY(Cpu6502* CPU);
+void execute_INC(Cpu6502* CPU);
+void execute_INX(Cpu6502* CPU);
+void execute_INY(Cpu6502* CPU);
+void execute_SBC(Cpu6502* CPU);
+
+// Bitwise:
+void execute_AND(Cpu6502* CPU);
+void execute_ASL(Cpu6502* CPU);
+void execute_BIT(Cpu6502* CPU);
+void execute_EOR(Cpu6502* CPU);
+void execute_LSR(Cpu6502* CPU);
+void execute_ORA(Cpu6502* CPU);
+void execute_ROL(Cpu6502* CPU);
+void execute_ROR(Cpu6502* CPU);
+
+// Branch
+void execute_BCC(Cpu6502* CPU);
+void execute_BCS(Cpu6502* CPU);
+void execute_BEQ(Cpu6502* CPU);
+void execute_BMI(Cpu6502* CPU);
+void execute_BNE(Cpu6502* CPU);
+void execute_BPL(Cpu6502* CPU);
+void execute_BVC(Cpu6502* CPU);
+void execute_BVS(Cpu6502* CPU);
+
+// JMP
+void execute_JMP(Cpu6502* CPU);
+void execute_JSR(Cpu6502* CPU);
+void execute_RTI(Cpu6502* CPU);
+void execute_RTS(Cpu6502* CPU);
+
+// Registers
+void execute_CLC(Cpu6502* CPU);
+void execute_CLD(Cpu6502* CPU);
+void execute_CLI(Cpu6502* CPU);
+void execute_CLV(Cpu6502* CPU);
+void execute_CMP(Cpu6502* CPU);
+void execute_CPX(Cpu6502* CPU);
+void execute_CPY(Cpu6502* CPU);
+void execute_SEC(Cpu6502* CPU);
+void execute_SED(Cpu6502* CPU);
+void execute_SEI(Cpu6502* CPU);
+
+// Stack
+void execute_PHA(Cpu6502* CPU);
+void execute_PHP(Cpu6502* CPU);
+void execute_PLA(Cpu6502* CPU);
+void execute_PLP(Cpu6502* CPU);
+
+// System
+void execute_BRK(Cpu6502* CPU);
+void execute_NOP(Cpu6502* CPU);
+void execute_IRQ(Cpu6502* CPU);
+void execute_NMI(Cpu6502* CPU); // Not an official opcode
+void execute_DMA(Cpu6502* CPU); // Not an official opcode
+
 
 #endif /* __6502_CPU__ */
