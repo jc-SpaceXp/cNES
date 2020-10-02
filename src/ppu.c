@@ -60,12 +60,13 @@ PPU_Struct* ppu_init(CpuPpuShare* cp)
 	ppu->cpu_ppu_io->vram_tmp_addr = &ppu->vram_tmp_addr;
 	ppu->cpu_ppu_io->mirroring = &ppu->mirroring;
 	ppu->cpu_ppu_io->fineX = &ppu->fineX;
+	ppu->cpu_ppu_io->write_debug = false;
 
 	ppu->reset_1 = false;
 	ppu->reset_2 = false;
-	ppu->cycle = 0;
-	ppu->cycle = 30; // Used to match Mesen traces
-	ppu->scanline = 0; // Mesen starts @ 0, previously mine = 240
+	ppu->cycle = 30;
+	ppu->scanline = 0;
+	ppu->OAM_read_buffer = 0;
 
 	/* Set PPU Latches and shift reg to 0 */
 	ppu->pt_lo_shift_reg = 0;
@@ -82,6 +83,15 @@ PPU_Struct* ppu_init(CpuPpuShare* cp)
 	ppu->sprite_zero_scanline_tmp = 600;
 	ppu->hit_scanline = 600; // Impossible values
 	ppu->hit_cycle = 600; // Impossible values
+
+	// Zero out arrays
+	memset(ppu->VRAM, 0, sizeof(ppu->VRAM));
+	memset(ppu->OAM, 0, sizeof(ppu->OAM));
+	memset(ppu->scanline_OAM, 0, sizeof(ppu->scanline_OAM));
+	memset(ppu->sprite_x_counter, 0, sizeof(ppu->sprite_x_counter));
+	memset(ppu->sprite_at_latches, 0, sizeof(ppu->sprite_at_latches));
+	memset(ppu->sprite_pt_lo_shift_reg, 0, sizeof(ppu->sprite_pt_lo_shift_reg));
+	memset(ppu->sprite_pt_hi_shift_reg, 0, sizeof(ppu->sprite_pt_hi_shift_reg));
 
 	/* NTSC */
 	ppu->nmi_start = 241;
@@ -114,7 +124,7 @@ void ppu_reset(int start, PPU_Struct *p, Cpu6502* CPU)
 		p->reset_2 = true;
 	} else if (p->reset_2 && (CPU->Cycle >= 57164)) {
 		p->cpu_ppu_io->ppu_status |= 0x80;
-		p->reset_2 = false;  // changed frim true
+		p->reset_2 = false;  // changed from true
 	}
 }
 
@@ -688,9 +698,6 @@ void ppu_tick(PPU_Struct *p)
 void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 {
 	//debug_entry(p);
-//#ifdef __RESET__
-	ppu_reset(1, p, CPU);
-//#endif
 
 #ifdef __DEBUG__
 	if (p->cpu_ppu_io->write_debug) {
@@ -703,8 +710,8 @@ void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 
 	/* NMI Calc - call function update_vblank() */
 	if (p->scanline == p->nmi_start) {
+		p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
 		if (p->cpu_ppu_io->ppu_ctrl & 0x80) { /* if PPU CTRL has execute NMI on VBlank */
-			p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
 			if (p->cycle  == 1) { // 6 works for SMB1
 				p->cpu_ppu_io->nmi_pending = true;
 				p->cpu_ppu_io->nmi_cycles_left = 7;
@@ -715,6 +722,10 @@ void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 		p->cpu_ppu_io->ppu_status &= ~0x80;
 	}
 
+
+#ifdef __RESET__
+	ppu_reset(1, p, CPU);
+#endif
 
 	/* Process BG Scanlines */
 	if(ppu_show_bg(p)) {
@@ -858,7 +869,7 @@ void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 			} else if (p->cycle <= 256) {
 				sprite_evaluation(p); // function includes break;
 			} else if (p->cycle <= 320) { // Sprite data fetches
-				unsigned count; // Counts 8 secondary OAM
+				static unsigned count = 0; // Counts 8 secondary OAM
 				if (p->cycle == 257) {
 					p->sprite_index = 0; // Using to access scanline_OAM
 					count = 0;
@@ -876,8 +887,8 @@ void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 						offset = 0; // Stops out of bounds access for -1
 					}
 					p->sprite_addr += offset;
-					break;
 					//printf("SPRITE ADDR %.4X\n", p->sprite_addr);
+					break;
 				case 2:
 					// Garbage AT byte - no need to emulate
 					p->sprite_at_latches[count] = p->scanline_OAM[(count * 4) + 2];

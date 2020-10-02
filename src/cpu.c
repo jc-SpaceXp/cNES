@@ -328,11 +328,13 @@ void cpu_debugger(Cpu6502* CPU)
 		sprintf(append_int, "%.2X", CPU->addr_lo);
 		strcpy(end, "$");
 		strcat(end, append_int);
+		strcat(end, ",X");
 		break;
 	case ZPY:    // 13. Zero Page Mode indexed via Y
 		sprintf(append_int, "%.2X", CPU->addr_lo);
 		strcpy(end, "$");
 		strcat(end, append_int);
+		strcat(end, ",Y");
 		break;
 	default:
 		printf("Invalid address mode\n");
@@ -1090,10 +1092,10 @@ void execute_ADC(Cpu6502* CPU)
 void execute_DEC(Cpu6502* CPU)
 {
 	strcpy(instruction, "DEC ");
-	write_to_cpu(CPU, CPU->target_addr,
-						  read_from_cpu(CPU, CPU->target_addr) - 1);
-	update_flag_n(CPU, read_from_cpu(CPU, CPU->target_addr));
-	update_flag_z(CPU, read_from_cpu(CPU, CPU->target_addr));
+	CPU->operand = read_from_cpu(CPU, CPU->target_addr);
+	write_to_cpu(CPU, CPU->target_addr, CPU->operand - 1);
+	update_flag_n(CPU, CPU->operand - 1);
+	update_flag_z(CPU, CPU->operand - 1);
 }
 
 
@@ -1126,10 +1128,10 @@ void execute_DEY(Cpu6502* CPU)
 void execute_INC(Cpu6502* CPU)
 {
 	strcpy(instruction, "INC ");
-	write_to_cpu(CPU, CPU->target_addr,
-						  read_from_cpu(CPU, CPU->target_addr) + 1);
-	update_flag_n(CPU, read_from_cpu(CPU, CPU->target_addr));
-	update_flag_z(CPU, read_from_cpu(CPU, CPU->target_addr));
+	CPU->operand = read_from_cpu(CPU, CPU->target_addr);
+	write_to_cpu(CPU, CPU->target_addr, CPU->operand + 1);
+	update_flag_n(CPU, CPU->operand + 1);
+	update_flag_z(CPU, CPU->operand + 1);
 }
 
 
@@ -1210,15 +1212,14 @@ void execute_ASL(Cpu6502* CPU)
 		update_flag_z(CPU, CPU->A);
 	} else {
 		/* Shift value @ address 1 bit to the left */
-		high_bit = read_from_cpu(CPU, CPU->target_addr) & 0x80; /* Mask 7th bit */
-		write_to_cpu(CPU, CPU->target_addr,
-							  read_from_cpu(CPU, CPU->target_addr) << 1);
-		update_flag_n(CPU, read_from_cpu(CPU, CPU->target_addr));
-		update_flag_z(CPU, read_from_cpu(CPU, CPU->target_addr));
+		CPU->operand = read_from_cpu(CPU, CPU->target_addr);
+		high_bit = CPU->operand & 0x80; /* Mask 7th bit */
+		write_to_cpu(CPU, CPU->target_addr, CPU->operand << 1);
+		update_flag_n(CPU, CPU->operand << 1);
+		update_flag_z(CPU, CPU->operand << 1);
 	}
-	high_bit = high_bit >> 7;
 	/* Update Carry */
-	update_flag_c(CPU, high_bit);
+	update_flag_c(CPU, high_bit >> 7);
 }
 
 
@@ -1227,27 +1228,13 @@ void execute_ASL(Cpu6502* CPU)
 void execute_BIT(Cpu6502* CPU)
 {
 	strcpy(instruction, "BIT ");
-	int tmp = CPU->A & read_from_cpu(CPU, CPU->target_addr);
+	CPU->operand = read_from_cpu(CPU, CPU->target_addr);
 	/* Update Flags */
 	/* N = Bit 7, V = Bit 6 (of fetched operand) & Z = 1 (if AND result = 0) */
-	/* Setting 7th Bit */
-	if ((read_from_cpu(CPU, CPU->target_addr) & FLAG_N)) {
-		CPU->P |= FLAG_N; /* set */
-	} else {
-		CPU->P &= ~FLAG_N; /* clear flag */
-	}
-	/* Setting 6th Bit */
-	if ((read_from_cpu(CPU, CPU->target_addr) & FLAG_V)) {
-		CPU->P |= FLAG_V;
-	} else {
-		CPU->P &= ~FLAG_V;
-	}
-	/* Setting Zero FLAG */
-	if (tmp == 0) {
-		CPU->P |= FLAG_Z; /* set */
-	} else {
-		CPU->P &= ~FLAG_Z; /* clear */
-	}
+
+	update_flag_n(CPU, CPU->operand);
+	update_flag_v(CPU, CPU->operand & FLAG_V);
+	update_flag_z(CPU, CPU->operand & CPU->A);
 }
 
 
@@ -1278,11 +1265,11 @@ void execute_LSR(Cpu6502* CPU)
 		update_flag_n(CPU, CPU->A); /* Should always clear N flag */
 		update_flag_z(CPU, CPU->A);
 	} else {
-		low_bit = read_from_cpu(CPU, CPU->target_addr) & 0x01; /* Mask 0th bit */
-		write_to_cpu(CPU, CPU->target_addr,
-					 read_from_cpu(CPU, CPU->target_addr) >> 1);
-		update_flag_n(CPU, read_from_cpu(CPU, CPU->target_addr)); /* Should always clear N flag */
-		update_flag_z(CPU, read_from_cpu(CPU, CPU->target_addr));
+		CPU->operand = read_from_cpu(CPU, CPU->target_addr);
+		low_bit = CPU->operand & 0x01; /* Mask 0th bit */
+		write_to_cpu(CPU, CPU->target_addr, CPU->operand >> 1);
+		update_flag_n(CPU, CPU->operand >> 1); /* Should always clear N flag */
+		update_flag_z(CPU, CPU->operand >> 1);
 	}
 	/* Update Carry */
 	update_flag_c(CPU, low_bit);
@@ -1321,19 +1308,21 @@ void execute_ROL(Cpu6502* CPU)
 		update_flag_n(CPU, CPU->A);
 		update_flag_z(CPU, CPU->A);
 	} else {
-		high_bit = read_from_cpu(CPU, CPU->target_addr) & 0x80; /* Mask 7th bit */
-		write_to_cpu(CPU, CPU->target_addr,
-					 read_from_cpu(CPU, CPU->target_addr) << 1);
+		CPU->operand = read_from_cpu(CPU, CPU->target_addr);
+		high_bit = CPU->operand & 0x80; /* Mask 7th bit */
+		unsigned result = CPU->operand << 1;
+		write_to_cpu(CPU, CPU->target_addr, result);
 		if (CPU->P & FLAG_C) {
-			write_to_cpu(CPU, CPU->target_addr,
-						 read_from_cpu(CPU, CPU->target_addr) | 0x01);
+			result |= 0x01;
+			write_to_cpu(CPU, CPU->target_addr, result);
 		}
-		update_flag_n(CPU, read_from_cpu(CPU, CPU->target_addr));
-		update_flag_z(CPU, read_from_cpu(CPU, CPU->target_addr));
+		update_flag_n(CPU, result);
+		update_flag_z(CPU, result);
 	}
 	/* Update Flag */
-	high_bit = high_bit >> 7;
-	update_flag_c(CPU, high_bit);
+	//high_bit = high_bit >> 7; // removed from the other high bit one
+	// kept in case it breaks something
+	update_flag_c(CPU, high_bit >> 7);
 }
 
 
@@ -1353,16 +1342,17 @@ void execute_ROR(Cpu6502* CPU)
 		update_flag_n(CPU, CPU->A);
 		update_flag_z(CPU, CPU->A);
 	} else {
-		low_bit = read_from_cpu(CPU, CPU->target_addr) & 0x01;
-		write_to_cpu(CPU, CPU->target_addr,
-		             read_from_cpu(CPU, CPU->target_addr) >> 1);
+		CPU->operand = read_from_cpu(CPU, CPU->target_addr);
+		low_bit = CPU->operand & 0x01;
+		unsigned result = CPU->operand >> 1;
+		write_to_cpu(CPU, CPU->target_addr, result);
 		if (CPU->P & FLAG_C) {
 			/* Set 7th bit to 1 - if carry = 1 */
-			write_to_cpu(CPU, CPU->target_addr,
-			             read_from_cpu(CPU, CPU->target_addr) | 0x80);
+			result |= 0x80;
+			write_to_cpu(CPU, CPU->target_addr, result);
 		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
-		update_flag_n(CPU, read_from_cpu(CPU, CPU->target_addr));
-		update_flag_z(CPU, read_from_cpu(CPU, CPU->target_addr));
+		update_flag_n(CPU, result);
+		update_flag_z(CPU, result);
 	}
 	/* Update Carry */
 	update_flag_c(CPU, low_bit);

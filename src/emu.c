@@ -28,7 +28,6 @@ void ppu_cpu_ratio(Cpu6502* CPU, PPU_Struct* PPU, Display* nes_screen)
 
 	// 3 : 1 PPU to CPU ratio
 	cpu_step(CPU);
-	//printf("CPU %X    PPU: %X\n", CPU->cpu_ppu_io->ppu_mask, PPU->cpu_ppu_io->ppu_mask);
 	ppu_step(PPU, CPU, nes_screen);
 	ppu_step(PPU, CPU, nes_screen);
 	ppu_step(PPU, CPU, nes_screen);
