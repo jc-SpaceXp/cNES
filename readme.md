@@ -6,9 +6,9 @@ these games (in theory), games tested: _Super Mario Bros, Donkey Kong and
 Balloon Fight_.
 
 cNES is the result of me wanting to get more experienced with _C_ and to work on
-some sort of computer architechture project. I settled on the NES due to the exntensive
-doumentation, especially that of the CPU and the [meduim article](https://medium.com/@fogleman/i-made-an-nes-emulator-here-s-what-i-learned-about-the-original-nintendo-2e078c9b28fe)
-by fogleman. There is already a plethera of NES projects online, so I wanted to make this project
+some sort of computer architecture project. I settled on the NES due to the extensive
+documentation, especially that of the CPU and the [meduim article](https://medium.com/@fogleman/i-made-an-nes-emulator-here-s-what-i-learned-about-the-original-nintendo-2e078c9b28fe)
+by fogleman. There is already a plethora of NES projects online, so I wanted to make this project
 mine and to not abandon the project or copy code; whilst learning about the hardware. Its been a 
 challenge and the result so far is an emulator that isn't perfect but one I'm proud of!
 
@@ -20,8 +20,6 @@ challenge and the result so far is an emulator that isn't perfect but one I'm pr
 ![BKG Test](screens/bkg_test.png)
 
 ## Todo
-* Make CPU execute instructions one clock cycle at a time
-* Move debugg triggering from emu.c to command line options
 * Process controller input
 * Add audio support
 * Potentially add support for other mappers (once above is all done)
@@ -32,7 +30,7 @@ cNES can be compiled and used on Linux.
 **Requirements:**
 * C99 compatible compiler
 * SDL2 (Used to render screen)
-* gcc (clang returns incorrect values from LDA $2002)
+* gcc or clang
 
 With the requirements satisfied. It is as simple as:
 
@@ -40,6 +38,9 @@ With the requirements satisfied. It is as simple as:
         $ make DEBUG=1
 
 (With the latter making a DEBUG build)
+
+Alternatively you can specify the compiler like so: (default is gcc)
+        $ make cc=clang DEBUG=1
   
 **Optional settings:**
   
@@ -48,7 +49,7 @@ the feature or uncommenting to enable them:
 
 `#define __LOG__` - Outputs CPU and PPU information to a file called "trace_log.txt"
   
-`#define __DEBUG__` - Outputs CPU and PPU information to the terminal
+`#define __DEBUG__` - Outputs CPU and PPU information to the terminal (`make DEBUG=1` satisfies this requirement)
 
 	
 ## Running cNES
