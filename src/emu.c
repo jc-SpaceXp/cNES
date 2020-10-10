@@ -9,19 +9,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//const char* filename = "milk_nuts.nes";
-//const char* filename = "nestest.nes";
-//const char* filename = "super_mario_bros.nes";
-const char* filename = "donkey_kong.nes";
-//const char* filename = "balloon.nes";
-//const char* filename = "nmi.nes";
-
-#define __LOG__
-
-/* comment out above or uncomment below to disable logging to a file
-#undef __LOG__
-*/
-
 void ppu_cpu_ratio(Cpu6502* CPU, PPU_Struct* PPU, Display* nes_screen)
 {
 	PPU->old_cycle = PPU->cycle;
@@ -33,9 +20,73 @@ void ppu_cpu_ratio(Cpu6502* CPU, PPU_Struct* PPU, Display* nes_screen)
 	ppu_step(PPU, CPU, nes_screen);
 }
 
-int main(void)
+void usuage(const char* program_name)
+{
+	fprintf(stderr, "\nUSAGE: %s [options]\n", program_name);
+	fprintf(stderr, "OPTIONS:\n");
+	fprintf(stderr, "\t-h\n\tShows all the possible command-line options\n\n");
+	fprintf(stderr, "\t-l\n\tEnable logging to a file\n\n");
+	fprintf(stderr, "\t-o FILE\n\tOpen the provided file\n\n");
+	fprintf(stderr, "\t-c CYCLES\n\tRun the CPU up to the specified number of cycles\n");
+}
+
+int main(int argc, char** argv)
 {
 	int ret = -1;
+
+	const char* program_name = "emu";
+	char* filename = "dummy.nes";  // default: forces user to submit a file to open
+	unsigned long max_cycles = 0;
+	bool help = false;
+	bool log = false;
+
+	// process command line arguments
+	while ((argc > 1) && (argv[1][0] == '-')) {
+		// make sure -x isn't the same as -xxxxxxx (where x is any command line option)
+		if (strlen(argv[1]) > 2) {
+			fprintf(stderr, "Command line option must be a single character when using the '-' option\n");
+			break;
+		}
+
+		switch (argv[1][1]) {
+		case 'h': // h - display help message
+			help = true;
+			break;
+		case 'o': // o - open file
+			if (argc < 3 || (argv[2][0] == '-')) {
+				fprintf(stderr, "Please provide a filename\n");
+				help = true;
+				break;
+			}
+			--argc;
+			++argv;
+			filename = &argv[1][0];
+			break;
+		case 'l': // l - enable logging to a file
+			log = true;
+			break;
+		case 'c': // c - execute emulator for a fixed number of cpu clock cycles
+			if (argc < 3 || (argv[2][0] == '-')) {
+				fprintf(stderr, "Please provide an unsigned integer\n");
+				help = true;
+				break;
+			}
+			--argc;
+			++argv;
+			max_cycles = atoi(&argv[1][0]);
+			break;
+		}
+		// increment argv and decrement argc
+		--argc;
+		++argv;
+	}
+
+	// only display help if the user requested it (or if they didn't supply a filename too)
+	if (help) {
+		usuage(program_name);
+		goto early_return;
+	}
+
 	Cartridge* cart = NULL;
 #define __RESET__
 
@@ -64,44 +115,36 @@ int main(void)
 	//CPU->PC = 0xC000; // nestest
 	update_cpu_info(CPU);
 
-#ifdef __LOG__
-	stdout = freopen("trace_log.txt", "w", stdout);
-#endif /*__LOG__ */
+	if (log) {
+		stdout = freopen("trace_log.txt", "w", stdout);
+	}
 
 	Display* nes_screen = screen_init();
 	if (!nes_screen)
 		goto program_exit;
 
-#if 1
-	unsigned i = 0;
-	// 5005 nestest, 104615 SMB1, 42360 Donkey Kong @ 5 frames
-	while (i < 10000000) { // SMB1 start of demo
-	//while (i < 23507) { // milk and nuts munmap_chunck() error 23500 = no error w/ quit
-	//while (i < 200) {
-	//while (CPU->Cycle < 6373063) { // NMI test end
-	//while (CPU->Cycle < 22040403) { // DK demo
-	//while (CPU->Cycle < 8198933) { // Balloon fight demo
-		ppu_cpu_ratio(CPU, PPU, nes_screen);
-		++i;
-	}
-#endif
 
-#if 0
-	/* SDL LOOOOOOP */
-	int quit = 0;
-	SDL_Event e;
-	while (!quit) {
-		while (SDL_PollEvent(&e)) {
-			if (e.type == SDL_QUIT) {
-				quit = 1;
-			}
+	// run for a fixed number of cycles if specified by the user
+	if (max_cycles) {
+		while (CPU->Cycle < max_cycles) {
+			ppu_cpu_ratio(CPU, PPU, nes_screen);
 		}
-		ppu_cpu_ratio(CPU, PPU, nes_screen);
+	} else {
+		/* SDL GAME LOOOOOOP */
+		int quit = 0;
+		SDL_Event e;
+		while (!quit) {
+			while (SDL_PollEvent(&e)) {
+				if (e.type == SDL_QUIT) {
+					quit = 1;
+				}
+			}
+			ppu_cpu_ratio(CPU, PPU, nes_screen);
+		}
 	}
 
 	screen_clear(nes_screen);  //seg fault rn
 	nes_screen = NULL;  //seg fault rn
-#endif
 
 	//cpu_mem_16_byte_viewer(CPU, 0, 2048);
 	//ppu_mem_16_byte_viewer(PPU, 0, 2048);
@@ -118,5 +161,6 @@ program_exit:
 	free(CPU);
 	free(cpu_ppu);
 
+early_return:
 	return ret;
 }
