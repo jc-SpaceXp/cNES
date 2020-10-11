@@ -727,6 +727,8 @@ void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 	ppu_reset(1, p, CPU);
 #endif
 
+	(void) CPU; // disable warning for unused parameter (still occurs even if __RESET__ is defined)
+
 	/* Process BG Scanlines */
 	if(ppu_show_bg(p)) {
 		if (p->scanline <= 239) { /* Visible scanlines */
