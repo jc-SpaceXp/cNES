@@ -134,17 +134,19 @@ int main(int argc, char** argv)
 		int quit = 0;
 		SDL_Event e;
 		while (!quit) {
-			while (SDL_PollEvent(&e)) {
-				if (e.type == SDL_QUIT) {
-					quit = 1;
+			if (PPU->cpu_ppu_io->ppu_status & 0x80) { // process input when ppu is idle
+				while (SDL_PollEvent(&e)) {
+					if (e.type == SDL_QUIT) {
+						quit = 1;
+					}
 				}
 			}
 			ppu_cpu_ratio(CPU, PPU, nes_screen);
 		}
 	}
 
-	screen_clear(nes_screen);  //seg fault rn
-	nes_screen = NULL;  //seg fault rn
+	screen_clear(nes_screen);
+	nes_screen = NULL;
 
 	//cpu_mem_16_byte_viewer(CPU, 0, 2048);
 	//ppu_mem_16_byte_viewer(PPU, 0, 2048);
