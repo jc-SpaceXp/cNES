@@ -57,14 +57,18 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 
 =#define __DEBUG__= - Outputs CPU and PPU information to the terminal (=make DEBUG=1= satisfies this requirement)
 
-** Command-line Options
+*** Command-line Options
 
--o FILE: Opens a user-provided file (necessary to run the emualtor) (note: FILE must be provided)
--c CYCLES: Run cNES for a fixed number of CPU cycles (note: CYCLES must be provided)
--l : Outputs CPU and PPU information to a file called "trace_log.txt"
--h : List of all the command line options inside your terminal
+=-o FILE= Opens a user-provided file (necessary to run the emualtor) (note: FILE must be provided)
+
+=-c CYCLES= Run cNES for a fixed number of CPU cycles (note: CYCLES must be provided)
+
+=-l= Outputs CPU and PPU information to a file called "trace_log.txt"
+
+=-h= List of all the command line options inside your terminal
 
 *Controls:*
+
 *Player1*
 
 |----------+--------|
@@ -82,7 +86,7 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 
 ** License
 
-cNES is zlib licensed, as found in the [[file:LICENSE][=LICENSE=]] file.
+cNES is zlib licensed, as found in the [[file:LICENSE][LICENSE]] file.
 
 ** Acknowledgments
 
