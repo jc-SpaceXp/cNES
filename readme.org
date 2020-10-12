@@ -1,9 +1,8 @@
 ** What is cNES
 
 cNES is a NES emulator which is only supported under Linux. It currently
-loads NROM (mapper 0) games and is capable of loading the title screen
-of these games (in theory), games tested: /Super Mario Bros, Donkey Kong
-and Balloon Fight/.
+loads NROM (mapper 0) games and is capable of playing any NROM game at
+in theory. Games tested: /Super Mario Bros, Donkey Kong and Balloon Fight/.
 
 cNES is the result of me wanting to get more experienced with /C/ and to
 work on some sort of computer architecture project. I settled on the NES
@@ -18,7 +17,7 @@ one I'm proud of!
 ** Screenshots
 
 [[file:screens/donkey_kong.png]] [[file:screens/balloon_fight.png]]
-[[file:screens/super_mario_bros.png]] [[file:screens/bkg_test.png]]
+[[file:screens/super_mario_bros_s1.png]] [[file:screens/super_mario_bros_s2.png]]
 
 ** Todo
 
@@ -57,7 +56,7 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 
 =#define __DEBUG__= - Outputs CPU and PPU information to the terminal (=make DEBUG=1= satisfies this requirement)
 
-*** Command-line Options
+*Command-line Options:*
 
 =-o FILE= Opens a user-provided file (necessary to run the emualtor) (note: FILE must be provided)
 
@@ -69,7 +68,7 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 
 *Controls:*
 
-*Player1*
+*Player 1*
 
 |----------+--------|
 | Keyboard | NES    |

@@ -2,3 +2,4 @@ build/
 *.nes
 *.txt
 emu
+*~
