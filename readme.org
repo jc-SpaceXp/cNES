@@ -1,0 +1,133 @@
+** What is cNES
+
+cNES is a NES emulator which is only supported under Linux. It currently
+loads NROM (mapper 0) games and is capable of loading the title screen
+of these games (in theory), games tested: /Super Mario Bros, Donkey Kong
+and Balloon Fight/.
+
+cNES is the result of me wanting to get more experienced with /C/ and to
+work on some sort of computer architecture project. I settled on the NES
+due to the extensive documentation, especially that of the CPU and the
+[[https://medium.com/@fogleman/i-made-an-nes-emulator-here-s-what-i-learned-about-the-original-nintendo-2e078c9b28fe][meduim
+article]] by fogleman. There is already a plethora of NES projects
+online, so I wanted to make this project mine and to not abandon the
+project or copy code; whilst learning about the hardware. Its been a
+challenge and the result so far is an emulator that isn't perfect but
+one I'm proud of!
+
+** Screenshots
+
+[[file:screens/donkey_kong.png]] [[file:screens/balloon_fight.png]]
+[[file:screens/super_mario_bros.png]] [[file:screens/bkg_test.png]]
+
+** Todo
+
+- Process controller input for player 2
+- Add audio support
+- Potentially add support for other mappers (once above is all done)
+
+** Building cNES
+
+cNES can be compiled and used on Linux.
+
+*Requirements:* 
+- C99 compatible compiler
+- SDL2 (used to render screen)
+- gcc or clang
+
+With the requirements satisfied. It is as simple as:
+
+#+BEGIN_EXAMPLE
+        $ make
+        $ make DEBUG=1
+#+END_EXAMPLE
+
+(With the latter making a DEBUG build)
+
+Alternatively you can specify the compiler like so: (default is gcc) =$make cc=clang DEBUG=1=
+
+
+** Running cNES
+
+#+BEGIN_EXAMPLE
+        $ ./emu -o FILE
+#+END_EXAMPLE
+
+*Optional settings:*
+
+=#define __DEBUG__= - Outputs CPU and PPU information to the terminal (=make DEBUG=1= satisfies this requirement)
+
+** Command-line Options
+
+-o FILE: Opens a user-provided file (necessary to run the emualtor) (note: FILE must be provided)
+-c CYCLES: Run cNES for a fixed number of CPU cycles (note: CYCLES must be provided)
+-l : Outputs CPU and PPU information to a file called "trace_log.txt"
+-h : List of all the command line options inside your terminal
+
+*Controls:*
+*Player1*
+
+|----------+--------|
+| Keyboard | NES    |
+|----------+--------|
+| M        | A      |
+| N        | B      |
+| Q        | Select |
+| E        | Start  |
+| W        | Up     |
+| S        | Down   |
+| A        | Left   |
+| D        | Right  |
+|----------+--------+
+
+** License
+
+cNES is zlib licensed, as found in the [[file:LICENSE][=LICENSE=]] file.
+
+** Acknowledgments
+
+https://github.com/mwpenny/pureNES
+
+http://emulator101.com/
+
+https://medium.com/@fogleman/i-made-an-nes-emulator-here-s-what-i-learned-about-the-original-nintendo-2e078c9b28fe
+
+http://www.dustmop.io/blog/2015/04/28/nes-graphics-part-1/
+
+https://opcode-defined.quora.com/
+
+http://www.fceux.com/web/help/fceux.html?PPU.html
+
+https://www.dwheeler.com/6502/oneelkruns/asm1step.html
+
+https://github.com/paramsingh/gameboi
+
+#+BEGIN_QUOTE
+  At a certain point I understood how the NES PPU worked and how
+  background rendering worked but I was unable to put this thinking into
+  code. This project massively helped me because it served as a readable
+  reference on how to add SDL2 into my project.
+#+END_QUOTE
+
+https://github.com/mwillsey/NES
+
+#+BEGIN_QUOTE
+  Again this massively helped my PPU progress. I understood the
+  background rendering of the PPU and wanted to implement the rendering
+  of a fixed nametable i.e. starting from $2000. So I attempted to see
+  if I could render the title screen (of Donkey Kong). This project
+  helped me build my first iteration of my PPU. They also calculated a
+  fixed nametable (no scrolling), I used their project to help render
+  the title screen of Donkey Kong which it did but not correctly.
+  Nonetheless it was an important breakthrough and my project wouldn't
+  be where it is now without this project.
+#+END_QUOTE
+
+https://github.com/SourMesen/Mesen
+
+#+BEGIN_QUOTE
+  I wouldn't of made so much progress on my PPU and fixing my CPU bugs
+  without the amazing debugging qualities of Mesen. It is a great
+  emulator and several times I've consulted their source code to better
+  my understanding of how to successfully emulate the NES.
+#+END_QUOTE
