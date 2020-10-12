@@ -8,6 +8,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <SDL2/SDL_keycode.h>
+
+#define A_BUTTON      0x01U
+#define B_BUTTON      0x02U
+#define SELECT_BUTTON 0x04U
+#define START_BUTTON  0x08U
+#define UP_BUTTON     0x10U
+#define DOWN_BUTTON   0x20U
+#define LEFT_BUTTON   0x40U
+#define RIGHT_BUTTON  0x80U
 
 void ppu_cpu_ratio(Cpu6502* CPU, PPU_Struct* PPU, Display* nes_screen)
 {
@@ -138,6 +148,72 @@ int main(int argc, char** argv)
 				while (SDL_PollEvent(&e)) {
 					if (e.type == SDL_QUIT) {
 						quit = 1;
+					}
+
+					// detect player 1 key presses (roll into its own function)
+					switch (e.type) {
+					case SDL_KEYDOWN:
+						// store into array and set to 1
+						switch (e.key.keysym.sym) {
+						case SDLK_m:
+							CPU->player_1_controller |= A_BUTTON;
+							break;
+						case SDLK_n:
+							CPU->player_1_controller |= B_BUTTON;
+							break;
+						case SDLK_q:
+							CPU->player_1_controller |= SELECT_BUTTON;
+							break;
+						case SDLK_e:
+							CPU->player_1_controller |= START_BUTTON;
+							break;
+						case SDLK_w:
+							CPU->player_1_controller |= UP_BUTTON;
+							break;
+						case SDLK_s:
+							CPU->player_1_controller |= DOWN_BUTTON;
+							break;
+						case SDLK_a:
+							CPU->player_1_controller |= LEFT_BUTTON;
+							break;
+						case SDLK_d:
+							CPU->player_1_controller |= RIGHT_BUTTON;
+							break;
+						default:
+							break;
+						}
+						break;
+					case SDL_KEYUP:
+						// store into array and set to 0
+						switch (e.key.keysym.sym) {
+						case SDLK_m:
+							CPU->player_1_controller &= ~A_BUTTON;
+							break;
+						case SDLK_n:
+							CPU->player_1_controller &= ~B_BUTTON;
+							break;
+						case SDLK_q:
+							CPU->player_1_controller &= ~SELECT_BUTTON;
+							break;
+						case SDLK_e:
+							CPU->player_1_controller &= ~START_BUTTON;
+							break;
+						case SDLK_w:
+							CPU->player_1_controller &= ~UP_BUTTON;
+							break;
+						case SDLK_s:
+							CPU->player_1_controller &= ~DOWN_BUTTON;
+							break;
+						case SDLK_a:
+							CPU->player_1_controller &= ~LEFT_BUTTON;
+							break;
+						case SDLK_d:
+							CPU->player_1_controller &= ~RIGHT_BUTTON;
+							break;
+						default:
+							break;
+						}
+						break;
 					}
 				}
 			}

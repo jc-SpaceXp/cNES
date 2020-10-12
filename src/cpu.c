@@ -97,6 +97,11 @@ Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp)
 	i->instruction_state = FETCH;
 	// change comment below
 	i->instruction_cycles_remaining = 51; // initially set to zero, initial value doesn't matter as LUT will set it after first instruction is read
+
+	i->controller_latch = 0;
+	i->player_1_controller = 0;
+	i->player_2_controller = 0;
+
 	memset(i->MEM, 0, CPU_MEMORY_SIZE); // Zero out memory
 	return i;
 }
@@ -114,6 +119,10 @@ uint8_t read_from_cpu(Cpu6502* CPU, uint16_t addr)
 		read = CPU->MEM[addr & 0x7FF];
 	} else if (addr < 0x4000) {
 		read = read_ppu_reg(addr & 0x2007, CPU);
+	} else if (addr == 0x4016) {
+		read = read_4016(CPU);
+	} else if (addr == 0x4017) {
+		read = read_4017(CPU);
 	} else {
 		read = CPU->MEM[addr]; /* catch-all */
 	}
@@ -136,9 +145,48 @@ void write_to_cpu(Cpu6502* CPU, uint16_t addr, uint8_t val)
 		CPU->MEM[addr & 0x2007] = val;
 	} else if (addr == 0x4014) {
 		write_ppu_reg(addr, val, CPU);
+	} else if (addr == 0x4016) {
+		write_4016(val, CPU);
 	} else {
 		CPU->MEM[addr] = val;
 	}
+}
+
+void write_4016(uint8_t data, Cpu6502* CPU)
+{
+	// Standard NES controller write
+	if (data == 1) {
+		CPU->controller_latch = 1;
+	} else if (data == 0) {
+		CPU->controller_latch = 0;
+	}
+}
+
+unsigned read_4016(Cpu6502* CPU)
+{
+	static unsigned clock_pulse = 0;
+	unsigned ret = 0;
+
+	ret = (CPU->player_1_controller >> clock_pulse) & 0x01;
+
+	++clock_pulse;
+	if (clock_pulse == 8) { clock_pulse = 0; }
+
+	return ret;
+}
+
+
+unsigned read_4017(Cpu6502* CPU)
+{
+	static unsigned clock_pulse = 0;
+	unsigned ret = 0;
+
+	ret = (CPU->player_2_controller >> clock_pulse) & 0x01;
+
+	++clock_pulse;
+	if (clock_pulse == 8) { clock_pulse = 0; }
+
+	return ret;
 }
 
 // start_addr = start address of the memory you wish to insepct (16 byte boundry alligned)

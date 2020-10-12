@@ -101,6 +101,11 @@ typedef struct {
 	//bool write_flag;  // 1 for store operations i.e. STA, STX etc
 	void (*decoder)(int); // decoder function pointer, see .c file
 
+	// NES controller
+	unsigned controller_latch; // latch signal for controller shift register
+	uint8_t player_1_controller;
+	uint8_t player_2_controller;
+
 	InstructionStates instruction_state;
 	AddressMode address_mode;
 

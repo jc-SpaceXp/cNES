@@ -64,6 +64,9 @@ void init_pc(Cpu6502* CPU); /* Set PC via reset vector */
 uint8_t read_from_cpu(Cpu6502* CPU, uint16_t addr);  // Read byte from CPU mempry
 uint16_t return_little_endian(Cpu6502* CPU, uint16_t addr); // Returns 2 byte
 void write_to_cpu(Cpu6502* CPU, uint16_t addr, uint8_t val);
+void write_4016(uint8_t data, Cpu6502* CPU);
+unsigned read_4016(Cpu6502* CPU);
+unsigned read_4017(Cpu6502* CPU);
 void cpu_mem_16_byte_viewer(Cpu6502* CPU, unsigned start_addr, unsigned total_rows);
 void cpu_debugger(Cpu6502* CPU);
 bool branch_not_taken(Cpu6502* CPU);
