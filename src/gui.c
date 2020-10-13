@@ -1,5 +1,8 @@
 #include "gui.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+
 
 const unsigned SCREEN_HEIGHT = 240;
 const unsigned SCREEN_WIDTH = 256;
