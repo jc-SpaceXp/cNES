@@ -2,7 +2,7 @@
 
 cNES is a NES emulator which is only supported under Linux. It currently
 is capable of playing any NROM (mapper 0) game in theory. Games tested:
-/Super Mario Bros, Donkey Kong, Nuts & Milk, and Balloon Fight /.
+/Super Mario Bros, Donkey Kong, Nuts & Milk, and Balloon Fight/.
 
 cNES is the result of me wanting to get more experienced with /C/ and to
 work on some sort of computer architecture project. I settled on the NES
