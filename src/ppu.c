@@ -97,19 +97,6 @@ PPU_Struct* ppu_init(CpuPpuShare* cp)
 	ppu->nmi_start = 241;
 	return ppu;
 }
-#if 0
-void debug_entry(PPU_Struct *p)
-{
-	// EXIT POINT
-	printf("b4: cyc: %d scan: %d\n", p->cycle, p->scanline);
-}
-
-void debug_exit(PPU_Struct *p)
-{
-	// EXIT POINT
-	printf("a4: cyc: %d scan: %d\n", p->cycle, p->scanline);
-}
-#endif 
 
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
 void ppu_reset(int start, PPU_Struct *p, Cpu6502* CPU)
@@ -311,14 +298,13 @@ void write_vram(uint8_t data, Cpu6502* CPU)
 void read_2002(Cpu6502* CPU)
 {
 	CPU->cpu_ppu_io->return_value = CPU->cpu_ppu_io->ppu_status;
-	CPU->cpu_ppu_io->ppu_status &= ~0x80U;  // compiler complains
+	CPU->cpu_ppu_io->ppu_status &= ~0x80U;
 	CPU->cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
 }
 
 void read_2007(Cpu6502* CPU)
 {
 	uint16_t addr = *(CPU->cpu_ppu_io->vram_addr) & 0x3FFF;
-	//uint8_t ret = 0; // return value
 
 	CPU->cpu_ppu_io->return_value = CPU->cpu_ppu_io->buffer_2007;
 	CPU->cpu_ppu_io->buffer_2007 = CPU->cpu_ppu_io->VRAM[addr];
@@ -393,15 +379,6 @@ void write_4014(uint8_t data, Cpu6502* CPU)
 {
 	CPU->cpu_ppu_io->dma_pending = true;
 	CPU->base_addr = data;
-
-	// OLD OAM transfer
-	//for (int i = 0; i < 256; i++) {
-		// Think it is bad to use the 2004 reg for a DMA transfer
-		// Uninententially set the oam_addr
-		// Shouldn't be an issue as oam_addr shouldbe set explicitly after by the programmer
-		//write_2004(CPU->MEM[(data << 8) + i], CPU);
-		//CPU->cpu_ppu_io->OAM[CPU->cpu_ppu_io->oam_addr + i] = CPU->MEM[(data << 8) + i];
-	//}
 }
 
 /**
@@ -575,7 +552,7 @@ void render_pixel(PPU_Struct *p)
 		bg_palette_addr = 0x3F00; // Take background colour (transparent)
 	}
 
-	unsigned RGB = p->VRAM[bg_palette_addr + bg_palette_offset]; // Get values
+	unsigned RGB = p->VRAM[bg_palette_addr + bg_palette_offset]; // Get RGB values
 
 	/* Shift each cycle */
 	p->pt_hi_shift_reg >>= 1;
@@ -589,7 +566,6 @@ void render_pixel(PPU_Struct *p)
 			p->sprite_x_counter[i] -= 1;
 		} else {
 			sprite_palette_offset[i] = ((p->sprite_pt_hi_shift_reg[i] & 0x01) << 1) | (p->sprite_pt_lo_shift_reg[i] & 0x01);
-			//printf("DEBUG HI|LO AFTER: %X\n", sprite_palette_offset[0]);
 			// Render sprites
 			unsigned sprite_palette_addr = p->sprite_at_latches[i] & 0x03;
 			sprite_palette_addr <<= 2;
@@ -597,7 +573,7 @@ void render_pixel(PPU_Struct *p)
 			if ((((p->sprite_at_latches[i] & 0x20) == 0) || !bg_palette_offset) && sprite_palette_offset[i]) { // front priority 
 				RGB = p->VRAM[sprite_palette_addr + sprite_palette_offset[i]]; // Output sprite
 			} else if (((p->sprite_at_latches[i] & 0x20) == 0x20) && bg_palette_offset) {
-				RGB = p->VRAM[bg_palette_addr + bg_palette_offset]; // Get values
+				RGB = p->VRAM[bg_palette_addr + bg_palette_offset];
 			}
 			p->sprite_pt_lo_shift_reg[i] >>= 1;
 			p->sprite_pt_hi_shift_reg[i] >>= 1;
@@ -606,14 +582,11 @@ void render_pixel(PPU_Struct *p)
 	if (p->scanline == p->sprite_zero_scanline && (p->sprite_zero_hit == false)) { // If sprite is on scanline
 		if (bg_palette_offset != 0 && sprite_palette_offset[0] != 0
 				&& (p->cpu_ppu_io->ppu_status & 0x40) != 0x40 && p->cycle != 256) {
-			//printf("1L OVERLAP HERE: %d\n", p->cycle);
 			p->hit_scanline = p->scanline;
 			p->hit_cycle = p->cycle + 1; // Sprite #0 hit is delayed by 1 tick (cycle)
 			p->sprite_zero_hit = true;
-			//p->PPU_STATUS |= 0x40; // Sprite #0 hit
 		}
 	} if ((p->scanline == p->hit_scanline) && (p->cycle == p->hit_cycle)) {
-		//printf("OVERLAP HERE: %d\n", p->cycle);
 		p->cpu_ppu_io->ppu_status |= 0x40; // Sprite #0 hit
 	} 
 	// Send pixels to pixel buffer
@@ -659,7 +632,6 @@ void sprite_evaluation(PPU_Struct* p)
 				p->sprite_zero_scanline_tmp = p->scanline + 1;
 			}
 			p->sprites_found++;
-			//printf("SPRITE FOUND: #%d total: %d \t\t", p->sprite_index, p->sprites_found);
 		}
 
 		++p->sprite_index;
@@ -697,8 +669,6 @@ void ppu_tick(PPU_Struct *p)
 
 void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 {
-	//debug_entry(p);
-
 #ifdef __DEBUG__
 	if (p->cpu_ppu_io->write_debug) {
 		p->cpu_ppu_io->write_debug = false;
@@ -717,7 +687,6 @@ void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 				p->cpu_ppu_io->nmi_cycles_left = 7;
 			}
 		}
-		//return;  // maybe comment out
 	}  else if (p->scanline == 261) { /* Pre-render scanline */
 		p->cpu_ppu_io->ppu_status &= ~0x80;
 	}
@@ -861,7 +830,6 @@ void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 			}
 		}
 	}
-	//debug_exit(p);
 
 	/* Process Sprites */
 	if (ppu_show_sprite(p)) {
@@ -889,7 +857,6 @@ void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 						offset = 0; // Stops out of bounds access for -1
 					}
 					p->sprite_addr += offset;
-					//printf("SPRITE ADDR %.4X\n", p->sprite_addr);
 					break;
 				case 2:
 					// Garbage AT byte - no need to emulate
@@ -921,8 +888,6 @@ void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 						p->sprite_pt_lo_shift_reg[i] = 0; // Empty slots should have transparent/bg pixel values
 						p->sprite_pt_hi_shift_reg[i] = 0; // Empty slots should have transparent/bg pixel values
 					}
-					//printf("DEBUG LO BEFORE %X\n", p->sprite_pt_lo_shift_reg[0]);
-					//printf("DEBUG HI BEFORE %X\n", p->sprite_pt_hi_shift_reg[0]);
 					break;
 				}
 			}
