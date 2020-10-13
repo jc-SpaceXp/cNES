@@ -49,7 +49,7 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 ** Running cNES
 
 #+BEGIN_EXAMPLE
-        $ ./emu -o FILE
+        $ ./cnes -o FILE
 #+END_EXAMPLE
 
 *Optional settings:*

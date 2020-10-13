@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 {
 	int ret = -1;
 
-	const char* program_name = "emu";
+	const char* program_name = "cnes";
 	char* filename = "dummy.nes";  // default: forces user to submit a file to open
 	unsigned long max_cycles = 0;
 	bool help = false;

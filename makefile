@@ -30,7 +30,7 @@ OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 DEPS := $(SRCS:%.c=$(DEPDIR)/%.d)
 
 .PHONY: all
-all: $(BINDIR)/emu
+all: $(BINDIR)/cnes
 
 $(OBJDIR)/%.o : %.c
 	@mkdir -p $(@D)
@@ -40,7 +40,7 @@ $(OBJDIR)/%.o : %.c
 $(BINDIR):
 	mkdir -p $@
 
-$(BINDIR)/emu: $(OBJS) | $(BINDIR)
+$(BINDIR)/cnes: $(OBJS) | $(BINDIR)
 	@echo "--- Linking target"
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 	@echo "--- Done: Linking target"
@@ -48,7 +48,7 @@ $(BINDIR)/emu: $(OBJS) | $(BINDIR)
 .PHONY: clean
 clean:
 	@echo "--- Cleaning build"
-	rm -f $(BINDIR)/emu
+	rm -f $(BINDIR)/cnes
 	rm -rf $(BUILDDIR)
 
 -include $(DEPS)
