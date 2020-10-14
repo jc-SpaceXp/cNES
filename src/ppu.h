@@ -74,8 +74,7 @@ void ppu_transfer_oam(PPU_Struct* p, unsigned index);
 void reset_secondary_oam(PPU_Struct* p);
 void sprite_evaluation(PPU_Struct* p);
 
-void ppu_tick(PPU_Struct *p);
-void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen);
+void clock_ppu(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen);
 
 
 #endif /* __NES_PPU__ */

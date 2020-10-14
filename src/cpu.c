@@ -206,15 +206,10 @@ void cpu_mem_16_byte_viewer(Cpu6502* CPU, unsigned start_addr, unsigned total_ro
 	}
 }
 
-void cpu_tick(Cpu6502* CPU)
+void clock_cpu(Cpu6502* CPU)
 {
 	++CPU->Cycle;
 	--CPU->instruction_cycles_remaining;
-}
-
-void cpu_step(Cpu6502* CPU)
-{
-	cpu_tick(CPU);
 
 	// Handle interrupts first
 	if (CPU->cpu_ppu_io->nmi_pending && CPU->instruction_state == FETCH) {

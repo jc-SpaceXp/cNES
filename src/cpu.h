@@ -56,8 +56,7 @@ static const uint8_t max_cycles_opcode_lut[256] = {
 
 CpuPpuShare* mmio_init(void);
 Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
-void cpu_tick(Cpu6502* CPU);
-void cpu_step(Cpu6502* CPU);
+void clock_cpu(Cpu6502* CPU);
 
 // Helper functions
 void init_pc(Cpu6502* CPU); /* Set PC via reset vector */

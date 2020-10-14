@@ -19,15 +19,15 @@
 #define LEFT_BUTTON   0x40U
 #define RIGHT_BUTTON  0x80U
 
-void ppu_cpu_ratio(Cpu6502* CPU, PPU_Struct* PPU, Display* nes_screen)
+void clock_all_units(Cpu6502* CPU, PPU_Struct* PPU, Display* nes_screen)
 {
 	PPU->old_cycle = PPU->cycle;
 
 	// 3 : 1 PPU to CPU ratio
-	cpu_step(CPU);
-	ppu_step(PPU, CPU, nes_screen);
-	ppu_step(PPU, CPU, nes_screen);
-	ppu_step(PPU, CPU, nes_screen);
+	clock_cpu(CPU);
+	clock_ppu(PPU, CPU, nes_screen);
+	clock_ppu(PPU, CPU, nes_screen);
+	clock_ppu(PPU, CPU, nes_screen);
 }
 
 void usuage(const char* program_name)
@@ -137,7 +137,7 @@ int main(int argc, char** argv)
 	// run for a fixed number of cycles if specified by the user
 	if (max_cycles) {
 		while (CPU->Cycle < max_cycles) {
-			ppu_cpu_ratio(CPU, PPU, nes_screen);
+			clock_all_units(CPU, PPU, nes_screen);
 		}
 	} else {
 		/* SDL GAME LOOOOOOP */
@@ -217,7 +217,7 @@ int main(int argc, char** argv)
 					}
 				}
 			}
-			ppu_cpu_ratio(CPU, PPU, nes_screen);
+			clock_all_units(CPU, PPU, nes_screen);
 		}
 	}
 

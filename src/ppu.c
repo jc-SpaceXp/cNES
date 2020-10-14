@@ -654,8 +654,16 @@ void sprite_evaluation(PPU_Struct* p)
  * RENDERING             *
  *************************/
 
-void ppu_tick(PPU_Struct *p)
+void clock_ppu(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 {
+#ifdef __DEBUG__
+	if (p->cpu_ppu_io->write_debug) {
+		p->cpu_ppu_io->write_debug = false;
+		append_ppu_info(p);
+	}
+#endif /* __DEBUG__ */
+
+	// Idle cycle thus can run tick to increment cycle from 0 to 1 initially
 	p->cycle++;
 	if (p->cycle > 340) {
 		p->cycle = 0; /* Reset cycle count to 0, max val = 340 */
@@ -665,18 +673,6 @@ void ppu_tick(PPU_Struct *p)
 			p->scanline = 0; /* Reset scanline to 0, max val == 261 */
 		}
 	}
-}
-
-void ppu_step(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
-{
-#ifdef __DEBUG__
-	if (p->cpu_ppu_io->write_debug) {
-		p->cpu_ppu_io->write_debug = false;
-		append_ppu_info(p);
-	}
-#endif /* __DEBUG__ */
-
-	ppu_tick(p); // Idle cycle thus can run tick to increment cycle from 0 to 1 initially
 
 	/* NMI Calc - call function update_vblank() */
 	if (p->scanline == p->nmi_start) {
