@@ -95,8 +95,7 @@ Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp)
 	i->Y = 0;
 	i->old_Cycle = 0;
 	i->instruction_state = FETCH;
-	// change comment below
-	i->instruction_cycles_remaining = 51; // initially set to zero, initial value doesn't matter as LUT will set it after first instruction is read
+	i->instruction_cycles_remaining = 51; // initial value doesn't matter as LUT will set it after first instruction is read
 
 	i->controller_latch = 0;
 	i->player_1_controller = 0;
@@ -207,7 +206,6 @@ void cpu_mem_16_byte_viewer(Cpu6502* CPU, unsigned start_addr, unsigned total_ro
 	}
 }
 
-// NEW: cpu_refactor
 void cpu_tick(Cpu6502* CPU)
 {
 	++CPU->Cycle;
@@ -218,7 +216,6 @@ void cpu_step(Cpu6502* CPU)
 {
 	cpu_tick(CPU);
 
-#if 1 // need to add DMA logic here too, currently runs once & ppu doesn't catch up!
 	// Handle interrupts first
 	if (CPU->cpu_ppu_io->nmi_pending && CPU->instruction_state == FETCH) {
 		// print the disassembly info of the instruction just completed
@@ -260,18 +257,6 @@ void cpu_step(Cpu6502* CPU)
 			execute_opcode_lut[CPU->opcode](CPU); // can change the PC which the early fetch made!
 		}
 	}
-#endif
-
-#if 0
-	if (CPU->cpu_ppu_io->dma_pending) {
-		execute_DMA(CPU);
-		if ((CPU->Cycle - 1) & 0x01) {  // add 1 cycle for on odd cycles
-			CPU->Cycle += 1;
-		}
-		CPU->Cycle += 513;
-		CPU->cpu_ppu_io->dma_pending = false;
-	}
-#endif
 }
 
 // true if branch not taken based on opcode
@@ -404,8 +389,6 @@ void log_cpu_info(Cpu6502* CPU)
 	if (CPU->old_Cycle == 0) {
 		printf("CPU:%.4u", CPU->old_Cycle);
 	} else { // first cycle = +1 cycles due to the tick() after the instruction executes
-		// might need if cycles appear inaccurate
-		// } else if (CPU->old_Cycle != 0 || CPU->cpu_ppu_io->nmi_pending == true) {
 		printf("CPU:%.4u", CPU->old_Cycle - 1);
 	}
 }
@@ -486,7 +469,6 @@ bool fixed_cycles_on_store(Cpu6502* CPU)
 void bad_op_code(Cpu6502* CPU)
 {
 	printf("invalid opcode: error 404: %.2X @ %.4X \n", CPU->opcode, CPU->PC);
-	(void) CPU; // suppress unused variable compiler warning
 }
 
 void decode_ABS_read_store(Cpu6502* CPU)
@@ -802,7 +784,6 @@ void decode_ZPY_read_store(Cpu6502* CPU)
 		CPU->instruction_state = EXECUTE;
 		break;
 	default:
-		// add a debugging message for now i.e. "illegal cycle :("
 		printf("We shouldn't be here! invalid cycle\n");
 		break;
 	}
@@ -901,7 +882,6 @@ void decode_RTS(Cpu6502* CPU)
 	switch (CPU->instruction_cycles_remaining) {
 	case 5: // T1
 		read_from_cpu(CPU, CPU->PC); // dummy read
-		//++CPU->PC; // don't increment according to 64doc.txt (doesn't matter anyways gets overwritten in T5)
 		break;
 	case 4: // T2
 		read_from_cpu(CPU, SP_START + CPU->Stack); // dummy stack read
@@ -1368,8 +1348,6 @@ void execute_ROL(Cpu6502* CPU)
 		update_flag_z(CPU, result);
 	}
 	/* Update Flag */
-	//high_bit = high_bit >> 7; // removed from the other high bit one
-	// kept in case it breaks something
 	update_flag_c(CPU, high_bit >> 7);
 }
 
@@ -1582,7 +1560,6 @@ void execute_RTI(Cpu6502* CPU)
 	switch (CPU->instruction_cycles_remaining) {
 	case 5: // T1
 		read_from_cpu(CPU, CPU->PC); // dummy read
-		//++CPU->PC; // don't increment according to 64doc.txt (doesn't matter anyways gets overwritten in T5)
 		break;
 	case 4: // T2
 		read_from_cpu(CPU, SP_START + CPU->Stack); // dummy stack read
@@ -1879,11 +1856,6 @@ void execute_NMI(Cpu6502* CPU)
 		CPU->cpu_ppu_io->nmi_pending = false;
 		break;
 	}
-
-	// comment out if using the newer loop in cpu_step
-	//if (CPU->instruction_cycles_remaining != 1) {
-		//CPU->instruction_state = EXECUTE;
-	//}
 }
 
 
@@ -1906,7 +1878,6 @@ void execute_DMA(Cpu6502* CPU)
 	//initialise static
 	static unsigned cycles_left = 513;
 
-
 	// + 1 cycle on an odd cycle
 	if ((CPU->Cycle & 1) && cycles_left == 513) { cycles_left = 514; }
 
@@ -1920,7 +1891,7 @@ void execute_DMA(Cpu6502* CPU)
 	unsigned index = 0;
 	//static unsigned read = 0; // read comments below
 	if (cycles_left < 513) {
-		index = (512 - cycles_left) / 2;
+		index = (512 - cycles_left) / 2; // index starts from 256 and ends on 0
 		if (cycles_left % 2) { // read (on the first cycle)
 			// have weird behaviour using static variable
 			// just write the expected read on the second cycle
