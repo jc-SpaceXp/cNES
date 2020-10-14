@@ -33,14 +33,14 @@ typedef struct {
 
 	unsigned nmi_cycles_left;  // PPU sets this CPU decrements it
 
-	uint8_t* VRAM; // CPU access to VRAM
-	uint8_t* OAM; /* OAM Address Space (Sprite RAM) */
+	uint8_t* vram; // CPU access to VRAM
+	uint8_t* oam; /* OAM Address Space (Sprite RAM) */
 	uint8_t buffer_2007; /* Read buffer for register 2007 */
 	uint8_t return_value;
 	uint16_t* vram_addr; /* VRAM address - LoopyV (v) */
 	uint16_t* vram_tmp_addr; /* Temp VRAM address - LoopyT (t) */
 	unsigned* mirroring; // 0 = Horz, 1 = vert, 4 = 4 screen
-	uint8_t* fineX; /* Fine X Scroll - only lower 4 bits are used */
+	uint8_t* fine_x; /* Fine X Scroll - only lower 4 bits are used */
 	bool write_toggle; /* 1st/2nd Write toggle */
 } CpuPpuShare;  // PPU MMIO
 
@@ -80,11 +80,11 @@ typedef struct {
 	uint8_t Y; /* Y reg */
 	/* Special Registers */
 	uint8_t P; /* Program status register */
-	unsigned Cycle;
-	int Stack; /* only being used for debugging */
 	uint16_t PC; /* Program counter (instruction pointer) */
+	int stack;
+	unsigned cycle; /* Helper variable, logs how many cpu cycles have elapsed */
 	/* Memory */
-	uint8_t MEM[CPU_MEMORY_SIZE];
+	uint8_t mem[CPU_MEMORY_SIZE];
 
 	// Decoders
 	uint8_t addr_lo;
@@ -98,7 +98,6 @@ typedef struct {
 	uint8_t opcode;
 	int8_t offset;  // used in branch and indexed addressing modes
 	unsigned instruction_cycles_remaining; // initial value = max number of cycles
-	//bool write_flag;  // 1 for store operations i.e. STA, STX etc
 	void (*decoder)(int); // decoder function pointer, see .c file
 
 	// NES controller
@@ -114,9 +113,9 @@ typedef struct {
 	uint8_t old_X;
 	uint8_t old_Y;
 	uint8_t old_P;
-	unsigned old_Cycle;
-	int old_Stack;
 	uint16_t old_PC;
+	int old_stack;
+	unsigned old_cycle;
 } Cpu6502;
 
 // PPU
@@ -124,15 +123,13 @@ typedef struct {
 	/* Memory mapped I/O */
 	CpuPpuShare* cpu_ppu_io;
 
-
-
 	/* Memory */
-	uint8_t VRAM[16 * KiB]; /* PPU memory space (VRAM) */
-	uint8_t OAM[256]; /* OAM Address Space (Sprite RAM) */
+	uint8_t vram[16 * KiB]; /* PPU memory space (VRAM) */
+	uint8_t oam[256]; /* OAM Address Space (Sprite RAM) */
 
 	/* Sprites */
-	uint8_t scanline_OAM[32]; // Secondary OAM, change to scanline
-	uint8_t OAM_read_buffer;
+	uint8_t scanline_oam[32]; // Secondary OAM, change to scanline
+	uint8_t oam_read_buffer;
 	unsigned sprites_found; // Number of sprites found in next scanlie: MAX 8
 	unsigned sprite_index; // Max 63 (0 indexed)
 	bool stop_early;
@@ -150,7 +147,7 @@ typedef struct {
 	/* BACKROUND */
 	uint16_t vram_addr; /* VRAM address - LoopyV (v) */
 	uint16_t vram_tmp_addr; /* Temp VRAM address - LoopyT (t) */
-	uint8_t fineX; /* Fine X Scroll - only lower 4 bits are used */
+	uint8_t fine_x; /* Fine X Scroll - only lower 4 bits are used */
 
 	/* Latches & Shift registers */
 	uint8_t pt_lo_latch; /* Most recent fetch pt_lo fetch */
@@ -166,11 +163,9 @@ typedef struct {
 	uint16_t nt_addr_next; /* Next tile address for pixels 9 -16 in pipeline */
 	uint16_t nt_addr_current; /* Current tile address for pixels 1 - 8 in pipeline */
 
-	//int palette[4]; /* Stores the 4 colour palette */
 	bool reset_1;
 	bool reset_2;
 
-	// maybe delete (keeping in case it is used by something late on)
 	unsigned mirroring; // 0 = Horz, 1 = vert, 4 = 4 screen
 
 	uint32_t scanline; /* Pre-render = 261, visible = 0 - 239, post-render 240 - 260 */
@@ -178,7 +173,7 @@ typedef struct {
 	const uint32_t nmi_end; /* Scanline in which NMI end */
 	uint16_t cycle; /* PPU Cycles, each PPU mem access takes 2 cycles */
 	uint16_t old_cycle;
-} PPU_Struct;
+} Ppu2A03;
 
 
 // SDL Display
@@ -191,8 +186,8 @@ typedef struct {
 extern Display* nes_screen;
 
 // Initialised in emu.c
-extern Cpu6502* CPU;
+extern Cpu6502* cpu;
 extern CpuPpuShare* cpu_ppu;
-extern PPU_Struct* PPU;
+extern Ppu2A03* ppu;
 
 #endif /* __EXTERN_STRUCTS__ */

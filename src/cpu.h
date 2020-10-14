@@ -55,136 +55,136 @@ static const uint8_t max_cycles_opcode_lut[256] = {
 
 
 CpuPpuShare* mmio_init(void);
-Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp); /* NES_CPU : Type 6501 CPU, used to initialise CPU */
-void clock_cpu(Cpu6502* CPU);
+Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp); /* initialise CPU struct */
+void clock_cpu(Cpu6502* cpu);
 
 // Helper functions
-void init_pc(Cpu6502* CPU); /* Set PC via reset vector */
-uint8_t read_from_cpu(Cpu6502* CPU, uint16_t addr);  // Read byte from CPU mempry
-uint16_t return_little_endian(Cpu6502* CPU, uint16_t addr); // Returns 2 byte
-void write_to_cpu(Cpu6502* CPU, uint16_t addr, uint8_t val);
-void write_4016(uint8_t data, Cpu6502* CPU);
-unsigned read_4016(Cpu6502* CPU);
-unsigned read_4017(Cpu6502* CPU);
-void cpu_mem_16_byte_viewer(Cpu6502* CPU, unsigned start_addr, unsigned total_rows);
-void cpu_debugger(Cpu6502* CPU);
-bool branch_not_taken(Cpu6502* CPU);
-void fetch_opcode(Cpu6502* CPU);
-bool fixed_cycles_on_store(Cpu6502* CPU);
-void log_cpu_info(Cpu6502* CPU);
-void update_cpu_info(Cpu6502* CPU);
+void init_pc(Cpu6502* cpu); /* Set PC via reset vector */
+uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr);  // Read byte from CPU mempry
+uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr); // Returns 2 byte
+void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val);
+void write_4016(uint8_t data, Cpu6502* cpu);
+unsigned read_4016(Cpu6502* cpu);
+unsigned read_4017(Cpu6502* cpu);
+void cpu_mem_16_byte_viewer(Cpu6502* cpu, unsigned start_addr, unsigned total_rows);
+void cpu_debugger(Cpu6502* cpu);
+bool branch_not_taken(Cpu6502* cpu);
+void fetch_opcode(Cpu6502* cpu);
+bool fixed_cycles_on_store(Cpu6502* cpu);
+void log_cpu_info(Cpu6502* cpu);
+void update_cpu_info(Cpu6502* cpu);
 bool page_cross_occurs(unsigned low_byte, unsigned offset);
 /* Flags */
-void update_flag_z(Cpu6502* CPU, uint8_t result);
-void update_flag_n(Cpu6502* CPU, uint8_t result);
-void update_flag_v(Cpu6502* CPU, bool overflow);
-void update_flag_c(Cpu6502* CPU, int carry_out);
+void update_flag_z(Cpu6502* cpu, uint8_t result);
+void update_flag_n(Cpu6502* cpu, uint8_t result);
+void update_flag_v(Cpu6502* cpu, bool overflow);
+void update_flag_c(Cpu6502* cpu, int carry_out);
 /* Stack */
-void stack_push(Cpu6502* CPU, uint8_t value);
-uint8_t stack_pull(Cpu6502* CPU);
+void stack_push(Cpu6502* cpu, uint8_t value);
+uint8_t stack_pull(Cpu6502* cpu);
 
 // Decoders: generic / address mode decoders
-void bad_op_code(Cpu6502* CPU);  // needed for function pointer of illegal op codes
-void decode_ABS_read_store(Cpu6502* CPU);
-void decode_ABS_rmw(Cpu6502* CPU);
-void decode_ABSX_read_store(Cpu6502* CPU);
-void decode_ABSX_rmw(Cpu6502* CPU);
-void decode_ABSY_read_store(Cpu6502* CPU);
-void decode_ACC(Cpu6502* CPU);
-void decode_IMM_read_store(Cpu6502* CPU);
-void decode_IMP(Cpu6502* CPU);  // no decoding happens
-void decode_INDX_read_store(Cpu6502* CPU);
-void decode_INDY_read_store(Cpu6502* CPU);
-void decode_ZP_read_store(Cpu6502* CPU);
-void decode_ZP_rmw(Cpu6502* CPU);
-void decode_ZPX_read_store(Cpu6502* CPU);
-void decode_ZPX_rmw(Cpu6502* CPU);
-void decode_ZPY_read_store(Cpu6502* CPU);
-void decode_ABS_JMP(Cpu6502* CPU);
-void decode_IND_JMP(Cpu6502* CPU);
-void decode_SPECIAL(Cpu6502* CPU);  // no decoding happens (when specific decoders and generic ones don't apply)
+void bad_op_code(Cpu6502* cpu);  // needed for function pointer of illegal op codes
+void decode_ABS_read_store(Cpu6502* cpu);
+void decode_ABS_rmw(Cpu6502* cpu);
+void decode_ABSX_read_store(Cpu6502* cpu);
+void decode_ABSX_rmw(Cpu6502* cpu);
+void decode_ABSY_read_store(Cpu6502* cpu);
+void decode_ACC(Cpu6502* cpu);
+void decode_IMM_read_store(Cpu6502* cpu);
+void decode_IMP(Cpu6502* cpu);  // no decoding happens
+void decode_INDX_read_store(Cpu6502* cpu);
+void decode_INDY_read_store(Cpu6502* cpu);
+void decode_ZP_read_store(Cpu6502* cpu);
+void decode_ZP_rmw(Cpu6502* cpu);
+void decode_ZPX_read_store(Cpu6502* cpu);
+void decode_ZPX_rmw(Cpu6502* cpu);
+void decode_ZPY_read_store(Cpu6502* cpu);
+void decode_ABS_JMP(Cpu6502* cpu);
+void decode_IND_JMP(Cpu6502* cpu);
+void decode_SPECIAL(Cpu6502* cpu);  // no decoding happens (when specific decoders and generic ones don't apply)
 /* Specific decoders */
-void decode_PUSH(Cpu6502* CPU);
-void decode_PULL(Cpu6502* CPU);
-void decode_Bxx(Cpu6502* CPU); // branch instructions (REL address mode)
-void decode_RTS(Cpu6502* CPU);
+void decode_PUSH(Cpu6502* cpu);
+void decode_PULL(Cpu6502* cpu);
+void decode_Bxx(Cpu6502* cpu); // branch instructions (REL address mode)
+void decode_RTS(Cpu6502* cpu);
 
 
 // Execute functions for op code
 // Storage:
-void execute_LDA(Cpu6502* CPU);
-void execute_LDX(Cpu6502* CPU);
-void execute_LDY(Cpu6502* CPU);
-void execute_STA(Cpu6502* CPU);
-void execute_STX(Cpu6502* CPU);
-void execute_STY(Cpu6502* CPU);
-void execute_TAX(Cpu6502* CPU);
-void execute_TAY(Cpu6502* CPU);
-void execute_TSX(Cpu6502* CPU);
-void execute_TXA(Cpu6502* CPU);
-void execute_TXS(Cpu6502* CPU);
-void execute_TYA(Cpu6502* CPU);
+void execute_LDA(Cpu6502* cpu);
+void execute_LDX(Cpu6502* cpu);
+void execute_LDY(Cpu6502* cpu);
+void execute_STA(Cpu6502* cpu);
+void execute_STX(Cpu6502* cpu);
+void execute_STY(Cpu6502* cpu);
+void execute_TAX(Cpu6502* cpu);
+void execute_TAY(Cpu6502* cpu);
+void execute_TSX(Cpu6502* cpu);
+void execute_TXA(Cpu6502* cpu);
+void execute_TXS(Cpu6502* cpu);
+void execute_TYA(Cpu6502* cpu);
 
 // Math:
-void execute_ADC(Cpu6502* CPU);
-void execute_DEC(Cpu6502* CPU);
-void execute_DEX(Cpu6502* CPU);
-void execute_DEY(Cpu6502* CPU);
-void execute_INC(Cpu6502* CPU);
-void execute_INX(Cpu6502* CPU);
-void execute_INY(Cpu6502* CPU);
-void execute_SBC(Cpu6502* CPU);
+void execute_ADC(Cpu6502* cpu);
+void execute_DEC(Cpu6502* cpu);
+void execute_DEX(Cpu6502* cpu);
+void execute_DEY(Cpu6502* cpu);
+void execute_INC(Cpu6502* cpu);
+void execute_INX(Cpu6502* cpu);
+void execute_INY(Cpu6502* cpu);
+void execute_SBC(Cpu6502* cpu);
 
 // Bitwise:
-void execute_AND(Cpu6502* CPU);
-void execute_ASL(Cpu6502* CPU);
-void execute_BIT(Cpu6502* CPU);
-void execute_EOR(Cpu6502* CPU);
-void execute_LSR(Cpu6502* CPU);
-void execute_ORA(Cpu6502* CPU);
-void execute_ROL(Cpu6502* CPU);
-void execute_ROR(Cpu6502* CPU);
+void execute_AND(Cpu6502* cpu);
+void execute_ASL(Cpu6502* cpu);
+void execute_BIT(Cpu6502* cpu);
+void execute_EOR(Cpu6502* cpu);
+void execute_LSR(Cpu6502* cpu);
+void execute_ORA(Cpu6502* cpu);
+void execute_ROL(Cpu6502* cpu);
+void execute_ROR(Cpu6502* cpu);
 
 // Branch
-void execute_BCC(Cpu6502* CPU);
-void execute_BCS(Cpu6502* CPU);
-void execute_BEQ(Cpu6502* CPU);
-void execute_BMI(Cpu6502* CPU);
-void execute_BNE(Cpu6502* CPU);
-void execute_BPL(Cpu6502* CPU);
-void execute_BVC(Cpu6502* CPU);
-void execute_BVS(Cpu6502* CPU);
+void execute_BCC(Cpu6502* cpu);
+void execute_BCS(Cpu6502* cpu);
+void execute_BEQ(Cpu6502* cpu);
+void execute_BMI(Cpu6502* cpu);
+void execute_BNE(Cpu6502* cpu);
+void execute_BPL(Cpu6502* cpu);
+void execute_BVC(Cpu6502* cpu);
+void execute_BVS(Cpu6502* cpu);
 
 // JMP
-void execute_JMP(Cpu6502* CPU);
-void execute_JSR(Cpu6502* CPU);
-void execute_RTI(Cpu6502* CPU);
-void execute_RTS(Cpu6502* CPU);
+void execute_JMP(Cpu6502* cpu);
+void execute_JSR(Cpu6502* cpu);
+void execute_RTI(Cpu6502* cpu);
+void execute_RTS(Cpu6502* cpu);
 
 // Registers
-void execute_CLC(Cpu6502* CPU);
-void execute_CLD(Cpu6502* CPU);
-void execute_CLI(Cpu6502* CPU);
-void execute_CLV(Cpu6502* CPU);
-void execute_CMP(Cpu6502* CPU);
-void execute_CPX(Cpu6502* CPU);
-void execute_CPY(Cpu6502* CPU);
-void execute_SEC(Cpu6502* CPU);
-void execute_SED(Cpu6502* CPU);
-void execute_SEI(Cpu6502* CPU);
+void execute_CLC(Cpu6502* cpu);
+void execute_CLD(Cpu6502* cpu);
+void execute_CLI(Cpu6502* cpu);
+void execute_CLV(Cpu6502* cpu);
+void execute_CMP(Cpu6502* cpu);
+void execute_CPX(Cpu6502* cpu);
+void execute_CPY(Cpu6502* cpu);
+void execute_SEC(Cpu6502* cpu);
+void execute_SED(Cpu6502* cpu);
+void execute_SEI(Cpu6502* cpu);
 
 // Stack
-void execute_PHA(Cpu6502* CPU);
-void execute_PHP(Cpu6502* CPU);
-void execute_PLA(Cpu6502* CPU);
-void execute_PLP(Cpu6502* CPU);
+void execute_PHA(Cpu6502* cpu);
+void execute_PHP(Cpu6502* cpu);
+void execute_PLA(Cpu6502* cpu);
+void execute_PLP(Cpu6502* cpu);
 
 // System
-void execute_BRK(Cpu6502* CPU);
-void execute_NOP(Cpu6502* CPU);
-void execute_IRQ(Cpu6502* CPU);
-void execute_NMI(Cpu6502* CPU); // Not an official opcode
-void execute_DMA(Cpu6502* CPU); // Not an official opcode
+void execute_BRK(Cpu6502* cpu);
+void execute_NOP(Cpu6502* cpu);
+void execute_IRQ(Cpu6502* cpu);
+void execute_NMI(Cpu6502* cpu); // Not an official opcode
+void execute_DMA(Cpu6502* cpu); // Not an official opcode
 
 
 #endif /* __6502_CPU__ */

@@ -19,15 +19,15 @@
 #define LEFT_BUTTON   0x40U
 #define RIGHT_BUTTON  0x80U
 
-void clock_all_units(Cpu6502* CPU, PPU_Struct* PPU, Display* nes_screen)
+void clock_all_units(Cpu6502* cpu, Ppu2A03* ppu, Display* nes_screen)
 {
-	PPU->old_cycle = PPU->cycle;
+	ppu->old_cycle = ppu->cycle;
 
 	// 3 : 1 PPU to CPU ratio
-	clock_cpu(CPU);
-	clock_ppu(PPU, CPU, nes_screen);
-	clock_ppu(PPU, CPU, nes_screen);
-	clock_ppu(PPU, CPU, nes_screen);
+	clock_cpu(cpu);
+	clock_ppu(ppu, cpu, nes_screen);
+	clock_ppu(ppu, cpu, nes_screen);
+	clock_ppu(ppu, cpu, nes_screen);
 }
 
 void usuage(const char* program_name)
@@ -103,11 +103,11 @@ int main(int argc, char** argv)
 	CpuPpuShare* cpu_ppu = mmio_init();
 	if (!cpu_ppu)
 		goto program_exit;
-	Cpu6502* CPU = cpu_init(0xC000, cpu_ppu);
-	if (!CPU)
+	Cpu6502* cpu = cpu_init(0xC000, cpu_ppu);
+	if (!cpu)
 		goto program_exit;
-	PPU_Struct* PPU = ppu_init(cpu_ppu);
-	if (!PPU)
+	Ppu2A03* ppu = ppu_init(cpu_ppu);
+	if (!ppu)
 		goto program_exit;
 
 	cart = malloc(sizeof(Cartridge));
@@ -115,15 +115,15 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Failed to allocate memory for Cartridge\n");
 		goto program_exit;
 	}
-	if (load_cart(cart, filename, CPU, PPU))
+	if (load_cart(cart, filename, cpu, ppu))
 		goto program_exit;
 
 	free(cart);
 	cart = NULL;
 
-	init_pc(CPU); // Initialise PC to reset vector
-	//CPU->PC = 0xC000; // nestest
-	update_cpu_info(CPU);
+	init_pc(cpu); // Initialise PC to reset vector
+	//cpu->PC = 0xC000; // nestest
+	update_cpu_info(cpu);
 
 	if (log) {
 		stdout = freopen("trace_log.txt", "w", stdout);
@@ -136,15 +136,15 @@ int main(int argc, char** argv)
 
 	// run for a fixed number of cycles if specified by the user
 	if (max_cycles) {
-		while (CPU->Cycle < max_cycles) {
-			clock_all_units(CPU, PPU, nes_screen);
+		while (cpu->cycle < max_cycles) {
+			clock_all_units(cpu, ppu, nes_screen);
 		}
 	} else {
 		/* SDL GAME LOOOOOOP */
 		int quit = 0;
 		SDL_Event e;
 		while (!quit) {
-			if (PPU->cpu_ppu_io->ppu_status & 0x80) { // process input when ppu is idle
+			if (ppu->cpu_ppu_io->ppu_status & 0x80) { // process input when ppu is idle
 				while (SDL_PollEvent(&e)) {
 					if (e.type == SDL_QUIT) {
 						quit = 1;
@@ -156,28 +156,28 @@ int main(int argc, char** argv)
 						// store into array and set to 1
 						switch (e.key.keysym.sym) {
 						case SDLK_m:
-							CPU->player_1_controller |= A_BUTTON;
+							cpu->player_1_controller |= A_BUTTON;
 							break;
 						case SDLK_n:
-							CPU->player_1_controller |= B_BUTTON;
+							cpu->player_1_controller |= B_BUTTON;
 							break;
 						case SDLK_q:
-							CPU->player_1_controller |= SELECT_BUTTON;
+							cpu->player_1_controller |= SELECT_BUTTON;
 							break;
 						case SDLK_e:
-							CPU->player_1_controller |= START_BUTTON;
+							cpu->player_1_controller |= START_BUTTON;
 							break;
 						case SDLK_w:
-							CPU->player_1_controller |= UP_BUTTON;
+							cpu->player_1_controller |= UP_BUTTON;
 							break;
 						case SDLK_s:
-							CPU->player_1_controller |= DOWN_BUTTON;
+							cpu->player_1_controller |= DOWN_BUTTON;
 							break;
 						case SDLK_a:
-							CPU->player_1_controller |= LEFT_BUTTON;
+							cpu->player_1_controller |= LEFT_BUTTON;
 							break;
 						case SDLK_d:
-							CPU->player_1_controller |= RIGHT_BUTTON;
+							cpu->player_1_controller |= RIGHT_BUTTON;
 							break;
 						default:
 							break;
@@ -187,28 +187,28 @@ int main(int argc, char** argv)
 						// store into array and set to 0
 						switch (e.key.keysym.sym) {
 						case SDLK_m:
-							CPU->player_1_controller &= ~A_BUTTON;
+							cpu->player_1_controller &= ~A_BUTTON;
 							break;
 						case SDLK_n:
-							CPU->player_1_controller &= ~B_BUTTON;
+							cpu->player_1_controller &= ~B_BUTTON;
 							break;
 						case SDLK_q:
-							CPU->player_1_controller &= ~SELECT_BUTTON;
+							cpu->player_1_controller &= ~SELECT_BUTTON;
 							break;
 						case SDLK_e:
-							CPU->player_1_controller &= ~START_BUTTON;
+							cpu->player_1_controller &= ~START_BUTTON;
 							break;
 						case SDLK_w:
-							CPU->player_1_controller &= ~UP_BUTTON;
+							cpu->player_1_controller &= ~UP_BUTTON;
 							break;
 						case SDLK_s:
-							CPU->player_1_controller &= ~DOWN_BUTTON;
+							cpu->player_1_controller &= ~DOWN_BUTTON;
 							break;
 						case SDLK_a:
-							CPU->player_1_controller &= ~LEFT_BUTTON;
+							cpu->player_1_controller &= ~LEFT_BUTTON;
 							break;
 						case SDLK_d:
-							CPU->player_1_controller &= ~RIGHT_BUTTON;
+							cpu->player_1_controller &= ~RIGHT_BUTTON;
 							break;
 						default:
 							break;
@@ -217,17 +217,17 @@ int main(int argc, char** argv)
 					}
 				}
 			}
-			clock_all_units(CPU, PPU, nes_screen);
+			clock_all_units(cpu, ppu, nes_screen);
 		}
 	}
 
 	screen_clear(nes_screen);
 	nes_screen = NULL;
 
-	//cpu_mem_16_byte_viewer(CPU, 0, 2048);
-	//ppu_mem_16_byte_viewer(PPU, 0, 2048);
-	//OAM_viewer(PPU, PRIMARY_OAM);
-	//OAM_viewer(PPU, SECONDARY_OAM);
+	//cpu_mem_16_byte_viewer(cpu, 0, 2048);
+	//ppu_mem_16_byte_viewer(ppu, 0, 2048);
+	//OAM_viewer(ppu, PRIMARY_OAM);
+	//OAM_viewer(ppu, SECONDARY_OAM);
 
 	ret = 0;
 
@@ -235,8 +235,8 @@ program_exit:
 	free(cart);
 	if (nes_screen) { screen_clear(nes_screen); }
 	free(nes_screen);
-	free(PPU);
-	free(CPU);
+	free(ppu);
+	free(cpu);
 	free(cpu_ppu);
 
 early_return:

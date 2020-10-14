@@ -45,28 +45,28 @@ static const uint32_t palette[0x40] = { 0xFF666666, 0xFF002A88, 0xFF1412A7, 0xFF
 uint32_t pixels[256 * 240];
 
 
-PPU_Struct* ppu_init(CpuPpuShare* cp)
+Ppu2A03* ppu_init(CpuPpuShare* cp)
 {
-	PPU_Struct* ppu = malloc(sizeof(PPU_Struct));
+	Ppu2A03* ppu = malloc(sizeof(Ppu2A03));
 	if (!ppu) {
 		fprintf(stderr, "Failed to allocate enough memory for PPU\n");
 		return ppu;
 	}
 	ppu->cpu_ppu_io = cp;
-	ppu->cpu_ppu_io->VRAM = &(ppu->VRAM[0]); // used so CPU can access PPU VRAM w/o needing the PPU struct
-	ppu->cpu_ppu_io->OAM = &(ppu->OAM[0]); // used so CPU can access PPU VRAM w/o needing the PPU struct
+	ppu->cpu_ppu_io->vram = &(ppu->vram[0]); // used so CPU can access PPU VRAM w/o needing the PPU struct
+	ppu->cpu_ppu_io->oam = &(ppu->oam[0]); // used so CPU can access PPU VRAM w/o needing the PPU struct
 	ppu->cpu_ppu_io->buffer_2007 = 0;
 	ppu->cpu_ppu_io->vram_addr = &ppu->vram_addr;
 	ppu->cpu_ppu_io->vram_tmp_addr = &ppu->vram_tmp_addr;
 	ppu->cpu_ppu_io->mirroring = &ppu->mirroring;
-	ppu->cpu_ppu_io->fineX = &ppu->fineX;
+	ppu->cpu_ppu_io->fine_x = &ppu->fine_x;
 	ppu->cpu_ppu_io->write_debug = false;
 
 	ppu->reset_1 = false;
 	ppu->reset_2 = false;
 	ppu->cycle = 30;
 	ppu->scanline = 0;
-	ppu->OAM_read_buffer = 0;
+	ppu->oam_read_buffer = 0;
 
 	/* Set PPU Latches and shift reg to 0 */
 	ppu->pt_lo_shift_reg = 0;
@@ -85,9 +85,9 @@ PPU_Struct* ppu_init(CpuPpuShare* cp)
 	ppu->hit_cycle = 600; // Impossible values
 
 	// Zero out arrays
-	memset(ppu->VRAM, 0, sizeof(ppu->VRAM));
-	memset(ppu->OAM, 0, sizeof(ppu->OAM));
-	memset(ppu->scanline_OAM, 0, sizeof(ppu->scanline_OAM));
+	memset(ppu->vram, 0, sizeof(ppu->vram));
+	memset(ppu->oam, 0, sizeof(ppu->oam));
+	memset(ppu->scanline_oam, 0, sizeof(ppu->scanline_oam));
 	memset(ppu->sprite_x_counter, 0, sizeof(ppu->sprite_x_counter));
 	memset(ppu->sprite_at_latches, 0, sizeof(ppu->sprite_at_latches));
 	memset(ppu->sprite_pt_lo_shift_reg, 0, sizeof(ppu->sprite_pt_lo_shift_reg));
@@ -99,43 +99,43 @@ PPU_Struct* ppu_init(CpuPpuShare* cp)
 }
 
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
-void ppu_reset(int start, PPU_Struct *p, Cpu6502* CPU)
+void ppu_reset(int start, Ppu2A03* p, Cpu6502* cpu)
 {
 	// remove p->reset_1 and 2 and isntead use a static variable
 	if (start && !p->reset_1 && !p->reset_2) {
 		p->cpu_ppu_io->ppu_status &= ~(0x80);  // clear VBL flag if set
 		p->reset_1 = true;
-	} else if (p->reset_1 && (CPU->Cycle >= 27383)) {
+	} else if (p->reset_1 && (cpu->cycle >= 27383)) {
 		p->cpu_ppu_io->ppu_status |= 0x80;
 		p->reset_1 = false;
 		p->reset_2 = true;
-	} else if (p->reset_2 && (CPU->Cycle >= 57164)) {
+	} else if (p->reset_2 && (cpu->cycle >= 57164)) {
 		p->cpu_ppu_io->ppu_status |= 0x80;
 		p->reset_2 = false;  // changed from true
 	}
 }
 
-void append_ppu_info(PPU_Struct* PPU)
+void append_ppu_info(Ppu2A03* ppu)
 {
-	printf(" PPU_CYC: %.3" PRIu16, PPU->old_cycle);
-	printf(" SL: %" PRIu32 "\n", PPU->scanline);
+	printf(" PPU_CYC: %.3" PRIu16, ppu->old_cycle);
+	printf(" SL: %" PRIu32 "\n", ppu->scanline);
 }
 
-void debug_ppu_regs(Cpu6502* CPU)
+void debug_ppu_regs(Cpu6502* cpu)
 {
-	printf("2000: %.2X\n", read_from_cpu(CPU, 0x2000));
-	printf("2001: %.2X\n", read_from_cpu(CPU, 0x2001));
-	printf("2002: %.2X\n", read_from_cpu(CPU, 0x2002));
-	printf("2003: %.2X\n", read_from_cpu(CPU, 0x2003));
-	printf("2004: %.2X\n", read_from_cpu(CPU, 0x2004));
-	printf("2005: %.2X\n", read_from_cpu(CPU, 0x2005));
-	printf("2006: %.2X\n", read_from_cpu(CPU, 0x2006));
-	printf("2007: %.2X\n", read_from_cpu(CPU, 0x2007));
-	printf("3F00: %.2X\n", read_from_cpu(CPU, 0x3F00));
-	printf("3F01: %.2X\n\n", read_from_cpu(CPU, 0x3F01));
+	printf("2000: %.2X\n", read_from_cpu(cpu, 0x2000));
+	printf("2001: %.2X\n", read_from_cpu(cpu, 0x2001));
+	printf("2002: %.2X\n", read_from_cpu(cpu, 0x2002));
+	printf("2003: %.2X\n", read_from_cpu(cpu, 0x2003));
+	printf("2004: %.2X\n", read_from_cpu(cpu, 0x2004));
+	printf("2005: %.2X\n", read_from_cpu(cpu, 0x2005));
+	printf("2006: %.2X\n", read_from_cpu(cpu, 0x2006));
+	printf("2007: %.2X\n", read_from_cpu(cpu, 0x2007));
+	printf("3F00: %.2X\n", read_from_cpu(cpu, 0x3F00));
+	printf("3F01: %.2X\n\n", read_from_cpu(cpu, 0x3F01));
 }
 
-void ppu_mem_16_byte_viewer(PPU_Struct* PPU, unsigned start_addr, unsigned total_rows)
+void ppu_mem_16_byte_viewer(Ppu2A03* ppu, unsigned start_addr, unsigned total_rows)
 {
 	printf("\n##################### PPU MEM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
@@ -143,9 +143,9 @@ void ppu_mem_16_byte_viewer(PPU_Struct* PPU, unsigned start_addr, unsigned total
 	while (start_addr < total_rows) {
 		printf("%.4X: ", start_addr << 4);
 		for (int x = 0; x < 16; x++) {
-			printf("%.2X ", PPU->VRAM[mem]);
-			//printf("%.2X ", PPU->scanline_OAM[mem]);
-			//printf("%.2X ", PPU->OAM[mem]);
+			printf("%.2X ", ppu->vram[mem]);
+			//printf("%.2X ", ppu->scanline_oam[mem]);
+			//printf("%.2X ", ppu->oam[mem]);
 			++mem;
 		}
 		printf("\n");
@@ -155,7 +155,7 @@ void ppu_mem_16_byte_viewer(PPU_Struct* PPU, unsigned start_addr, unsigned total
 
 
 // fix like above
-void OAM_viewer(PPU_Struct* PPU, enum Memory ppu_mem)
+void OAM_viewer(Ppu2A03* ppu, enum Memory ppu_mem)
 {
 	printf("\n##################### PPU OAM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
@@ -171,8 +171,8 @@ void OAM_viewer(PPU_Struct* PPU, enum Memory ppu_mem)
 		printf("%.4X: ", addr << 4);
 		for (int x = 0; x < 16; x++) {
 			// need condirional here as well
-			//printf("%.2X ", PPU->OAM[mem]);
-			printf("%.2X ", PPU->scanline_OAM[mem]);
+			//printf("%.2X ", ppu->oam[mem]);
+			printf("%.2X ", ppu->scanline_oam[mem]);
 			++mem;
 		}
 		printf("\n");
@@ -180,221 +180,221 @@ void OAM_viewer(PPU_Struct* PPU, enum Memory ppu_mem)
 	}
 }
 
-uint8_t read_ppu_reg(uint16_t addr, Cpu6502* CPU)
+uint8_t read_ppu_reg(uint16_t addr, Cpu6502* cpu)
 {
 	uint8_t ret;
 	switch (addr) {
 	case (0x2002):
 		/* PPU STATUS */
-		read_2002(CPU);
-		ret = CPU->cpu_ppu_io->return_value;
+		read_2002(cpu);
+		ret = cpu->cpu_ppu_io->return_value;
 		break;
 	case (0x2004):
 		/* OAM Data (read & write) */
-		ret = CPU->cpu_ppu_io->oam_data;
+		ret = cpu->cpu_ppu_io->oam_data;
 		break;
 	case (0x2007):
 		/* PPU DATA */
-		read_2007(CPU);
-		ret = CPU->cpu_ppu_io->return_value;
+		read_2007(cpu);
+		ret = cpu->cpu_ppu_io->return_value;
 		break;
 	}
 	return ret;
 }
 
 /* CPU uses this function */
-void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* CPU)
+void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
 {
 	switch (addr) {
 	case (0x2000):
 		/* PPU CTRL */
-		CPU->cpu_ppu_io->ppu_ctrl = data;
-		write_2000(data, CPU);
+		cpu->cpu_ppu_io->ppu_ctrl = data;
+		write_2000(data, cpu);
 		break;
 	case (0x2001):
 		/* PPU MASK */
-		CPU->cpu_ppu_io->ppu_mask = data;
+		cpu->cpu_ppu_io->ppu_mask = data;
 		break;
 	case (0x2003):
 		/* OAM ADDR */
-		write_2003(data, CPU);
+		write_2003(data, cpu);
 		break;
 	case (0x2004):
 		/* OAM Data (read & write) */
-		CPU->cpu_ppu_io->oam_data = data;
-		write_2004(data, CPU);
+		cpu->cpu_ppu_io->oam_data = data;
+		write_2004(data, cpu);
 		break;
 	case (0x2005):
 		/* PPU SCROLL (write * 2) */
-		write_2005(data, CPU);
+		write_2005(data, cpu);
 		break;
 	case (0x2006):
 		/* PPU ADDR (write * 2) */
-		write_2006(data, CPU);
+		write_2006(data, cpu);
 		break;
 	case (0x2007):
 		/* PPU DATA */
-		CPU->cpu_ppu_io->ppu_data = data;
-		write_2007(data, CPU);
+		cpu->cpu_ppu_io->ppu_data = data;
+		write_2007(data, cpu);
 		break;
 	case (0x4014):
-		write_4014(data, CPU);
+		write_4014(data, cpu);
 		break;
 	}
 }
 
 // VRAM is written to by the CPU
-void write_vram(uint8_t data, Cpu6502* CPU)
+void write_vram(uint8_t data, Cpu6502* cpu)
 {
-	uint16_t addr = *(CPU->cpu_ppu_io->vram_addr) & 0x3FFF;
-	if (*(CPU->cpu_ppu_io->mirroring) == 0) {
+	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
+	if (*(cpu->cpu_ppu_io->mirroring) == 0) {
 		// Horiz mirroring
 		if (addr >= 0x2000 && addr < 0x2800) {
 			if (addr < 0x2400) {
-				CPU->cpu_ppu_io->VRAM[addr] = data;
-				CPU->cpu_ppu_io->VRAM[addr + 0x0400] = data;
+				cpu->cpu_ppu_io->vram[addr] = data;
+				cpu->cpu_ppu_io->vram[addr + 0x0400] = data;
 			} else {
-				CPU->cpu_ppu_io->VRAM[addr] = data;
-				CPU->cpu_ppu_io->VRAM[addr - 0x0400] = data;
+				cpu->cpu_ppu_io->vram[addr] = data;
+				cpu->cpu_ppu_io->vram[addr - 0x0400] = data;
 			}
 		} else if (addr >= 2800 && addr < 0x3000) {
 			if (addr < 0x2C00) {
-				CPU->cpu_ppu_io->VRAM[addr] = data;
-				CPU->cpu_ppu_io->VRAM[addr + 0x0400] = data;
+				cpu->cpu_ppu_io->vram[addr] = data;
+				cpu->cpu_ppu_io->vram[addr + 0x0400] = data;
 			} else {
-				CPU->cpu_ppu_io->VRAM[addr] = data;
-				CPU->cpu_ppu_io->VRAM[addr - 0x0400] = data;
+				cpu->cpu_ppu_io->vram[addr] = data;
+				cpu->cpu_ppu_io->vram[addr - 0x0400] = data;
 			}
 		}
-	} else if (*(CPU->cpu_ppu_io->mirroring) == 1) {
+	} else if (*(cpu->cpu_ppu_io->mirroring) == 1) {
 		// Vertical mirroring
 		if (addr >= 0x2000 && addr < 0x2800) {
-			CPU->cpu_ppu_io->VRAM[addr] = data;
-			CPU->cpu_ppu_io->VRAM[addr + 0x0800] = data;
+			cpu->cpu_ppu_io->vram[addr] = data;
+			cpu->cpu_ppu_io->vram[addr + 0x0800] = data;
 		} else if (addr >= 0x2800 && addr < 0x2C00) {
-			CPU->cpu_ppu_io->VRAM[addr] = data;
-			CPU->cpu_ppu_io->VRAM[addr - 0x0800] = data;
+			cpu->cpu_ppu_io->vram[addr] = data;
+			cpu->cpu_ppu_io->vram[addr - 0x0800] = data;
 		}
-	} else if (*(CPU->cpu_ppu_io->mirroring) == 4) {
+	} else if (*(cpu->cpu_ppu_io->mirroring) == 4) {
 		// 4 Screen
-		CPU->cpu_ppu_io->VRAM[addr] = data; // Do nothing
+		cpu->cpu_ppu_io->vram[addr] = data; // Do nothing
 	}
 
 	/* Write to palettes */
 	if (addr >= 0x3F00 && addr < 0x3F10) {
-		CPU->cpu_ppu_io->VRAM[addr] = data;
+		cpu->cpu_ppu_io->vram[addr] = data;
 		if ((addr & 0x03) == 0) {
-			CPU->cpu_ppu_io->VRAM[addr + 0x10] = data; // If palette #0 mirror 4 palettes up
+			cpu->cpu_ppu_io->vram[addr + 0x10] = data; // If palette #0 mirror 4 palettes up
 		}
 	} else if (addr >= 0x3F10 && addr < 0x3F20) {
-		CPU->cpu_ppu_io->VRAM[addr] = data;
+		cpu->cpu_ppu_io->vram[addr] = data;
 		if ((addr & 0x03) == 0) {
-			CPU->cpu_ppu_io->VRAM[addr - 0x10] = data; // If palette #0 mirror 4 palettes down
+			cpu->cpu_ppu_io->vram[addr - 0x10] = data; // If palette #0 mirror 4 palettes down
 		}
 	}
 }
 
 /* Read Functions */
-void read_2002(Cpu6502* CPU)
+void read_2002(Cpu6502* cpu)
 {
-	CPU->cpu_ppu_io->return_value = CPU->cpu_ppu_io->ppu_status;
-	CPU->cpu_ppu_io->ppu_status &= ~0x80U;
-	CPU->cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
+	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->ppu_status;
+	cpu->cpu_ppu_io->ppu_status &= ~0x80U;
+	cpu->cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
 }
 
-void read_2007(Cpu6502* CPU)
+void read_2007(Cpu6502* cpu)
 {
-	uint16_t addr = *(CPU->cpu_ppu_io->vram_addr) & 0x3FFF;
+	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
 
-	CPU->cpu_ppu_io->return_value = CPU->cpu_ppu_io->buffer_2007;
-	CPU->cpu_ppu_io->buffer_2007 = CPU->cpu_ppu_io->VRAM[addr];
+	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->buffer_2007;
+	cpu->cpu_ppu_io->buffer_2007 = cpu->cpu_ppu_io->vram[addr];
 
 	if (addr >= 0x3F00) {
-		CPU->cpu_ppu_io->return_value = CPU->cpu_ppu_io->VRAM[addr];
+		cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->vram[addr];
 	}
 
-	*(CPU->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(CPU);
+	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
 }
 
 /* Write Functions */
-void write_2000(uint8_t data, Cpu6502* CPU)
+void write_2000(uint8_t data, Cpu6502* cpu)
 {
-	*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x0C00; /* Clear bits to be set */
-	*(CPU->cpu_ppu_io->vram_tmp_addr) |= (data & 0x03) << 10;
+	*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x0C00; /* Clear bits to be set */
+	*(cpu->cpu_ppu_io->vram_tmp_addr) |= (data & 0x03) << 10;
 }
 
-inline void write_2003(uint8_t data, Cpu6502* CPU)
+inline void write_2003(uint8_t data, Cpu6502* cpu)
 {
-	CPU->cpu_ppu_io->oam_addr = data;
+	cpu->cpu_ppu_io->oam_addr = data;
 }
 
-void write_2004(uint8_t data, Cpu6502* CPU)
+void write_2004(uint8_t data, Cpu6502* cpu)
 {
-	CPU->cpu_ppu_io->OAM[CPU->cpu_ppu_io->oam_addr] = data;
-	++CPU->cpu_ppu_io->oam_addr;
+	cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] = data;
+	++cpu->cpu_ppu_io->oam_addr;
 }
 
-void write_2005(uint8_t data, Cpu6502* CPU)
+void write_2005(uint8_t data, Cpu6502* cpu)
 {
 	// Valid address = 0x0000 to 0x3FFF
-	if (!CPU->cpu_ppu_io->write_toggle) {
+	if (!cpu->cpu_ppu_io->write_toggle) {
 		// First Write
-		*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x001F; /* Clear bits that are to be set */
-		*(CPU->cpu_ppu_io->vram_tmp_addr) |= (data >> 3);
-		*(CPU->cpu_ppu_io->fineX) = data & 0x07; /* same as data % 8 */
+		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x001F; /* Clear bits that are to be set */
+		*(cpu->cpu_ppu_io->vram_tmp_addr) |= (data >> 3);
+		*(cpu->cpu_ppu_io->fine_x) = data & 0x07; /* same as data % 8 */
 	} else {
 		// Second Write
-		*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x73E0; /* Clear bits that are to be set */
-		*(CPU->cpu_ppu_io->vram_tmp_addr) |= ((data & 0xF8) << 2) | ((data & 0x07) << 12);
-		CPU->cpu_ppu_io->ppu_scroll = *(CPU->cpu_ppu_io->vram_tmp_addr);
+		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x73E0; /* Clear bits that are to be set */
+		*(cpu->cpu_ppu_io->vram_tmp_addr) |= ((data & 0xF8) << 2) | ((data & 0x07) << 12);
+		cpu->cpu_ppu_io->ppu_scroll = *(cpu->cpu_ppu_io->vram_tmp_addr);
 	}
-	CPU->cpu_ppu_io->write_toggle = !CPU->cpu_ppu_io->write_toggle;
+	cpu->cpu_ppu_io->write_toggle = !cpu->cpu_ppu_io->write_toggle;
 }
 
 
-void write_2006(uint8_t data, Cpu6502* CPU)
+void write_2006(uint8_t data, Cpu6502* cpu)
 {
 	// Valid address = 0x0000 to 0x3FFF
-	if (!CPU->cpu_ppu_io->write_toggle) {
-		*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x7F00; /* Clear Higher Byte */
-		*(CPU->cpu_ppu_io->vram_tmp_addr) |= (uint16_t) ((data & 0x3F) << 8); /* 14th bit should be clear */
+	if (!cpu->cpu_ppu_io->write_toggle) {
+		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x7F00; /* Clear Higher Byte */
+		*(cpu->cpu_ppu_io->vram_tmp_addr) |= (uint16_t) ((data & 0x3F) << 8); /* 14th bit should be clear */
 	} else {
-		*(CPU->cpu_ppu_io->vram_tmp_addr) &= ~0x00FF; /* Clear Lower Byte */
-		*(CPU->cpu_ppu_io->vram_tmp_addr) |= data; /* Lower byte */
-		*(CPU->cpu_ppu_io->vram_addr) = *(CPU->cpu_ppu_io->vram_tmp_addr);
-		CPU->cpu_ppu_io->ppu_addr = *(CPU->cpu_ppu_io->vram_tmp_addr);
+		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x00FF; /* Clear Lower Byte */
+		*(cpu->cpu_ppu_io->vram_tmp_addr) |= data; /* Lower byte */
+		*(cpu->cpu_ppu_io->vram_addr) = *(cpu->cpu_ppu_io->vram_tmp_addr);
+		cpu->cpu_ppu_io->ppu_addr = *(cpu->cpu_ppu_io->vram_tmp_addr);
 	}
-	CPU->cpu_ppu_io->write_toggle = !CPU->cpu_ppu_io->write_toggle;
+	cpu->cpu_ppu_io->write_toggle = !cpu->cpu_ppu_io->write_toggle;
 }
 
 
-void write_2007(uint8_t data, Cpu6502* CPU)
+void write_2007(uint8_t data, Cpu6502* cpu)
 {
-	write_vram(data, CPU);
-	*(CPU->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(CPU);
+	write_vram(data, cpu);
+	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
 }
 
 
-void write_4014(uint8_t data, Cpu6502* CPU)
+void write_4014(uint8_t data, Cpu6502* cpu)
 {
-	CPU->cpu_ppu_io->dma_pending = true;
-	CPU->base_addr = data;
+	cpu->cpu_ppu_io->dma_pending = true;
+	cpu->base_addr = data;
 }
 
 /**
  * PPU_CTRL
  */
 // use CPU to access shared CPU/PPU space as this is needed in CPU writes
-uint8_t ppu_vram_addr_inc(Cpu6502* CPU)
+uint8_t ppu_vram_addr_inc(Cpu6502* cpu)
 {
-	if (!(CPU->cpu_ppu_io->ppu_ctrl & 0x04)) {
+	if (!(cpu->cpu_ppu_io->ppu_ctrl & 0x04)) {
 		return 1;
 	} else {
 		return 32;
 	}
 }
 
-uint16_t ppu_base_nt_address(PPU_Struct* p)
+uint16_t ppu_base_nt_address(Ppu2A03* p)
 {
 	switch(p->cpu_ppu_io->ppu_ctrl & 0x03) {
 	case 0:
@@ -411,7 +411,7 @@ uint16_t ppu_base_nt_address(PPU_Struct* p)
 }
 
 
-uint16_t ppu_base_pt_address(PPU_Struct* p)
+uint16_t ppu_base_pt_address(Ppu2A03* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 4) & 0x01) {
 		return 0x1000;
@@ -420,7 +420,7 @@ uint16_t ppu_base_pt_address(PPU_Struct* p)
 	}
 }
 
-uint16_t ppu_sprite_pattern_table_addr(PPU_Struct* p)
+uint16_t ppu_sprite_pattern_table_addr(Ppu2A03* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 3) & 0x01) {
 		return 0x1000;
@@ -429,7 +429,7 @@ uint16_t ppu_sprite_pattern_table_addr(PPU_Struct* p)
 	}
 }
 
-uint8_t ppu_sprite_height(PPU_Struct* p)
+uint8_t ppu_sprite_height(Ppu2A03* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
 		return 16; /* 8 x 16 */
@@ -442,7 +442,7 @@ uint8_t ppu_sprite_height(PPU_Struct* p)
  * PPU_MASK
  */
 
-bool ppu_show_bg(PPU_Struct* p)
+bool ppu_show_bg(Ppu2A03* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x08) {
 		return true;
@@ -452,7 +452,7 @@ bool ppu_show_bg(PPU_Struct* p)
 }
 
 
-bool ppu_show_sprite(PPU_Struct *p)
+bool ppu_show_sprite(Ppu2A03 *p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x10) {
 		return true;
@@ -466,7 +466,7 @@ bool ppu_show_sprite(PPU_Struct *p)
  */
 
 // Taken from wiki.nesdev
-void inc_vert_scroll(PPU_Struct *p)
+void inc_vert_scroll(Ppu2A03 *p)
 {
 	uint16_t addr = p->vram_addr;
 	if ((addr & 0x7000) != 0x7000) { // If fine Y < 7
@@ -487,7 +487,7 @@ void inc_vert_scroll(PPU_Struct *p)
 	p->vram_addr = addr;
 }
 
-void inc_horz_scroll(PPU_Struct *p)
+void inc_horz_scroll(Ppu2A03 *p)
 {
 	if ((p->vram_addr & 0x001F) == 31) {
 		p->vram_addr &= ~0x001F;
@@ -497,36 +497,36 @@ void inc_horz_scroll(PPU_Struct *p)
 	}
 }
 
-void fetch_nt_byte(PPU_Struct *p)
+void fetch_nt_byte(Ppu2A03 *p)
 {
 	p->nt_addr_tmp = 0x2000 | (p->vram_addr & 0x0FFF);
-	p->nt_byte = p->VRAM[p->nt_addr_tmp];
+	p->nt_byte = p->vram[p->nt_addr_tmp];
 }
 
 /* Determines colour palette */
-void fetch_at_byte(PPU_Struct *p)
+void fetch_at_byte(Ppu2A03 *p)
 {
-	p->at_latch = p->VRAM[0x23C0 | (p->vram_addr & 0x0C00) | ((p->vram_addr >> 4) & 0x38) | ((p->vram_addr >> 2) & 0x07)];
+	p->at_latch = p->vram[0x23C0 | (p->vram_addr & 0x0C00) | ((p->vram_addr >> 4) & 0x38) | ((p->vram_addr >> 2) & 0x07)];
 }
 
 /* Lo & Hi determine which index of the colour palette we use (0 to 3) */
-void fetch_pt_lo(PPU_Struct *p)
+void fetch_pt_lo(Ppu2A03 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12);
-	uint8_t latch = p->VRAM[ppu_base_pt_address(p) | pt_offset];
+	uint8_t latch = p->vram[ppu_base_pt_address(p) | pt_offset];
 	p->pt_lo_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
 }
 
 
-void fetch_pt_hi(PPU_Struct *p)
+void fetch_pt_hi(Ppu2A03 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12) + 8;
-	uint8_t latch = p->VRAM[ppu_base_pt_address(p) | pt_offset];
+	uint8_t latch = p->vram[ppu_base_pt_address(p) | pt_offset];
 	p->pt_hi_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
 }
 
 
-void render_pixel(PPU_Struct *p)
+void render_pixel(Ppu2A03 *p)
 {
 	unsigned bg_palette_addr;
 	/* Defines the which colour palette to use */
@@ -552,7 +552,7 @@ void render_pixel(PPU_Struct *p)
 		bg_palette_addr = 0x3F00; // Take background colour (transparent)
 	}
 
-	unsigned RGB = p->VRAM[bg_palette_addr + bg_palette_offset]; // Get RGB values
+	unsigned RGB = p->vram[bg_palette_addr + bg_palette_offset]; // Get RGB values
 
 	/* Shift each cycle */
 	p->pt_hi_shift_reg >>= 1;
@@ -571,9 +571,9 @@ void render_pixel(PPU_Struct *p)
 			sprite_palette_addr <<= 2;
 			sprite_palette_addr += 0x3F10;
 			if ((((p->sprite_at_latches[i] & 0x20) == 0) || !bg_palette_offset) && sprite_palette_offset[i]) { // front priority 
-				RGB = p->VRAM[sprite_palette_addr + sprite_palette_offset[i]]; // Output sprite
+				RGB = p->vram[sprite_palette_addr + sprite_palette_offset[i]]; // Output sprite
 			} else if (((p->sprite_at_latches[i] & 0x20) == 0x20) && bg_palette_offset) {
-				RGB = p->VRAM[bg_palette_addr + bg_palette_offset];
+				RGB = p->vram[bg_palette_addr + bg_palette_offset];
 			}
 			p->sprite_pt_lo_shift_reg[i] >>= 1;
 			p->sprite_pt_hi_shift_reg[i] >>= 1;
@@ -593,17 +593,17 @@ void render_pixel(PPU_Struct *p)
 	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
 }
 
-void ppu_transfer_oam(PPU_Struct* p, unsigned index)
+void ppu_transfer_oam(Ppu2A03* p, unsigned index)
 {
 	for (int i = 0; i < 4; i++) {
-		p->scanline_OAM[(p->sprites_found * 4) + i] = p->OAM[(index * 4) + i]; // Copy remaining bytes
+		p->scanline_oam[(p->sprites_found * 4) + i] = p->oam[(index * 4) + i]; // Copy remaining bytes
 	}
 }
 
-void reset_secondary_oam(PPU_Struct* p)
+void reset_secondary_oam(Ppu2A03* p)
 {
 	for (int i = 0; i < 32; i++) {
-		p->scanline_OAM[i] = 0xFF; // Reset secondary OAM
+		p->scanline_oam[i] = 0xFF; // Reset secondary OAM
 	}
 	/* Reset internals */
 	p->sprite_index = 0;
@@ -612,15 +612,15 @@ void reset_secondary_oam(PPU_Struct* p)
 	p->sprite_zero_scanline = p->sprite_zero_scanline_tmp;
 }
 
-void sprite_evaluation(PPU_Struct* p)
+void sprite_evaluation(Ppu2A03* p)
 {
 	int y_offset = 0;
 	switch (p->cycle % 2) {
 	case 1: // Odd cycles
-		p->OAM_read_buffer = p->OAM[p->sprite_index * 4];
+		p->oam_read_buffer = p->oam[p->sprite_index * 4];
 		break;
 	case 0: //Even cycles
-		y_offset = p->scanline - p->OAM_read_buffer;
+		y_offset = p->scanline - p->oam_read_buffer;
 		if ((y_offset >= 0)
 				&& (y_offset < ppu_sprite_height(p))
 				&& (p->sprites_found <= 8)
@@ -654,7 +654,7 @@ void sprite_evaluation(PPU_Struct* p)
  * RENDERING             *
  *************************/
 
-void clock_ppu(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
+void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 {
 #ifdef __DEBUG__
 	if (p->cpu_ppu_io->write_debug) {
@@ -689,10 +689,10 @@ void clock_ppu(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 
 
 #ifdef __RESET__
-	ppu_reset(1, p, CPU);
+	ppu_reset(1, p, cpu);
 #endif
 
-	(void) CPU; // disable warning for unused parameter (still occurs even if __RESET__ is defined)
+	(void) cpu; // disable warning for unused parameter (still occurs even if __RESET__ is defined)
 
 	/* Process BG Scanlines */
 	if(ppu_show_bg(p)) {
@@ -837,7 +837,7 @@ void clock_ppu(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 			} else if (p->cycle <= 320) { // Sprite data fetches
 				static unsigned count = 0; // Counts 8 secondary OAM
 				if (p->cycle == 257) {
-					p->sprite_index = 0; // Using to access scanline_OAM
+					p->sprite_index = 0; // Using to access scanline_oam
 					count = 0;
 				}
 				int offset = 0;
@@ -847,8 +847,8 @@ void clock_ppu(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 					break;
 				case 1:
 					// When not in range the sprite is filled w/ FF
-					p->sprite_addr = ppu_sprite_pattern_table_addr(p) | (uint16_t) p->scanline_OAM[(count * 4) + 1] << 4; // Read tile numb
-					offset = p->scanline - p->scanline_OAM[count * 4];
+					p->sprite_addr = ppu_sprite_pattern_table_addr(p) | (uint16_t) p->scanline_oam[(count * 4) + 1] << 4; // Read tile numb
+					offset = p->scanline - p->scanline_oam[count * 4];
 					if (offset < 0) { // Keep address static until we reach the scanline in range
 						offset = 0; // Stops out of bounds access for -1
 					}
@@ -856,26 +856,26 @@ void clock_ppu(PPU_Struct *p, Cpu6502* CPU, Display* nes_screen)
 					break;
 				case 2:
 					// Garbage AT byte - no need to emulate
-					p->sprite_at_latches[count] = p->scanline_OAM[(count * 4) + 2];
+					p->sprite_at_latches[count] = p->scanline_oam[(count * 4) + 2];
 					break;
 				case 3:
 					// Read X Pos (In NES it's re-read until the 8th cycle)
-					p->sprite_x_counter[count] = p->scanline_OAM[(count * 4) + 3];
+					p->sprite_x_counter[count] = p->scanline_oam[(count * 4) + 3];
 					break;
 				case 4:
 					// Fetch sprite low pt
 					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
-						p->sprite_pt_lo_shift_reg[count] = p->VRAM[p->sprite_addr];
+						p->sprite_pt_lo_shift_reg[count] = p->vram[p->sprite_addr];
 					} else {
-						p->sprite_pt_lo_shift_reg[count] = reverse_bits[p->VRAM[p->sprite_addr]];
+						p->sprite_pt_lo_shift_reg[count] = reverse_bits[p->vram[p->sprite_addr]];
 					}
 					break;
 				case 6:
 					// Fetch sprite hi pt, turn into function once all attribute data is processed
 					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
-						p->sprite_pt_hi_shift_reg[count] = p->VRAM[p->sprite_addr + 8];
+						p->sprite_pt_hi_shift_reg[count] = p->vram[p->sprite_addr + 8];
 					} else {
-						p->sprite_pt_hi_shift_reg[count] = reverse_bits[p->VRAM[p->sprite_addr + 8]];
+						p->sprite_pt_hi_shift_reg[count] = reverse_bits[p->vram[p->sprite_addr + 8]];
 					}
 					break;
 				case 7: /* 8th Cycle */

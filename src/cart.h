@@ -36,6 +36,6 @@ typedef struct Cartridge {
 /* Read .nes file data [cartidge data] into CPU and PPU, whilst also choosing 
  * the correct mapper (nested call).
  */
-int load_cart(Cartridge* cart, const char* filename, Cpu6502* CPU, PPU_Struct* p);
+int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2A03* ppu);
 
 #endif /* __CART__ */

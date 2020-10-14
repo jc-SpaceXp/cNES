@@ -6,7 +6,7 @@
 
 
 /* iNES format */
-int load_cart(Cartridge* cart, const char* filename, Cpu6502* CPU, PPU_Struct* p)
+int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2A03* ppu)
 {
 	uint8_t header[16];
 	unsigned trainer;
@@ -54,12 +54,12 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* CPU, PPU_Struct* p
 	/* Flags 6 */
 	if (!(header[6] & 0x08)) {
 		if (header[6] & 0x01) {
-			p->mirroring = 1;
+			ppu->mirroring = 1;
 		} else {
-			p->mirroring = 0;
+			ppu->mirroring = 0;
 		}
 	} else {
-		p->mirroring = 4;
+		ppu->mirroring = 4;
 	}
 
 	if (header[6] & 0x04) {
@@ -103,7 +103,7 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* CPU, PPU_Struct* p
 	/* Mapper select */
 	switch(mapper) {
 	case 0:
-		mapper_000(cart, CPU, p);
+		mapper_000(cart, cpu, ppu);
 		break;
 	default:
 		printf("mapper not implemented yet\n");
