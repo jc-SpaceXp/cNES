@@ -97,42 +97,37 @@ int main(int argc, char** argv)
 		goto early_return;
 	}
 
-	Cartridge* cart = NULL;
 #define __RESET__
 
+	Cartridge* cart = NULL;
 	CpuPpuShare* cpu_ppu = mmio_init();
-	if (!cpu_ppu)
-		goto program_exit;
 	Cpu6502* cpu = cpu_init(0xC000, cpu_ppu);
-	if (!cpu)
-		goto program_exit;
 	Ppu2A03* ppu = ppu_init(cpu_ppu);
-	if (!ppu)
+	Display* nes_screen = screen_init();
+
+	if (!cpu_ppu || !cpu || !ppu || !nes_screen) {
 		goto program_exit;
+	}
 
 	cart = malloc(sizeof(Cartridge));
 	if (!cart) {
 		fprintf(stderr, "Failed to allocate memory for Cartridge\n");
 		goto program_exit;
 	}
-	if (load_cart(cart, filename, cpu, ppu))
+
+	if (load_cart(cart, filename, cpu, ppu)) {
 		goto program_exit;
+	}
 
 	free(cart);
 	cart = NULL;
 
 	init_pc(cpu); // Initialise PC to reset vector
-	//cpu->PC = 0xC000; // nestest
 	update_cpu_info(cpu);
 
 	if (log) {
 		stdout = freopen("trace_log.txt", "w", stdout);
 	}
-
-	Display* nes_screen = screen_init();
-	if (!nes_screen)
-		goto program_exit;
-
 
 	// run for a fixed number of cycles if specified by the user
 	if (max_cycles) {
@@ -233,7 +228,6 @@ int main(int argc, char** argv)
 
 program_exit:
 	free(cart);
-	if (nes_screen) { screen_clear(nes_screen); }
 	free(nes_screen);
 	free(ppu);
 	free(cpu);
