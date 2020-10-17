@@ -531,11 +531,8 @@ void decode_ABSX_read_store(Cpu6502* cpu)
 		// dummy read not implemented
 		break;
 	case 1: // T4 (page cross)
-		// either keep the first two lines or comment out the third
-		//cpu->addr_hi += 1;
-		//cpu->target_addr = cpu->addr_hi << 8 | (cpu->addr_lo + cpu->X) & 0xFF;
 		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo) + cpu->X;
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr); // comment out in execute functions (make sure it's the last commit)
+		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -589,9 +586,6 @@ void decode_ABSY_read_store(Cpu6502* cpu)
 		// dummy read not implemented
 		break;
 	case 1: // T4 (page cross)
-		// either keep the first two lines or comment out the third
-		//cpu->addr_hi += 1;
-		//cpu->target_addr = cpu->addr_hi << 8 | (cpu->addr_lo + cpu->Y) & 0xFF;
 		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo) + cpu->Y;
 		cpu->instruction_state = EXECUTE;
 		break;
@@ -637,10 +631,10 @@ void decode_INDX_read_store(Cpu6502* cpu)
 		cpu->addr_lo = read_from_cpu(cpu, cpu->base_addr);  // DISCARD
 		break;
 	case 3: // T3
-		cpu->addr_lo = read_from_cpu(cpu, cpu->base_addr + cpu->X);
+		cpu->addr_lo = read_from_cpu(cpu, (cpu->base_addr + cpu->X) & 0xFF);
 		break;
 	case 2: // T4
-		cpu->addr_hi = read_from_cpu(cpu, cpu->base_addr + cpu->X + 1);
+		cpu->addr_hi = read_from_cpu(cpu, (cpu->base_addr + cpu->X + 1) & 0xFF);
 		break;
 	case 1: // T5
 		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo);
@@ -662,7 +656,7 @@ void decode_INDY_read_store(Cpu6502* cpu)
 		cpu->addr_lo = read_from_cpu(cpu, cpu->base_addr); // ZP read
 		break;
 	case 3: // T3
-		cpu->addr_hi = read_from_cpu(cpu, cpu->base_addr + 1);
+		cpu->addr_hi = read_from_cpu(cpu, (cpu->base_addr + 1) & 0xFF);
 		break;
 	case 2: // T4
 		cpu->target_addr = cpu->addr_hi << 8 | ((cpu->addr_lo + cpu->Y) & 0xFF);
@@ -670,9 +664,6 @@ void decode_INDY_read_store(Cpu6502* cpu)
 		// dummy read not implemented
 		break;
 	case 1: // T5 (page cross)
-		// either keep the first two lines or comment out the third
-		//cpu->addr_hi += 1;
-		//cpu->target_addr = cpu->addr_hi << 8 | (cpu->addr_lo + cpu->Y) & 0xFF;
 		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo) + cpu->Y;
 		cpu->instruction_state = EXECUTE;
 	}
@@ -775,7 +766,6 @@ void decode_ZPY_read_store(Cpu6502* cpu)
 		break;
 	case 1: // T3
 		cpu->target_addr = (cpu->addr_lo + cpu->Y) & 0xFF;
-		//cpu->target_addr = (uint8_t) (cpu->addr_lo + cpu->Y); either one
 		cpu->instruction_state = EXECUTE;
 		break;
 	default:
