@@ -406,14 +406,12 @@ bool page_cross_occurs(unsigned low_byte, unsigned offset)
 
 void stack_push(Cpu6502* cpu, uint8_t value)
 {
-	/* SP_START - 1 - as Stack = Empty Descending */
-	/* FIX LIMIT CHECK */
+	cpu->mem[SP_START + cpu->stack] = value;
+	--cpu->stack;
+
 	if (cpu->stack == 0x00) {
-		/* Overflow */
-		printf("Full stack - can't PUSH\n"); // Instead wrap-around
-	} else {
-		cpu->mem[SP_START + cpu->stack] = value;
-		--cpu->stack;
+		/* Overflow (wrap around) */
+		cpu->stack = SP_OFFSET;
 	}
 }
 
@@ -421,14 +419,15 @@ void stack_push(Cpu6502* cpu, uint8_t value)
 uint8_t stack_pull(Cpu6502* cpu)
 {
 	unsigned result = 0;
-	/* FIX LIMIT CHECK */
-	if (cpu->stack == SP_START) {
-		/* Underflow */
-		printf("Empty stack - can't PULL\n"); // Instead wrap-around
+
+	if (cpu->stack == SP_OFFSET) {
+		/* Underflow (wrap around) */
+		cpu->stack = 0;
 	} else {
 		++cpu->stack;
-		result = cpu->mem[SP_START + cpu->stack];
 	}
+
+	result = cpu->mem[SP_START + cpu->stack];
 	return result;
 }
 
