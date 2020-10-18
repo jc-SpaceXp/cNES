@@ -210,6 +210,7 @@ void clock_cpu(Cpu6502* cpu)
 {
 	++cpu->cycle;
 	--cpu->instruction_cycles_remaining;
+	cpu->cpu_ppu_io->suppress_nmi = false;
 
 	// Handle interrupts first
 	if (cpu->cpu_ppu_io->nmi_pending && cpu->instruction_state == FETCH) {

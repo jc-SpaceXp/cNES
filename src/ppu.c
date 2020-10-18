@@ -310,6 +310,7 @@ void read_2002(Cpu6502* cpu)
 	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->ppu_status;
 	cpu->cpu_ppu_io->ppu_status &= ~0x80U;
 	cpu->cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
+	cpu->cpu_ppu_io->suppress_nmi = true;
 }
 
 void read_2007(Cpu6502* cpu)
@@ -686,12 +687,25 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 
 	/* NMI Calc - call function update_vblank() */
 	if (p->scanline == p->nmi_start) {
-		p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
+		if (p->cycle == 0) {
+			p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
+		}
 		if (p->cpu_ppu_io->ppu_ctrl & 0x80) { /* if PPU CTRL has execute NMI on VBlank */
-			if (p->cycle  == 1) { // 6 works for SMB1
+			if (p->cycle == 1) {
 				p->cpu_ppu_io->nmi_pending = true;
 				p->cpu_ppu_io->nmi_cycles_left = 7;
 			}
+			// suppress nmi
+			if (p->cycle == 2) {
+				if (p->cpu_ppu_io->suppress_nmi) {
+					p->cpu_ppu_io->nmi_pending = false;
+				}
+			}
+		}
+		// clear VBlank flag if cpu clock is aligned w/ the ppu clock
+		// hard coded for NTSC currently
+		if (p->cpu_ppu_io->suppress_nmi && (cpu->cycle % 3 == 0)) {
+			p->cpu_ppu_io->ppu_status &= ~0x80;
 		}
 	}  else if (p->scanline == 261) { /* Pre-render scanline */
 		p->cpu_ppu_io->ppu_status &= ~0x80;
@@ -701,8 +715,6 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 #ifdef __RESET__
 	ppu_reset(1, p, cpu);
 #endif
-
-	(void) cpu; // disable warning for unused parameter (still occurs even if __RESET__ is defined)
 
 	/* Process BG Scanlines */
 	if(ppu_show_bg(p)) {
