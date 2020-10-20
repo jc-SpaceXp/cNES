@@ -633,9 +633,9 @@ void sprite_evaluation(Ppu2A03* p)
 	case 0: //Even cycles
 		y_offset = p->scanline - p->oam_read_buffer;
 		if ((y_offset >= 0)
-				&& (y_offset < ppu_sprite_height(p))
-				&& (p->sprites_found <= 8)
-				&& !p->stop_early) {
+		   && (y_offset < ppu_sprite_height(p))
+		   && (p->sprites_found <= 8)
+		   && !p->stop_early) {
 			ppu_transfer_oam(p, p->sprite_index); // sprite found load into secondary oam
 
 			// Setting up sprite zero hit detection
@@ -651,7 +651,7 @@ void sprite_evaluation(Ppu2A03* p)
 			p->stop_early = true;
 		}
 
-		if ((p->sprites_found == 8) && (y_offset >= 0) && (y_offset < ppu_sprite_height(p))) {
+		if ((p->sprites_found == 9) && (y_offset >= 0) && (y_offset < ppu_sprite_height(p))) {
 			// Trigger sprite overflow flag
 			p->cpu_ppu_io->ppu_status |= 0x20;
 		}
@@ -707,14 +707,24 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		if (p->cpu_ppu_io->suppress_nmi && (cpu->cycle % 3 == 0)) {
 			p->cpu_ppu_io->ppu_status &= ~0x80;
 		}
-	}  else if (p->scanline == 261) { /* Pre-render scanline */
-		p->cpu_ppu_io->ppu_status &= ~0x80;
+	} else if (p->scanline == 261 && p->cycle == 1) { /* Pre-render scanline */
+		// Clear VBlank, sprite hit and sprite overflow flags
+		p->cpu_ppu_io->ppu_status &= ~0xE0;
 	}
 
 
 #ifdef __RESET__
 	ppu_reset(1, p, cpu);
 #endif
+
+	if (ppu_show_bg(p) || ppu_show_sprite(p)) {
+		// Sprites are evaluated for either BG or sprite rendering
+		if (p->scanline <= 239) { /* Visible scanlines */
+			 if (p->cycle > 64 && p->cycle <= 256) {
+				sprite_evaluation(p);
+			}
+		}
+	}
 
 	/* Process BG Scanlines */
 	if(ppu_show_bg(p)) {
@@ -854,9 +864,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		if (p->scanline <= 239) { /* Visible scanlines */
 			if (p->cycle <= 64 && (p->cycle != 0)) {
 				reset_secondary_oam(p);
-			} else if (p->cycle <= 256) {
-				sprite_evaluation(p); // function includes break;
-			} else if (p->cycle <= 320) { // Sprite data fetches
+			} else if (p->cycle > 256 && p->cycle <= 320) { // Sprite data fetches
 				static unsigned count = 0; // Counts 8 secondary OAM
 				if (p->cycle == 257) {
 					p->sprite_index = 0; // Using to access scanline_oam
@@ -920,9 +928,8 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 			// only bg fetches occur
 	
 			p->sprite_index = 0;
-			// Clear sprite #0 hit
+			// Clear sprite #0 hit data
 			if (p->cycle == 1) {
-				p->cpu_ppu_io->ppu_status &= ~0x40; 
 				p->sprite_zero_hit = false;
 				p->sprite_zero_scanline = 600;
 				p->sprite_zero_scanline_tmp = 600;
