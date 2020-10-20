@@ -862,7 +862,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 					p->sprite_index = 0; // Using to access scanline_oam
 					count = 0;
 				}
-				int offset = 0;
+				static int offset = 0;
 				switch ((p->cycle - 1) & 0x07) {
 				case 0:
 					// Garbage NT byte - no need to emulate
@@ -879,6 +879,13 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 				case 2:
 					// Garbage AT byte - no need to emulate
 					p->sprite_at_latches[count] = p->scanline_oam[(count * 4) + 2];
+
+					if (p->sprite_at_latches[count] & 0x80) { // Flip vertical pixles
+						// undo offset, then go from offset_max down to 0
+						// e.g. 0-7 is now flipped to 7-0 (for sprites 8px high)
+						p->sprite_addr = p->sprite_addr - offset
+						                 + (ppu_sprite_height(p) - 1) - (offset % ppu_sprite_height(p));
+					}
 					break;
 				case 3:
 					// Read X Pos (In NES it's re-read until the 8th cycle)
