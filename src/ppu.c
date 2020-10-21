@@ -258,8 +258,8 @@ void write_vram(uint8_t data, Cpu6502* cpu)
 {
 	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
 
-	// Write to pattern tables
-	if (addr <= 0x1FFF) {
+	// Write to pattern tables (if using CHR RAM)
+	if (cpu->cpu_mapper_io->chr->ram_size && addr <= 0x1FFF) {
 		cpu->cpu_ppu_io->vram[addr] = data;
 	}
 
