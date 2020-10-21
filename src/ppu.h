@@ -58,7 +58,12 @@ uint8_t ppu_sprite_height(Ppu2A03* p);
 /* PPU_MASK FUNCTIONS */
 bool ppu_show_bg(Ppu2A03* p);
 bool ppu_show_sprite(Ppu2A03* p);
+bool ppu_mask_left_8px_bg(Ppu2A03* p);
+bool ppu_mask_left_8px_sprite(Ppu2A03* p);
+bool ppu_show_greyscale(Ppu2A03* p);
 
+/* PPU_STATUS FUNCTIONS */
+bool sprite_overflow_occured(Ppu2A03* p);
 
 void inc_vert_scroll(Ppu2A03* p);
 void inc_horz_scroll(Ppu2A03* p);

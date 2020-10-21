@@ -469,9 +469,49 @@ bool ppu_show_bg(Ppu2A03* p)
 }
 
 
-bool ppu_show_sprite(Ppu2A03 *p)
+bool ppu_show_sprite(Ppu2A03* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x10) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+bool ppu_mask_left_8px_bg(Ppu2A03* p)
+{
+	if (p->cpu_ppu_io->ppu_mask & 0x02) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
+bool ppu_mask_left_8px_sprite(Ppu2A03* p)
+{
+	if (p->cpu_ppu_io->ppu_mask & 0x04) {
+		return false;
+	} else {
+		return true;
+	}
+}
+
+bool ppu_show_greyscale(Ppu2A03* p)
+{
+	if (p->cpu_ppu_io->ppu_mask & 0x01) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+/**
+ * PPU_STATUS
+ */
+
+bool sprite_overflow_occured(Ppu2A03* p)
+{
+	if (p->cpu_ppu_io->ppu_status & 0x40) {
 		return true;
 	} else {
 		return false;
@@ -598,7 +638,8 @@ void render_pixel(Ppu2A03 *p)
 	}
 	if (p->scanline == p->sprite_zero_scanline && (p->sprite_zero_hit == false)) { // If sprite is on scanline
 		if (bg_palette_offset != 0 && sprite_palette_offset[0] != 0
-				&& (p->cpu_ppu_io->ppu_status & 0x40) != 0x40 && p->cycle != 256) {
+		    && !sprite_overflow_occured(p)
+		    && p->cycle != 256) {
 			p->hit_scanline = p->scanline;
 			p->hit_cycle = p->cycle + 1; // Sprite #0 hit is delayed by 1 tick (cycle)
 			p->sprite_zero_hit = true;
