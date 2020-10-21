@@ -645,6 +645,8 @@ void render_pixel(Ppu2A03 *p)
 	}
 	if (p->scanline == p->sprite_zero_scanline && (p->sprite_zero_hit == false)) { // If sprite is on scanline
 		if (bg_palette_offset != 0 && sprite_palette_offset[0] != 0
+		    && !((ppu_mask_left_8px_bg(p) || ppu_mask_left_8px_sprite(p)) && p->cycle <= 8)
+		    && ((ppu_show_bg(p) && ppu_show_sprite(p)))
 		    && !sprite_overflow_occured(p)
 		    && p->cycle != 256) {
 			p->hit_scanline = p->scanline;
