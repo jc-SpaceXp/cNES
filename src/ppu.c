@@ -257,6 +257,12 @@ void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
 void write_vram(uint8_t data, Cpu6502* cpu)
 {
 	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
+
+	// Write to pattern tables
+	if (addr <= 0x1FFF) {
+		cpu->cpu_ppu_io->vram[addr] = data;
+	}
+
 	if (*(cpu->cpu_ppu_io->mirroring) == 0) {
 		// Horiz mirroring
 		if (addr >= 0x2000 && addr < 0x2800) {
