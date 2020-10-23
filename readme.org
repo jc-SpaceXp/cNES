@@ -16,8 +16,8 @@ one I'm proud of!
 
 ** Screenshots
 
-[[file:screens/donkey_kong.png]] [[file:screens/balloon_fight.png]]
-[[file:screens/super_mario_bros_s1.png]] [[file:screens/super_mario_bros_s2.png]]
+[[file:screens/donkey_kong.png]] [[file:screens/zelda_1.png]]
+[[file:screens/super_mario_bros.png]] [[file:screens/megaman2.png]]
 
 ** Todo
 
@@ -45,7 +45,6 @@ With the requirements satisfied. It is as simple as:
 
 Alternatively you can specify the compiler like so: (default is gcc) =$make cc=clang DEBUG=1=
 
-
 ** Running cNES
 
 #+BEGIN_EXAMPLE
@@ -54,7 +53,7 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 
 *Optional settings:*
 
-=#define __DEBUG__= - Outputs CPU and PPU information to the terminal (=make DEBUG=1= satisfies this requirement)
+=#define __DEBUG__= Outputs CPU and PPU information to the terminal (=make DEBUG=1= satisfies this requirement)
 
 *Command-line Options:*
 
@@ -82,6 +81,14 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 | A        | Left   |
 | D        | Right  |
 |----------+--------+
+
+*Supported mappers*
+- NROM (mapper 0)
+- MMC1 (mapper 1)
+
+*Test ROMS*
+
+Here is a place to find a source of legal (test) ROMS: https://wiki.nesdev.com/w/index.php/Emulator_tests
 
 ** License
 
