@@ -4,6 +4,7 @@
 #include "extern_structs.h"
 #include "cpu.h"
 #include "ppu.h"  // needed for read/write functions
+#include "mappers.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -52,6 +53,30 @@ static void (*execute_opcode_lut[256])(Cpu6502* cpu) = {
 	execute_BEQ, execute_SBC, bad_op_code, bad_op_code, bad_op_code, execute_SBC, execute_INC, bad_op_code, execute_SED, execute_SBC, bad_op_code, bad_op_code, bad_op_code, execute_SBC, execute_INC, bad_op_code
 };
 
+CpuMapperShare* cpu_mapper_init(Cartridge* cart)
+{
+	CpuMapperShare* i = malloc(sizeof(CpuMapperShare));
+	if (!i) {
+		fprintf(stderr, "Failed to allocate enough memory for CpuMapperShare\n");
+		return i;
+	}
+
+	// assign mirrors
+	i->prg_rom = &cart->prg_rom;
+	i->prg_ram = &cart->prg_ram;
+	i->chr = &cart->chr;
+
+	i->mapper_number = 0;
+	i->prg_rom_bank_size = 0;
+	i->chr_bank_size = 0;
+
+	i->is_upper_fixed = false;
+	i->is_lower_fixed = false;
+	i->disable_prg_ram = true;
+
+	return i;
+}
+
 CpuPpuShare* mmio_init(void)
 {
 	CpuPpuShare* i = malloc(sizeof(CpuPpuShare));
@@ -77,7 +102,7 @@ CpuPpuShare* mmio_init(void)
 	return i;
 }
 
-Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp)
+Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm)
 {
 	Cpu6502* i = malloc(sizeof(Cpu6502));
 	if (!i) {
@@ -86,6 +111,7 @@ Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp)
 	}
 
 	i->cpu_ppu_io = cp;
+	i->cpu_mapper_io = cm;
 	i->PC = pc_init;
 	i->stack = 0xFD; // After startup stack pointer is FD
 	i->cycle = 0;
@@ -146,6 +172,8 @@ void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 		write_ppu_reg(addr, val, cpu);
 	} else if (addr == 0x4016) {
 		write_4016(val, cpu);
+	} else if (addr >= 0x8000) {
+		mapper_write(cpu, addr, val);
 	} else {
 		cpu->mem[addr] = val;
 	}

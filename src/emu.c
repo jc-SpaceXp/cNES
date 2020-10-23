@@ -99,28 +99,20 @@ int main(int argc, char** argv)
 
 #define __RESET__
 
-	Cartridge* cart = NULL;
+	Cartridge* cart = cart_init();
+	CpuMapperShare* cpu_mapper = cpu_mapper_init(cart);
 	CpuPpuShare* cpu_ppu = mmio_init();
-	Cpu6502* cpu = cpu_init(0xC000, cpu_ppu);
+	Cpu6502* cpu = cpu_init(0xC000, cpu_ppu, cpu_mapper);
 	Ppu2A03* ppu = ppu_init(cpu_ppu);
 	Display* nes_screen = screen_init();
 
-	if (!cpu_ppu || !cpu || !ppu || !nes_screen) {
-		goto program_exit;
-	}
-
-	cart = malloc(sizeof(Cartridge));
-	if (!cart) {
-		fprintf(stderr, "Failed to allocate memory for Cartridge\n");
+	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu || !nes_screen) {
 		goto program_exit;
 	}
 
 	if (load_cart(cart, filename, cpu, ppu)) {
 		goto program_exit;
 	}
-
-	free(cart);
-	cart = NULL;
 
 	init_pc(cpu); // Initialise PC to reset vector
 	update_cpu_info(cpu);

@@ -53,9 +53,9 @@ static const uint8_t max_cycles_opcode_lut[256] = {
 	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0
 };
 
-
+CpuMapperShare* cpu_mapper_init(Cartridge* cart);
 CpuPpuShare* mmio_init(void);
-Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp); /* initialise CPU struct */
+Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm); /* initialise CPU struct */
 void clock_cpu(Cpu6502* cpu);
 
 // Helper functions

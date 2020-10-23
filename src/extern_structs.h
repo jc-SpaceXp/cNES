@@ -12,6 +12,54 @@
 
 #define CPU_MEMORY_SIZE  65536U // Total memory available to the CPU
 
+/* FLAG 9 in iNES header */
+typedef enum {
+	NTSC = 0,
+	PAL = 1,
+} VideoType;
+
+/* Struct for the different banks of memory present in a ROM i.e CHR_RAM
+ * Data represents the actual data present in the bank and size represents
+ * how large this data is in KiB.
+ */
+typedef struct {
+	uint8_t* data;
+	uint32_t size;
+} Memory;
+
+typedef struct {
+	uint8_t* data;
+	uint32_t rom_size;  // either CHR RAM or CHR ROM is used
+	uint32_t ram_size;  // ... one of these should hold 0
+} ChrMemory;
+
+typedef struct Cartridge {
+	VideoType video_mode;
+	Memory prg_rom;  // Program ROM, sent to CPU
+	Memory prg_ram;  // Program RAM, sent to CPU
+	ChrMemory chr;  // Sprite and background pattern tables, sent to PPU
+} Cartridge;
+
+
+// Shared mapper/cpu struct
+typedef struct {
+	// Mirror data from Cart struct
+	Memory* prg_rom;
+	Memory* prg_ram;
+	ChrMemory* chr;
+	unsigned mapper_number;
+
+	// currently these are only MMC1 specific (struct may change later)
+	unsigned prg_rom_bank_size;
+	unsigned chr_bank_size;
+
+	// prg_rom helpers
+	bool is_upper_fixed;
+	bool is_lower_fixed;
+
+	bool disable_prg_ram;
+} CpuMapperShare;
+
 // Shared CPU/PPU struct
 typedef struct {
 	/* Registers */
@@ -44,6 +92,7 @@ typedef struct {
 	bool write_toggle; /* 1st/2nd Write toggle */
 } CpuPpuShare;  // PPU MMIO
 
+
 // CPU
 /* Addressing Modes: */
 typedef enum {
@@ -73,6 +122,7 @@ typedef enum {
 typedef struct {
 	/* Memory mapped I/O */
 	CpuPpuShare* cpu_ppu_io;
+	CpuMapperShare* cpu_mapper_io;
 
 	/* Registers */
 	uint8_t A; /* Accumulator */
@@ -189,5 +239,6 @@ extern Display* nes_screen;
 extern Cpu6502* cpu;
 extern CpuPpuShare* cpu_ppu;
 extern Ppu2A03* ppu;
+extern CpuMapperShare* cpu_mapper;
 
 #endif /* __EXTERN_STRUCTS__ */

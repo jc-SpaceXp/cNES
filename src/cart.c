@@ -4,6 +4,15 @@
 #include <string.h>
 #include <stdio.h>
 
+Cartridge* cart_init(void)
+{
+	Cartridge* cart = malloc(sizeof(Cartridge));
+	if (!cart) {
+		fprintf(stderr, "Failed to allocate memory for Cartridge\n");
+	}
+
+	return cart;
+}
 
 /* iNES format */
 int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2A03* ppu)
@@ -48,8 +57,10 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2A03* ppu)
 	/* parsing header */
 	cart->prg_rom.size = 16 * (KiB) * header[4];
 	cart->prg_ram.size = 8 * (KiB) * header[8];
-	cart->chr_rom.size = 8 * (KiB) * header[5]; // Pattern table data (if any)
+	cart->chr.rom_size = 8 * (KiB) * header[5]; // Pattern table data (if any)
+	cart->chr.ram_size = 8 * (KiB) * !header[5];
 	mapper = (header[7] & 0xF0) | ((header[6] & 0xF0) >> 4);
+	cpu->cpu_mapper_io->mapper_number = mapper;
 
 	/* Flags 6 */
 	if (!(header[6] & 0x08)) {
@@ -90,25 +101,21 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2A03* ppu)
 	fread(cart->prg_rom.data, 1, cart->prg_rom.size, rom);
 
 	/* loading data into chr_rom */
-	cart->chr_rom.data = malloc(cart->chr_rom.size);
-	if (!cart->chr_rom.data) {
-		free(cart->prg_rom.data);
-		fclose(rom);
-		return 8;
+	unsigned chr_size = cart->chr.rom_size ? cart->chr.rom_size : cart->chr.ram_size;
+	if (chr_size) {
+		cart->chr.data = malloc(chr_size);
+		if (!cart->chr.data) {
+			free(cart->prg_rom.data);
+			fclose(rom);
+			return 8;
+		}
+		fread(cart->chr.data, 1, chr_size, rom);
 	}
-	fread(cart->chr_rom.data, 1, cart->chr_rom.size, rom);
 
 	fclose(rom);
 
 	/* Mapper select */
-	switch(mapper) {
-	case 0:
-		mapper_000(cart, cpu, ppu);
-		break;
-	default:
-		printf("mapper not implemented yet\n");
-		break;
-	}
+	init_mapper(cart, cpu, ppu);
 
 	return 0;
 }
