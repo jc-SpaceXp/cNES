@@ -273,7 +273,7 @@ void write_vram(uint8_t data, Cpu6502* cpu)
 				cpu->cpu_ppu_io->vram[addr] = data;
 				cpu->cpu_ppu_io->vram[addr - 0x0400] = data;
 			}
-		} else if (addr >= 2800 && addr < 0x3000) {
+		} else if (addr >= 0x2800 && addr < 0x3000) {
 			if (addr < 0x2C00) {
 				cpu->cpu_ppu_io->vram[addr] = data;
 				cpu->cpu_ppu_io->vram[addr + 0x0400] = data;
