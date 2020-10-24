@@ -436,26 +436,14 @@ bool page_cross_occurs(unsigned low_byte, unsigned offset)
 void stack_push(Cpu6502* cpu, uint8_t value)
 {
 	cpu->mem[SP_START + cpu->stack] = value;
-	--cpu->stack;
-
-	if (cpu->stack == 0x00) {
-		/* Overflow (wrap around) */
-		cpu->stack = SP_OFFSET;
-	}
+	--cpu->stack; // automatically wraps around (8-bit variable)
 }
 
 
 uint8_t stack_pull(Cpu6502* cpu)
 {
 	unsigned result = 0;
-
-	if (cpu->stack == SP_OFFSET) {
-		/* Underflow (wrap around) */
-		cpu->stack = 0;
-	} else {
-		++cpu->stack;
-	}
-
+	++cpu->stack; // automatically wraps around (8-bit variable)
 	result = cpu->mem[SP_START + cpu->stack];
 	return result;
 }

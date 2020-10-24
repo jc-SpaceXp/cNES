@@ -131,7 +131,7 @@ typedef struct {
 	/* Special Registers */
 	uint8_t P; /* Program status register */
 	uint16_t PC; /* Program counter (instruction pointer) */
-	int stack;
+	uint8_t stack;
 	unsigned cycle; /* Helper variable, logs how many cpu cycles have elapsed */
 	/* Memory */
 	uint8_t mem[CPU_MEMORY_SIZE];
