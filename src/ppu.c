@@ -957,18 +957,16 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 					break;
 				case 4:
 					// Fetch sprite low pt
+					p->sprite_pt_lo_shift_reg[count] = reverse_bits[p->vram[p->sprite_addr]];
 					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
 						p->sprite_pt_lo_shift_reg[count] = p->vram[p->sprite_addr];
-					} else {
-						p->sprite_pt_lo_shift_reg[count] = reverse_bits[p->vram[p->sprite_addr]];
 					}
 					break;
 				case 6:
 					// Fetch sprite hi pt, turn into function once all attribute data is processed
+					p->sprite_pt_hi_shift_reg[count] = reverse_bits[p->vram[p->sprite_addr + 8]];
 					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
 						p->sprite_pt_hi_shift_reg[count] = p->vram[p->sprite_addr + 8];
-					} else {
-						p->sprite_pt_hi_shift_reg[count] = reverse_bits[p->vram[p->sprite_addr + 8]];
 					}
 					break;
 				case 7: /* 8th Cycle */
