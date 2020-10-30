@@ -105,6 +105,7 @@ void mapper_001(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
 {
 	(void) ppu; // suppress unused variable warning
 	unsigned prg_rom_banks = cart->prg_rom.size / (16 * KiB);
+	set_prg_rom_bank_1(cpu, 0, 16 * KiB);
 	set_prg_rom_bank_2(cpu, prg_rom_banks - 1);
 }
 
