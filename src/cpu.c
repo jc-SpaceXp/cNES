@@ -357,7 +357,7 @@ void cpu_debugger(Cpu6502* cpu)
 		sprintf(append_int, "%.4X", cpu->target_addr);  // previously used %.X
 		strcpy(end, "($");
 		strcat(end, append_int);
-		strcpy(end, ")");
+		strcat(end, ")");
 		break;
 	case INDX:   // 08. Indexed Indirect Mode via X
 		sprintf(append_int, "%.2X", cpu->base_addr);
@@ -1505,7 +1505,7 @@ void execute_JMP(Cpu6502* cpu)
 			}
 
 			cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo; // END T4
-			cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo; // for debugger function
+			cpu->target_addr = (cpu->index_hi << 8) | cpu->index_lo; // for debugger function
 			break;
 		}
 	}
