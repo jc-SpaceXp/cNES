@@ -1498,10 +1498,9 @@ void execute_JMP(Cpu6502* cpu)
 			cpu->addr_lo = read_from_cpu(cpu, (cpu->index_hi << 8) | cpu->index_lo);
 			break;
 		case 1: // T4
+			cpu->addr_hi = read_from_cpu(cpu, ((cpu->index_hi << 8) | cpu->index_lo) + 1);
 			if (cpu->index_lo == 0xFF) { // JMP bug
 				cpu->addr_hi = read_from_cpu(cpu, cpu->index_hi << 8);
-			} else {
-				cpu->addr_hi = read_from_cpu(cpu, ((cpu->index_hi << 8) | cpu->index_lo) + 1);
 			}
 
 			cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo; // END T4
