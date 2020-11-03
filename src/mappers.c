@@ -73,7 +73,7 @@ void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
 		mapper_001(cart, cpu, ppu);
 		break;
 	default:
-		fprintf(stderr, "Mapper %d isn't implemented", cpu->cpu_mapper_io->mapper_number);
+		fprintf(stderr, "Mapper %d isn't implemented\n", cpu->cpu_mapper_io->mapper_number);
 		break;
 	}
 }
