@@ -931,12 +931,25 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 					break;
 				case 1:
 					// When not in range the sprite is filled w/ FF
-					p->sprite_addr = ppu_sprite_pattern_table_addr(p) | (uint16_t) p->scanline_oam[(count * 4) + 1] << 4; // Read tile numb
+					p->sprite_addr = ppu_sprite_pattern_table_addr(p)
+					               | (uint16_t) p->scanline_oam[(count * 4) + 1] << 4; // Read tile numb
+					// 8x16 sprites don't use ppu_ctrl to determine base pt address
+					if (ppu_sprite_height(p) == 16) {
+						// Bit 0 determines base pt address, 0x1000 or 0x000
+						p->sprite_addr = (0x1000 * (p->scanline_oam[(count * 4) + 1] & 0x01))
+						               | (uint16_t) (p->scanline_oam[(count * 4) + 1] & 0xFE) << 4; // Read tile numb (ignoring bit 0, see & 0xFE)
+					}
 					offset = p->scanline - p->scanline_oam[count * 4];
 					if (offset < 0) { // Keep address static until we reach the scanline in range
 						offset = 0; // Stops out of bounds access for -1
 					}
+
+					// addr for rows 9-16 of 8x16 sprites
+					if (ppu_sprite_height(p) == 16) {
+						if (offset >= 8) { offset += 8; }
+					}
 					p->sprite_addr += offset;
+
 					break;
 				case 2:
 					// Garbage AT byte - no need to emulate
