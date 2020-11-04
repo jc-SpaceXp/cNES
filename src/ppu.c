@@ -293,7 +293,9 @@ void write_vram(uint8_t data, Cpu6502* cpu)
 		}
 	} else if (*(cpu->cpu_ppu_io->mirroring) == 4) {
 		// 4 Screen
-		cpu->cpu_ppu_io->vram[addr] = data; // Do nothing
+		if (addr >= 0x2000 && addr < 0x3000) {
+			cpu->cpu_ppu_io->vram[addr] = data; // Do nothing (no mirroring)
+		}
 	} else if (*(cpu->cpu_ppu_io->mirroring) == 2 || *(cpu->cpu_ppu_io->mirroring) == 3) {
 		// Single-screen mirroring
 		if (addr >= 0x2000 && addr < 0x3000) {
