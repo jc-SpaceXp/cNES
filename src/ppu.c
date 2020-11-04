@@ -263,47 +263,34 @@ void write_vram(uint8_t data, Cpu6502* cpu)
 		cpu->cpu_ppu_io->vram[addr] = data;
 	}
 
-	if (*(cpu->cpu_ppu_io->mirroring) == 0) {
-		// Horiz mirroring
-		if (addr >= 0x2000 && addr < 0x2800) {
-			if (addr < 0x2400) {
-				cpu->cpu_ppu_io->vram[addr] = data;
-				cpu->cpu_ppu_io->vram[addr + 0x0400] = data;
-			} else {
-				cpu->cpu_ppu_io->vram[addr] = data;
-				cpu->cpu_ppu_io->vram[addr - 0x0400] = data;
+	// Nametable mirroring
+	if (addr >= 0x2000 && addr < 0x3000) {
+		if (*(cpu->cpu_ppu_io->mirroring) == 0) {
+			// Horiz mirroring
+			if (addr < 0x2800) {
+				// mask = 0x23FF, so that address is in the first nametable space 0x2000 to 0x23FF
+				cpu->cpu_ppu_io->vram[addr & 0x23FF] = data;
+				cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x0400] = data;
+			} else if (addr >= 0x2800) {
+				// mask = 0x2BFF, so that address is in the third nametable space 0x2800 to 0x2BFF
+				cpu->cpu_ppu_io->vram[addr & 0x2BFF] = data;
+				cpu->cpu_ppu_io->vram[(addr & 0x2BFF) + 0x0400] = data;
 			}
-		} else if (addr >= 0x2800 && addr < 0x3000) {
-			if (addr < 0x2C00) {
-				cpu->cpu_ppu_io->vram[addr] = data;
-				cpu->cpu_ppu_io->vram[addr + 0x0400] = data;
-			} else {
-				cpu->cpu_ppu_io->vram[addr] = data;
-				cpu->cpu_ppu_io->vram[addr - 0x0400] = data;
-			}
-		}
-	} else if (*(cpu->cpu_ppu_io->mirroring) == 1) {
-		// Vertical mirroring
-		if (addr >= 0x2000 && addr < 0x2800) {
-			cpu->cpu_ppu_io->vram[addr] = data;
-			cpu->cpu_ppu_io->vram[addr + 0x0800] = data;
-		} else if (addr >= 0x2800 && addr < 0x2C00) {
-			cpu->cpu_ppu_io->vram[addr] = data;
-			cpu->cpu_ppu_io->vram[addr - 0x0800] = data;
-		}
-	} else if (*(cpu->cpu_ppu_io->mirroring) == 4) {
-		// 4 Screen
-		if (addr >= 0x2000 && addr < 0x3000) {
+		} else if (*(cpu->cpu_ppu_io->mirroring) == 1) {
+			// Vertical mirroring
+			// mask = 0x27FF, so that address is in the first two nametable spaces 0x2000 to 0x27FF
+			cpu->cpu_ppu_io->vram[addr & 0x27FF] = data;
+			cpu->cpu_ppu_io->vram[(addr & 0x27FF) + 0x0800] = data;
+		} else if (*(cpu->cpu_ppu_io->mirroring) == 4) {
+			// 4 Screen
 			cpu->cpu_ppu_io->vram[addr] = data; // Do nothing (no mirroring)
-		}
-	} else if (*(cpu->cpu_ppu_io->mirroring) == 2 || *(cpu->cpu_ppu_io->mirroring) == 3) {
-		// Single-screen mirroring
-		if (addr >= 0x2000 && addr < 0x3000) {
+		} else if (*(cpu->cpu_ppu_io->mirroring) == 2 || *(cpu->cpu_ppu_io->mirroring) == 3) {
+			// Single-screen mirroring
 			// mask = 0x23FF, so that address is in the first nametable space 0x2000 to 0x23FF
 			cpu->cpu_ppu_io->vram[addr & 0x23FF] = data;
-			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x400] = data;
-			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x800] = data;
-			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0xC00] = data;
+			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x0400] = data;
+			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x0800] = data;
+			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x0C00] = data;
 		}
 	}
 
