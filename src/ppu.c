@@ -294,6 +294,15 @@ void write_vram(uint8_t data, Cpu6502* cpu)
 	} else if (*(cpu->cpu_ppu_io->mirroring) == 4) {
 		// 4 Screen
 		cpu->cpu_ppu_io->vram[addr] = data; // Do nothing
+	} else if (*(cpu->cpu_ppu_io->mirroring) == 2 || *(cpu->cpu_ppu_io->mirroring) == 3) {
+		// Single-screen mirroring
+		if (addr >= 0x2000 && addr < 0x3000) {
+			// mask = 0x23FF, so that address is in the first nametable space 0x2000 to 0x23FF
+			cpu->cpu_ppu_io->vram[addr & 0x23FF] = data;
+			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x400] = data;
+			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x800] = data;
+			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0xC00] = data;
+		}
 	}
 
 	/* Write to palettes */
