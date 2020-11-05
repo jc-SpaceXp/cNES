@@ -734,7 +734,6 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 	}
 #endif /* __DEBUG__ */
 
-	// Idle cycle thus can run tick to increment cycle from 0 to 1 initially
 	p->cycle++;
 	if (p->cycle > 340) {
 		p->cycle = 0; /* Reset cycle count to 0, max val = 340 */
@@ -745,7 +744,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		}
 	}
 
-	/* NMI Calc - call function update_vblank() */
+	/* NMI, VBlank and ppu_status register handling */
 	if (p->scanline == p->nmi_start) {
 		if (p->cycle == 0) {
 			p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
