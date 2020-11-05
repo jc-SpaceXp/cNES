@@ -123,6 +123,8 @@ Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm)
 	i->instruction_state = FETCH;
 	i->instruction_cycles_remaining = 51; // initial value doesn't matter as LUT will set it after first instruction is read
 
+	i->delay_nmi = false;
+
 	i->controller_latch = 0;
 	i->player_1_controller = 0;
 	i->player_2_controller = 0;
@@ -241,7 +243,7 @@ void clock_cpu(Cpu6502* cpu)
 	cpu->cpu_ppu_io->suppress_nmi = false;
 
 	// Handle interrupts first
-	if (cpu->cpu_ppu_io->nmi_pending && cpu->instruction_state == FETCH) {
+	if (!cpu->delay_nmi && cpu->cpu_ppu_io->nmi_pending && cpu->instruction_state == FETCH) {
 		// print the disassembly info of the instruction just completed
 		if (cpu->cpu_ppu_io->nmi_cycles_left == 7) {
 #ifdef __DEBUG__
@@ -270,6 +272,7 @@ void clock_cpu(Cpu6502* cpu)
 #endif /* __DEBUG__ */
 			}
 			fetch_opcode(cpu);
+			cpu->delay_nmi = false; // reset after returning from NMI
 		}  else if (cpu->instruction_state == DECODE) {
 			decode_opcode_lut[cpu->opcode](cpu);
 		}

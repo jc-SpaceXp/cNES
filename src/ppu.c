@@ -218,6 +218,14 @@ void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
 	switch (addr) {
 	case (0x2000):
 		/* PPU CTRL */
+
+		// Toggling NMI during VBlank generates a NMI
+		if ((cpu->cpu_ppu_io->ppu_status & 0x80)
+			&& !(cpu->cpu_ppu_io->ppu_ctrl & 0x80) && (data & 0x80)) {
+			cpu->cpu_ppu_io->nmi_pending = true;
+			cpu->delay_nmi = true;
+		}
+
 		cpu->cpu_ppu_io->ppu_ctrl = data;
 		write_2000(data, cpu);
 		break;

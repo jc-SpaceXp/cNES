@@ -150,6 +150,8 @@ typedef struct {
 	unsigned instruction_cycles_remaining; // initial value = max number of cycles
 	void (*decoder)(int); // decoder function pointer, see .c file
 
+	bool delay_nmi;  // only true when enabling NMI via $2000 during VBlank
+
 	// NES controller
 	unsigned controller_latch; // latch signal for controller shift register
 	uint8_t player_1_controller;
