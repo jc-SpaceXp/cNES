@@ -615,8 +615,6 @@ void render_pixel(Ppu2A03 *p)
 		bg_palette_addr = 0x3F00; // Take background colour (transparent)
 	}
 
-	// not sure if this is correct
-	// should either be transparent or black pixels, gone w/ transparent for now
 	if (ppu_mask_left_8px_bg(p) && p->cycle < 8) {
 		bg_palette_addr = 0x3F00;
 		bg_palette_offset = 0;
