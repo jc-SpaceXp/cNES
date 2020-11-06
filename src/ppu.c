@@ -779,7 +779,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 	if (ppu_show_bg(p) || ppu_show_sprite(p)) {
 		// Sprites are evaluated for either BG or sprite rendering
 		if (p->scanline <= 239) { /* Visible scanlines */
-			 if (p->cycle > 64 && p->cycle <= 256) {
+			if (p->cycle > 64 && p->cycle <= 256) {
 				sprite_evaluation(p);
 			}
 		}
