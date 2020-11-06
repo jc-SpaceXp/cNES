@@ -796,7 +796,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 	}
 
 	/* Process BG Scanlines */
-	if(ppu_show_bg(p)) {
+	if (ppu_show_bg(p)) {
 		if (p->scanline <= 239) { /* Visible scanlines */
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
 				// BG STUFF
