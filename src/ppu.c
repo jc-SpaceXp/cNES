@@ -303,6 +303,7 @@ void write_vram(uint8_t data, Cpu6502* cpu)
 	}
 
 	/* Write to palettes */
+	if (addr >= 0x3F00) { addr &= 0x3F1F; } // Handle palette mirroring (by avoiding it)
 	if (addr >= 0x3F00 && addr < 0x3F10) {
 		cpu->cpu_ppu_io->vram[addr] = data;
 		if ((addr & 0x03) == 0) {
