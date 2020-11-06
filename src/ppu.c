@@ -616,7 +616,7 @@ void render_pixel(Ppu2A03 *p)
 		bg_palette_addr = 0x3F00; // Take background colour (transparent)
 	}
 
-	if (ppu_mask_left_8px_bg(p) && p->cycle < 8) {
+	if ((ppu_mask_left_8px_bg(p) && p->cycle < 8) || !ppu_show_bg(p)) {
 		bg_palette_addr = 0x3F00;
 		bg_palette_offset = 0;
 	}
@@ -786,12 +786,20 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		}
 	}
 
+	// Fill pixel buffer and then render frame
+	if (p->scanline <= 239) { /* Visible scanlines */
+		if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
+			render_pixel(p); // Render pixel every cycle
+		}
+	} else if (p->scanline == 240 && p->cycle == 0) {
+		draw_pixels(pixels, nes_screen);  // Render frame
+	}
+
 	/* Process BG Scanlines */
 	if(ppu_show_bg(p)) {
 		if (p->scanline <= 239) { /* Visible scanlines */
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
 				// BG STUFF
-				render_pixel(p); // Render pixel every cycle
 				switch ((p->cycle - 1) & 0x07) {
 				case 0:
 					fetch_nt_byte(p);
@@ -854,8 +862,6 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 					break;
 				}
 			}
-		} else if (p->scanline == 240 && p->cycle == 0) {
-			draw_pixels(pixels, nes_screen);  // Render frame
 		} else if (p->scanline == 261) {
 			// Pre-render scanline
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
