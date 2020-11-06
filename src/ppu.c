@@ -334,7 +334,8 @@ void read_2007(Cpu6502* cpu)
 	cpu->cpu_ppu_io->buffer_2007 = cpu->cpu_ppu_io->vram[addr];
 
 	if (addr >= 0x3F00) {
-		cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->vram[addr];
+		// return non-mirrored address
+		cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->vram[addr & 0x3F1F];
 	}
 
 	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
