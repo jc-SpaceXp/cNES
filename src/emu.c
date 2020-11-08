@@ -21,8 +21,6 @@
 
 void clock_all_units(Cpu6502* cpu, Ppu2A03* ppu, Display* nes_screen)
 {
-	ppu->old_cycle = ppu->cycle;
-
 	// 3 : 1 PPU to CPU ratio
 	clock_cpu(cpu);
 	clock_ppu(ppu, cpu, nes_screen);
