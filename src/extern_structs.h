@@ -225,6 +225,7 @@ typedef struct {
 	const uint32_t nmi_end; /* Scanline in which NMI end */
 	uint16_t cycle; /* PPU Cycles, each PPU mem access takes 2 cycles */
 	uint16_t old_cycle;
+	uint32_t old_scanline;
 } Ppu2A03;
 
 

@@ -78,6 +78,7 @@ Ppu2A03* ppu_init(CpuPpuShare* cp)
 	ppu->scanline = 0;
 	ppu->oam_read_buffer = 0;
 	ppu->old_cycle = ppu->cycle;
+	ppu->old_scanline = ppu->scanline;
 
 	/* Set PPU Latches and shift reg to 0 */
 	ppu->pt_lo_shift_reg = 0;
@@ -129,8 +130,9 @@ void ppu_reset(int start, Ppu2A03* p, Cpu6502* cpu)
 void append_ppu_info(Ppu2A03* ppu)
 {
 	printf(" PPU_CYC: %.3" PRIu16, ppu->old_cycle);
-	printf(" SL: %" PRIu32 "\n", ppu->scanline);
+	printf(" SL: %" PRIu32 "\n", ppu->old_scanline);
 	ppu->old_cycle = ppu->cycle;
+	ppu->old_scanline = ppu->scanline;
 }
 
 void debug_ppu_regs(Cpu6502* cpu)
