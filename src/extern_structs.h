@@ -79,6 +79,11 @@ typedef struct {
 	bool suppress_nmi;
 	bool write_debug;  // Trigger debug of PPU only when the CPU writes to the disassembler
 
+	// cpu/ppu nmi synchronisation, when the cpu runs its clock it can be out of sync
+	// with the ppu by 3 ppu clocks, this is set to true for the last 3 ppu clocks
+	// before a NMI is latched (includes [SL/PPU_CYC] 239/340, 240/0, 240/1)
+	bool nmi_lookahead;
+
 	unsigned nmi_cycles_left;  // PPU sets this CPU decrements it
 
 	uint8_t* vram; // CPU access to VRAM
@@ -168,6 +173,7 @@ typedef struct {
 	uint16_t old_PC;
 	int old_stack;
 	unsigned old_cycle;
+	bool process_interrupt;
 } Cpu6502;
 
 // PPU

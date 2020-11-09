@@ -98,6 +98,7 @@ CpuPpuShare* mmio_init(void)
 	i->nmi_pending = false;
 	i->dma_pending = false;
 	i->suppress_nmi = false;
+	i->nmi_lookahead = false;
 
 	return i;
 }
@@ -124,6 +125,7 @@ Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm)
 	i->instruction_cycles_remaining = 51; // initial value doesn't matter as LUT will set it after first instruction is read
 
 	i->delay_nmi = false;
+	i->process_interrupt = false;
 
 	i->controller_latch = 0;
 	i->player_1_controller = 0;
@@ -243,7 +245,7 @@ void clock_cpu(Cpu6502* cpu)
 	cpu->cpu_ppu_io->suppress_nmi = false;
 
 	// Handle interrupts first
-	if (!cpu->delay_nmi && cpu->cpu_ppu_io->nmi_pending && cpu->instruction_state == FETCH) {
+	if (!cpu->delay_nmi && cpu->process_interrupt && cpu->instruction_state == FETCH) {
 		// print the disassembly info of the instruction just completed
 		if (cpu->cpu_ppu_io->nmi_cycles_left == 7) {
 #ifdef __DEBUG__
@@ -282,6 +284,14 @@ void clock_cpu(Cpu6502* cpu)
 			fetch_opcode(cpu);
 #endif /* ENABLE_PIPELINING */
 			execute_opcode_lut[cpu->opcode](cpu); // can change the PC which the early fetch made!
+
+			if (cpu->cpu_ppu_io->nmi_pending) {
+				cpu->process_interrupt = true;
+			}
+
+			if (cpu->cpu_ppu_io->nmi_lookahead) {
+				cpu->delay_nmi = true;
+			}
 		}
 	}
 }
@@ -1857,6 +1867,7 @@ void execute_NMI(Cpu6502* cpu)
 		cpu->addr_hi = read_from_cpu(cpu, 0xFFFB);
 		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
 		cpu->cpu_ppu_io->nmi_pending = false;
+		cpu->process_interrupt = false;
 		break;
 	}
 }

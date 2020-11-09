@@ -740,6 +740,8 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 	}
 #endif /* __DEBUG__ */
 
+	p->cpu_ppu_io->nmi_lookahead = false;
+
 	p->cycle++;
 	if (p->cycle > 340) {
 		p->cycle = 0; /* Reset cycle count to 0, max val = 340 */
@@ -754,11 +756,13 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 	if (p->scanline == p->nmi_start) {
 		if (p->cycle == 0) {
 			p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
+			p->cpu_ppu_io->nmi_lookahead = true;
 		}
 		if (p->cpu_ppu_io->ppu_ctrl & 0x80) { /* if PPU CTRL has execute NMI on VBlank */
 			if (p->cycle == 1) {
 				p->cpu_ppu_io->nmi_pending = true;
 				p->cpu_ppu_io->nmi_cycles_left = 7;
+				p->cpu_ppu_io->nmi_lookahead = true;
 			}
 			// suppress nmi
 			if (p->cycle == 2) {
@@ -775,6 +779,8 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 	} else if (p->scanline == 261 && p->cycle == 0) { /* Pre-render scanline */
 		// Clear VBlank, sprite hit and sprite overflow flags
 		p->cpu_ppu_io->ppu_status &= ~0xE0;
+	} else if (p->scanline == 239 && p->cycle == 340) {
+		p->cpu_ppu_io->nmi_lookahead = true;
 	}
 
 
