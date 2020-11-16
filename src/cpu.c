@@ -100,6 +100,11 @@ CpuPpuShare* mmio_init(void)
 	i->suppress_nmi = false;
 	i->nmi_lookahead = false;
 
+	i->buffer_write = false;
+	i->buffer_address = 0;
+	i->buffer_counter = 0;
+	i->buffer_value = 0;
+
 	return i;
 }
 
@@ -170,7 +175,7 @@ void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 	if (addr < 0x2000) {
 		cpu->mem[addr & 0x7FF] = val;
 	} else if (addr < 0x4000) {
-		write_ppu_reg(addr & 0x2007, val, cpu);
+		delay_write_ppu_reg(addr & 0x2007, val, cpu);
 		cpu->mem[addr & 0x2007] = val;
 	} else if (addr == 0x4014) {
 		write_ppu_reg(addr, val, cpu);

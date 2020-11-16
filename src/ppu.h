@@ -33,6 +33,7 @@ void OAM_viewer(Ppu2A03* PPU, enum Memory ppu_mem); // rename to VRAM viewer?
 
 /* Read & Write Functions */
 uint8_t read_ppu_reg(uint16_t addr, Cpu6502* cpu); /* For addresses exposed to CPU */
+void delay_write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu); /* For addresses exposed to CPU */
 void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu); /* For addresses exposed to CPU */
 void write_vram(uint8_t data, Cpu6502* cpu);
 

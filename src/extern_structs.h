@@ -84,6 +84,12 @@ typedef struct {
 	// before a NMI is latched (includes [SL/PPU_CYC] 239/340, 240/0, 240/1)
 	bool nmi_lookahead;
 
+	// more cpu/ppu synchronisation
+	bool buffer_write;
+	unsigned buffer_counter;
+	unsigned buffer_address;
+	uint8_t buffer_value;
+
 	unsigned nmi_cycles_left;  // PPU sets this CPU decrements it
 
 	uint8_t* vram; // CPU access to VRAM

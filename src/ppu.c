@@ -217,13 +217,23 @@ uint8_t read_ppu_reg(uint16_t addr, Cpu6502* cpu)
 }
 
 /* CPU uses this function */
+void delay_write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
+{
+	cpu->cpu_ppu_io->buffer_write = true;
+	cpu->cpu_ppu_io->buffer_counter = 2;
+	if (addr == 0x2001) {
+		cpu->cpu_ppu_io->buffer_counter += 3; // 3 dot delay for background/sprite rendering
+	}
+	cpu->cpu_ppu_io->buffer_address = addr;
+	cpu->cpu_ppu_io->buffer_value = data;
+}
+
 void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
 {
 	switch (addr) {
 	case (0x2000):
 		/* PPU CTRL */
 
-		// Toggling NMI during VBlank generates a NMI
 		if ((cpu->cpu_ppu_io->ppu_status & 0x80)
 			&& !(cpu->cpu_ppu_io->ppu_ctrl & 0x80) && (data & 0x80)) {
 			cpu->cpu_ppu_io->nmi_pending = true;
@@ -749,6 +759,18 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		p->scanline++;
 		if (p->scanline > 261) {
 			p->scanline = 0; /* Reset scanline to 0, max val == 261 */
+		}
+	}
+
+	// cpu is clocked first, ppu must be updated after the ppu runs its clock
+	// as the ppu is supposed to be running at the same time the write to the ppu reg occurs
+	// this means a buffer system needs to be implemented to preserve this behaviour
+	if (p->cpu_ppu_io->buffer_write) {
+		--p->cpu_ppu_io->buffer_counter;
+		if (!p->cpu_ppu_io->buffer_counter) {
+			write_ppu_reg(p->cpu_ppu_io->buffer_address, p->cpu_ppu_io->buffer_value, cpu);
+			p->cpu_ppu_io->buffer_write = false;
+			p->cpu_ppu_io->buffer_counter = 6; // reset to non-zero value
 		}
 	}
 
