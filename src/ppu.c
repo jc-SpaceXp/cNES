@@ -74,11 +74,12 @@ Ppu2A03* ppu_init(CpuPpuShare* cp)
 
 	ppu->reset_1 = false;
 	ppu->reset_2 = false;
-	ppu->cycle = 30;
+	ppu->cycle = 27;
 	ppu->scanline = 0;
 	ppu->oam_read_buffer = 0;
 	ppu->old_cycle = ppu->cycle;
 	ppu->old_scanline = ppu->scanline;
+	ppu->odd_frame = false;
 
 	/* Set PPU Latches and shift reg to 0 */
 	ppu->pt_lo_shift_reg = 0;
@@ -759,6 +760,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		p->scanline++;
 		if (p->scanline > 261) {
 			p->scanline = 0; /* Reset scanline to 0, max val == 261 */
+			p->odd_frame = !p->odd_frame;
 		}
 	}
 
@@ -815,6 +817,10 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		if (p->scanline <= 239) { /* Visible scanlines */
 			if (p->cycle > 64 && p->cycle <= 256) {
 				sprite_evaluation(p);
+			}
+		} else if (p->scanline == 261 && p->cycle == 339) {
+			if (p->odd_frame) {
+				++p->cycle;
 			}
 		}
 	}

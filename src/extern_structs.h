@@ -238,6 +238,7 @@ typedef struct {
 	uint16_t cycle; /* PPU Cycles, each PPU mem access takes 2 cycles */
 	uint16_t old_cycle;
 	uint32_t old_scanline;
+	bool odd_frame;
 } Ppu2A03;
 
 
