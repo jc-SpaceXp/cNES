@@ -338,7 +338,7 @@ void read_2002(Cpu6502* cpu)
 	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->ppu_status;
 	cpu->cpu_ppu_io->ppu_status &= ~0x80U;
 	cpu->cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
-	cpu->cpu_ppu_io->suppress_nmi = true;
+	cpu->cpu_ppu_io->suppress_nmi_flag = true;
 }
 
 void read_2007(Cpu6502* cpu)
@@ -781,23 +781,28 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		if (p->cycle == 0) {
 			p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
 			p->cpu_ppu_io->nmi_lookahead = true;
+			if (p->cpu_ppu_io->suppress_nmi_flag) {
+				p->cpu_ppu_io->ignore_nmi = true;
+			}
 		}
 		if (p->cpu_ppu_io->ppu_ctrl & 0x80) { /* if PPU CTRL has execute NMI on VBlank */
 			if (p->cycle == 1) {
 				p->cpu_ppu_io->nmi_pending = true;
 				p->cpu_ppu_io->nmi_cycles_left = 7;
-				p->cpu_ppu_io->nmi_lookahead = true;
+				p->cpu_ppu_io->nmi_lookahead = true; // nmi is delayed
 			}
-			// suppress nmi
-			if (p->cycle == 2) {
-				if (p->cpu_ppu_io->suppress_nmi) {
-					p->cpu_ppu_io->nmi_pending = false;
-				}
+			if (p->cpu_ppu_io->suppress_nmi_flag && (p->cycle < 3)) {
+				p->cpu_ppu_io->ignore_nmi = true;
 			}
 		}
+
+		if (p->cpu_ppu_io->ignore_nmi) {
+			p->cpu_ppu_io->nmi_pending = false;
+		}
+
 		// clear VBlank flag if cpu clock is aligned w/ the ppu clock
 		// hard coded for NTSC currently
-		if (p->cpu_ppu_io->suppress_nmi && (cpu->cycle % 3 == 0)) {
+		if (p->cpu_ppu_io->suppress_nmi_flag && (cpu->cycle % 3 == 0)) {
 			p->cpu_ppu_io->ppu_status &= ~0x80;
 		}
 	} else if (p->scanline == 261 && p->cycle == 0) { /* Pre-render scanline */
@@ -806,6 +811,9 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 	} else if (p->scanline == 239 && p->cycle == 340) {
 		p->cpu_ppu_io->nmi_lookahead = true;
 	}
+
+
+	p->cpu_ppu_io->suppress_nmi_flag = false;
 
 
 #ifdef __RESET__

@@ -76,7 +76,8 @@ typedef struct {
 	/* Flags */
 	bool nmi_pending;  // PPU indidcates if an nmi is pending, CPU then services the request
 	bool dma_pending;  // PPU indidcates if an dma is pending, CPU then services the request
-	bool suppress_nmi;
+	bool suppress_nmi_flag;
+	bool ignore_nmi;
 	bool write_debug;  // Trigger debug of PPU only when the CPU writes to the disassembler
 
 	// cpu/ppu nmi synchronisation, when the cpu runs its clock it can be out of sync

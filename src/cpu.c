@@ -97,7 +97,8 @@ CpuPpuShare* mmio_init(void)
 
 	i->nmi_pending = false;
 	i->dma_pending = false;
-	i->suppress_nmi = false;
+	i->suppress_nmi_flag = false;
+	i->ignore_nmi = false;
 	i->nmi_lookahead = false;
 
 	i->buffer_write = false;
@@ -247,7 +248,12 @@ void clock_cpu(Cpu6502* cpu)
 {
 	++cpu->cycle;
 	--cpu->instruction_cycles_remaining;
-	cpu->cpu_ppu_io->suppress_nmi = false;
+
+	// disable any pending interrupts when suppressing an NMI
+	if (cpu->cpu_ppu_io->ignore_nmi) {
+		cpu->process_interrupt = false;
+		cpu->cpu_ppu_io->ignore_nmi = false;
+	}
 
 	// Handle interrupts first
 	if (!cpu->delay_nmi && cpu->process_interrupt && cpu->instruction_state == FETCH) {
