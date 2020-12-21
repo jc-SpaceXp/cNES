@@ -816,7 +816,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 	} else if (p->scanline == 261 && p->cycle == 0) { /* Pre-render scanline */
 		// Clear VBlank, sprite hit and sprite overflow flags
 		p->cpu_ppu_io->ppu_status &= ~0xE0;
-	} else if (p->scanline == 239 && p->cycle == 340) {
+	} else if (p->scanline == 240 && p->cycle == 340) {
 		p->cpu_ppu_io->nmi_lookahead = true;
 	}
 
