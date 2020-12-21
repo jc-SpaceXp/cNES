@@ -71,6 +71,7 @@ Ppu2A03* ppu_init(CpuPpuShare* cp)
 	ppu->cpu_ppu_io->mirroring = &ppu->mirroring;
 	ppu->cpu_ppu_io->fine_x = &ppu->fine_x;
 	ppu->cpu_ppu_io->write_debug = false;
+	ppu->cpu_ppu_io->clear_status = false;
 
 	ppu->reset_1 = false;
 	ppu->reset_2 = false;
@@ -339,6 +340,11 @@ void read_2002(Cpu6502* cpu)
 	cpu->cpu_ppu_io->ppu_status &= ~0x80U;
 	cpu->cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
 	cpu->cpu_ppu_io->suppress_nmi_flag = true;
+
+	if (cpu->cpu_ppu_io->clear_status) {
+		cpu->cpu_ppu_io->return_value &= ~0x80;
+		cpu->cpu_ppu_io->clear_status = false;
+	}
 }
 
 void read_2007(Cpu6502* cpu)
@@ -752,6 +758,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 #endif /* __DEBUG__ */
 
 	p->cpu_ppu_io->nmi_lookahead = false;
+	p->cpu_ppu_io->clear_status = false;
 
 	p->cycle++;
 	if (p->cycle > 340) {
@@ -781,6 +788,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		if (p->cycle == 0) {
 			p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
 			p->cpu_ppu_io->nmi_lookahead = true;
+			p->cpu_ppu_io->clear_status = true;
 			if (p->cpu_ppu_io->suppress_nmi_flag) {
 				p->cpu_ppu_io->ignore_nmi = true;
 			}
@@ -818,6 +826,8 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		p->cpu_ppu_io->ppu_status &= ~0xE0;
 	} else if (p->scanline == 240 && p->cycle == 340) {
 		p->cpu_ppu_io->nmi_lookahead = true;
+	} else if (p->scanline == 240 && (p->cycle == 339 || p->cycle == 340)) {
+		p->cpu_ppu_io->clear_status = true;
 	}
 
 
