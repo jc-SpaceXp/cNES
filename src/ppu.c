@@ -72,6 +72,8 @@ Ppu2A03* ppu_init(CpuPpuShare* cp)
 	ppu->cpu_ppu_io->fine_x = &ppu->fine_x;
 	ppu->cpu_ppu_io->write_debug = false;
 	ppu->cpu_ppu_io->clear_status = false;
+	ppu->cpu_ppu_io->early_disable_mask = false;
+	ppu->cpu_ppu_io->early_enable_mask = false;
 
 	ppu->reset_1 = false;
 	ppu->reset_2 = false;
@@ -776,10 +778,23 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 	// this means a buffer system needs to be implemented to preserve this behaviour
 	if (p->cpu_ppu_io->buffer_write) {
 		--p->cpu_ppu_io->buffer_counter;
+		if (p->cpu_ppu_io->buffer_address == 0x2001 && (p->cpu_ppu_io->buffer_value & 0x08)) {
+			if (p->cpu_ppu_io->buffer_counter == 3) {
+				cpu->cpu_ppu_io->early_enable_mask = true;
+			}
+		}
+
+		if (p->cpu_ppu_io->buffer_address == 0x2001 && !(p->cpu_ppu_io->buffer_value & 0x08)) {
+			if (p->cpu_ppu_io->buffer_counter == 3) {
+				cpu->cpu_ppu_io->early_disable_mask = true;
+			}
+		}
 		if (!p->cpu_ppu_io->buffer_counter) {
 			write_ppu_reg(p->cpu_ppu_io->buffer_address, p->cpu_ppu_io->buffer_value, cpu);
 			p->cpu_ppu_io->buffer_write = false;
 			p->cpu_ppu_io->buffer_counter = 6; // reset to non-zero value
+			cpu->cpu_ppu_io->early_enable_mask = false;
+			cpu->cpu_ppu_io->early_disable_mask = false;
 		}
 	}
 
@@ -833,6 +848,14 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 
 	p->cpu_ppu_io->suppress_nmi_flag = false;
 
+	// odd frame skip
+	if (!cpu->cpu_ppu_io->early_disable_mask
+		&& (cpu->cpu_ppu_io->early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
+		if (p->odd_frame && p->scanline == 261 && p->cycle == 339) {
+			++p->cycle;
+		}
+	}
+
 
 #ifdef __RESET__
 	ppu_reset(1, p, cpu);
@@ -843,10 +866,6 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		if (p->scanline <= 239) { /* Visible scanlines */
 			if (p->cycle > 64 && p->cycle <= 256) {
 				sprite_evaluation(p);
-			}
-		} else if (p->scanline == 261 && p->cycle == 339) {
-			if (p->odd_frame) {
-				++p->cycle;
 			}
 		}
 	}
