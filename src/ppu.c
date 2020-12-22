@@ -813,6 +813,8 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 				p->cpu_ppu_io->nmi_pending = true;
 				p->cpu_ppu_io->nmi_cycles_left = 7;
 				p->cpu_ppu_io->nmi_lookahead = true; // nmi is delayed
+			} else if (p->cycle == 2) {
+				p->cpu_ppu_io->nmi_lookahead = true;
 			}
 			if (p->cpu_ppu_io->suppress_nmi_flag && (p->cycle < 3)) {
 				p->cpu_ppu_io->ignore_nmi = true;
