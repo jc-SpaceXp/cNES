@@ -825,7 +825,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 
 		// Must also disable NMI after disabling NMI flag
 		if (!(p->cpu_ppu_io->ppu_ctrl & 0x80) && p->cpu_ppu_io->nmi_pending) {
-			if (p->cycle < 4) {
+			if (p->cycle < 5) {
 				p->cpu_ppu_io->ignore_nmi = true;
 				p->cpu_ppu_io->nmi_pending = false;
 			}
