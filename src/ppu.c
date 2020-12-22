@@ -804,9 +804,6 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 			p->cpu_ppu_io->ppu_status |= 0x80; /* In VBlank */
 			p->cpu_ppu_io->nmi_lookahead = true;
 			p->cpu_ppu_io->clear_status = true;
-			if (p->cpu_ppu_io->suppress_nmi_flag) {
-				p->cpu_ppu_io->ignore_nmi = true;
-			}
 		}
 		if (p->cpu_ppu_io->ppu_ctrl & 0x80) { /* if PPU CTRL has execute NMI on VBlank */
 			if (p->cycle == 1) {
@@ -816,7 +813,8 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 			} else if (p->cycle == 2) {
 				p->cpu_ppu_io->nmi_lookahead = true;
 			}
-			if (p->cpu_ppu_io->suppress_nmi_flag && (p->cycle < 3)) {
+			if (p->cpu_ppu_io->suppress_nmi_flag
+			    && (p->cycle == 1 || p->cycle == 2 || p->cycle == 3)) {
 				p->cpu_ppu_io->ignore_nmi = true;
 			}
 		}
