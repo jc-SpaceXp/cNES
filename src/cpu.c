@@ -1900,14 +1900,15 @@ void execute_DMA(Cpu6502* cpu)
 	strcpy(instruction, "DMA");
 	cpu->address_mode = SPECIAL;
 
-	//initialise static
-	static unsigned cycles_left = 513;
+	// initialise static (actually takes 513 cycles to complete)
+	// this is due to the first idle tick(s) and the if (cycles < 513) check
+	// which nullifies the last cycle skip
+	static unsigned cycles_left = 514;
 
 	// + 1 cycle on an odd cycle
-	if ((cpu->cycle & 1) && cycles_left == 513) { cycles_left = 514; }
+	if (((cpu->cycle - 1) & 1) && cycles_left == 514) {  cycles_left += 1;  }
 
-
-	if (cycles_left == 514 || cycles_left == 513) {
+	if (cycles_left >= 513) {
 		// dummy read
 		--cycles_left;
 	}
@@ -1931,7 +1932,7 @@ void execute_DMA(Cpu6502* cpu)
 	if (cycles_left == 0) {
 		cpu->instruction_state = FETCH;
 		cpu->cpu_ppu_io->dma_pending = false;
-		cycles_left = 513;
+		cycles_left = 514;
 		first_cycle = true;
 	}
 }
