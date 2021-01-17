@@ -230,6 +230,10 @@ void delay_write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
 	}
 	cpu->cpu_ppu_io->buffer_address = addr;
 	cpu->cpu_ppu_io->buffer_value = data;
+
+
+	cpu->cpu_ppu_io->ppu_status &= ~0x1F;
+	cpu->cpu_ppu_io->ppu_status |= (data & 0x1F);
 }
 
 void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
