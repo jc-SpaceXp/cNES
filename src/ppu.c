@@ -546,7 +546,7 @@ bool ppu_show_greyscale(Ppu2A03* p)
 
 bool sprite_overflow_occured(Ppu2A03* p)
 {
-	if (p->cpu_ppu_io->ppu_status & 0x40) {
+	if (p->cpu_ppu_io->ppu_status & 0x20) {
 		return true;
 	} else {
 		return false;
