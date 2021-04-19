@@ -83,6 +83,7 @@ Ppu2A03* ppu_init(CpuPpuShare* cp)
 	ppu->old_cycle = ppu->cycle;
 	ppu->old_scanline = ppu->scanline;
 	ppu->odd_frame = false;
+	ppu->nt_addr_current = 0;
 
 	/* Set PPU Latches and shift reg to 0 */
 	ppu->pt_lo_shift_reg = 0;
