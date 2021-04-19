@@ -131,6 +131,7 @@ Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm)
 	i->instruction_cycles_remaining = 51; // initial value doesn't matter as LUT will set it after first instruction is read
 
 	i->delay_nmi = false;
+	i->cpu_ignore_fetch_on_nmi = false;
 	i->process_interrupt = false;
 
 	i->controller_latch = 0;
@@ -303,6 +304,11 @@ void clock_cpu(Cpu6502* cpu)
 			if (cpu->cpu_ppu_io->nmi_lookahead) {
 				cpu->delay_nmi = true;
 			}
+
+			if (cpu->cpu_ppu_io->nmi_lookahead && cpu->cpu_ignore_fetch_on_nmi) {
+				cpu->delay_nmi = false;
+			}
+			cpu->cpu_ignore_fetch_on_nmi = false;
 		}
 	}
 }
@@ -818,6 +824,7 @@ void decode_ZPY_read_store(Cpu6502* cpu)
 void decode_ABS_JMP(Cpu6502* cpu)
 {
 	cpu->address_mode = ABS;
+	cpu->cpu_ignore_fetch_on_nmi = true;
 	// opcode fetched: T0
 	cpu->instruction_state = EXECUTE;
 }

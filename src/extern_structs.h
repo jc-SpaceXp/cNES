@@ -166,6 +166,7 @@ typedef struct {
 	void (*decoder)(int); // decoder function pointer, see .c file
 
 	bool delay_nmi;  // only true when enabling NMI via $2000 during VBlank
+	bool cpu_ignore_fetch_on_nmi;
 
 	// NES controller
 	unsigned controller_latch; // latch signal for controller shift register
