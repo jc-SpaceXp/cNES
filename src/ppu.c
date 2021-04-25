@@ -749,7 +749,7 @@ void sprite_evaluation(Ppu2A03* p)
 
 void sprite_hit_lookahead(Ppu2A03* p)
 {
-	// -1 as Y pos is sprite is delayed until next scanline
+	// -1 as Y pos of sprite is delayed until the next scanline
 	if ((p->scanline - p->oam[0] - 1) < ppu_sprite_height(p)
 		&& (p->scanline > 0)
 		&& (p->scanline < 240)) {
@@ -814,12 +814,6 @@ void sprite_hit_lookahead(Ppu2A03* p)
 						p->l_sl = p->scanline;
 						p->l_cl = p->oam[3] + mask; // delayed by one tick (hence no minus one)
 
-						// horizontal flip
-						if (p->oam[2] & 0x40) {
-						}
-						// vertical flip
-						if (p->oam[2] & 0x40) {
-						}
 						// no sprite hit on p->cycle = 256 (x pixel == 255 (when counting from 0))
 						if (p->l_cl == 256) {
 							p->l_sl = 10000;
