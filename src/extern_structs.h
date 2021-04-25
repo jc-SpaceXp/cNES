@@ -237,6 +237,17 @@ typedef struct {
 
 	unsigned mirroring; // 0 = Horz, 1 = vert, 4 = 4 screen
 
+	// lookahead hit
+	unsigned bg_lo_reg;
+	unsigned bg_hi_reg;
+	unsigned sp_lo_reg;
+	unsigned sp_hi_reg;
+	int bg_opaque_hit[8];
+	int sp_opaque_hit[8];
+	bool sp_frame_hit_lookahead;
+	int l_sl;
+	int l_cl;
+
 	uint32_t scanline; /* Pre-render = 261, visible = 0 - 239, post-render 240 - 260 */
 	uint32_t nmi_start; /* Scanline in which NMI starts - set value depending on NTSC or PAL */
 	const uint32_t nmi_end; /* Scanline in which NMI end */

@@ -79,6 +79,7 @@ void render_pixel(Ppu2A03* p);
 void ppu_transfer_oam(Ppu2A03* p, unsigned index);
 void reset_secondary_oam(Ppu2A03* p);
 void sprite_evaluation(Ppu2A03* p);
+void sprite_hit_lookahead(Ppu2A03* p);
 
 void clock_ppu(Ppu2A03* p, Cpu6502* cpu, Display* nes_screen);
 

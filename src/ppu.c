@@ -100,6 +100,15 @@ Ppu2A03* ppu_init(CpuPpuShare* cp)
 	ppu->sprite_zero_scanline_tmp = 600;
 	ppu->hit_scanline = 600; // Impossible values
 	ppu->hit_cycle = 600; // Impossible values
+	ppu->sp_frame_hit_lookahead = false;
+	ppu->bg_lo_reg = 0;
+	ppu->bg_hi_reg = 0;
+	ppu->sp_lo_reg = 0;
+	ppu->sp_hi_reg = 0;
+	ppu->l_sl = 400;
+	ppu->l_cl = 400;
+	memset(ppu->bg_opaque_hit, 0, sizeof(ppu->bg_opaque_hit));
+	memset(ppu->sp_opaque_hit, 0, sizeof(ppu->sp_opaque_hit));
 
 	// Zero out arrays
 	memset(ppu->vram, 0, sizeof(ppu->vram));
@@ -677,19 +686,7 @@ void render_pixel(Ppu2A03 *p)
 			p->sprite_pt_hi_shift_reg[i] >>= 1;
 		}
 	}
-	if (p->scanline == p->sprite_zero_scanline && (p->sprite_zero_hit == false)) { // If sprite is on scanline
-		if (bg_palette_offset != 0 && sprite_palette_offset[0] != 0
-		    && !((ppu_mask_left_8px_bg(p) || ppu_mask_left_8px_sprite(p)) && p->cycle <= 8)
-		    && ((ppu_show_bg(p) && ppu_show_sprite(p)))
-		    && !sprite_overflow_occured(p)
-		    && p->cycle != 256) {
-			p->hit_scanline = p->scanline;
-			p->hit_cycle = p->cycle + 1; // Sprite #0 hit is delayed by 1 tick (cycle)
-			p->sprite_zero_hit = true;
-		}
-	} if ((p->scanline == p->hit_scanline) && (p->cycle == p->hit_cycle)) {
-		p->cpu_ppu_io->ppu_status |= 0x40; // Sprite #0 hit
-	} 
+
 	// Send pixels to pixel buffer
 	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
 }
@@ -750,6 +747,102 @@ void sprite_evaluation(Ppu2A03* p)
 }
 
 
+void sprite_hit_lookahead(Ppu2A03* p)
+{
+	// -1 as Y pos is sprite is delayed until next scanline
+	if ((p->scanline - p->oam[0] - 1) < ppu_sprite_height(p)
+		&& (p->scanline > 0)
+		&& (p->scanline < 240)) {
+		// should be looking @ px 9-16 (1 index) @ cyc 8
+		switch ((p->cycle - 1) & 0x07) {
+		case 7:
+			// perform our check on the start of a tile boundry i.e. 0, 8, 16 ...
+			if (((p->oam[3] / 8) == (p->cycle / 8)) && (p->cycle < 256)) {
+				// reset hit_pos
+				p->l_sl = 10000;
+				p->l_cl = 10000;
+				unsigned h_offset = p->oam[3] % 8;
+				unsigned v_offset = p->scanline - p->oam[0] - 1;
+				for (int i = 0; i < 8; i++) {
+					p->bg_opaque_hit[i] = -10;
+					p->sp_opaque_hit[i] = -10;
+				}
+
+				for (int mask = 1; mask < 9; mask++) {
+					p->bg_lo_reg = (p->pt_lo_shift_reg >> (mask + h_offset - 1)) & 0x01;
+					p->bg_hi_reg = (p->pt_hi_shift_reg >> (mask + h_offset - 1)) & 0x01;
+					unsigned tmp_pt_lo = p->vram[(ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + v_offset];
+					unsigned tmp_pt_hi = p->vram[(ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + v_offset + 8];
+					if (ppu_sprite_height(p) == 16) {
+						if (v_offset >= 8) { v_offset += 8; } // avoid overlap w/ hi address space i.e. 0x0008 to 0x000F
+						tmp_pt_lo = p->vram[(0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + v_offset)];
+						tmp_pt_hi = p->vram[(0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + v_offset + 8)];
+					}
+					// MSB = 1st pixel (not using the reverse_bits function here)
+					p->sp_lo_reg = (tmp_pt_lo >> (8 - mask)) & 0x01;
+					p->sp_hi_reg = (tmp_pt_hi >> (8 - mask)) & 0x01;
+					// flip sprites horizontally
+					if (p->oam[2] & 0x40) {
+						p->sp_lo_reg = (reverse_bits[tmp_pt_lo] >> (8 - mask)) & 0x01;
+						p->sp_hi_reg = (reverse_bits[tmp_pt_hi] >> (8 - mask)) & 0x01;
+					}
+					// flip sprites vertically
+					if (p->oam[2] & 0x80) {
+						tmp_pt_lo = p->vram[(ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 7 - v_offset];
+						tmp_pt_hi = p->vram[(ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 15 - v_offset];
+						// flip the 8x16 sprites
+						if (ppu_sprite_height(p) == 16) {
+							tmp_pt_lo = p->vram[(0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 23 - v_offset)];
+							tmp_pt_hi = p->vram[(0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 31 - v_offset)];
+						}
+						p->sp_lo_reg = (tmp_pt_lo >> (8 - mask)) & 0x01;
+						p->sp_hi_reg = (tmp_pt_hi >> (8 - mask)) & 0x01;
+						if (p->oam[2] & 0x40) {
+							p->sp_lo_reg = (reverse_bits[tmp_pt_lo] >> (8 - mask)) & 0x01;
+							p->sp_hi_reg = (reverse_bits[tmp_pt_hi] >> (8 - mask)) & 0x01;
+						}
+					}
+					// using the p->sprite_pt_xx_shift_reg[0] produces some incorrect values
+					// i.e. in bases loaded: after sprite zero hit SL: 118 onwards should
+					// report 0xFF when calling the lo_pt[0] instead for 118 I get 0x00
+					if (p->bg_lo_reg || p->bg_hi_reg) { p->bg_opaque_hit[mask - 1] = mask - 1; }
+					if (p->sp_lo_reg || p->sp_hi_reg) { p->sp_opaque_hit[mask - 1] = p->oam[3] + mask - 1; }
+
+					if ((p->sp_frame_hit_lookahead == false)
+						&& (p->bg_opaque_hit[mask - 1] != -10)
+						&& (p->sp_opaque_hit[mask - 1] != -10)) {
+						p->l_sl = p->scanline;
+						p->l_cl = p->oam[3] + mask; // delayed by one tick (hence no minus one)
+
+						// horizontal flip
+						if (p->oam[2] & 0x40) {
+						}
+						// vertical flip
+						if (p->oam[2] & 0x40) {
+						}
+						// no sprite hit on p->cycle = 256 (x pixel == 255 (when counting from 0))
+						if (p->l_cl == 256) {
+							p->l_sl = 10000;
+							p->l_cl = 10000;
+							continue;
+						}
+						// ignore sprite hits if sprite or bg are masked (leftmost 8 pixels)
+						if ((ppu_mask_left_8px_bg(p) || ppu_mask_left_8px_sprite(p))
+							&& (p->l_cl < 9)) {
+							p->l_sl = 10000;
+							p->l_cl = 10000;
+							continue;
+						}
+						p->sp_frame_hit_lookahead = true;
+					}
+				}
+			}
+			break;
+		default:
+			break;
+		}
+	}
+}
 
 /*************************
  * RENDERING             *
@@ -1091,6 +1184,7 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 				}
 			}
 		} else if (p->scanline == 261) { /* Pre-render scanline */
+			p->sp_frame_hit_lookahead = false;
 			// only bg fetches occur
 	
 			p->sprite_index = 0;
@@ -1103,5 +1197,16 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 				p->hit_cycle = 600;
 			}
 		}
+	}
+
+
+	if ((ppu_show_bg(p) && ppu_show_sprite(p)) && !sprite_overflow_occured(p)) {
+		sprite_hit_lookahead(p);
+	}
+
+	if (((int) p->scanline == p->l_sl) && (p->cycle == p->l_cl)) {
+		p->cpu_ppu_io->ppu_status |= 0x40; // Sprite #0 hit
+		p->l_sl = 10000;
+		p->l_cl = 10000;
 	}
 }
