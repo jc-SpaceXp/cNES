@@ -101,6 +101,8 @@ CpuPpuShare* mmio_init(void)
 	i->ignore_nmi = false;
 	i->nmi_lookahead = false;
 
+	i->nmi_cycles_left = 7;
+
 	i->buffer_write = false;
 	i->buffer_address = 0;
 	i->buffer_counter = 0;
@@ -1886,6 +1888,7 @@ void execute_NMI(Cpu6502* cpu)
 		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
 		cpu->cpu_ppu_io->nmi_pending = false;
 		cpu->process_interrupt = false;
+		cpu->cpu_ppu_io->nmi_cycles_left = 8;  // 8 as a decrement occurs after this function is called
 		break;
 	}
 }

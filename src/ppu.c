@@ -906,7 +906,6 @@ void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
 		if (p->cpu_ppu_io->ppu_ctrl & 0x80) { /* if PPU CTRL has execute NMI on VBlank */
 			if (p->cycle == 1) {
 				p->cpu_ppu_io->nmi_pending = true;
-				p->cpu_ppu_io->nmi_cycles_left = 7;
 				p->cpu_ppu_io->nmi_lookahead = true; // nmi is delayed
 			} else if (p->cycle == 2) {
 				p->cpu_ppu_io->nmi_lookahead = true;
