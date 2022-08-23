@@ -573,9 +573,9 @@ static void log_cpu_info(Cpu6502* cpu)
 	printf("SP:%.2X ", cpu->old_stack);
 
 	if (cpu->old_cycle == 0) {
-		printf("CPU:%.4u", cpu->old_cycle);
+		printf("CPU:%-10u", cpu->old_cycle);
 	} else { // first cycle = +1 cycles due to the tick() after the instruction executes
-		printf("CPU:%.4u", cpu->old_cycle - 1);
+		printf("CPU:%-10u", cpu->old_cycle - 1);
 	}
 }
 

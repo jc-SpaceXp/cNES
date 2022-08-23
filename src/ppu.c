@@ -155,7 +155,7 @@ void ppu_reset(int start, Ppu2C02* p, Cpu6502* cpu)
 
 static void append_ppu_info(Ppu2C02* ppu)
 {
-	printf(" PPU_CYC: %.3" PRIu16, ppu->old_cycle);
+	printf(" PPU_CYC: %-3" PRIu16, ppu->old_cycle);
 	printf(" SL: %" PRIu32 "\n", ppu->old_scanline);
 	ppu->old_cycle = ppu->cycle;
 	ppu->old_scanline = ppu->scanline;
