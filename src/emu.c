@@ -28,7 +28,7 @@ void clock_all_units(Cpu6502* cpu, Ppu2A03* ppu, Display* nes_screen)
 	clock_ppu(ppu, cpu, nes_screen);
 }
 
-void usuage(const char* program_name)
+void emu_usuage(const char* program_name)
 {
 	fprintf(stderr, "\nUSAGE: %s [options]\n", program_name);
 	fprintf(stderr, "OPTIONS:\n");
@@ -91,7 +91,7 @@ int main(int argc, char** argv)
 
 	// only display help if the user requested it (or if they didn't supply a filename too)
 	if (help) {
-		usuage(program_name);
+		emu_usuage(program_name);
 		goto early_return;
 	}
 
