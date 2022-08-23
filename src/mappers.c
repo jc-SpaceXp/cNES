@@ -6,8 +6,8 @@
 
 // Static prototype functions
 static void mmc1_reg_write(Cpu6502* cpu, uint16_t addr, uint8_t val);
-static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu);
-static void mapper_001(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu);
+static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu);
+static void mapper_001(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu);
 
 // Helper functions
 static inline void set_prg_rom_bank_1(Cpu6502* cpu, unsigned prg_bank_offset, unsigned kib_size)
@@ -68,7 +68,7 @@ void change_nt_mirroring(Cpu6502* cpu)
 	}
 }
 
-void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
+void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	switch (cpu->cpu_mapper_io->mapper_number) {
 	case 0:
@@ -85,7 +85,7 @@ void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
 
 
 /* NROM mapper */
-static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
+static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	/* Load PRG_ROM into CPU program memory space */
 	if (cart->prg_rom.size == 16 * KiB) {
@@ -106,7 +106,7 @@ static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
 
 /* SxROM (MMC1) mapper */
 // power on state
-static void mapper_001(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
+static void mapper_001(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	(void) ppu; // suppress unused variable warning
 	unsigned prg_rom_banks = cart->prg_rom.size / (16 * KiB);

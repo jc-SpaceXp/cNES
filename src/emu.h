@@ -3,7 +3,7 @@
 
 #include "extern_structs.h"
 
-void ppu_cpu_ratio(Cpu6502* cpu, Ppu2A03* ppu, Display* nes_screen);
+void ppu_cpu_ratio(Cpu6502* cpu, Ppu2C02* ppu, Display* nes_screen);
 void emu_usuage(const char* program_name);
 int main(int argc, char** argv);
 

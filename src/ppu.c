@@ -67,9 +67,9 @@ static void write_4014(uint8_t data, Cpu6502* cpu); // DMA_DATA
 static uint8_t ppu_vram_addr_inc(Cpu6502* cpu);
 
 
-Ppu2A03* ppu_init(CpuPpuShare* cp)
+Ppu2C02* ppu_init(CpuPpuShare* cp)
 {
-	Ppu2A03* ppu = malloc(sizeof(Ppu2A03));
+	Ppu2C02* ppu = malloc(sizeof(Ppu2C02));
 	if (!ppu) {
 		fprintf(stderr, "Failed to allocate enough memory for PPU\n");
 		return ppu;
@@ -137,7 +137,7 @@ Ppu2A03* ppu_init(CpuPpuShare* cp)
 }
 
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
-void ppu_reset(int start, Ppu2A03* p, Cpu6502* cpu)
+void ppu_reset(int start, Ppu2C02* p, Cpu6502* cpu)
 {
 	// remove p->reset_1 and 2 and isntead use a static variable
 	if (start && !p->reset_1 && !p->reset_2) {
@@ -153,7 +153,7 @@ void ppu_reset(int start, Ppu2A03* p, Cpu6502* cpu)
 	}
 }
 
-static void append_ppu_info(Ppu2A03* ppu)
+static void append_ppu_info(Ppu2C02* ppu)
 {
 	printf(" PPU_CYC: %.3" PRIu16, ppu->old_cycle);
 	printf(" SL: %" PRIu32 "\n", ppu->old_scanline);
@@ -175,7 +175,7 @@ void debug_ppu_regs(Cpu6502* cpu)
 	printf("3F01: %.2X\n\n", read_from_cpu(cpu, 0x3F01));
 }
 
-void ppu_mem_16_byte_viewer(Ppu2A03* ppu, unsigned start_addr, unsigned total_rows)
+void ppu_mem_16_byte_viewer(Ppu2C02* ppu, unsigned start_addr, unsigned total_rows)
 {
 	printf("\n##################### PPU MEM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
@@ -195,7 +195,7 @@ void ppu_mem_16_byte_viewer(Ppu2A03* ppu, unsigned start_addr, unsigned total_ro
 
 
 // fix like above
-void OAM_viewer(Ppu2A03* ppu, enum PpuMemoryTypes ppu_mem)
+void OAM_viewer(Ppu2C02* ppu, enum PpuMemoryTypes ppu_mem)
 {
 	printf("\n##################### PPU OAM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
@@ -468,7 +468,7 @@ static uint8_t ppu_vram_addr_inc(Cpu6502* cpu)
 	}
 }
 
-static uint16_t ppu_base_nt_address(Ppu2A03* p)
+static uint16_t ppu_base_nt_address(Ppu2C02* p)
 {
 	switch(p->cpu_ppu_io->ppu_ctrl & 0x03) {
 	case 0:
@@ -485,7 +485,7 @@ static uint16_t ppu_base_nt_address(Ppu2A03* p)
 }
 
 
-static uint16_t ppu_base_pt_address(Ppu2A03* p)
+static uint16_t ppu_base_pt_address(Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 4) & 0x01) {
 		return 0x1000;
@@ -494,7 +494,7 @@ static uint16_t ppu_base_pt_address(Ppu2A03* p)
 	}
 }
 
-static uint16_t ppu_sprite_pattern_table_addr(Ppu2A03* p)
+static uint16_t ppu_sprite_pattern_table_addr(Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 3) & 0x01) {
 		return 0x1000;
@@ -503,7 +503,7 @@ static uint16_t ppu_sprite_pattern_table_addr(Ppu2A03* p)
 	}
 }
 
-static uint8_t ppu_sprite_height(Ppu2A03* p)
+static uint8_t ppu_sprite_height(Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
 		return 16; /* 8 x 16 */
@@ -516,7 +516,7 @@ static uint8_t ppu_sprite_height(Ppu2A03* p)
  * PPU_MASK
  */
 
-static bool ppu_show_bg(Ppu2A03* p)
+static bool ppu_show_bg(Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x08) {
 		return true;
@@ -526,7 +526,7 @@ static bool ppu_show_bg(Ppu2A03* p)
 }
 
 
-static bool ppu_show_sprite(Ppu2A03* p)
+static bool ppu_show_sprite(Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x10) {
 		return true;
@@ -535,7 +535,7 @@ static bool ppu_show_sprite(Ppu2A03* p)
 	}
 }
 
-static bool ppu_mask_left_8px_bg(Ppu2A03* p)
+static bool ppu_mask_left_8px_bg(Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x02) {
 		return false;
@@ -544,7 +544,7 @@ static bool ppu_mask_left_8px_bg(Ppu2A03* p)
 	}
 }
 
-static bool ppu_mask_left_8px_sprite(Ppu2A03* p)
+static bool ppu_mask_left_8px_sprite(Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x04) {
 		return false;
@@ -553,7 +553,7 @@ static bool ppu_mask_left_8px_sprite(Ppu2A03* p)
 	}
 }
 
-static bool ppu_show_greyscale(Ppu2A03* p)
+static bool ppu_show_greyscale(Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x01) {
 		return true;
@@ -566,7 +566,7 @@ static bool ppu_show_greyscale(Ppu2A03* p)
  * PPU_STATUS
  */
 
-static bool sprite_overflow_occured(Ppu2A03* p)
+static bool sprite_overflow_occured(Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_status & 0x20) {
 		return true;
@@ -580,7 +580,7 @@ static bool sprite_overflow_occured(Ppu2A03* p)
  */
 
 // Taken from wiki.nesdev
-static void inc_vert_scroll(Ppu2A03 *p)
+static void inc_vert_scroll(Ppu2C02 *p)
 {
 	uint16_t addr = p->vram_addr;
 	if ((addr & 0x7000) != 0x7000) { // If fine Y < 7
@@ -601,7 +601,7 @@ static void inc_vert_scroll(Ppu2A03 *p)
 	p->vram_addr = addr;
 }
 
-static void inc_horz_scroll(Ppu2A03 *p)
+static void inc_horz_scroll(Ppu2C02 *p)
 {
 	if ((p->vram_addr & 0x001F) == 31) {
 		p->vram_addr &= ~0x001F;
@@ -611,20 +611,20 @@ static void inc_horz_scroll(Ppu2A03 *p)
 	}
 }
 
-static void fetch_nt_byte(Ppu2A03 *p)
+static void fetch_nt_byte(Ppu2C02 *p)
 {
 	p->nt_addr_tmp = 0x2000 | (p->vram_addr & 0x0FFF);
 	p->nt_byte = p->vram[p->nt_addr_tmp];
 }
 
 /* Determines colour palette */
-static void fetch_at_byte(Ppu2A03 *p)
+static void fetch_at_byte(Ppu2C02 *p)
 {
 	p->at_latch = p->vram[0x23C0 | (p->vram_addr & 0x0C00) | ((p->vram_addr >> 4) & 0x38) | ((p->vram_addr >> 2) & 0x07)];
 }
 
 /* Lo & Hi determine which index of the colour palette we use (0 to 3) */
-static void fetch_pt_lo(Ppu2A03 *p)
+static void fetch_pt_lo(Ppu2C02 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12);
 	uint8_t latch = p->vram[ppu_base_pt_address(p) | pt_offset];
@@ -632,7 +632,7 @@ static void fetch_pt_lo(Ppu2A03 *p)
 }
 
 
-static void fetch_pt_hi(Ppu2A03 *p)
+static void fetch_pt_hi(Ppu2C02 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12) + 8;
 	uint8_t latch = p->vram[ppu_base_pt_address(p) | pt_offset];
@@ -640,7 +640,7 @@ static void fetch_pt_hi(Ppu2A03 *p)
 }
 
 
-static void render_pixel(Ppu2A03 *p)
+static void render_pixel(Ppu2C02 *p)
 {
 	unsigned bg_palette_addr;
 	/* Defines the which colour palette to use */
@@ -703,14 +703,14 @@ static void render_pixel(Ppu2A03 *p)
 	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
 }
 
-static void ppu_transfer_oam(Ppu2A03* p, unsigned index)
+static void ppu_transfer_oam(Ppu2C02* p, unsigned index)
 {
 	for (int i = 0; i < 4; i++) {
 		p->scanline_oam[(p->sprites_found * 4) + i] = p->oam[(index * 4) + i]; // Copy remaining bytes
 	}
 }
 
-static void reset_secondary_oam(Ppu2A03* p)
+static void reset_secondary_oam(Ppu2C02* p)
 {
 	for (int i = 0; i < 32; i++) {
 		p->scanline_oam[i] = 0xFF; // Reset secondary OAM
@@ -722,7 +722,7 @@ static void reset_secondary_oam(Ppu2A03* p)
 	p->sprite_zero_scanline = p->sprite_zero_scanline_tmp;
 }
 
-static void sprite_evaluation(Ppu2A03* p)
+static void sprite_evaluation(Ppu2C02* p)
 {
 	int y_offset = 0;
 	switch (p->cycle % 2) {
@@ -759,7 +759,7 @@ static void sprite_evaluation(Ppu2A03* p)
 }
 
 
-static void sprite_hit_lookahead(Ppu2A03* p)
+static void sprite_hit_lookahead(Ppu2C02* p)
 {
 	// -1 as Y pos of sprite is delayed until the next scanline
 	if ((p->scanline - p->oam[0] - 1) < ppu_sprite_height(p)
@@ -854,7 +854,7 @@ static void sprite_hit_lookahead(Ppu2A03* p)
  * RENDERING             *
  *************************/
 
-void clock_ppu(Ppu2A03 *p, Cpu6502* cpu, Display* nes_screen)
+void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen)
 {
 #ifdef __DEBUG__
 	if (p->cpu_ppu_io->write_debug) {

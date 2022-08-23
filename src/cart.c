@@ -15,7 +15,7 @@ Cartridge* cart_init(void)
 }
 
 /* iNES format */
-int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2A03* ppu)
+int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	uint8_t header[16];
 	unsigned trainer;

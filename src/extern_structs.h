@@ -255,7 +255,7 @@ typedef struct {
 	uint16_t old_cycle;
 	uint32_t old_scanline;
 	bool odd_frame;
-} Ppu2A03;
+} Ppu2C02;
 
 
 // SDL Display
@@ -270,7 +270,7 @@ extern Display* nes_screen;
 // Initialised in emu.c
 extern Cpu6502* cpu;
 extern CpuPpuShare* cpu_ppu;
-extern Ppu2A03* ppu;
+extern Ppu2C02* ppu;
 extern CpuMapperShare* cpu_mapper;
 
 #endif /* __EXTERN_STRUCTS__ */
