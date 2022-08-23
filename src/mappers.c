@@ -4,29 +4,34 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Static prototype functions
+static void mmc1_reg_write(Cpu6502* cpu, uint16_t addr, uint8_t val);
+static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu);
+static void mapper_001(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu);
+
 // Helper functions
-void set_prg_rom_bank_1(Cpu6502* cpu, unsigned prg_bank_offset, unsigned kib_size)
+static void set_prg_rom_bank_1(Cpu6502* cpu, unsigned prg_bank_offset, unsigned kib_size)
 {
 	memcpy(&cpu->mem[0x8000]
 		  , cpu->cpu_mapper_io->prg_rom->data + ((prg_bank_offset) * (kib_size))
 		  , kib_size);
 }
 
-void set_prg_rom_bank_2(Cpu6502* cpu, unsigned prg_bank_offset)
+static void set_prg_rom_bank_2(Cpu6502* cpu, unsigned prg_bank_offset)
 {
 	memcpy(&cpu->mem[0xC000]
 		  , cpu->cpu_mapper_io->prg_rom->data + ((prg_bank_offset) * (16 * KiB))
 		  , 16 * KiB);
 }
 
-void set_chr_bank_1(Cpu6502* cpu, unsigned chr_bank_offset, unsigned kib_size)
+static void set_chr_bank_1(Cpu6502* cpu, unsigned chr_bank_offset, unsigned kib_size)
 {
 	memcpy(&cpu->cpu_ppu_io->vram[0x0000]
 		  , cpu->cpu_mapper_io->chr->data + ((chr_bank_offset) * (kib_size))
 		  , kib_size);
 }
 
-void set_chr_bank_2(Cpu6502* cpu, unsigned chr_bank_offset)
+static void set_chr_bank_2(Cpu6502* cpu, unsigned chr_bank_offset)
 {
 	memcpy(&cpu->cpu_ppu_io->vram[0x1000]
 		  , cpu->cpu_mapper_io->chr->data + ((chr_bank_offset) * (4 * KiB))
@@ -80,7 +85,7 @@ void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
 
 
 /* NROM mapper */
-void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
+static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
 {
 	/* Load PRG_ROM into CPU program memory space */
 	if (cart->prg_rom.size == 16 * KiB) {
@@ -101,7 +106,7 @@ void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
 
 /* SxROM (MMC1) mapper */
 // power on state
-void mapper_001(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
+static void mapper_001(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
 {
 	(void) ppu; // suppress unused variable warning
 	unsigned prg_rom_banks = cart->prg_rom.size / (16 * KiB);
@@ -110,7 +115,7 @@ void mapper_001(Cartridge* cart, Cpu6502* cpu, Ppu2A03* ppu)
 }
 
 
-void mmc1_reg_write(Cpu6502* cpu, uint16_t addr, uint8_t val)
+static void mmc1_reg_write(Cpu6502* cpu, uint16_t addr, uint8_t val)
 {
 	static unsigned write_count = 0;
 	static unsigned buffer = 0;
@@ -143,11 +148,14 @@ void mmc1_reg_write(Cpu6502* cpu, uint16_t addr, uint8_t val)
 		if (addr >= 0x8000 && addr <= 0x9FFF) { // reg 0 (control)
 			// MM bits
 			switch (buffer & 0x03) {
-			case 0x00: // 1-screen mirroring nametable 0 (implement in ppu.c)
+			case 0x00: // 1-screen mirroring nametable 0
 				*(cpu->cpu_ppu_io->mirroring) = 2;
+				puts("Switch to lower nametable");
+				printf("%d\n", cpu->cycle);
 				break;
-			case 0x01: // 1-screen mirroring nametable 1 (implement in ppu.c)
+			case 0x01: // 1-screen mirroring nametable 1
 				*(cpu->cpu_ppu_io->mirroring) = 3;
+				puts("Switch to upper nametable");
 				break;
 			case 0x02: // 0b10 vertical mirroring
 				*(cpu->cpu_ppu_io->mirroring) = 1;
