@@ -125,6 +125,26 @@ static void execute_IRQ(Cpu6502* cpu);  // warning unused function, needed later
 static void execute_NMI(Cpu6502* cpu);
 static void execute_DMA(Cpu6502* cpu);
 
+// 0 denotes illegal op codes
+static const uint8_t max_cycles_opcode_lut[256] = {
+	0x0007, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0003, 0x0002, 0x0002,      0,      0, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	0x0006, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0004, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	0x0006, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0003, 0x0002, 0x0002,      0, 0x0003, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	0x0006, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0004, 0x0002, 0x0002,      0, 0x0005, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	     0, 0x0006,      0,      0, 0x0003, 0x0003, 0x0003,      0, 0x0002,      0, 0x0002,      0, 0x0004, 0x0004, 0x0004,      0,
+	0x0004, 0x0006,      0,      0, 0x0004, 0x0004, 0x0004,      0, 0x0002, 0x0005, 0x0002,      0,      0, 0x0005,      0,      0,
+	0x0002, 0x0006, 0x0002,      0, 0x0003, 0x0003, 0x0003,      0, 0x0002, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0004,      0,
+	0x0004, 0x0006,      0,      0, 0x0004, 0x0004, 0x0004,      0, 0x0002, 0x0005, 0x0002,      0, 0x0005, 0x0005, 0x0005,      0,
+	0x0002, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0002, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
+	0x0002, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0002, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
+	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0
+};
+
 static void (*decode_opcode_lut[256])(Cpu6502* cpu) = {
 	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PUSH, decode_IMM_read_store , decode_ACC,  bad_op_code, bad_op_code           , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
