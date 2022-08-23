@@ -10,6 +10,15 @@
 #include <stdio.h>
 #include <string.h>
 
+// CPU memory map
+#define ADDR_RAM_START        0x0000U
+#define ADDR_RAM_END          0x1FFFU
+#define ADDR_PPU_REG_START    0x2000U
+#define ADDR_PPU_REG_END      0x3FFFU
+#define ADDR_OAM_DMA          0x4014U
+#define ADDR_JOY1             0x4016U
+#define ADDR_JOY2             0x4017U
+
 /* Debugger */
 char instruction[18]; // complete instruction i.e. LDA $2000
 char end[10]; // ending of the instruction i.e. #$2000
@@ -250,13 +259,13 @@ void init_pc(Cpu6502* cpu)
 uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr)
 {
 	unsigned read;
-	if (addr < 0x2000) {
+	if (addr < (ADDR_RAM_END + 1)) { // read from RAM (non-mirrored)
 		read = cpu->mem[addr & 0x7FF];
-	} else if (addr < 0x4000) {
+	} else if (addr < (ADDR_PPU_REG_END + 1)) { // read from PPU registers (non-mirrored)
 		read = read_ppu_reg(addr & 0x2007, cpu);
-	} else if (addr == 0x4016) {
+	} else if (addr == ADDR_JOY1) {
 		read = read_4016(cpu);
-	} else if (addr == 0x4017) {
+	} else if (addr == ADDR_JOY2) {
 		read = read_4017(cpu);
 	} else {
 		read = cpu->mem[addr]; /* catch-all */
@@ -273,16 +282,16 @@ static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr)
 
 static void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 {
-	if (addr < 0x2000) {
+	if (addr < (ADDR_RAM_END + 1)) { // write to RAM (non-mirrored)
 		cpu->mem[addr & 0x7FF] = val;
-	} else if (addr < 0x4000) {
+	} else if (addr < (ADDR_PPU_REG_END + 1)) { // write to PPU registers (non-mirrored)
 		delay_write_ppu_reg(addr & 0x2007, val, cpu);
 		cpu->mem[addr & 0x2007] = val;
-	} else if (addr == 0x4014) {
+	} else if (addr == ADDR_OAM_DMA) {
 		write_ppu_reg(addr, val, cpu);
-	} else if (addr == 0x4016) {
+	} else if (addr == ADDR_JOY1) {
 		write_4016(val, cpu);
-	} else if (addr >= 0x8000) {
+	} else if (addr >= 0x8000) { // currently hard-coded for mappers 0 and 1
 		mapper_write(cpu, addr, val);
 	} else {
 		cpu->mem[addr] = val;
