@@ -244,7 +244,7 @@ Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm)
 
 void init_pc(Cpu6502* cpu)
 {
-	cpu->PC = return_little_endian(cpu, 0xFFFC);
+	cpu->PC = return_little_endian(cpu, RST_VECTOR);
 }
 
 uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr)
@@ -1897,10 +1897,10 @@ static void execute_BRK(Cpu6502* cpu)
 		cpu->P |= FLAG_I;              /* Flag I is set */
 		break;
 	case 2: // T5
-		cpu->addr_lo = read_from_cpu(cpu, 0xFFFE);
+		cpu->addr_lo = read_from_cpu(cpu, BRK_VECTOR);
 		break;
 	case 1: // T6
-		cpu->addr_hi = read_from_cpu(cpu, 0xFFFF);
+		cpu->addr_hi = read_from_cpu(cpu, BRK_VECTOR + 1);
 		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
 		break;
 	}
@@ -1943,10 +1943,10 @@ static void execute_IRQ(Cpu6502* cpu)
 		cpu->P |= FLAG_I;
 		break;
 	case 2: // T5
-		cpu->addr_lo = read_from_cpu(cpu, 0xFFFE);
+		cpu->addr_lo = read_from_cpu(cpu, IRQ_VECTOR);
 		break;
 	case 1: // T6
-		cpu->addr_hi = read_from_cpu(cpu, 0xFFFF);
+		cpu->addr_hi = read_from_cpu(cpu, IRQ_VECTOR + 1);
 		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
 		break;
 	}
@@ -1978,10 +1978,10 @@ static void execute_NMI(Cpu6502* cpu)
 		cpu->P |= FLAG_I;
 		break;
 	case 2: // T5
-		cpu->addr_lo = read_from_cpu(cpu, 0xFFFA);
+		cpu->addr_lo = read_from_cpu(cpu, NMI_VECTOR);
 		break;
 	case 1: // T6
-		cpu->addr_hi = read_from_cpu(cpu, 0xFFFB);
+		cpu->addr_hi = read_from_cpu(cpu, NMI_VECTOR + 1);
 		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
 		cpu->cpu_ppu_io->nmi_pending = false;
 		cpu->process_interrupt = false;
