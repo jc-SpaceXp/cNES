@@ -19,6 +19,10 @@
 #define ADDR_JOY1             0x4016U
 #define ADDR_JOY2             0x4017U
 
+// Address masks
+#define RAM_NON_MIRROR_MASK     0x07FFU
+#define PPU_REG_NON_MIRROR_MASK 0x2007U
+
 /* Debugger */
 char instruction[18]; // complete instruction i.e. LDA $2000
 char end[10]; // ending of the instruction i.e. #$2000
@@ -260,9 +264,9 @@ uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr)
 {
 	unsigned read;
 	if (addr < (ADDR_RAM_END + 1)) { // read from RAM (non-mirrored)
-		read = cpu->mem[addr & 0x7FF];
+		read = cpu->mem[addr & RAM_NON_MIRROR_MASK];
 	} else if (addr < (ADDR_PPU_REG_END + 1)) { // read from PPU registers (non-mirrored)
-		read = read_ppu_reg(addr & 0x2007, cpu);
+		read = read_ppu_reg(addr & PPU_REG_NON_MIRROR_MASK, cpu);
 	} else if (addr == ADDR_JOY1) {
 		read = read_4016(cpu);
 	} else if (addr == ADDR_JOY2) {
@@ -283,10 +287,10 @@ static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr)
 static void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 {
 	if (addr < (ADDR_RAM_END + 1)) { // write to RAM (non-mirrored)
-		cpu->mem[addr & 0x7FF] = val;
+		cpu->mem[addr & RAM_NON_MIRROR_MASK] = val;
 	} else if (addr < (ADDR_PPU_REG_END + 1)) { // write to PPU registers (non-mirrored)
-		delay_write_ppu_reg(addr & 0x2007, val, cpu);
-		cpu->mem[addr & 0x2007] = val;
+		delay_write_ppu_reg(addr & PPU_REG_NON_MIRROR_MASK, val, cpu);
+		cpu->mem[addr & PPU_REG_NON_MIRROR_MASK] = val;
 	} else if (addr == ADDR_OAM_DMA) {
 		write_ppu_reg(addr, val, cpu);
 	} else if (addr == ADDR_JOY1) {
