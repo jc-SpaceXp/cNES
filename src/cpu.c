@@ -15,6 +15,103 @@ char instruction[18]; // complete instruction i.e. LDA $2000
 char end[10]; // ending of the instruction i.e. #$2000
 char append_int[20]; // conversion for int to char
 
+// static prototype functions
+static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr);
+static void write_4016(uint8_t data, Cpu6502* cpu);
+static unsigned read_4016(Cpu6502* cpu);
+static unsigned read_4017(Cpu6502* cpu);
+static void cpu_debugger(Cpu6502* cpu);  // warning unused function, currently hidden behind conditional execution
+static void log_cpu_info(Cpu6502* cpu);  // warning unused function, currently hidden behind conditional execution
+static void fetch_opcode(Cpu6502* cpu);
+static bool fixed_cycles_on_store(Cpu6502* cpu);
+static bool page_cross_occurs(unsigned low_byte, unsigned offset);
+static void update_flag_z(Cpu6502* cpu, uint8_t result);
+static void update_flag_n(Cpu6502* cpu, uint8_t result);
+static void update_flag_v(Cpu6502* cpu, bool overflow);
+static void update_flag_c(Cpu6502* cpu, int carry_out);
+static void bad_op_code(Cpu6502* cpu);  // needed for function pointer
+static void decode_ABS_read_store(Cpu6502* cpu);
+static void decode_ABS_rmw(Cpu6502* cpu);
+static void decode_ABSX_read_store(Cpu6502* cpu);
+static void decode_ABSX_rmw(Cpu6502* cpu);
+static void decode_ABSY_read_store(Cpu6502* cpu);
+static void decode_ACC(Cpu6502* cpu);
+static void decode_IMM_read_store(Cpu6502* cpu);
+static void decode_IMP(Cpu6502* cpu);
+static void decode_INDX_read_store(Cpu6502* cpu);
+static void decode_INDY_read_store(Cpu6502* cpu);
+static void decode_ZP_read_store(Cpu6502* cpu);
+static void decode_ZP_rmw(Cpu6502* cpu);
+static void decode_ZPX_read_store(Cpu6502* cpu);
+static void decode_ZPX_rmw(Cpu6502* cpu);
+static void decode_ABS_JMP(Cpu6502* cpu);
+static void decode_ZPY_read_store(Cpu6502* cpu);
+static void decode_IND_JMP(Cpu6502* cpu);
+static void decode_SPECIAL(Cpu6502* cpu); // no decoding happens here, execute_X() handles the complete instruction
+static void decode_PUSH(Cpu6502* cpu);
+static void decode_PULL(Cpu6502* cpu);
+static void decode_Bxx(Cpu6502* cpu); // branch instructions (REL address mode)
+static void decode_RTS(Cpu6502* cpu);
+static void execute_LDA(Cpu6502* cpu);
+static void execute_LDX(Cpu6502* cpu);
+static void execute_LDY(Cpu6502* cpu);
+static void execute_STA(Cpu6502* cpu);
+static void execute_STX(Cpu6502* cpu);
+static void execute_STY(Cpu6502* cpu);
+static void execute_TAX(Cpu6502* cpu);
+static void execute_TAY(Cpu6502* cpu);
+static void execute_TSX(Cpu6502* cpu);
+static void execute_TXA(Cpu6502* cpu);
+static void execute_TXS(Cpu6502* cpu);
+static void execute_TYA(Cpu6502* cpu);
+static void execute_ADC(Cpu6502* cpu);
+static void execute_DEC(Cpu6502* cpu);
+static void execute_DEX(Cpu6502* cpu);
+static void execute_DEY(Cpu6502* cpu);
+static void execute_INC(Cpu6502* cpu);
+static void execute_INX(Cpu6502* cpu);
+static void execute_INY(Cpu6502* cpu);
+static void execute_SBC(Cpu6502* cpu);
+static void execute_AND(Cpu6502* cpu);
+static void execute_ASL(Cpu6502* cpu);
+static void execute_BIT(Cpu6502* cpu);
+static void execute_EOR(Cpu6502* cpu);
+static void execute_LSR(Cpu6502* cpu);
+static void execute_ORA(Cpu6502* cpu);
+static void execute_ROL(Cpu6502* cpu);
+static void execute_ROR(Cpu6502* cpu);
+static void execute_BCC(Cpu6502* cpu);
+static void execute_BCS(Cpu6502* cpu);
+static void execute_BEQ(Cpu6502* cpu);
+static void execute_BMI(Cpu6502* cpu);
+static void execute_BNE(Cpu6502* cpu);
+static void execute_BPL(Cpu6502* cpu);
+static void execute_BVC(Cpu6502* cpu);
+static void execute_BVS(Cpu6502* cpu);
+static void execute_JMP(Cpu6502* cpu);
+static void execute_JSR(Cpu6502* cpu);
+static void execute_RTI(Cpu6502* cpu);
+static void execute_RTS(Cpu6502* cpu);
+static void execute_CLC(Cpu6502* cpu);
+static void execute_CLD(Cpu6502* cpu);
+static void execute_CLI(Cpu6502* cpu);
+static void execute_CLV(Cpu6502* cpu);
+static void execute_CMP(Cpu6502* cpu);
+static void execute_CPX(Cpu6502* cpu);
+static void execute_CPY(Cpu6502* cpu);
+static void execute_SEC(Cpu6502* cpu);
+static void execute_SED(Cpu6502* cpu);
+static void execute_SEI(Cpu6502* cpu);
+static void execute_PHA(Cpu6502* cpu);
+static void execute_PHP(Cpu6502* cpu);
+static void execute_PLA(Cpu6502* cpu);
+static void execute_PLP(Cpu6502* cpu);
+static void execute_BRK(Cpu6502* cpu);
+static void execute_NOP(Cpu6502* cpu);
+static void execute_IRQ(Cpu6502* cpu);  // warning unused function, needed later for audio or other mappers I believe
+static void execute_NMI(Cpu6502* cpu);
+static void execute_DMA(Cpu6502* cpu);
+
 static void (*decode_opcode_lut[256])(Cpu6502* cpu) = {
 	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PUSH, decode_IMM_read_store , decode_ACC,  bad_op_code, bad_op_code           , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
@@ -169,12 +266,12 @@ uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr)
 }
 
 /* Return 16 bit address in little endian format */
-uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr)
+static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr)
 {
 	return ((read_from_cpu(cpu, addr + 1) << 8) | read_from_cpu(cpu, addr));
 }
 
-void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
+static void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 {
 	if (addr < 0x2000) {
 		cpu->mem[addr & 0x7FF] = val;
@@ -192,7 +289,7 @@ void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 	}
 }
 
-void write_4016(uint8_t data, Cpu6502* cpu)
+static void write_4016(uint8_t data, Cpu6502* cpu)
 {
 	// Standard NES controller write
 	if (data == 1) {
@@ -202,7 +299,7 @@ void write_4016(uint8_t data, Cpu6502* cpu)
 	}
 }
 
-unsigned read_4016(Cpu6502* cpu)
+static unsigned read_4016(Cpu6502* cpu)
 {
 	static unsigned clock_pulse = 0;
 	unsigned ret = 0;
@@ -216,7 +313,7 @@ unsigned read_4016(Cpu6502* cpu)
 }
 
 
-unsigned read_4017(Cpu6502* cpu)
+static unsigned read_4017(Cpu6502* cpu)
 {
 	static unsigned clock_pulse = 0;
 	unsigned ret = 0;
@@ -316,7 +413,7 @@ void clock_cpu(Cpu6502* cpu)
 }
 
 // true if branch not taken based on opcode
-bool branch_not_taken(Cpu6502* cpu)
+static bool branch_not_taken(Cpu6502* cpu)
 {
 	bool result;
 	switch (cpu->opcode) {
@@ -353,7 +450,7 @@ bool branch_not_taken(Cpu6502* cpu)
 	return result;
 }
 
-void cpu_debugger(Cpu6502* cpu)
+static void cpu_debugger(Cpu6502* cpu)
 {
 	switch(cpu->address_mode) {
 	case ABS:
@@ -432,7 +529,7 @@ void cpu_debugger(Cpu6502* cpu)
 	strcat(instruction, end); // execute_* functions provide the instruction string
 }
 
-void log_cpu_info(Cpu6502* cpu)
+static void log_cpu_info(Cpu6502* cpu)
 {
 	printf("%-6.4X ", cpu->old_PC);
 	printf("%-20s ", instruction);
@@ -460,19 +557,19 @@ void update_cpu_info(Cpu6502* cpu)
 	cpu->old_cycle = cpu->cycle;
 }
 
-bool page_cross_occurs(unsigned low_byte, unsigned offset)
+static bool page_cross_occurs(unsigned low_byte, unsigned offset)
 {
 	return ((low_byte + offset) > 0xFF) ? 1 : 0;
 }
 
-void stack_push(Cpu6502* cpu, uint8_t value)
+static void stack_push(Cpu6502* cpu, uint8_t value)
 {
 	cpu->mem[SP_START + cpu->stack] = value;
 	--cpu->stack; // automatically wraps around (8-bit variable)
 }
 
 
-uint8_t stack_pull(Cpu6502* cpu)
+static uint8_t stack_pull(Cpu6502* cpu)
 {
 	unsigned result = 0;
 	++cpu->stack; // automatically wraps around (8-bit variable)
@@ -480,7 +577,7 @@ uint8_t stack_pull(Cpu6502* cpu)
 	return result;
 }
 
-void fetch_opcode(Cpu6502* cpu)
+static void fetch_opcode(Cpu6502* cpu)
 {
 	cpu->opcode = read_from_cpu(cpu, cpu->PC);
 	++cpu->PC;
@@ -491,7 +588,7 @@ void fetch_opcode(Cpu6502* cpu)
 
 // Store operations can't skip cycles and are always fixed length unlike their load counterparts
 // before skipping cycles check whether that is correct using this function
-bool fixed_cycles_on_store(Cpu6502* cpu)
+static bool fixed_cycles_on_store(Cpu6502* cpu)
 {
 	bool result;
 	switch(cpu->opcode) {
@@ -509,12 +606,12 @@ bool fixed_cycles_on_store(Cpu6502* cpu)
 }
 
 
-void bad_op_code(Cpu6502* cpu)
+static void bad_op_code(Cpu6502* cpu)
 {
 	printf("invalid opcode: error 404: %.2X @ %.4X \n", cpu->opcode, cpu->PC);
 }
 
-void decode_ABS_read_store(Cpu6502* cpu)
+static void decode_ABS_read_store(Cpu6502* cpu)
 {
 	cpu->address_mode = ABS;
 	// opcode fetched: T0
@@ -534,7 +631,7 @@ void decode_ABS_read_store(Cpu6502* cpu)
 	}
 }
 
-void decode_ABS_rmw(Cpu6502* cpu)
+static void decode_ABS_rmw(Cpu6502* cpu)
 {
 	cpu->address_mode = ABS;
 	// opcode fetched: T0
@@ -560,7 +657,7 @@ void decode_ABS_rmw(Cpu6502* cpu)
 	}
 }
 
-void decode_ABSX_read_store(Cpu6502* cpu)
+static void decode_ABSX_read_store(Cpu6502* cpu)
 {
 	cpu->address_mode = ABSX;
 	// opcode fetched: T0
@@ -586,7 +683,7 @@ void decode_ABSX_read_store(Cpu6502* cpu)
 	}
 }
 
-void decode_ABSX_rmw(Cpu6502* cpu)
+static void decode_ABSX_rmw(Cpu6502* cpu)
 {
 	cpu->address_mode = ABSX;
 	// opcode fetched: T0
@@ -615,7 +712,7 @@ void decode_ABSX_rmw(Cpu6502* cpu)
 	}
 }
 
-void decode_ABSY_read_store(Cpu6502* cpu)
+static void decode_ABSY_read_store(Cpu6502* cpu)
 {
 	cpu->address_mode = ABSY;
 	// opcode fetched: T0
@@ -640,13 +737,13 @@ void decode_ABSY_read_store(Cpu6502* cpu)
 	}
 }
 
-void decode_ACC(Cpu6502* cpu)
+static void decode_ACC(Cpu6502* cpu)
 {
 	cpu->address_mode = ACC;
 	cpu->instruction_state = EXECUTE;
 }
 
-void decode_IMM_read_store(Cpu6502* cpu) // might only just be read
+static void decode_IMM_read_store(Cpu6502* cpu) // might only just be read
 {
 	cpu->address_mode = IMM;
 	// opcode fetched: T0
@@ -659,14 +756,14 @@ void decode_IMM_read_store(Cpu6502* cpu) // might only just be read
 	}
 }
 
-void decode_IMP(Cpu6502* cpu)
+static void decode_IMP(Cpu6502* cpu)
 {
 	cpu->address_mode = IMP;
 	// opcode fetched: T0
 	cpu->instruction_state = EXECUTE;
 }
 
-void decode_INDX_read_store(Cpu6502* cpu)
+static void decode_INDX_read_store(Cpu6502* cpu)
 {
 	cpu->address_mode = INDX;
 	// opcode fetched: T0
@@ -691,7 +788,7 @@ void decode_INDX_read_store(Cpu6502* cpu)
 	}
 }
 
-void decode_INDY_read_store(Cpu6502* cpu)
+static void decode_INDY_read_store(Cpu6502* cpu)
 {
 	cpu->address_mode = INDY;
 	// opcode fetched: T0
@@ -717,7 +814,7 @@ void decode_INDY_read_store(Cpu6502* cpu)
 	}
 }
 
-void decode_ZP_read_store(Cpu6502* cpu)
+static void decode_ZP_read_store(Cpu6502* cpu)
 {
 	cpu->address_mode = ZP;
 	// opcode fetched: T0
@@ -733,7 +830,7 @@ void decode_ZP_read_store(Cpu6502* cpu)
 	}
 }
 
-void decode_ZP_rmw(Cpu6502* cpu)
+static void decode_ZP_rmw(Cpu6502* cpu)
 {
 	cpu->address_mode = ZP;
 	// opcode fetched: T0
@@ -755,7 +852,7 @@ void decode_ZP_rmw(Cpu6502* cpu)
 	}
 }
 
-void decode_ZPX_read_store(Cpu6502* cpu)
+static void decode_ZPX_read_store(Cpu6502* cpu)
 {
 	cpu->address_mode = ZPX;
 	// opcode fetched: T0
@@ -774,7 +871,7 @@ void decode_ZPX_read_store(Cpu6502* cpu)
 	}
 }
 
-void decode_ZPX_rmw(Cpu6502* cpu)
+static void decode_ZPX_rmw(Cpu6502* cpu)
 {
 	cpu->address_mode = ZPX;
 	// opcode fetched: T0
@@ -800,7 +897,7 @@ void decode_ZPX_rmw(Cpu6502* cpu)
 	}
 }
 
-void decode_ZPY_read_store(Cpu6502* cpu)
+static void decode_ZPY_read_store(Cpu6502* cpu)
 {
 	cpu->address_mode = ZPY;
 	// opcode fetched: T0
@@ -823,7 +920,7 @@ void decode_ZPY_read_store(Cpu6502* cpu)
 }
 
 // could have one common function and use a switch case for the opcode?
-void decode_ABS_JMP(Cpu6502* cpu)
+static void decode_ABS_JMP(Cpu6502* cpu)
 {
 	cpu->address_mode = ABS;
 	cpu->cpu_ignore_fetch_on_nmi = true;
@@ -831,21 +928,21 @@ void decode_ABS_JMP(Cpu6502* cpu)
 	cpu->instruction_state = EXECUTE;
 }
 
-void decode_IND_JMP(Cpu6502* cpu)
+static void decode_IND_JMP(Cpu6502* cpu)
 {
 	cpu->address_mode = IND;
 	// opcode fetched: T0
 	cpu->instruction_state = EXECUTE;
 }
 
-void decode_SPECIAL(Cpu6502* cpu)
+static void decode_SPECIAL(Cpu6502* cpu)
 {
 	cpu->address_mode = SPECIAL;
 	// opcode fetched: T0
 	cpu->instruction_state = EXECUTE;
 }
 
-void decode_PUSH(Cpu6502* cpu)
+static void decode_PUSH(Cpu6502* cpu)
 {
 	// Technically an IMP instruction but not handled by decode_IMP()
 	cpu->address_mode = IMP; // used for debugger sets end = ""
@@ -862,7 +959,7 @@ void decode_PUSH(Cpu6502* cpu)
 }
 
 
-void decode_PULL(Cpu6502* cpu)
+static void decode_PULL(Cpu6502* cpu)
 {
 	// Technically an IMP instruction but not handled by decode_IMP()
 	cpu->address_mode = IMP; // used for debugger sets end = ""
@@ -881,7 +978,7 @@ void decode_PULL(Cpu6502* cpu)
 	}
 }
 
-void decode_Bxx(Cpu6502* cpu) // branch instructions
+static void decode_Bxx(Cpu6502* cpu) // branch instructions
 {
 	cpu->address_mode = REL;
 	// opcode fetched: T0
@@ -909,7 +1006,7 @@ void decode_Bxx(Cpu6502* cpu) // branch instructions
 	}
 }
 
-void decode_RTS(Cpu6502* cpu)
+static void decode_RTS(Cpu6502* cpu)
 {
 	cpu->address_mode = IMP;
 	// opcode fetched: T0
@@ -939,7 +1036,7 @@ void decode_RTS(Cpu6502* cpu)
 /* Bits : 7 ----------> 0 */
 /* Flags: N V - - D I Z C */
 
-void update_flag_z(Cpu6502* cpu, uint8_t result)
+static void update_flag_z(Cpu6502* cpu, uint8_t result)
 {
 	/* Zero Flag Test */
 	if (!result) {
@@ -950,7 +1047,7 @@ void update_flag_z(Cpu6502* cpu, uint8_t result)
 }
 
 
-void update_flag_n(Cpu6502* cpu, uint8_t result)
+static void update_flag_n(Cpu6502* cpu, uint8_t result)
 {
 	/* Negative Flag Test */
 	if (result >> 7) {
@@ -962,7 +1059,7 @@ void update_flag_n(Cpu6502* cpu, uint8_t result)
 
 
 /* Parameters = 2 binary operands and then the result */
-void update_flag_v(Cpu6502* cpu, bool overflow)
+static void update_flag_v(Cpu6502* cpu, bool overflow)
 {
 	/* Overflow Flag Test */
 	if (overflow) {
@@ -973,7 +1070,7 @@ void update_flag_v(Cpu6502* cpu, bool overflow)
 }
 
 
-void update_flag_c(Cpu6502* cpu, int carry_out)
+static void update_flag_c(Cpu6502* cpu, int carry_out)
 {
 	if (carry_out) { // Carry out = result >> 8 (9th bit in ADC / SBC calc
 		cpu->P |= FLAG_C; /* Set C */
@@ -993,7 +1090,7 @@ void update_flag_c(Cpu6502* cpu, int carry_out)
 
 /* execute_LDA: LDA command - Load A with memory
  */
-void execute_LDA(Cpu6502* cpu)
+static void execute_LDA(Cpu6502* cpu)
 {
 	strcpy(instruction, "LDA ");
 	if (cpu->address_mode == IMM) {
@@ -1008,7 +1105,7 @@ void execute_LDA(Cpu6502* cpu)
 
 /* execute_LDX: LDX command - Load X with memory
  */
-void execute_LDX(Cpu6502* cpu)
+static void execute_LDX(Cpu6502* cpu)
 {
 	strcpy(instruction, "LDX ");
 	if (cpu->address_mode == IMM) {
@@ -1023,7 +1120,7 @@ void execute_LDX(Cpu6502* cpu)
 
 /* execute_LDY: LDY command - Load Y with memory
  */
-void execute_LDY(Cpu6502* cpu)
+static void execute_LDY(Cpu6502* cpu)
 {
 	strcpy(instruction, "LDY ");
 	if (cpu->address_mode == IMM) {
@@ -1038,7 +1135,7 @@ void execute_LDY(Cpu6502* cpu)
 
 /* execute_STA: STA command - Store A in memory
  */
-void execute_STA(Cpu6502* cpu)
+static void execute_STA(Cpu6502* cpu)
 {
 	strcpy(instruction, "STA ");
 	write_to_cpu(cpu, cpu->target_addr, cpu->A);
@@ -1047,7 +1144,7 @@ void execute_STA(Cpu6502* cpu)
 
 /* execute_STX: STX command - Store X in memory
  */
-void execute_STX(Cpu6502* cpu)
+static void execute_STX(Cpu6502* cpu)
 {
 	strcpy(instruction, "STX ");
 	write_to_cpu(cpu, cpu->target_addr, cpu->X);
@@ -1056,7 +1153,7 @@ void execute_STX(Cpu6502* cpu)
 
 /* execute_STY: STY command - Store Y in memory
  */
-void execute_STY(Cpu6502* cpu)
+static void execute_STY(Cpu6502* cpu)
 {
 	strcpy(instruction, "STY ");
 	write_to_cpu(cpu, cpu->target_addr, cpu->Y);
@@ -1065,7 +1162,7 @@ void execute_STY(Cpu6502* cpu)
 
 /* execute_TAX: TAX command - Transfer A to X
  */
-void execute_TAX(Cpu6502* cpu)
+static void execute_TAX(Cpu6502* cpu)
 {
 	strcpy(instruction, "TAX ");
 	cpu->X = cpu->A;
@@ -1076,7 +1173,7 @@ void execute_TAX(Cpu6502* cpu)
 
 /* execute_TAY: TAY command - Transfer A to Y
  */
-void execute_TAY(Cpu6502* cpu)
+static void execute_TAY(Cpu6502* cpu)
 {
 	strcpy(instruction, "TAY ");
 	cpu->Y = cpu->A;
@@ -1087,7 +1184,7 @@ void execute_TAY(Cpu6502* cpu)
 
 /* execute_TSX: TSX command - Transfer SP to X
  */
-void execute_TSX(Cpu6502* cpu)
+static void execute_TSX(Cpu6502* cpu)
 {
 	strcpy(instruction, "TSX ");
 	cpu->X = cpu->stack;
@@ -1098,7 +1195,7 @@ void execute_TSX(Cpu6502* cpu)
 
 /* execute_TXA: TXA command - Transfer X to A
  */
-void execute_TXA(Cpu6502* cpu)
+static void execute_TXA(Cpu6502* cpu)
 {
 	strcpy(instruction, "TXA ");
 	cpu->A = cpu->X;
@@ -1109,7 +1206,7 @@ void execute_TXA(Cpu6502* cpu)
 
 /* execute_TXS: TXS command - Transfer X to SP
  */
-void execute_TXS(Cpu6502* cpu)
+static void execute_TXS(Cpu6502* cpu)
 {
 	strcpy(instruction, "TXS ");
 	cpu->stack = cpu->X;
@@ -1118,7 +1215,7 @@ void execute_TXS(Cpu6502* cpu)
 
 /* execute_TYA: TYA command - Transfer Y to A
  */
-void execute_TYA(Cpu6502* cpu)
+static void execute_TYA(Cpu6502* cpu)
 {
 	strcpy(instruction, "TYA ");
 	cpu->A = cpu->Y;
@@ -1132,7 +1229,7 @@ void execute_TYA(Cpu6502* cpu)
 
 /* execute_ADC: ADC command - Add mem w/ A and C (A + M + C : then set flags)
  */
-void execute_ADC(Cpu6502* cpu)
+static void execute_ADC(Cpu6502* cpu)
 {
 	strcpy(instruction, "ADC ");
 	if (cpu->address_mode != IMM) {
@@ -1151,7 +1248,7 @@ void execute_ADC(Cpu6502* cpu)
 
 /* execute_DEC: DEC command - Decrement Mem by one
  */
-void execute_DEC(Cpu6502* cpu)
+static void execute_DEC(Cpu6502* cpu)
 {
 	strcpy(instruction, "DEC ");
 	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
@@ -1163,7 +1260,7 @@ void execute_DEC(Cpu6502* cpu)
 
 /* execute_DEX: DEX command - Decrement X by one
  */
-void execute_DEX(Cpu6502 *cpu)
+static void execute_DEX(Cpu6502* cpu)
 {
 	/* Implied Mode */
 	strcpy(instruction, "DEX ");
@@ -1175,7 +1272,7 @@ void execute_DEX(Cpu6502 *cpu)
 
 /* execute_DEY: DEY command - Decrement Y by one
  */
-void execute_DEY(Cpu6502* cpu)
+static void execute_DEY(Cpu6502* cpu)
 {
 	/* Implied Mode */
 	strcpy(instruction, "DEY ");
@@ -1187,7 +1284,7 @@ void execute_DEY(Cpu6502* cpu)
 
 /* execute_INC: INC command - Increment Mem by one
  */
-void execute_INC(Cpu6502* cpu)
+static void execute_INC(Cpu6502* cpu)
 {
 	strcpy(instruction, "INC ");
 	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
@@ -1199,7 +1296,7 @@ void execute_INC(Cpu6502* cpu)
 
 /* execute_INX: INX command - Increment X by one
  */
-void execute_INX(Cpu6502* cpu)
+static void execute_INX(Cpu6502* cpu)
 {
 	strcpy(instruction, "INX ");
 	/* Implied Mode */
@@ -1211,7 +1308,7 @@ void execute_INX(Cpu6502* cpu)
 
 /* execute_INY: DEY command - Increment Y by one
  */
-void execute_INY(Cpu6502* cpu)
+static void execute_INY(Cpu6502* cpu)
 {
 	strcpy(instruction, "INY ");
 	/* Implied Mode */
@@ -1223,7 +1320,7 @@ void execute_INY(Cpu6502* cpu)
 
 /* execute_SBC: SBC command - Subtract mem w/ A and C (A - M - !C : then set flags)
  */
-void execute_SBC(Cpu6502* cpu)
+static void execute_SBC(Cpu6502* cpu)
 
 {
 	strcpy(instruction, "SBC ");
@@ -1247,7 +1344,7 @@ void execute_SBC(Cpu6502* cpu)
 
 /* execute_AND: AND command - AND memory with Acc
  */
-void execute_AND(Cpu6502* cpu)
+static void execute_AND(Cpu6502* cpu)
 {
 	strcpy(instruction, "AND ");
 	if (cpu->address_mode == IMM) {
@@ -1263,7 +1360,7 @@ void execute_AND(Cpu6502* cpu)
 /* execute_ASL: ASL command - Arithmetic Shift Left one bit (Acc or mem)
  * ASL == LSL
  */
-void execute_ASL(Cpu6502* cpu)
+static void execute_ASL(Cpu6502* cpu)
 {
 	strcpy(instruction, "ASL ");
 	unsigned high_bit = 0;
@@ -1287,7 +1384,7 @@ void execute_ASL(Cpu6502* cpu)
 
 /* execute_BIT: BIT command - BIT test (AND) between mem and Acc
  */
-void execute_BIT(Cpu6502* cpu)
+static void execute_BIT(Cpu6502* cpu)
 {
 	strcpy(instruction, "BIT ");
 	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
@@ -1302,7 +1399,7 @@ void execute_BIT(Cpu6502* cpu)
 
 /* execute_EOR: EOR command - Exclusive OR memory with Acc
  */
-void execute_EOR(Cpu6502* cpu)
+static void execute_EOR(Cpu6502* cpu)
 {
 	strcpy(instruction, "EOR ");
 	if (cpu->address_mode == IMM) {
@@ -1317,7 +1414,7 @@ void execute_EOR(Cpu6502* cpu)
 
 /* execute_LSR: LSR command - Logical Shift Right by one bit (Acc or mem)
  */
-void execute_LSR(Cpu6502* cpu)
+static void execute_LSR(Cpu6502* cpu)
 {
 	strcpy(instruction, "LSR ");
 	unsigned low_bit = 0;
@@ -1340,7 +1437,7 @@ void execute_LSR(Cpu6502* cpu)
 
 /* execute_ORA: ORA command - OR memory with Acc
  */
-void execute_ORA(Cpu6502* cpu)
+static void execute_ORA(Cpu6502* cpu)
 {
 	strcpy(instruction, "ORA ");
 	if (cpu->address_mode == IMM) {
@@ -1356,7 +1453,7 @@ void execute_ORA(Cpu6502* cpu)
 /* execute_ROL: ROL command - Rotate Shift Left one bit (Acc or mem)
  * ROL == LSL (execpt Carry Flag is copied into LSB & Carry = MSB after shift)
  */
-void execute_ROL(Cpu6502* cpu)
+static void execute_ROL(Cpu6502* cpu)
 {
 	strcpy(instruction, "ROL ");
 	unsigned high_bit = 0;
@@ -1389,7 +1486,7 @@ void execute_ROL(Cpu6502* cpu)
 /* execute_ROR: ROR command - Rotate Shift Right one bit (Acc or mem)
  * ROR == LSR (execpt MSB = carry & LSB copied into carry)
  */
-void execute_ROR(Cpu6502* cpu)
+static void execute_ROR(Cpu6502* cpu)
 {
 	strcpy(instruction, "ROR ");
 	unsigned low_bit = 0;
@@ -1426,7 +1523,7 @@ void execute_ROR(Cpu6502* cpu)
 
 /* execute_BCC: BCC command - Branch on Carry Clear (C = 0)
  */
-void execute_BCC(Cpu6502* cpu)
+static void execute_BCC(Cpu6502* cpu)
 {
 	strcpy(instruction, "BCC ");
 	cpu->PC = cpu->target_addr;
@@ -1435,7 +1532,7 @@ void execute_BCC(Cpu6502* cpu)
 
 /* execute_BCS: BCS command - Branch on Carry Set (C = 1)
  */
-void execute_BCS(Cpu6502* cpu)
+static void execute_BCS(Cpu6502* cpu)
 {
 	strcpy(instruction, "BCS ");
 	cpu->PC = cpu->target_addr;
@@ -1444,7 +1541,7 @@ void execute_BCS(Cpu6502* cpu)
 
 /* execute_BEQ: BEQ command - Branch on Zero result (Z = 1)
  */
-void execute_BEQ(Cpu6502* cpu)
+static void execute_BEQ(Cpu6502* cpu)
 {
 	strcpy(instruction, "BEQ ");
 	cpu->PC = cpu->target_addr;
@@ -1453,7 +1550,7 @@ void execute_BEQ(Cpu6502* cpu)
 
 /* execute_BMI: BMI command - Branch on Minus result (N = 1)
  */
-void execute_BMI(Cpu6502* cpu)
+static void execute_BMI(Cpu6502* cpu)
 {
 	strcpy(instruction, "BMI ");
 	cpu->PC = cpu->target_addr;
@@ -1462,7 +1559,7 @@ void execute_BMI(Cpu6502* cpu)
 
 /* execute_BNE: BNE command - Branch on NOT Zero result (Z = 0)
  */
-void execute_BNE(Cpu6502* cpu)
+static void execute_BNE(Cpu6502* cpu)
 {
 	strcpy(instruction, "BNE ");
 	cpu->PC = cpu->target_addr;
@@ -1471,7 +1568,7 @@ void execute_BNE(Cpu6502* cpu)
 
 /* execute_BPL: BPL command - Branch on Plus result (N = 0)
  */
-void execute_BPL(Cpu6502* cpu)
+static void execute_BPL(Cpu6502* cpu)
 {
 	strcpy(instruction, "BPL ");
 	cpu->PC = cpu->target_addr;
@@ -1480,7 +1577,7 @@ void execute_BPL(Cpu6502* cpu)
 
 /* execute_BVC: BVC command - Branch on Overflow Clear (V = 0)
  */
-void execute_BVC(Cpu6502* cpu)
+static void execute_BVC(Cpu6502* cpu)
 {
 	strcpy(instruction, "BVC ");
 	cpu->PC = cpu->target_addr;
@@ -1489,7 +1586,7 @@ void execute_BVC(Cpu6502* cpu)
 
 /* execute_BVS: BVS command - Branch on Overflow Set (V = 1)
  */
-void execute_BVS(Cpu6502* cpu)
+static void execute_BVS(Cpu6502* cpu)
 {
 	strcpy(instruction, "BVS ");
 	cpu->PC = cpu->target_addr;
@@ -1502,7 +1599,7 @@ void execute_BVS(Cpu6502* cpu)
 
 /* execute_JMP: JMP command - JuMP to another location
  */
-void execute_JMP(Cpu6502* cpu)
+static void execute_JMP(Cpu6502* cpu)
 {
 	strcpy(instruction, "JMP ");
 	if (cpu->address_mode == ABS) {
@@ -1550,7 +1647,7 @@ void execute_JMP(Cpu6502* cpu)
 
 /* execute_JSR: JSR command - Jump to SubRoutine
  */
-void execute_JSR(Cpu6502* cpu)
+static void execute_JSR(Cpu6502* cpu)
 {
 	// opcode fetched: T0
 	switch (cpu->instruction_cycles_remaining) {
@@ -1586,7 +1683,7 @@ void execute_JSR(Cpu6502* cpu)
 
 /* execute_RTI: RTI command - ReTurn from Interrupt
  */
-void execute_RTI(Cpu6502* cpu)
+static void execute_RTI(Cpu6502* cpu)
 {
 	strcpy(instruction, "RTI");
 	// opcode fetched: T0
@@ -1617,7 +1714,7 @@ void execute_RTI(Cpu6502* cpu)
 
 /* execute_RTS: RTS command - ReTurn from Sub-routine
  */
-void execute_RTS(Cpu6502* cpu)
+static void execute_RTS(Cpu6502* cpu)
 {
 	strcpy(instruction, "RTS");
 	cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo;
@@ -1631,7 +1728,7 @@ void execute_RTS(Cpu6502* cpu)
 
 /* execute_CLC: CLC command - Clear Carry flag
  */
-void execute_CLC(Cpu6502* cpu)
+static void execute_CLC(Cpu6502* cpu)
 {
 	strcpy(instruction, "CLC");
 	cpu->P &= ~FLAG_C;
@@ -1640,7 +1737,7 @@ void execute_CLC(Cpu6502* cpu)
 
 /* execute_CLD: CLD command - Clear Decimal Mode (Decimal mode not supported in NES) 
  */
-void execute_CLD(Cpu6502* cpu)
+static void execute_CLD(Cpu6502* cpu)
 {
 	strcpy(instruction, "CLD");
 	cpu->P &= ~FLAG_D;
@@ -1650,7 +1747,7 @@ void execute_CLD(Cpu6502* cpu)
 
 /* execute_CLI: CLI command - Clear Interrupt disable bit
  */
-void execute_CLI(Cpu6502* cpu)
+static void execute_CLI(Cpu6502* cpu)
 {
 	strcpy(instruction, "CLI");
 	cpu->P &= ~FLAG_I;
@@ -1659,7 +1756,7 @@ void execute_CLI(Cpu6502* cpu)
 
 /* execute_CLV: CLV command - Clear Overflow flag
  */
-void execute_CLV(Cpu6502* cpu)
+static void execute_CLV(Cpu6502* cpu)
 {
 	strcpy(instruction, "CLV");
 	cpu->P &= ~FLAG_V;
@@ -1668,7 +1765,7 @@ void execute_CLV(Cpu6502* cpu)
 
 /* execute_CMP: CMP command - Compare mem w/ A (A - M then set flags)
  */
-void execute_CMP(Cpu6502* cpu)
+static void execute_CMP(Cpu6502* cpu)
 {
 	strcpy(instruction, "CMP ");
 	/* CMP - same as SBC except result isn't stored and V flag isn't changed */
@@ -1685,7 +1782,7 @@ void execute_CMP(Cpu6502* cpu)
 
 /* execute_CPX: CPX command - Compare mem w/ X (X - M then set flags)
  */
-void execute_CPX(Cpu6502* cpu)
+static void execute_CPX(Cpu6502* cpu)
 {
 	strcpy(instruction, "CPX ");
 	if (cpu->address_mode != IMM) {
@@ -1700,7 +1797,7 @@ void execute_CPX(Cpu6502* cpu)
 
 /* execute_CPY: CPY command - Compare mem w/ Y (Y - M then set flags)
  */
-void execute_CPY(Cpu6502* cpu)
+static void execute_CPY(Cpu6502* cpu)
 {
 	strcpy(instruction, "CPY ");
 	if (cpu->address_mode != IMM) {
@@ -1716,7 +1813,7 @@ void execute_CPY(Cpu6502* cpu)
 
 /* execute_SEC: SEC command - Set Carry flag (C = 1)
  */
-void execute_SEC(Cpu6502* cpu)
+static void execute_SEC(Cpu6502* cpu)
 {
 	strcpy(instruction, "SEC ");
 	cpu->P |= FLAG_C;
@@ -1725,7 +1822,7 @@ void execute_SEC(Cpu6502* cpu)
 
 /* execute_SED: SED command - Set Decimal Mode (Decimal mode not supported in NES)
  */
-void execute_SED(Cpu6502* cpu)
+static void execute_SED(Cpu6502* cpu)
 {
 	strcpy(instruction, "SED ");
 	cpu->P |= FLAG_D;
@@ -1734,7 +1831,7 @@ void execute_SED(Cpu6502* cpu)
 
 /* execute_SEI: SEI command - Set Interrupt disable bit (I = 1)
  */
-void execute_SEI(Cpu6502* cpu)
+static void execute_SEI(Cpu6502* cpu)
 {
 	strcpy(instruction, "SEI ");
 	cpu->P |= FLAG_I;
@@ -1744,20 +1841,20 @@ void execute_SEI(Cpu6502* cpu)
  * STACK                   *
  * *************************/
 
-void execute_PHA(Cpu6502* cpu)
+static void execute_PHA(Cpu6502* cpu)
 {
 	strcpy(instruction, "PHA ");
 	stack_push(cpu, cpu->A);
 }
 
-void execute_PHP(Cpu6502* cpu)
+static void execute_PHP(Cpu6502* cpu)
 {
 	strcpy(instruction, "PHP ");
 	stack_push(cpu, cpu->P | 0x30); // set bits 4 & 5
 }
 
 
-void execute_PLA(Cpu6502* cpu)
+static void execute_PLA(Cpu6502* cpu)
 {
 	strcpy(instruction, "PLA ");
 	cpu->A = stack_pull(cpu);
@@ -1766,7 +1863,7 @@ void execute_PLA(Cpu6502* cpu)
 }
 
 
-void execute_PLP(Cpu6502* cpu)
+static void execute_PLP(Cpu6502* cpu)
 {
 	strcpy(instruction, "PLP ");
 	cpu->P = stack_pull(cpu) & ~ 0x10; // B flag may exist on stack but not P so it is cleared
@@ -1779,7 +1876,7 @@ void execute_PLP(Cpu6502* cpu)
 
 /* execute_BRK: BRK command - Fore Break - Store PC & P (along w/ X, Y & A)
  */
-void execute_BRK(Cpu6502* cpu)
+static void execute_BRK(Cpu6502* cpu)
 {
 	strcpy(instruction, "BRK ");
 	// opcode fetched: T0
@@ -1816,7 +1913,7 @@ void execute_BRK(Cpu6502* cpu)
 
 /* execute_NOP: NOP command - Does nothing (No OPeration)
  */
-void execute_NOP(Cpu6502* cpu)
+static void execute_NOP(Cpu6502* cpu)
 {
 	strcpy(instruction, "NOP ");
 	(void) cpu; // suppress unused variable compiler warning
@@ -1824,7 +1921,7 @@ void execute_NOP(Cpu6502* cpu)
 
 
 /* Non opcode interrupts */
-void execute_IRQ(Cpu6502* cpu)
+static void execute_IRQ(Cpu6502* cpu)
 {
 	strcpy(instruction, "IRQ ");
 	// opcode fetched: T0
@@ -1860,7 +1957,7 @@ void execute_IRQ(Cpu6502* cpu)
 }
 
 
-void execute_NMI(Cpu6502* cpu)
+static void execute_NMI(Cpu6502* cpu)
 {
 	strcpy(instruction, "NMI");
 	cpu->address_mode = SPECIAL;
@@ -1894,7 +1991,7 @@ void execute_NMI(Cpu6502* cpu)
 }
 
 
-void execute_DMA(Cpu6502* cpu)
+static void execute_DMA(Cpu6502* cpu)
 {
 	static bool first_cycle = true;
 	if (first_cycle) {
