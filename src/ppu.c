@@ -54,6 +54,18 @@ static const uint32_t palette[64] = {
 
 uint32_t pixels[256 * 240];
 
+// Static prototype functions
+static void read_2002(Cpu6502* cpu);
+static void read_2007(Cpu6502* cpu);
+static void write_2000(uint8_t data, Cpu6502* cpu); // OAM_ADDR
+static void write_2003(uint8_t data, Cpu6502* cpu); // OAM_ADDR
+static void write_2004(uint8_t data, Cpu6502* cpu); // OAM_DATA
+static void write_2005(uint8_t data, Cpu6502* cpu); // PPU_SCROLL
+static void write_2006(uint8_t data, Cpu6502* cpu); // PPU_ADDR
+static void write_2007(uint8_t data, Cpu6502* cpu); // PPU_DATA
+static void write_4014(uint8_t data, Cpu6502* cpu); // DMA_DATA
+static uint8_t ppu_vram_addr_inc(Cpu6502* cpu);
+
 
 Ppu2A03* ppu_init(CpuPpuShare* cp)
 {
@@ -141,7 +153,7 @@ void ppu_reset(int start, Ppu2A03* p, Cpu6502* cpu)
 	}
 }
 
-void append_ppu_info(Ppu2A03* ppu)
+static void append_ppu_info(Ppu2A03* ppu)
 {
 	printf(" PPU_CYC: %.3" PRIu16, ppu->old_cycle);
 	printf(" SL: %" PRIu32 "\n", ppu->old_scanline);
@@ -294,7 +306,7 @@ void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
 }
 
 // VRAM is written to by the CPU
-void write_vram(uint8_t data, Cpu6502* cpu)
+static void write_vram(uint8_t data, Cpu6502* cpu)
 {
 	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
 
@@ -350,7 +362,7 @@ void write_vram(uint8_t data, Cpu6502* cpu)
 }
 
 /* Read Functions */
-void read_2002(Cpu6502* cpu)
+static void read_2002(Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->ppu_status;
 	cpu->cpu_ppu_io->ppu_status &= ~0x80U;
@@ -363,7 +375,7 @@ void read_2002(Cpu6502* cpu)
 	}
 }
 
-void read_2007(Cpu6502* cpu)
+static void read_2007(Cpu6502* cpu)
 {
 	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
 
@@ -379,24 +391,24 @@ void read_2007(Cpu6502* cpu)
 }
 
 /* Write Functions */
-void write_2000(uint8_t data, Cpu6502* cpu)
+static void write_2000(uint8_t data, Cpu6502* cpu)
 {
 	*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x0C00; /* Clear bits to be set */
 	*(cpu->cpu_ppu_io->vram_tmp_addr) |= (data & 0x03) << 10;
 }
 
-inline void write_2003(uint8_t data, Cpu6502* cpu)
+static inline void write_2003(uint8_t data, Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->oam_addr = data;
 }
 
-void write_2004(uint8_t data, Cpu6502* cpu)
+static void write_2004(uint8_t data, Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] = data;
 	++cpu->cpu_ppu_io->oam_addr;
 }
 
-void write_2005(uint8_t data, Cpu6502* cpu)
+static void write_2005(uint8_t data, Cpu6502* cpu)
 {
 	// Valid address = 0x0000 to 0x3FFF
 	if (!cpu->cpu_ppu_io->write_toggle) {
@@ -414,7 +426,7 @@ void write_2005(uint8_t data, Cpu6502* cpu)
 }
 
 
-void write_2006(uint8_t data, Cpu6502* cpu)
+static void write_2006(uint8_t data, Cpu6502* cpu)
 {
 	// Valid address = 0x0000 to 0x3FFF
 	if (!cpu->cpu_ppu_io->write_toggle) {
@@ -430,7 +442,7 @@ void write_2006(uint8_t data, Cpu6502* cpu)
 }
 
 
-void write_2007(uint8_t data, Cpu6502* cpu)
+static void write_2007(uint8_t data, Cpu6502* cpu)
 {
 	write_vram(data, cpu);
 	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
@@ -447,7 +459,7 @@ void write_4014(uint8_t data, Cpu6502* cpu)
  * PPU_CTRL
  */
 // use CPU to access shared CPU/PPU space as this is needed in CPU writes
-uint8_t ppu_vram_addr_inc(Cpu6502* cpu)
+static uint8_t ppu_vram_addr_inc(Cpu6502* cpu)
 {
 	if (!(cpu->cpu_ppu_io->ppu_ctrl & 0x04)) {
 		return 1;
@@ -456,7 +468,7 @@ uint8_t ppu_vram_addr_inc(Cpu6502* cpu)
 	}
 }
 
-uint16_t ppu_base_nt_address(Ppu2A03* p)
+static uint16_t ppu_base_nt_address(Ppu2A03* p)
 {
 	switch(p->cpu_ppu_io->ppu_ctrl & 0x03) {
 	case 0:
@@ -473,7 +485,7 @@ uint16_t ppu_base_nt_address(Ppu2A03* p)
 }
 
 
-uint16_t ppu_base_pt_address(Ppu2A03* p)
+static uint16_t ppu_base_pt_address(Ppu2A03* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 4) & 0x01) {
 		return 0x1000;
@@ -482,7 +494,7 @@ uint16_t ppu_base_pt_address(Ppu2A03* p)
 	}
 }
 
-uint16_t ppu_sprite_pattern_table_addr(Ppu2A03* p)
+static uint16_t ppu_sprite_pattern_table_addr(Ppu2A03* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 3) & 0x01) {
 		return 0x1000;
@@ -491,7 +503,7 @@ uint16_t ppu_sprite_pattern_table_addr(Ppu2A03* p)
 	}
 }
 
-uint8_t ppu_sprite_height(Ppu2A03* p)
+static uint8_t ppu_sprite_height(Ppu2A03* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
 		return 16; /* 8 x 16 */
@@ -504,7 +516,7 @@ uint8_t ppu_sprite_height(Ppu2A03* p)
  * PPU_MASK
  */
 
-bool ppu_show_bg(Ppu2A03* p)
+static bool ppu_show_bg(Ppu2A03* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x08) {
 		return true;
@@ -514,7 +526,7 @@ bool ppu_show_bg(Ppu2A03* p)
 }
 
 
-bool ppu_show_sprite(Ppu2A03* p)
+static bool ppu_show_sprite(Ppu2A03* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x10) {
 		return true;
@@ -523,7 +535,7 @@ bool ppu_show_sprite(Ppu2A03* p)
 	}
 }
 
-bool ppu_mask_left_8px_bg(Ppu2A03* p)
+static bool ppu_mask_left_8px_bg(Ppu2A03* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x02) {
 		return false;
@@ -532,7 +544,7 @@ bool ppu_mask_left_8px_bg(Ppu2A03* p)
 	}
 }
 
-bool ppu_mask_left_8px_sprite(Ppu2A03* p)
+static bool ppu_mask_left_8px_sprite(Ppu2A03* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x04) {
 		return false;
@@ -541,7 +553,7 @@ bool ppu_mask_left_8px_sprite(Ppu2A03* p)
 	}
 }
 
-bool ppu_show_greyscale(Ppu2A03* p)
+static bool ppu_show_greyscale(Ppu2A03* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x01) {
 		return true;
@@ -554,7 +566,7 @@ bool ppu_show_greyscale(Ppu2A03* p)
  * PPU_STATUS
  */
 
-bool sprite_overflow_occured(Ppu2A03* p)
+static bool sprite_overflow_occured(Ppu2A03* p)
 {
 	if (p->cpu_ppu_io->ppu_status & 0x20) {
 		return true;
@@ -568,7 +580,7 @@ bool sprite_overflow_occured(Ppu2A03* p)
  */
 
 // Taken from wiki.nesdev
-void inc_vert_scroll(Ppu2A03 *p)
+static void inc_vert_scroll(Ppu2A03 *p)
 {
 	uint16_t addr = p->vram_addr;
 	if ((addr & 0x7000) != 0x7000) { // If fine Y < 7
@@ -589,7 +601,7 @@ void inc_vert_scroll(Ppu2A03 *p)
 	p->vram_addr = addr;
 }
 
-void inc_horz_scroll(Ppu2A03 *p)
+static void inc_horz_scroll(Ppu2A03 *p)
 {
 	if ((p->vram_addr & 0x001F) == 31) {
 		p->vram_addr &= ~0x001F;
@@ -599,20 +611,20 @@ void inc_horz_scroll(Ppu2A03 *p)
 	}
 }
 
-void fetch_nt_byte(Ppu2A03 *p)
+static void fetch_nt_byte(Ppu2A03 *p)
 {
 	p->nt_addr_tmp = 0x2000 | (p->vram_addr & 0x0FFF);
 	p->nt_byte = p->vram[p->nt_addr_tmp];
 }
 
 /* Determines colour palette */
-void fetch_at_byte(Ppu2A03 *p)
+static void fetch_at_byte(Ppu2A03 *p)
 {
 	p->at_latch = p->vram[0x23C0 | (p->vram_addr & 0x0C00) | ((p->vram_addr >> 4) & 0x38) | ((p->vram_addr >> 2) & 0x07)];
 }
 
 /* Lo & Hi determine which index of the colour palette we use (0 to 3) */
-void fetch_pt_lo(Ppu2A03 *p)
+static void fetch_pt_lo(Ppu2A03 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12);
 	uint8_t latch = p->vram[ppu_base_pt_address(p) | pt_offset];
@@ -620,7 +632,7 @@ void fetch_pt_lo(Ppu2A03 *p)
 }
 
 
-void fetch_pt_hi(Ppu2A03 *p)
+static void fetch_pt_hi(Ppu2A03 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12) + 8;
 	uint8_t latch = p->vram[ppu_base_pt_address(p) | pt_offset];
@@ -628,7 +640,7 @@ void fetch_pt_hi(Ppu2A03 *p)
 }
 
 
-void render_pixel(Ppu2A03 *p)
+static void render_pixel(Ppu2A03 *p)
 {
 	unsigned bg_palette_addr;
 	/* Defines the which colour palette to use */
@@ -691,14 +703,14 @@ void render_pixel(Ppu2A03 *p)
 	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
 }
 
-void ppu_transfer_oam(Ppu2A03* p, unsigned index)
+static void ppu_transfer_oam(Ppu2A03* p, unsigned index)
 {
 	for (int i = 0; i < 4; i++) {
 		p->scanline_oam[(p->sprites_found * 4) + i] = p->oam[(index * 4) + i]; // Copy remaining bytes
 	}
 }
 
-void reset_secondary_oam(Ppu2A03* p)
+static void reset_secondary_oam(Ppu2A03* p)
 {
 	for (int i = 0; i < 32; i++) {
 		p->scanline_oam[i] = 0xFF; // Reset secondary OAM
@@ -710,7 +722,7 @@ void reset_secondary_oam(Ppu2A03* p)
 	p->sprite_zero_scanline = p->sprite_zero_scanline_tmp;
 }
 
-void sprite_evaluation(Ppu2A03* p)
+static void sprite_evaluation(Ppu2A03* p)
 {
 	int y_offset = 0;
 	switch (p->cycle % 2) {
@@ -747,7 +759,7 @@ void sprite_evaluation(Ppu2A03* p)
 }
 
 
-void sprite_hit_lookahead(Ppu2A03* p)
+static void sprite_hit_lookahead(Ppu2A03* p)
 {
 	// -1 as Y pos of sprite is delayed until the next scanline
 	if ((p->scanline - p->oam[0] - 1) < ppu_sprite_height(p)
