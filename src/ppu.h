@@ -11,7 +11,7 @@
 #endif /* KiB */
 
 
-enum Memory {
+enum PpuMemoryTypes {
 	PRIMARY_OAM,
 	SECONDARY_OAM,
 	PATTERN_TABLE_1
@@ -24,7 +24,7 @@ void ppu_reset(int start, Ppu2A03* p, Cpu6502* cpu); /* Emulates reset/warm-up o
 /* Debug Functions */
 void debug_ppu_regs(Cpu6502* cpu);
 void ppu_mem_16_byte_viewer(Ppu2A03* PPU, unsigned start_addr, unsigned total_rows);
-void OAM_viewer(Ppu2A03* PPU, enum Memory ppu_mem); // rename to VRAM viewer?
+void OAM_viewer(Ppu2A03* PPU, enum PpuMemoryTypes ppu_mem); // rename to VRAM viewer?
 
 /* Read & Write Functions */
 uint8_t read_ppu_reg(uint16_t addr, Cpu6502* cpu); /* For addresses exposed to CPU */

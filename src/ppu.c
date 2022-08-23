@@ -195,7 +195,7 @@ void ppu_mem_16_byte_viewer(Ppu2A03* ppu, unsigned start_addr, unsigned total_ro
 
 
 // fix like above
-void OAM_viewer(Ppu2A03* ppu, enum Memory ppu_mem)
+void OAM_viewer(Ppu2A03* ppu, enum PpuMemoryTypes ppu_mem)
 {
 	printf("\n##################### PPU OAM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
