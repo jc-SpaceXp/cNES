@@ -32,7 +32,7 @@ void delay_write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu); /* For addr
 void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu); /* For addresses exposed to CPU */
 
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen);
+void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, bool no_logging);
 
 
 #endif /* __NES_PPU__ */

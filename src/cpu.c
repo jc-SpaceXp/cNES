@@ -34,7 +34,7 @@ static void write_4016(uint8_t data, Cpu6502* cpu);
 static unsigned read_4016(Cpu6502* cpu);
 static unsigned read_4017(Cpu6502* cpu);
 static void cpu_debugger(Cpu6502* cpu);  // warning unused function, currently hidden behind conditional execution
-static void log_cpu_info(Cpu6502* cpu);  // warning unused function, currently hidden behind conditional execution
+static void log_cpu_info(Cpu6502* cpu, bool no_logging);  // warning unused function, currently hidden behind conditional execution
 static void fetch_opcode(Cpu6502* cpu);
 static bool fixed_cycles_on_store(Cpu6502* cpu);
 static bool page_cross_occurs(unsigned low_byte, unsigned offset);
@@ -123,7 +123,7 @@ static void execute_BRK(Cpu6502* cpu);
 static void execute_NOP(Cpu6502* cpu);
 static void execute_IRQ(Cpu6502* cpu);  // warning unused function, needed later for audio or other mappers I believe
 static void execute_NMI(Cpu6502* cpu);
-static void execute_DMA(Cpu6502* cpu);
+static void execute_DMA(Cpu6502* cpu, bool no_logging);
 
 // 0 denotes illegal op codes
 static const uint8_t max_cycles_opcode_lut[256] = {
@@ -377,7 +377,7 @@ void cpu_mem_16_byte_viewer(Cpu6502* cpu, unsigned start_addr, unsigned total_ro
 	}
 }
 
-void clock_cpu(Cpu6502* cpu)
+void clock_cpu(Cpu6502* cpu, bool no_logging)
 {
 	++cpu->cycle;
 	--cpu->instruction_cycles_remaining;
@@ -395,7 +395,7 @@ void clock_cpu(Cpu6502* cpu)
 #ifdef __DEBUG__
 			cpu->cpu_ppu_io->write_debug = true;
 			cpu_debugger(cpu);
-			log_cpu_info(cpu);
+			log_cpu_info(cpu, no_logging);
 			update_cpu_info(cpu);
 #endif /* __DEBUG__ */
 		}
@@ -405,7 +405,7 @@ void clock_cpu(Cpu6502* cpu)
 		// Fetch-decode-execute state logic
 		if (cpu->instruction_state == FETCH) {
 			if (cpu->cpu_ppu_io->dma_pending) {
-				execute_DMA(cpu);
+				execute_DMA(cpu, no_logging);
 				return;
 			}
 			// if not the first instruction print its output
@@ -413,7 +413,7 @@ void clock_cpu(Cpu6502* cpu)
 #ifdef __DEBUG__
 				cpu->cpu_ppu_io->write_debug = true;
 				cpu_debugger(cpu);
-				log_cpu_info(cpu);
+				log_cpu_info(cpu, no_logging);
 				update_cpu_info(cpu);
 #endif /* __DEBUG__ */
 			}
@@ -562,20 +562,22 @@ static void cpu_debugger(Cpu6502* cpu)
 	strcat(instruction, end); // execute_* functions provide the instruction string
 }
 
-static void log_cpu_info(Cpu6502* cpu)
+static void log_cpu_info(Cpu6502* cpu, bool no_logging)
 {
-	printf("%-6.4X ", cpu->old_PC);
-	printf("%-20s ", instruction);
-	printf("A:%.2X ", cpu->old_A);
-	printf("X:%.2X ", cpu->old_X);
-	printf("Y:%.2X ", cpu->old_Y);
-	printf("P:%.2X ", cpu->old_P);
-	printf("SP:%.2X ", cpu->old_stack);
+	if (!no_logging) {
+		printf("%-6.4X ", cpu->old_PC);
+		printf("%-20s ", instruction);
+		printf("A:%.2X ", cpu->old_A);
+		printf("X:%.2X ", cpu->old_X);
+		printf("Y:%.2X ", cpu->old_Y);
+		printf("P:%.2X ", cpu->old_P);
+		printf("SP:%.2X ", cpu->old_stack);
 
-	if (cpu->old_cycle == 0) {
-		printf("CPU:%-10u", cpu->old_cycle);
-	} else { // first cycle = +1 cycles due to the tick() after the instruction executes
-		printf("CPU:%-10u", cpu->old_cycle - 1);
+		if (cpu->old_cycle == 0) {
+			printf("CPU:%-10u", cpu->old_cycle);
+		} else { // first cycle = +1 cycles due to the tick() after the instruction executes
+			printf("CPU:%-10u", cpu->old_cycle - 1);
+		}
 	}
 }
 
@@ -2024,14 +2026,14 @@ static void execute_NMI(Cpu6502* cpu)
 }
 
 
-static void execute_DMA(Cpu6502* cpu)
+static void execute_DMA(Cpu6502* cpu, bool no_logging)
 {
 	static bool first_cycle = true;
 	if (first_cycle) {
 #ifdef __DEBUG__
 		cpu->cpu_ppu_io->write_debug = true;
 		cpu_debugger(cpu);
-		log_cpu_info(cpu);
+		log_cpu_info(cpu, no_logging);
 		update_cpu_info(cpu);
 		first_cycle = false;
 #endif /* __DEBUG__ */

@@ -19,13 +19,13 @@
 #define LEFT_BUTTON   0x40U
 #define RIGHT_BUTTON  0x80U
 
-void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Display* nes_screen)
+void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Display* nes_screen, bool no_logging)
 {
 	// 3 : 1 PPU to CPU ratio
-	clock_cpu(cpu);
-	clock_ppu(ppu, cpu, nes_screen);
-	clock_ppu(ppu, cpu, nes_screen);
-	clock_ppu(ppu, cpu, nes_screen);
+	clock_cpu(cpu, no_logging);
+	clock_ppu(ppu, cpu, nes_screen, no_logging);
+	clock_ppu(ppu, cpu, nes_screen, no_logging);
+	clock_ppu(ppu, cpu, nes_screen, no_logging);
 }
 
 void emu_usuage(const char* program_name)
@@ -46,7 +46,8 @@ int main(int argc, char** argv)
 	char* filename = "dummy.nes";  // default: forces user to submit a file to open
 	unsigned long max_cycles = 0;
 	bool help = false;
-	bool log = false;
+	bool log_to_file = false;
+	bool no_logging = false;
 
 	// process command line arguments
 	while ((argc > 1) && (argv[1][0] == '-')) {
@@ -71,7 +72,10 @@ int main(int argc, char** argv)
 			filename = &argv[1][0];
 			break;
 		case 'l': // l - enable logging to a file
-			log = true;
+			log_to_file = true;
+			break;
+		case 's': // s - silent output (no instructionlogging, either to terminal or file)
+			no_logging = true;
 			break;
 		case 'c': // c - execute emulator for a fixed number of cpu clock cycles
 			if (argc < 3 || (argv[2][0] == '-')) {
@@ -115,14 +119,14 @@ int main(int argc, char** argv)
 	init_pc(cpu); // Initialise PC to reset vector
 	update_cpu_info(cpu);
 
-	if (log) {
+	if (log_to_file) {
 		stdout = freopen("trace_log.txt", "w", stdout);
 	}
 
 	// run for a fixed number of cycles if specified by the user
 	if (max_cycles) {
 		while (cpu->cycle < max_cycles) {
-			clock_all_units(cpu, ppu, nes_screen);
+			clock_all_units(cpu, ppu, nes_screen, no_logging);
 		}
 	} else {
 		/* SDL GAME LOOOOOOP */
@@ -202,7 +206,7 @@ int main(int argc, char** argv)
 					}
 				}
 			}
-			clock_all_units(cpu, ppu, nes_screen);
+			clock_all_units(cpu, ppu, nes_screen, no_logging);
 		}
 	}
 
