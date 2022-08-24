@@ -72,7 +72,11 @@ int main(int argc, char** argv)
 			filename = &argv[1][0];
 			break;
 		case 'l': // l - enable logging to a file
+			// disable the side effect of overwritting the log file when switching to release builds
+			// and providing the -l option
+#ifdef __DEBUG__
 			log_to_file = true;
+#endif /* __DEBUG__ */
 			break;
 		case 's': // s - silent output (no instructionlogging, either to terminal or file)
 			no_logging = true;
