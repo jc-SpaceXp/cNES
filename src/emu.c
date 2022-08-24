@@ -34,6 +34,7 @@ void emu_usuage(const char* program_name)
 	fprintf(stderr, "OPTIONS:\n");
 	fprintf(stderr, "\t-h\n\tShows all the possible command-line options\n\n");
 	fprintf(stderr, "\t-l\n\tEnable logging to a file\n\n");
+	fprintf(stderr, "\t-s\n\tSuppress logging to file or terminal\n\n");
 	fprintf(stderr, "\t-o FILE\n\tOpen the provided file\n\n");
 	fprintf(stderr, "\t-c CYCLES\n\tRun the CPU up to the specified number of cycles\n");
 }

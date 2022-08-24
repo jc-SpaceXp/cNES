@@ -63,6 +63,8 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 
 =-l= Outputs CPU and PPU information to a file called "trace_log.txt"
 
+=-s= Disable CPU and PPU logging (disables either writing to disk or terminal)
+
 =-h= List of all the command line options inside your terminal
 
 *Controls:*
