@@ -11,12 +11,13 @@ Cartridge* cart_init(void)
 		fprintf(stderr, "Failed to allocate memory for Cartridge\n");
 	}
 
+	cart->header = HEADERLESS;
+
 	return cart;
 }
 
-static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu);
+static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu, uint8_t* header_bytes);
 
-/* iNES format */
 int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	uint8_t header[16];
@@ -49,9 +50,18 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 		fclose(rom);
 		return 8;
 	}
-	
-	if (memcmp(header, "NES\x1A", 4)) {
-		fprintf(stderr, "Error: invalid nes file.\n");
+
+	if (!memcmp(header, "NES\x1A", 4)) {
+		// bytes 10-15 should be filled w/ 0's however people often write in this space
+		// e.g. their name at the end of the header
+		cart->header = INES;
+		if ((header[7] & 0x0C) == 0x08) {
+			cart->header = NES_2;
+		}
+	}
+
+	if (cart->header == HEADERLESS) {
+		fprintf(stderr, "Error: unrecognised header, requires an offline database.\n");
 		fclose(rom);
 		return 8;
 	}
@@ -118,15 +128,43 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 
 	/* Mapper select */
 	init_mapper(cart, cpu, ppu);
-	log_cart_info(cart, filename, cpu, ppu);
+	log_cart_info(cart, filename, cpu, ppu, &header[0]);
 
 	return 0;
 }
 
-static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
+static void print_header(Cartridge* cart, uint8_t* header_bytes)
+{
+	printf("Header bytes: ");
+	if (cart->header != HEADERLESS) {
+		for (int i = 0; i < 16; i++) {
+			printf("%.2X ", header_bytes[i]);
+		}
+	} else {
+		printf(" N/A");
+	}
+	printf("\n");
+}
+
+static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu, uint8_t* header_bytes)
 {
 	printf("Cart: %s\n", filename);
 	printf("Mapper number %d\n", cpu->cpu_mapper_io->mapper_number);
+
+	printf("Header Format: ");
+	switch (cart->header) {
+	case (HEADERLESS):
+		printf("Headerless\n");
+		break;
+	case (INES):
+		printf("iNES\n");
+		break;
+	case (NES_2):
+		printf("NES2.0\n");
+		break;
+	}
+
+	print_header(cart, header_bytes);
 
 	if (cart->video_mode == PAL) {
 		printf("PAL\n");
@@ -137,7 +175,7 @@ static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, P
 	printf("PRG ROM size: %d KiB\n", cart->prg_rom.size / (KiB));
 	printf("PRG RAM (WRAM) size: %d KiB\n", cart->prg_ram.size / (KiB));
 	printf("CHR ROM size: %d KiB\n", cart->chr.rom_size / (KiB));
-	printf("CHR RAM size: %d KiB\n", cart->chr.ram_size / (KiB));
+	printf("CHR RAM (VRAM) size: %d KiB\n", cart->chr.ram_size / (KiB));
 
 	printf("Mirroring mode: ");
 	if (ppu->mirroring == 1) {

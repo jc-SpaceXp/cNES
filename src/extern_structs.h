@@ -12,6 +12,12 @@
 
 #define CPU_MEMORY_SIZE  65536U // Total memory available to the CPU
 
+typedef enum {
+	HEADERLESS,
+	INES,
+	NES_2,
+} HeaderFormat;
+
 /* FLAG 9 in iNES header */
 typedef enum {
 	NTSC = 0,
@@ -35,6 +41,7 @@ typedef struct {
 
 typedef struct Cartridge {
 	VideoType video_mode;
+	HeaderFormat header;
 	Memory prg_rom;  // Program ROM, sent to CPU
 	Memory prg_ram;  // Program RAM, sent to CPU
 	ChrMemory chr;  // Sprite and background pattern tables, sent to PPU
