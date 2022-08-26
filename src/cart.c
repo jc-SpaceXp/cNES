@@ -12,6 +12,7 @@ Cartridge* cart_init(void)
 	}
 
 	cart->header = HEADERLESS;
+	cart->trainer.size = 0;
 
 	return cart;
 }
@@ -21,7 +22,6 @@ static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, P
 int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	uint8_t header[16];
-	unsigned trainer;
 	uint8_t mapper;
 	long file_size;
 
@@ -75,12 +75,12 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 		memset(&header[7], 0, 9);
 	}
 
-	/* parsing header */
+	/* parsing header, assume iNES format */
 	cart->prg_rom.size = 16 * (KiB) * header[4];
-	cart->prg_ram.size = 8 * (KiB) * header[8];
-	cart->chr.rom_size = 8 * (KiB) * header[5]; // Pattern table data (if any)
-	cart->chr.ram_size = 8 * (KiB) * !header[5];
+	cart->chr.rom_size = 8  * (KiB) * header[5]; // Pattern table data (if any)
+	cart->chr.ram_size = 8  * (KiB) * !header[5];
 	mapper = (header[7] & 0xF0) | ((header[6] & 0xF0) >> 4);
+	cart->prg_ram.size = 8  * (KiB) * header[8];
 	cpu->cpu_mapper_io->mapper_number = mapper;
 
 	/* Flags 6 */
@@ -95,11 +95,8 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 	}
 
 	if (header[6] & 0x04) {
-		trainer = 512;
-	} else {
-		trainer = 0;
+		cart->trainer.size = 512;
 	}
-		
 
 	/* Flags 7 */
 
@@ -112,8 +109,17 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 
 	/* Flags 10 - not implimented - rarely used */
 
+	/* Load trainer into member variable */
+	if (cart->trainer.size) {
+		cart->trainer.data = malloc(cart->prg_rom.size);
+		if (!cart->trainer.data) {
+			fclose(rom);
+			return 8;
+		}
+		fread(cart->trainer.data, 1, 512, rom);
+	}
+
 	/* Loading data into PRG_ROM */
-	fseek(rom, trainer, SEEK_CUR); /* fseek has gone past header now needs to skip trainer */
 	cart->prg_rom.data = malloc(cart->prg_rom.size);
 	if (!cart->prg_rom.data) {
 		fclose(rom);
@@ -188,6 +194,12 @@ static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, P
 	printf("PRG RAM (WRAM) size: %d KiB\n", cart->prg_ram.size / (KiB));
 	printf("CHR ROM size: %d KiB\n", cart->chr.rom_size / (KiB));
 	printf("CHR RAM (VRAM) size: %d KiB\n", cart->chr.ram_size / (KiB));
+	printf("Trainer: ");
+	if (cart->trainer.size) {
+		printf("Yes\n");
+	} else {
+		printf("No\n");
+	}
 
 	printf("Mirroring mode: ");
 	if (ppu->mirroring == 1) {

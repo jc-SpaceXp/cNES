@@ -45,6 +45,7 @@ typedef struct Cartridge {
 	HeaderFormat header;
 	Memory prg_rom;  // Program ROM, sent to CPU
 	Memory prg_ram;  // Program RAM, sent to CPU
+	Memory trainer;  // Trainer data (can be used by some mappers, rarely)
 	ChrMemory chr;  // Sprite and background pattern tables, sent to PPU
 } Cartridge;
 
