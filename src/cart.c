@@ -14,6 +14,8 @@ Cartridge* cart_init(void)
 	return cart;
 }
 
+static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu);
+
 /* iNES format */
 int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 {
@@ -116,6 +118,33 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 
 	/* Mapper select */
 	init_mapper(cart, cpu, ppu);
+	log_cart_info(cart, filename, cpu, ppu);
 
 	return 0;
+}
+
+static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
+{
+	printf("Cart: %s\n", filename);
+	printf("Mapper number %d\n", cpu->cpu_mapper_io->mapper_number);
+
+	if (cart->video_mode == PAL) {
+		printf("PAL\n");
+	} else if (cart->video_mode == NTSC) {
+		printf("NTSC\n");
+	}
+
+	printf("PRG ROM size: %d KiB\n", cart->prg_rom.size / (KiB));
+	printf("PRG RAM (WRAM) size: %d KiB\n", cart->prg_ram.size / (KiB));
+	printf("CHR ROM size: %d KiB\n", cart->chr.rom_size / (KiB));
+	printf("CHR RAM size: %d KiB\n", cart->chr.ram_size / (KiB));
+
+	printf("Mirroring mode: ");
+	if (ppu->mirroring == 1) {
+		printf("Vertical\n");
+	} else if (ppu->mirroring == 0) {
+		printf("Horizontal\n");
+	} else if (ppu->mirroring == 4) {
+		printf("4-screen\n");
+	}
 }
