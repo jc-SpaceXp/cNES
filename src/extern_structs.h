@@ -14,6 +14,7 @@
 
 typedef enum {
 	HEADERLESS,
+	BAD_INES,
 	INES,
 	NES_2,
 } HeaderFormat;

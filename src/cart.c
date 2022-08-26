@@ -55,6 +55,9 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 		// bytes 10-15 should be filled w/ 0's however people often write in this space
 		// e.g. their name at the end of the header
 		cart->header = INES;
+		if (header[9] & 0xFE) { // 9th byte should only contain a 1 or 0
+			cart->header = BAD_INES;  // excludes nes files w/ data in the unused bytes
+		}
 		if ((header[7] & 0x0C) == 0x08) {
 			cart->header = NES_2;
 		}
@@ -64,6 +67,12 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 		fprintf(stderr, "Error: unrecognised header, requires an offline database.\n");
 		fclose(rom);
 		return 8;
+	}
+
+	// attempt to clean a bad header file
+	if (!memcmp(&header[7], "DiskDude!", 9)) {
+		printf("Badly formatted iNES header!! Zeroing out tag in header\n");
+		memset(&header[7], 0, 9);
 	}
 
 	/* parsing header */
@@ -155,6 +164,9 @@ static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, P
 	switch (cart->header) {
 	case (HEADERLESS):
 		printf("Headerless\n");
+		break;
+	case (BAD_INES):
+		printf("iNES (badly formatted)\n");
 		break;
 	case (INES):
 		printf("iNES\n");
