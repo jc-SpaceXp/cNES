@@ -13,6 +13,7 @@ Cartridge* cart_init(void)
 
 	cart->header = HEADERLESS;
 	cart->trainer.size = 0;
+	cart->non_volatile_mem = false;  // used for "battery-backed" ROMS e.g. Legend of Zelda
 
 	return cart;
 }
@@ -81,33 +82,38 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 	cart->chr.ram_size = 8  * (KiB) * !header[5];
 	mapper = (header[7] & 0xF0) | ((header[6] & 0xF0) >> 4);
 	cart->prg_ram.size = 8  * (KiB) * header[8];
+	if (!cart->prg_ram.size) {
+		// a zero value implies 8 K for compatability
+		// depends on the mapper on whether there is PRG RAM or not
+		cart->prg_ram.size = 8  * (KiB);
+	}
 	cpu->cpu_mapper_io->mapper_number = mapper;
 
-	/* Flags 6 */
-	if (!(header[6] & 0x08)) {
-		if (header[6] & 0x01) {
-			ppu->mirroring = 1;
-		} else {
-			ppu->mirroring = 0;
-		}
-	} else {
+	/* Byte 6 */
+	if (header[6] & 0x08) {
 		ppu->mirroring = 4;
+	} else if (header[6] & 0x01) {
+		ppu->mirroring = 1;
+	} else if (!(header[6] & 0x01)) {
+		ppu->mirroring = 0;
+	}
+
+	if (header[6] & 0x02) {
+		cart->non_volatile_mem = true;
 	}
 
 	if (header[6] & 0x04) {
 		cart->trainer.size = 512;
 	}
 
-	/* Flags 7 */
-
-	/* Flags 9 */
+	/* Byte 9 */
 	if (header[9] & 0x01) {
 		cart->video_mode = PAL;
 	} else {
 		cart->video_mode = NTSC;
 	}
 
-	/* Flags 10 - not implimented - rarely used */
+	log_cart_info(cart, filename, cpu, ppu, &header[0]);
 
 	/* Load trainer into member variable */
 	if (cart->trainer.size) {
@@ -143,7 +149,6 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 
 	/* Mapper select */
 	init_mapper(cart, cpu, ppu);
-	log_cart_info(cart, filename, cpu, ppu, &header[0]);
 
 	return 0;
 }
@@ -159,6 +164,15 @@ static void print_header(Cartridge* cart, uint8_t* header_bytes)
 		printf(" N/A");
 	}
 	printf("\n");
+}
+
+static void inline print_yes_or_no(int check_non_zero)
+{
+	if (check_non_zero) {
+		printf("Yes\n");
+	} else {
+		printf("No\n");
+	}
 }
 
 static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu, uint8_t* header_bytes)
@@ -191,15 +205,13 @@ static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, P
 	}
 
 	printf("PRG ROM size: %d KiB\n", cart->prg_rom.size / (KiB));
-	printf("PRG RAM (WRAM) size: %d KiB\n", cart->prg_ram.size / (KiB));
+	printf("PRG RAM (WRAM) size: %d KiB (depends on the mapper, some mappers have no PRG RAM, value maybe ignored)\n", cart->prg_ram.size / (KiB));
 	printf("CHR ROM size: %d KiB\n", cart->chr.rom_size / (KiB));
 	printf("CHR RAM (VRAM) size: %d KiB\n", cart->chr.ram_size / (KiB));
 	printf("Trainer: ");
-	if (cart->trainer.size) {
-		printf("Yes\n");
-	} else {
-		printf("No\n");
-	}
+	print_yes_or_no(cart->trainer.size);
+	printf("Battery/Non-volatile Memory: ");
+	print_yes_or_no(cart->non_volatile_mem);
 
 	printf("Mirroring mode: ");
 	if (ppu->mirroring == 1) {
