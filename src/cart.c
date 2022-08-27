@@ -40,7 +40,8 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 	file_size = ftell(rom);
 	rewind(rom);
 
-	if (file_size < 0x4010) {
+	// minimum file size is a headerless .nes file w/ only a 16 KiB PRG ROM
+	if (file_size < (16 * KiB - 1)) {
 		fprintf(stderr, "Error: input file is too small.\n");
 		fclose(rom);
 		return 8;
