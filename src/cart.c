@@ -18,6 +18,7 @@ Cartridge* cart_init(void)
 	return cart;
 }
 
+static uint16_t concat_lsb_and_msb_to_16_bit_val(uint8_t lsb, uint8_t msb);
 static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu, uint8_t* header_bytes);
 
 int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
@@ -113,6 +114,40 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 		cart->video_mode = NTSC;
 	}
 
+	if (cart->header == NES_2) {
+		cart->prg_rom.size = 16 * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[4], header[9] & 0x0F);
+		cart->chr.rom_size = 8  * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[5], header[9] & 0xF0);
+
+		// Calculate exponent of PRG ROM if necessary
+		if ((header[9] & 0x0F) == 0x0F) {
+			unsigned multiplier = (header[4] & 0x03) * 2 + 1;
+			cart->prg_rom.size = (1 << (header[4] & 0xC0)) * multiplier;
+		}
+
+		// Calculate exponent of CHR ROM if necessary
+		if ((header[9] & 0xF0) == 0xF0) {
+			unsigned multiplier = (header[5] & 0x03) * 2 + 1;
+			cart->chr.rom_size = (1 << (header[5] & 0xC0)) * multiplier;
+		}
+		// Byte 6 is the same as before
+		cpu->cpu_mapper_io->mapper_number |= (header[8] & 0x0F) << 8; // an extra 4 bits are added to the mapper number
+		// will add submapper number later
+		// Byte 9, already processed for the ROM sizes
+		cart->prg_ram.size = 0;
+		unsigned shift_count = header[10] & 0x0F;
+		if (shift_count) {  cart->prg_ram.size = 64 << shift_count; }
+
+		cart->chr.ram_size = 0;
+		shift_count = header[11] & 0x0F;
+		if (shift_count) {  cart->chr.ram_size = 64 << shift_count; }
+
+		// so far only processing PAL/NTSC
+		cart->video_mode = NTSC;
+		if ((header[12] & 0x03) == 0x01) {
+			cart->video_mode = PAL;
+		}
+	}
+
 	log_cart_info(cart, filename, cpu, ppu, &header[0]);
 
 	/* Load trainer into member variable */
@@ -151,6 +186,13 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 	init_mapper(cart, cpu, ppu);
 
 	return 0;
+}
+
+
+// lsb/msb is least/most significant byte
+static uint16_t concat_lsb_and_msb_to_16_bit_val(uint8_t lsb, uint8_t msb)
+{
+	return ((msb << 8) | lsb);
 }
 
 static void print_header(Cartridge* cart, uint8_t* header_bytes)
@@ -205,7 +247,7 @@ static void log_cart_info(Cartridge* cart, const char* filename, Cpu6502* cpu, P
 	}
 
 	printf("PRG ROM size: %d KiB\n", cart->prg_rom.size / (KiB));
-	printf("PRG RAM (WRAM) size: %d KiB (depends on the mapper, some mappers have no PRG RAM, value maybe ignored)\n", cart->prg_ram.size / (KiB));
+	printf("PRG RAM (WRAM) size: %d KiB (Some mappers have no PRG RAM, for INES header the value maybe ignored)\n", cart->prg_ram.size / (KiB));
 	printf("CHR ROM size: %d KiB\n", cart->chr.rom_size / (KiB));
 	printf("CHR RAM (VRAM) size: %d KiB\n", cart->chr.ram_size / (KiB));
 	printf("Trainer: ");
