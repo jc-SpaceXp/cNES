@@ -219,9 +219,7 @@ int main(int argc, char** argv)
 	nes_screen = NULL;
 
 	//cpu_mem_16_byte_viewer(cpu, 0, 2048);
-	//ppu_mem_16_byte_viewer(ppu, 0, 2048);
-	//OAM_viewer(ppu, PRIMARY_OAM);
-	//OAM_viewer(ppu, SECONDARY_OAM);
+	//ppu_mem_hexdump_addr_range(ppu, VRAM, 0x0000, 0x2000);
 
 	ret = 0;
 
