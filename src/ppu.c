@@ -175,48 +175,62 @@ void debug_ppu_regs(Cpu6502* cpu)
 	printf("3F01: %.2X\n\n", read_from_cpu(cpu, 0x3F01));
 }
 
-void ppu_mem_16_byte_viewer(const Ppu2C02* ppu, unsigned start_addr, const unsigned total_rows)
+void ppu_mem_hexdump_addr_range(Ppu2C02* ppu, const enum PpuMemoryTypes ppu_mem, unsigned start_addr, uint16_t end_addr)
 {
-	printf("\n##################### PPU MEM #######################\n");
-	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
-	unsigned mem = start_addr;
-	while (start_addr < total_rows) {
-		printf("%.4X: ", start_addr << 4);
-		for (int x = 0; x < 16; x++) {
-			printf("%.2X ", ppu->vram[mem]);
-			//printf("%.2X ", ppu->scanline_oam[mem]);
-			//printf("%.2X ", ppu->oam[mem]);
-			++mem;
-		}
-		printf("\n");
-		++start_addr;
+	if (end_addr <= start_addr) {
+		fprintf(stderr, "Hexdump failed, need more than 1 byte to read (end_addr must be greater than start_addr)\n");
+		return;
 	}
-}
 
-
-// fix like above
-void oam_viewer(const Ppu2C02* ppu, const enum PpuMemoryTypes ppu_mem)
-{
-	printf("\n##################### PPU OAM #######################\n");
-	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
-	unsigned int addr = 0; // Byte count. 16 Bytes per line
-	unsigned int mem = 0;  // Start address
-	unsigned int addr_limit = 0; // Byte count. 16 Bytes per line
-	if (ppu_mem == PRIMARY_OAM) {
-		addr_limit = 16; // Byte count. 16 Bytes per line
+	if (ppu_mem == VRAM) {
+		printf("\n##################### PPU VRAM #######################\n");
+		if (end_addr > (16 * KiB - 1)) {
+			end_addr = 0x3FFF; // keep value between 0 and 16 KiB - 1
+		}
+	} else if (ppu_mem == PRIMARY_OAM) {
+		printf("\n#################### PPU OAM ALL #####################\n");
+		if (end_addr >= 255) {
+			end_addr = 0xFF;  // keep value between 0-255
+		}
 	} else if (ppu_mem == SECONDARY_OAM) {
-		addr_limit = 2;
-	}
-	while (addr < addr_limit) {
-		printf("%.4X: ", addr << 4);
-		for (int x = 0; x < 16; x++) {
-			// need condirional here as well
-			//printf("%.2X ", ppu->oam[mem]);
-			printf("%.2X ", ppu->scanline_oam[mem]);
-			++mem;
+		printf("\n################## PPU OAM SCANLINE ##################\n");
+		if (end_addr > 31) {
+			end_addr = 0x1F;  // keep value between 0-31
 		}
+	}
+	// print header for memory addresses
+	printf("      ");
+	for (int h = 0; h < 16; h++) {
+		printf("%.2X ", (start_addr & 0x0F) + h);
+		// halfway point, print extra space for readability
+		if (h == 7) {
+			printf(" ");
+		}
+	}
+	printf("\n");
+
+	// acutally perform hexdump here
+	while (start_addr < end_addr) {
+		printf("%.4X: ", start_addr);
+		for (int x = 0; x < 16; x++) {
+			if ((start_addr + x) > end_addr) {
+				// early stop
+				break;
+			}
+			if (ppu_mem == VRAM) {
+				printf("%.2X ", ppu->vram[start_addr + x]);
+			} else if (ppu_mem == PRIMARY_OAM) {
+				printf("%.2X ", ppu->oam[start_addr + x]);
+			} else if (ppu_mem == SECONDARY_OAM) {
+				printf("%.2X ", ppu->scanline_oam[start_addr + x]);
+			}
+			// halfway point, print extra space for readability
+			if (x == 7) {
+				printf(" ");
+			}
+		}
+		start_addr += 16;
 		printf("\n");
-		++addr;
 	}
 }
 
