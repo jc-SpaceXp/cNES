@@ -57,14 +57,14 @@ uint32_t pixels[256 * 240];
 // Static prototype functions
 static void read_2002(Cpu6502* cpu);
 static void read_2007(Cpu6502* cpu);
-static void write_2000(uint8_t data, Cpu6502* cpu); // OAM_ADDR
-static void write_2003(uint8_t data, Cpu6502* cpu); // OAM_ADDR
-static void write_2004(uint8_t data, Cpu6502* cpu); // OAM_DATA
-static void write_2005(uint8_t data, Cpu6502* cpu); // PPU_SCROLL
-static void write_2006(uint8_t data, Cpu6502* cpu); // PPU_ADDR
-static void write_2007(uint8_t data, Cpu6502* cpu); // PPU_DATA
-static void write_4014(uint8_t data, Cpu6502* cpu); // DMA_DATA
-static uint8_t ppu_vram_addr_inc(Cpu6502* cpu);
+static void write_2000(const uint8_t data, Cpu6502* cpu); // OAM_ADDR
+static void write_2003(const uint8_t data, Cpu6502* cpu); // OAM_ADDR
+static void write_2004(const uint8_t data, Cpu6502* cpu); // OAM_DATA
+static void write_2005(const uint8_t data, Cpu6502* cpu); // PPU_SCROLL
+static void write_2006(const uint8_t data, Cpu6502* cpu); // PPU_ADDR
+static void write_2007(const uint8_t data, Cpu6502* cpu); // PPU_DATA
+static void write_4014(const uint8_t data, Cpu6502* cpu); // DMA_DATA
+static uint8_t ppu_vram_addr_inc(const Cpu6502* cpu);
 
 
 Ppu2C02* ppu_init(CpuPpuShare* cp)
@@ -137,7 +137,7 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 }
 
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
-void ppu_reset(int start, Ppu2C02* p, Cpu6502* cpu)
+void ppu_reset(int start, Ppu2C02* p, const Cpu6502* cpu)
 {
 	// remove p->reset_1 and 2 and isntead use a static variable
 	if (start && !p->reset_1 && !p->reset_2) {
@@ -175,7 +175,7 @@ void debug_ppu_regs(Cpu6502* cpu)
 	printf("3F01: %.2X\n\n", read_from_cpu(cpu, 0x3F01));
 }
 
-void ppu_mem_16_byte_viewer(Ppu2C02* ppu, unsigned start_addr, unsigned total_rows)
+void ppu_mem_16_byte_viewer(const Ppu2C02* ppu, unsigned start_addr, const unsigned total_rows)
 {
 	printf("\n##################### PPU MEM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
@@ -195,7 +195,7 @@ void ppu_mem_16_byte_viewer(Ppu2C02* ppu, unsigned start_addr, unsigned total_ro
 
 
 // fix like above
-void OAM_viewer(Ppu2C02* ppu, enum PpuMemoryTypes ppu_mem)
+void OAM_viewer(const Ppu2C02* ppu, const enum PpuMemoryTypes ppu_mem)
 {
 	printf("\n##################### PPU OAM #######################\n");
 	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
@@ -220,7 +220,7 @@ void OAM_viewer(Ppu2C02* ppu, enum PpuMemoryTypes ppu_mem)
 	}
 }
 
-uint8_t read_ppu_reg(uint16_t addr, Cpu6502* cpu)
+uint8_t read_ppu_reg(const uint16_t addr, Cpu6502* cpu)
 {
 	uint8_t ret;
 	switch (addr) {
@@ -243,7 +243,7 @@ uint8_t read_ppu_reg(uint16_t addr, Cpu6502* cpu)
 }
 
 /* CPU uses this function */
-void delay_write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
+void delay_write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->buffer_write = true;
 	cpu->cpu_ppu_io->buffer_counter = 2;
@@ -258,7 +258,7 @@ void delay_write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
 	cpu->cpu_ppu_io->ppu_status |= (data & 0x1F);
 }
 
-void write_ppu_reg(uint16_t addr, uint8_t data, Cpu6502* cpu)
+void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 {
 	switch (addr) {
 	case (0x2000):
@@ -391,24 +391,24 @@ static void read_2007(Cpu6502* cpu)
 }
 
 /* Write Functions */
-static void write_2000(uint8_t data, Cpu6502* cpu)
+static void write_2000(const uint8_t data, Cpu6502* cpu)
 {
 	*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x0C00; /* Clear bits to be set */
 	*(cpu->cpu_ppu_io->vram_tmp_addr) |= (data & 0x03) << 10;
 }
 
-static inline void write_2003(uint8_t data, Cpu6502* cpu)
+static inline void write_2003(const uint8_t data, Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->oam_addr = data;
 }
 
-static void write_2004(uint8_t data, Cpu6502* cpu)
+static void write_2004(const uint8_t data, Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] = data;
 	++cpu->cpu_ppu_io->oam_addr;
 }
 
-static void write_2005(uint8_t data, Cpu6502* cpu)
+static void write_2005(const uint8_t data, Cpu6502* cpu)
 {
 	// Valid address = 0x0000 to 0x3FFF
 	if (!cpu->cpu_ppu_io->write_toggle) {
@@ -426,7 +426,7 @@ static void write_2005(uint8_t data, Cpu6502* cpu)
 }
 
 
-static void write_2006(uint8_t data, Cpu6502* cpu)
+static void write_2006(const uint8_t data, Cpu6502* cpu)
 {
 	// Valid address = 0x0000 to 0x3FFF
 	if (!cpu->cpu_ppu_io->write_toggle) {
@@ -442,14 +442,14 @@ static void write_2006(uint8_t data, Cpu6502* cpu)
 }
 
 
-static void write_2007(uint8_t data, Cpu6502* cpu)
+static void write_2007(const uint8_t data, Cpu6502* cpu)
 {
 	write_vram(data, cpu);
 	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
 }
 
 
-void write_4014(uint8_t data, Cpu6502* cpu)
+void write_4014(const uint8_t data, Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->dma_pending = true;
 	cpu->base_addr = data;
@@ -459,7 +459,7 @@ void write_4014(uint8_t data, Cpu6502* cpu)
  * PPU_CTRL
  */
 // use CPU to access shared CPU/PPU space as this is needed in CPU writes
-static uint8_t ppu_vram_addr_inc(Cpu6502* cpu)
+static uint8_t ppu_vram_addr_inc(const Cpu6502* cpu)
 {
 	if (!(cpu->cpu_ppu_io->ppu_ctrl & 0x04)) {
 		return 1;
@@ -468,7 +468,7 @@ static uint8_t ppu_vram_addr_inc(Cpu6502* cpu)
 	}
 }
 
-static uint16_t ppu_base_nt_address(Ppu2C02* p)
+static uint16_t ppu_base_nt_address(const Ppu2C02* p)
 {
 	switch(p->cpu_ppu_io->ppu_ctrl & 0x03) {
 	case 0:
@@ -485,7 +485,7 @@ static uint16_t ppu_base_nt_address(Ppu2C02* p)
 }
 
 
-static uint16_t ppu_base_pt_address(Ppu2C02* p)
+static uint16_t ppu_base_pt_address(const Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 4) & 0x01) {
 		return 0x1000;
@@ -494,7 +494,7 @@ static uint16_t ppu_base_pt_address(Ppu2C02* p)
 	}
 }
 
-static uint16_t ppu_sprite_pattern_table_addr(Ppu2C02* p)
+static uint16_t ppu_sprite_pattern_table_addr(const Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 3) & 0x01) {
 		return 0x1000;
@@ -503,7 +503,7 @@ static uint16_t ppu_sprite_pattern_table_addr(Ppu2C02* p)
 	}
 }
 
-static uint8_t ppu_sprite_height(Ppu2C02* p)
+static uint8_t ppu_sprite_height(const Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
 		return 16; /* 8 x 16 */
@@ -516,7 +516,7 @@ static uint8_t ppu_sprite_height(Ppu2C02* p)
  * PPU_MASK
  */
 
-static bool ppu_show_bg(Ppu2C02* p)
+static bool ppu_show_bg(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x08) {
 		return true;
@@ -526,7 +526,7 @@ static bool ppu_show_bg(Ppu2C02* p)
 }
 
 
-static bool ppu_show_sprite(Ppu2C02* p)
+static bool ppu_show_sprite(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x10) {
 		return true;
@@ -535,7 +535,7 @@ static bool ppu_show_sprite(Ppu2C02* p)
 	}
 }
 
-static bool ppu_mask_left_8px_bg(Ppu2C02* p)
+static bool ppu_mask_left_8px_bg(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x02) {
 		return false;
@@ -544,7 +544,7 @@ static bool ppu_mask_left_8px_bg(Ppu2C02* p)
 	}
 }
 
-static bool ppu_mask_left_8px_sprite(Ppu2C02* p)
+static bool ppu_mask_left_8px_sprite(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x04) {
 		return false;
@@ -553,7 +553,7 @@ static bool ppu_mask_left_8px_sprite(Ppu2C02* p)
 	}
 }
 
-static bool ppu_show_greyscale(Ppu2C02* p)
+static bool ppu_show_greyscale(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x01) {
 		return true;
@@ -566,7 +566,7 @@ static bool ppu_show_greyscale(Ppu2C02* p)
  * PPU_STATUS
  */
 
-static bool sprite_overflow_occured(Ppu2C02* p)
+static bool sprite_overflow_occured(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_status & 0x20) {
 		return true;
@@ -703,7 +703,7 @@ static void render_pixel(Ppu2C02 *p)
 	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
 }
 
-static void ppu_transfer_oam(Ppu2C02* p, unsigned index)
+static void ppu_transfer_oam(Ppu2C02* p, const unsigned index)
 {
 	for (int i = 0; i < 4; i++) {
 		p->scanline_oam[(p->sprites_found * 4) + i] = p->oam[(index * 4) + i]; // Copy remaining bytes
@@ -854,7 +854,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
  * RENDERING             *
  *************************/
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, bool no_logging)
+void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logging)
 {
 #ifdef __DEBUG__
 	if (!no_logging && p->cpu_ppu_io->write_debug) {

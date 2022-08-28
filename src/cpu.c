@@ -33,11 +33,11 @@ static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr);
 static void write_4016(uint8_t data, Cpu6502* cpu);
 static unsigned read_4016(Cpu6502* cpu);
 static unsigned read_4017(Cpu6502* cpu);
-static void cpu_debugger(Cpu6502* cpu);  // warning unused function, currently hidden behind conditional execution
-static void log_cpu_info(Cpu6502* cpu, bool no_logging);  // warning unused function, currently hidden behind conditional execution
+static void cpu_debugger(const Cpu6502* cpu);  // warning unused function, currently hidden behind conditional execution
+static void log_cpu_info(Cpu6502* cpu, const bool no_logging);  // warning unused function, currently hidden behind conditional execution
 static void fetch_opcode(Cpu6502* cpu);
-static bool fixed_cycles_on_store(Cpu6502* cpu);
-static bool page_cross_occurs(unsigned low_byte, unsigned offset);
+static bool fixed_cycles_on_store(const Cpu6502* cpu);
+static bool page_cross_occurs(const unsigned low_byte, const unsigned offset);
 static void update_flag_z(Cpu6502* cpu, uint8_t result);
 static void update_flag_n(Cpu6502* cpu, uint8_t result);
 static void update_flag_v(Cpu6502* cpu, bool overflow);
@@ -123,7 +123,7 @@ static void execute_BRK(Cpu6502* cpu);
 static void execute_NOP(Cpu6502* cpu);
 static void execute_IRQ(Cpu6502* cpu);  // warning unused function, needed later for audio or other mappers I believe
 static void execute_NMI(Cpu6502* cpu);
-static void execute_DMA(Cpu6502* cpu, bool no_logging);
+static void execute_DMA(Cpu6502* cpu, const bool no_logging);
 
 // 0 denotes illegal op codes
 static const uint8_t max_cycles_opcode_lut[256] = {
@@ -377,7 +377,7 @@ void cpu_mem_16_byte_viewer(Cpu6502* cpu, unsigned start_addr, unsigned total_ro
 	}
 }
 
-void clock_cpu(Cpu6502* cpu, bool no_logging)
+void clock_cpu(Cpu6502* cpu, const bool no_logging)
 {
 	++cpu->cycle;
 	--cpu->instruction_cycles_remaining;
@@ -446,7 +446,7 @@ void clock_cpu(Cpu6502* cpu, bool no_logging)
 }
 
 // true if branch not taken based on opcode
-static bool branch_not_taken(Cpu6502* cpu)
+static bool branch_not_taken(const Cpu6502* cpu)
 {
 	bool result;
 	switch (cpu->opcode) {
@@ -483,7 +483,7 @@ static bool branch_not_taken(Cpu6502* cpu)
 	return result;
 }
 
-static void cpu_debugger(Cpu6502* cpu)
+static void cpu_debugger(const Cpu6502* cpu)
 {
 	switch(cpu->address_mode) {
 	case ABS:
@@ -562,7 +562,7 @@ static void cpu_debugger(Cpu6502* cpu)
 	strcat(instruction, end); // execute_* functions provide the instruction string
 }
 
-static void log_cpu_info(Cpu6502* cpu, bool no_logging)
+static void log_cpu_info(Cpu6502* cpu, const bool no_logging)
 {
 	if (!no_logging) {
 		printf("%-6.4X ", cpu->old_PC);
@@ -592,12 +592,12 @@ void update_cpu_info(Cpu6502* cpu)
 	cpu->old_cycle = cpu->cycle;
 }
 
-static bool page_cross_occurs(unsigned low_byte, unsigned offset)
+static bool page_cross_occurs(const unsigned low_byte, const unsigned offset)
 {
 	return ((low_byte + offset) > 0xFF) ? 1 : 0;
 }
 
-static void stack_push(Cpu6502* cpu, uint8_t value)
+static void stack_push(Cpu6502* cpu, const uint8_t value)
 {
 	cpu->mem[SP_START + cpu->stack] = value;
 	--cpu->stack; // automatically wraps around (8-bit variable)
@@ -623,7 +623,7 @@ static void fetch_opcode(Cpu6502* cpu)
 
 // Store operations can't skip cycles and are always fixed length unlike their load counterparts
 // before skipping cycles check whether that is correct using this function
-static bool fixed_cycles_on_store(Cpu6502* cpu)
+static bool fixed_cycles_on_store(const Cpu6502* cpu)
 {
 	bool result;
 	switch(cpu->opcode) {
@@ -641,6 +641,7 @@ static bool fixed_cycles_on_store(Cpu6502* cpu)
 }
 
 
+// not a const pointer as the function pointer that uses this is non-const
 static void bad_op_code(Cpu6502* cpu)
 {
 	printf("invalid opcode: error 404: %.2X @ %.4X \n", cpu->opcode, cpu->PC);
@@ -1071,7 +1072,7 @@ static void decode_RTS(Cpu6502* cpu)
 /* Bits : 7 ----------> 0 */
 /* Flags: N V - - D I Z C */
 
-static void update_flag_z(Cpu6502* cpu, uint8_t result)
+static void update_flag_z(Cpu6502* cpu, const uint8_t result)
 {
 	/* Zero Flag Test */
 	if (!result) {
@@ -1082,7 +1083,7 @@ static void update_flag_z(Cpu6502* cpu, uint8_t result)
 }
 
 
-static void update_flag_n(Cpu6502* cpu, uint8_t result)
+static void update_flag_n(Cpu6502* cpu, const uint8_t result)
 {
 	/* Negative Flag Test */
 	if (result >> 7) {
@@ -1094,7 +1095,7 @@ static void update_flag_n(Cpu6502* cpu, uint8_t result)
 
 
 /* Parameters = 2 binary operands and then the result */
-static void update_flag_v(Cpu6502* cpu, bool overflow)
+static void update_flag_v(Cpu6502* cpu, const bool overflow)
 {
 	/* Overflow Flag Test */
 	if (overflow) {
@@ -1105,7 +1106,7 @@ static void update_flag_v(Cpu6502* cpu, bool overflow)
 }
 
 
-static void update_flag_c(Cpu6502* cpu, int carry_out)
+static void update_flag_c(Cpu6502* cpu, const int carry_out)
 {
 	if (carry_out) { // Carry out = result >> 8 (9th bit in ADC / SBC calc
 		cpu->P |= FLAG_C; /* Set C */
@@ -2026,7 +2027,7 @@ static void execute_NMI(Cpu6502* cpu)
 }
 
 
-static void execute_DMA(Cpu6502* cpu, bool no_logging)
+static void execute_DMA(Cpu6502* cpu, const bool no_logging)
 {
 	static bool first_cycle = true;
 	if (first_cycle) {

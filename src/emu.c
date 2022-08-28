@@ -19,7 +19,7 @@
 #define LEFT_BUTTON   0x40U
 #define RIGHT_BUTTON  0x80U
 
-void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Display* nes_screen, bool no_logging)
+void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Display* nes_screen, const bool no_logging)
 {
 	// 3 : 1 PPU to CPU ratio
 	clock_cpu(cpu, no_logging);
