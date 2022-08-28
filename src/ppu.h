@@ -24,7 +24,7 @@ void ppu_reset(int start, Ppu2C02* p, const Cpu6502* cpu); /* Emulates reset/war
 /* Debug Functions */
 void debug_ppu_regs(Cpu6502* cpu);
 void ppu_mem_16_byte_viewer(const Ppu2C02* PPU, unsigned start_addr, const unsigned total_rows);
-void OAM_viewer(const Ppu2C02* PPU, const enum PpuMemoryTypes ppu_mem); // rename to VRAM viewer?
+void oam_viewer(const Ppu2C02* PPU, const enum PpuMemoryTypes ppu_mem);
 
 /* Read & Write Functions */
 uint8_t read_ppu_reg(const uint16_t addr, Cpu6502* cpu); /* For addresses exposed to CPU */
