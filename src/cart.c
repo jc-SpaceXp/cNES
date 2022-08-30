@@ -177,12 +177,12 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 
 	/* Load trainer into member variable */
 	if (cart->trainer.size) {
-		cart->trainer.data = malloc(cart->prg_rom.size);
+		cart->trainer.data = malloc(cart->trainer.size);
 		if (!cart->trainer.data) {
 			fclose(rom);
 			return 8;
 		}
-		fread(cart->trainer.data, 1, 512, rom);
+		fread(cart->trainer.data, 1, 512, rom); // size is always 512 bytes if present
 	}
 
 	/* Loading data into PRG_ROM */
