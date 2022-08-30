@@ -32,6 +32,7 @@ Cartridge* cart_init(void)
 	Cartridge* cart = malloc(sizeof(Cartridge));
 	if (!cart) {
 		fprintf(stderr, "Failed to allocate memory for Cartridge\n");
+		return cart; // NULL pointer
 	}
 
 	cart->header = HEADERLESS;
