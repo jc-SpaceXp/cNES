@@ -242,9 +242,6 @@ typedef struct {
 	uint16_t nt_addr_next; /* Next tile address for pixels 9 -16 in pipeline */
 	uint16_t nt_addr_current; /* Current tile address for pixels 1 - 8 in pipeline */
 
-	bool reset_1;
-	bool reset_2;
-
 	unsigned mirroring; // 0 = Horz, 1 = vert, 4 = 4 screen
 
 	// lookahead hit

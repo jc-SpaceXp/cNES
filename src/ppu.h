@@ -20,7 +20,6 @@ enum PpuMemoryTypes {
 
 /* Initialise Function */
 Ppu2C02* ppu_init(CpuPpuShare* cp);
-void ppu_reset(int start, Ppu2C02* p, const Cpu6502* cpu); /* Emulates reset/warm-up of PPU */
 
 /* Debug Functions */
 void debug_ppu_regs(Cpu6502* cpu);

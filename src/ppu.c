@@ -87,8 +87,6 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 	ppu->cpu_ppu_io->early_disable_mask = false;
 	ppu->cpu_ppu_io->early_enable_mask = false;
 
-	ppu->reset_1 = false;
-	ppu->reset_2 = false;
 	ppu->cycle = 27;
 	ppu->scanline = 0;
 	ppu->oam_read_buffer = 0;
@@ -137,19 +135,18 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 }
 
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
-void ppu_reset(int start, Ppu2C02* p, const Cpu6502* cpu)
+static void ppu_vblank_warmup_seq(Ppu2C02* p, const Cpu6502* cpu)
 {
-	// remove p->reset_1 and 2 and isntead use a static variable
-	if (start && !p->reset_1 && !p->reset_2) {
-		p->cpu_ppu_io->ppu_status &= ~(0x80);  // clear VBL flag if set
-		p->reset_1 = true;
-	} else if (p->reset_1 && (cpu->cycle >= 27383)) {
+	static unsigned count = 0;
+	if (!count) {
+		p->cpu_ppu_io->ppu_status &= ~0x80;  // clear VBL flag if set
+		++count;
+	} else if ((count == 1) && cpu->cycle >= 27383) {
 		p->cpu_ppu_io->ppu_status |= 0x80;
-		p->reset_1 = false;
-		p->reset_2 = true;
-	} else if (p->reset_2 && (cpu->cycle >= 57164)) {
+		++count;
+	} else if ((count == 2) && cpu->cycle >= 57164) {
 		p->cpu_ppu_io->ppu_status |= 0x80;
-		p->reset_2 = false;  // changed from true
+		++count;
 	}
 }
 
@@ -891,6 +888,8 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 		}
 	}
 
+	ppu_vblank_warmup_seq(p, cpu);
+
 	// cpu is clocked first, ppu must be updated after the ppu runs its clock
 	// as the ppu is supposed to be running at the same time the write to the ppu reg occurs
 	// this means a buffer system needs to be implemented to preserve this behaviour
@@ -975,10 +974,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 		}
 	}
 
-
-#ifdef __RESET__
-	ppu_reset(1, p, cpu);
-#endif
 
 	if (ppu_show_bg(p) || ppu_show_sprite(p)) {
 		// Sprites are evaluated for either BG or sprite rendering
