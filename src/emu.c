@@ -117,7 +117,7 @@ int main(int argc, char** argv)
 		goto program_exit;
 	}
 
-	if (load_cart(cart, filename, cpu, ppu)) {
+	if (parse_nes_cart_file(cart, filename, cpu, ppu)) {
 		goto program_exit;
 	}
 

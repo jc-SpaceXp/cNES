@@ -45,7 +45,7 @@ Cartridge* cart_init(void)
 static uint16_t concat_lsb_and_msb_to_16_bit_val(const uint8_t lsb, const uint8_t msb);
 static void log_cart_info(const Cartridge* cart, const char* filename, const Cpu6502* cpu, const Ppu2C02* ppu, const uint8_t* header_bytes);
 
-int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
+int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	uint8_t header[16];
 	uint8_t mapper;
