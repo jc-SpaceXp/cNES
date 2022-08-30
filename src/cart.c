@@ -4,6 +4,29 @@
 #include <string.h>
 #include <stdio.h>
 
+// iNES/NES2.0 common header masks and results (for 6th byte of header)
+#define NES2_IDENTIFIER_MASK       0x0CU
+#define PPU_4_SCREEN_MASK          0x08U
+#define PPU_VERT_MIRROR_MASK       0x01U
+#define NON_VOLATILE_MEM_MASK      0x02U
+#define TRAINER_MASK               0x04U
+#define NES2_IDENTIFIER            0x08U
+
+// iNES header masks
+#define INES_BAD_HEADER_9_MASK     0xFEU   // 9th byte should only contain a 1 or 0
+#define INES_PAL_MASK              0x01U   // If the result of the mask is zero it is a NTSC system
+
+// NES2.0 header masks and results
+#define NES2_PRG_ROM_MSB_MASK      0x0FU   // upper 4 bits of 12 bit value
+#define NES2_CHR_ROM_MSB_MASK      0xF0U   // upper 4 bits of 12 bit value
+#define NES2_PRG_ROM_EXPONENT_SIZE 0x0FU
+#define NES2_CHR_ROM_EXPONENT_SIZE 0xF0U
+#define NES2_MULT_VAL_MASK         0x03U
+#define NES2_EXPONENT_VAL_MASK     0xC0U
+#define NES2_REGION_MASK           0x03U   // If the result of the mask is zero it is a NTSC system
+#define NES2_PAL_REGION            0x01U
+#define VOLATILE_RAM_SHIFT_MASK    0x0FU   // represents non-volatile shift counts for CHR and PRG RAM
+
 Cartridge* cart_init(void)
 {
 	Cartridge* cart = malloc(sizeof(Cartridge));
@@ -58,10 +81,10 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 		// bytes 10-15 should be filled w/ 0's however people often write in this space
 		// e.g. their name at the end of the header
 		cart->header = INES;
-		if (header[9] & 0xFE) { // 9th byte should only contain a 1 or 0
+		if (header[9] & INES_BAD_HEADER_9_MASK) { // 9th byte should only contain a 1 or 0
 			cart->header = BAD_INES;  // excludes nes files w/ data in the unused bytes
 		}
-		if ((header[7] & 0x0C) == 0x08) {
+		if ((header[7] & NES2_IDENTIFIER_MASK) == NES2_IDENTIFIER) {
 			cart->header = NES_2;
 		}
 	}
@@ -82,7 +105,7 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 	cart->prg_rom.size = 16 * (KiB) * header[4];
 	cart->chr.rom_size = 8  * (KiB) * header[5]; // Pattern table data (if any)
 	cart->chr.ram_size = 8  * (KiB) * !header[5];
-	mapper = (header[7] & 0xF0) | ((header[6] & 0xF0) >> 4);
+	mapper = (header[7] & 0xF0) | ((header[6] & 0xF0) >> 4); // upper-half byte represents the mapper byte number from header bytes 6 and 7
 	cart->prg_ram.size = 8  * (KiB) * header[8];
 	if (!cart->prg_ram.size) {
 		// a zero value implies 8 K for compatability
@@ -91,60 +114,60 @@ int load_cart(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
 	}
 	cpu->cpu_mapper_io->mapper_number = mapper;
 
-	/* Byte 6 */
-	if (header[6] & 0x08) {
+	/* Byte 6, common for both iNES and NES2.0 */
+	if (header[6] & PPU_4_SCREEN_MASK) {
 		ppu->mirroring = 4;
-	} else if (header[6] & 0x01) {
+	} else if (header[6] & PPU_VERT_MIRROR_MASK) {
 		ppu->mirroring = 1;
-	} else if (!(header[6] & 0x01)) {
+	} else if (!(header[6] & PPU_VERT_MIRROR_MASK)) {
 		ppu->mirroring = 0;
 	}
 
-	if (header[6] & 0x02) {
+	if (header[6] & NON_VOLATILE_MEM_MASK) { // "Battery bit"
 		cart->non_volatile_mem = true;
 	}
 
-	if (header[6] & 0x04) {
+	if (header[6] & TRAINER_MASK) {
 		cart->trainer.size = 512;
 	}
 
 	/* Byte 9 */
-	if (header[9] & 0x01) {
+	if (header[9] & INES_PAL_MASK) {
 		cart->video_mode = PAL;
 	} else {
 		cart->video_mode = NTSC;
 	}
 
 	if (cart->header == NES_2) {
-		cart->prg_rom.size = 16 * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[4], header[9] & 0x0F);
-		cart->chr.rom_size = 8  * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[5], header[9] & 0xF0);
+		cart->prg_rom.size = 16 * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[4], header[9] & NES2_PRG_ROM_MSB_MASK);
+		cart->chr.rom_size = 8  * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[5], header[9] & NES2_CHR_ROM_MSB_MASK);
 
 		// Calculate exponent of PRG ROM if necessary
-		if ((header[9] & 0x0F) == 0x0F) {
-			unsigned multiplier = (header[4] & 0x03) * 2 + 1;
-			cart->prg_rom.size = (1 << (header[4] & 0xC0)) * multiplier;
+		if ((header[9] & NES2_PRG_ROM_MSB_MASK) == NES2_PRG_ROM_EXPONENT_SIZE) {
+			unsigned multiplier = (header[4] & NES2_MULT_VAL_MASK) * 2 + 1;
+			cart->prg_rom.size = (1 << (header[4] & NES2_EXPONENT_VAL_MASK)) * multiplier;
 		}
 
 		// Calculate exponent of CHR ROM if necessary
-		if ((header[9] & 0xF0) == 0xF0) {
-			unsigned multiplier = (header[5] & 0x03) * 2 + 1;
-			cart->chr.rom_size = (1 << (header[5] & 0xC0)) * multiplier;
+		if ((header[9] & NES2_CHR_ROM_MSB_MASK) == NES2_CHR_ROM_EXPONENT_SIZE) {
+			unsigned multiplier = (header[5] & NES2_MULT_VAL_MASK) * 2 + 1;
+			cart->chr.rom_size = (1 << (header[5] & NES2_EXPONENT_VAL_MASK)) * multiplier;
 		}
 		// Byte 6 is the same as before
 		cpu->cpu_mapper_io->mapper_number |= (header[8] & 0x0F) << 8; // an extra 4 bits are added to the mapper number
 		// will add submapper number later
 		// Byte 9, already processed for the ROM sizes
 		cart->prg_ram.size = 0;
-		unsigned shift_count = header[10] & 0x0F;
+		unsigned shift_count = header[10] & VOLATILE_RAM_SHIFT_MASK;
 		if (shift_count) {  cart->prg_ram.size = 64 << shift_count; }
 
 		cart->chr.ram_size = 0;
-		shift_count = header[11] & 0x0F;
+		shift_count = header[11] & VOLATILE_RAM_SHIFT_MASK;
 		if (shift_count) {  cart->chr.ram_size = 64 << shift_count; }
 
 		// so far only processing PAL/NTSC
 		cart->video_mode = NTSC;
-		if ((header[12] & 0x03) == 0x01) {
+		if ((header[12] & NES2_REGION_MASK) == NES2_PAL_REGION) {
 			cart->video_mode = PAL;
 		}
 	}
