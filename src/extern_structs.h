@@ -67,7 +67,7 @@ typedef struct {
 	bool is_upper_fixed;
 	bool is_lower_fixed;
 
-	bool disable_prg_ram;
+	bool enable_prg_ram;
 } CpuMapperShare;
 
 // Shared CPU/PPU struct

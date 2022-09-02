@@ -222,13 +222,15 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 					set_prg_rom_bank_2(cpu, prg_rom_banks - 1);
 				}
 			}
-			// done this section wrong
-			cpu->cpu_mapper_io->disable_prg_ram = (buffer & 0x10) >> 4;
-			if (cpu->cpu_mapper_io->disable_prg_ram == 0) {
-				//memcpy(&cpu->mem[0x6000], cpu->cpu_mapper_io->prg_rom->data, 8 * KiB);
-			} // otherwise read only, should return open bus when read
+			cpu->cpu_mapper_io->enable_prg_ram = !((buffer & 0x10) >> 4);
 		}
 		write_count = 0;
 		buffer = 0;
+	}
+
+	// allow writes to PRG RAM / WRAM (CPU: 0x6000 to 0x7FFF) if enabled through reg 3 previously
+	// if disabled you can't read/write to this space (reads will return open bus behaviour)
+	if (cpu->cpu_mapper_io->enable_prg_ram && (addr >= 0x6000) && (addr < 0x8000)) {
+		cpu->mem[addr] = val;
 	}
 }

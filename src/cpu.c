@@ -202,7 +202,7 @@ CpuMapperShare* cpu_mapper_init(Cartridge* cart)
 
 	i->is_upper_fixed = false;
 	i->is_lower_fixed = false;
-	i->disable_prg_ram = true;
+	i->enable_prg_ram = false;
 
 	return i;
 }
