@@ -1053,8 +1053,8 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					p->at_current = p->at_next;
 					p->at_next = p->at_latch;
 					/* Load latched values into upper byte of shift regs */
-					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
-					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
+					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << (8 - p->fine_x));
+					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << (8 - p->fine_x));
 					/* Used for palette calculations */
 					p->nt_addr_current = p->nt_addr_next;
 					p->nt_addr_next = p->nt_addr_tmp;
@@ -1084,8 +1084,8 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					/* Load latched values into upper byte of shift regs */
 					p->pt_hi_shift_reg >>= 8;
 					p->pt_lo_shift_reg >>= 8;
-					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
-					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
+					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << (8 - p->fine_x));
+					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << (8 - p->fine_x));
 					p->at_current = p->at_next; // at_current is 1st loaded w/ garbage
 					p->at_next = p->at_latch;
 					p->nt_addr_current = p->nt_addr_next;
@@ -1144,8 +1144,8 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					/* Load latched values into upper byte of shift regs */
 					p->pt_hi_shift_reg >>= 8;
 					p->pt_lo_shift_reg >>= 8;
-					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
-					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
+					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << (8 - p->fine_x));
+					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << (8 - p->fine_x));
 					p->at_current = p->at_next; // at_current is 1st loaded w/ garbage
 					p->at_next = p->at_latch;
 					p->nt_addr_current = p->nt_addr_next;
