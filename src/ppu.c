@@ -100,6 +100,10 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 	ppu->pt_hi_shift_reg = 0;
 	ppu->pt_lo_latch = 0;
 	ppu->pt_hi_latch = 0;
+	ppu->at_lo_shift_reg = 0;
+	ppu->at_hi_shift_reg = 0;
+	ppu->at_current = 0;
+	ppu->nt_addr_current = 0;
 
 	/* Sprite stuff */
 	ppu->sprites_found = 0;
@@ -687,29 +691,69 @@ static void fetch_pt_hi(Ppu2C02 *p)
 	p->pt_hi_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
 }
 
+static void fill_attribute_shift_reg(Ppu2C02 *p, uint16_t nametable_addr, uint8_t attribute_data)
+{
+	unsigned attr_bits = 0;
+	// Right quadrants (CoarseX / 2) 0x... XX XXXX (select 0x02 bit)
+	if (nametable_addr & 0x02) {
+		// Bottom quadrants (CoarseY / 2) 0x... NNYY YYYX xxxx (select 0x04 bit)
+		if (nametable_addr & 0x40) {
+			attr_bits = attribute_data >> 6; // Bottom right
+		} else {
+			attr_bits = attribute_data >> 2; // Top right
+		}
+	} else { // Left quadrants
+		if (nametable_addr & 0x40) {
+			attr_bits = attribute_data >> 4; // Bottom left
+		} else {
+			attr_bits = attribute_data; // Top left
+		}
+	}
+
+	// Clear registers
+	p->at_hi_shift_reg = 0;
+	p->at_lo_shift_reg = 0;
+
+	// Separate 2 bit val into lo and hi shift registers
+	// Shift registers contain repeated bits of the lo/hi bit
+	// as the shift register represents one tile
+	for (unsigned i = 0; i < 8; i++) {
+		p->at_hi_shift_reg |= ((attr_bits & 0x02) >> 1) << i;
+		p->at_lo_shift_reg |= (attr_bits & 0x01) << i;
+	}
+}
+
+
+/* 3-bit number for select_lines, which selects input bits 0 through 7
+ * Bit mask (1 << select lines) to get the correct input bit
+ * Then shift down to the lsb
+ * Intended to select a specific bit from the ppu's internal shift registers
+ * when scrolling using fine_x to select the correct bit during rendering
+ */
+static unsigned eight_to_one_mux(uint16_t input, unsigned select_lines)
+{
+	return (input & (1 << select_lines)) >> select_lines;
+}
 
 static void render_pixel(Ppu2C02 *p)
 {
-	unsigned bg_palette_addr;
-	/* Defines the which colour palette to use */
-	if (p->nt_addr_current & 0x02) { // Right quadrants
-		if (p->nt_addr_current & 0x40) {
-			bg_palette_addr = p->at_current >> 6; // Bottom right
-		} else {
-			bg_palette_addr = p->at_current >> 2; // Top right
-		}
-	} else { // Left quadrants
-		if (p->nt_addr_current & 0x40) {
-			bg_palette_addr = p->at_current >> 4; // Bottom left
-		} else {
-			bg_palette_addr = p->at_current; // Top left
-		}
-	}
-	bg_palette_addr &= 0x03;
+	// We don't use fine_x to mux the attribute shift regs as when
+	// we shift out the attribute shift registers the fine_x mux
+	// will lead to a palette address of 3F00 as the upper bits
+	// hold 0 and the mux will select those incorrect bits
+	// Instead we reload the shift registers with new attribute data
+	// when the fine_x will select a new tile to render e.g. moving from
+	// pixels 1-8 in the pipeline to 8-16
+	// They are then reloaded evey 8 cycles after that
+	// (alternatively you can mux w/ fine_x as long as you don't shift
+	// out the attribute shift registers)
+	unsigned bg_palette_addr = (eight_to_one_mux(p->at_hi_shift_reg, 0) << 1)
+	                         |  eight_to_one_mux(p->at_lo_shift_reg, 0);
 	bg_palette_addr <<= 2;
 	bg_palette_addr += 0x3F00; // bg palette mem starts here
 
-	unsigned bg_palette_offset = ((p->pt_hi_shift_reg & 0x01) << 1) | (p->pt_lo_shift_reg & 0x01);
+	unsigned bg_palette_offset = (eight_to_one_mux(p->pt_hi_shift_reg, p->fine_x) << 1)
+	                           |  eight_to_one_mux(p->pt_lo_shift_reg, p->fine_x);
 	if (!bg_palette_offset) {
 		bg_palette_addr = 0x3F00; // Take background colour (transparent)
 	}
@@ -724,6 +768,8 @@ static void render_pixel(Ppu2C02 *p)
 	/* Shift each cycle */
 	p->pt_hi_shift_reg >>= 1;
 	p->pt_lo_shift_reg >>= 1;
+	p->at_hi_shift_reg >>= 1;
+	p->at_lo_shift_reg >>= 1;
 
 	/* Sprite Stuff */
 	unsigned sprite_palette_offset[8] = {0, 0, 0, 0, 0, 0, 0};
@@ -1034,6 +1080,14 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 	if (ppu_show_bg(p)) {
 		if (p->scanline <= 239) { /* Visible scanlines */
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
+				// reload at shift registers when we move onto a new tile
+				// (the original pixels 9-16 in the pipeline)
+				// e.g. if fine_x == 7 then 1 bit of the first tile is rendered
+				// then we reload the shift reg on cycle 1 w/ new attribute data
+				// for the next tile
+				if (!((p->cycle + p->fine_x) % 8)) {
+					fill_attribute_shift_reg(p, p->nt_addr_current, p->at_current);
+				}
 				// BG STUFF
 				switch ((p->cycle - 1) & 0x07) {
 				case 0:
@@ -1050,14 +1104,12 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					break;
 				case 7: /* 8th Cycle */
 					// 8 Shifts should have occured by now, load new data
-					p->at_current = p->at_next;
-					p->at_next = p->at_latch;
 					/* Load latched values into upper byte of shift regs */
-					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << (8 - p->fine_x));
-					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << (8 - p->fine_x));
-					/* Used for palette calculations */
-					p->nt_addr_current = p->nt_addr_next;
-					p->nt_addr_next = p->nt_addr_tmp;
+					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
+					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
+					// Used to fill at shift registers later
+					p->at_current = p->at_latch;
+					p->nt_addr_current = p->vram_addr;
 					// Update Scroll
 					inc_horz_scroll(p);
 					break;
@@ -1073,6 +1125,9 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 				case 0:
 					fetch_nt_byte(p);
 					break;
+				case 1:
+					fill_attribute_shift_reg(p, p->nt_addr_current, p->at_current);
+					break;
 				case 2:
 					fetch_at_byte(p);
 					break;
@@ -1084,12 +1139,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					/* Load latched values into upper byte of shift regs */
 					p->pt_hi_shift_reg >>= 8;
 					p->pt_lo_shift_reg >>= 8;
-					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << (8 - p->fine_x));
-					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << (8 - p->fine_x));
-					p->at_current = p->at_next; // at_current is 1st loaded w/ garbage
-					p->at_next = p->at_latch;
-					p->nt_addr_current = p->nt_addr_next;
-					p->nt_addr_next = p->nt_addr_tmp;
+					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
+					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
+					// Used to fill at shift registers later
+					p->at_current = p->at_latch;
+					p->nt_addr_current = p->vram_addr;
 					break;
 				case 7:
 					// Update Scroll
@@ -1133,6 +1187,9 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 				case 0:
 					fetch_nt_byte(p);
 					break;
+				case 1:
+					fill_attribute_shift_reg(p, p->nt_addr_current, p->at_current);
+					break;
 				case 2:
 					fetch_at_byte(p);
 					break;
@@ -1144,12 +1201,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					/* Load latched values into upper byte of shift regs */
 					p->pt_hi_shift_reg >>= 8;
 					p->pt_lo_shift_reg >>= 8;
-					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << (8 - p->fine_x));
-					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << (8 - p->fine_x));
-					p->at_current = p->at_next; // at_current is 1st loaded w/ garbage
-					p->at_next = p->at_latch;
-					p->nt_addr_current = p->nt_addr_next;
-					p->nt_addr_next = p->nt_addr_tmp;
+					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
+					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
+					// Used to fill at shift registers later
+					p->at_current = p->at_latch;
+					p->nt_addr_current = p->vram_addr;
 					break;
 				case 7:
 					// Update Scroll
