@@ -233,13 +233,13 @@ typedef struct {
 	uint8_t pt_hi_latch;
 	uint16_t pt_lo_shift_reg; /* Stores a 16 pixels in the pipeline - 1st 8 pixels to be rendered are in lowest byte */
 	uint16_t pt_hi_shift_reg;
+	uint8_t at_lo_shift_reg; /* Matches lowest 8 bits for the pattern table shift register */
+	uint8_t at_hi_shift_reg;
 	uint8_t nt_byte; /* NT byte that is rendered 16 PPU cycles later */
 	uint8_t at_latch; /* AT byte that is rendered 16 PPU cycles later */
 	uint8_t at_current; /* AT byte for pixels 1 - 8 in pipeline */
-	uint8_t at_next; /* AT byte for pixels 9 - 16 in pipeline */
 
 	uint16_t nt_addr_tmp; /* Address used to generate nt byte */
-	uint16_t nt_addr_next; /* Next tile address for pixels 9 -16 in pipeline */
 	uint16_t nt_addr_current; /* Current tile address for pixels 1 - 8 in pipeline */
 
 	unsigned mirroring; // 0 = Horz, 1 = vert, 4 = 4 screen
