@@ -743,7 +743,7 @@ static void render_pixel(Ppu2C02 *p)
 	// hold 0 and the mux will select those incorrect bits
 	// Instead we reload the shift registers with new attribute data
 	// when the fine_x will select a new tile to render e.g. moving from
-	// pixels 1-8 in the pipeline to 8-16
+	// pixels 1-8 in the pipeline to 9-16
 	// They are then reloaded evey 8 cycles after that
 	// (alternatively you can mux w/ fine_x as long as you don't shift
 	// out the attribute shift registers)
