@@ -669,13 +669,42 @@ static void fetch_nt_byte(Ppu2C02 *p)
 	p->nt_byte = p->vram[p->nt_addr_tmp];
 }
 
-/* Determines colour palette */
+/* Get correct at byte from vram_addr
+ *
+ * vram_addr byte layout: 0yyy NNYY YYYX XXXX
+ * X is coarse X, Y is coarse Y, N is nametable select, y is fine Y
+ *
+ * vram_addr & 0x0C00 masks the NN bits
+ * NN is either 0 ($2000), 1 ($2400), 2 ($2800), 3 ($2C00)
+ * for 0 attribute table starts @ $23C0, 1 $(27C0), 2 ($2BC0), 3 ($2FC0)
+ * (using the NN mask | 23C0)
+ *
+ * (vram_addr >> 4) & 0x38 becomes: YY YYYY & 0x38 --> YY Y000
+ * This is coarse Y / 4
+ *
+ * (vram_addr >> 2) & 0x07 becomes: XXX & 0x07 -> XXX
+ * This is coarse X / 4
+ *
+ * Corse X and Y are the tile offsets in x/y direction
+ * representing a group of 8 pixels
+ *
+ * These calculations work 1 attribute byte represents a 4x4 tile section
+ * So we increment the attribute address in either the x or y direction once
+ * we've passed 4 tiles in those directions
+ */
 static void fetch_at_byte(Ppu2C02 *p)
 {
 	p->at_latch = p->vram[0x23C0 | (p->vram_addr & 0x0C00) | ((p->vram_addr >> 4) & 0x38) | ((p->vram_addr >> 2) & 0x07)];
 }
 
-/* Lo & Hi determine which index of the colour palette we use (0 to 3) */
+/* nt_byte represents the tile index (the nametable byte reference)
+ * Pattern table of background is either found @ 0x0000 or 0x1000
+ * One tile takes up 16 bytes, e.g. 0x0000 to 0x000F (one byte per row
+ * for lo and hi bits)
+ * Can represent pattern table as 0x0xx0 to 0x0xxF
+ * where xx is the tile index (nt_byte << 4)
+ * Y offset of tile is fine Y represented as a 3 bit value (0 to 7)
+ */
 static void fetch_pt_lo(Ppu2C02 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12);
@@ -684,6 +713,7 @@ static void fetch_pt_lo(Ppu2C02 *p)
 }
 
 
+/* Lo & Hi determine which index of the colour palette we use (0 to 3) */
 static void fetch_pt_hi(Ppu2C02 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12) + 8;
@@ -691,12 +721,20 @@ static void fetch_pt_hi(Ppu2C02 *p)
 	p->pt_hi_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
 }
 
+/* Figure out what quadrant the input address is in and set the correct bits
+ * in the lo and hi bit shift registers
+ *
+ * nametable_addr can either take the vram_addr or the actual nametable address
+ * We ignore the upper bytes of the input so they are essentially the same number
+ * nametable_addr byte layout: ???? ??YY YYYX XXXX
+ * ?? are don't care bits
+ */
 static void fill_attribute_shift_reg(Ppu2C02 *p, uint16_t nametable_addr, uint8_t attribute_data)
 {
 	unsigned attr_bits = 0;
-	// Right quadrants (CoarseX / 2) 0x... XX XXXX (select 0x02 bit)
+	// Right quadrants (CoarseX / 2): YYYX XXXX (select 0x02 bit)
 	if (nametable_addr & 0x02) {
-		// Bottom quadrants (CoarseY / 2) 0x... NNYY YYYX xxxx (select 0x04 bit)
+		// Bottom quadrants (CoarseY / 2): NNYY YYYX XXXX (select 0x04 bit)
 		if (nametable_addr & 0x40) {
 			attr_bits = attribute_data >> 6; // Bottom right
 		} else {
@@ -1090,21 +1128,21 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 				}
 				// BG STUFF
 				switch ((p->cycle - 1) & 0x07) {
-				case 0:
+				case 0: // Cycle 1, 2 (and + 8)
 					fetch_nt_byte(p);
 					break;
-				case 2:
+				case 2: // Cycle 3, 4 (and + 8)
 					fetch_at_byte(p);
 					break;
-				case 4:
+				case 4: // Cycle 5, 6 (and + 8)
 					fetch_pt_lo(p);
 					break;
-				case 6:
+				case 6: // Cycle 7 (and + 8)
 					fetch_pt_hi(p);
 					break;
-				case 7: /* 8th Cycle */
+				case 7: // Cycle 8 (and +8)
 					// 8 Shifts should have occured by now, load new data
-					/* Load latched values into upper byte of shift regs */
+					// Load latched values into upper byte of shift regs
 					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
 					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
 					// Used to fill at shift registers later
@@ -1122,19 +1160,19 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 				p->vram_addr = (p->vram_addr & ~0x041F) | (p->vram_tmp_addr & 0x041F);
 			} else if (p->cycle >= 321 && p->cycle <= 336) { // 1st 16 pixels of next scanline
 				switch ((p->cycle - 1) & 0x07) {
-				case 0:
+				case 0: // Cycle 321 (and + 8)
 					fetch_nt_byte(p);
 					break;
-				case 1:
+				case 1: // Cycle 322 (and +8)
 					fill_attribute_shift_reg(p, p->nt_addr_current, p->at_current);
 					break;
-				case 2:
+				case 2: // Cycle 323, 324 (and +8)
 					fetch_at_byte(p);
 					break;
-				case 4:
+				case 4: // Cycle 325, 326 (and +8)
 					fetch_pt_lo(p);
 					break;
-				case 6:
+				case 6: // Cycle 327 (and +8)
 					fetch_pt_hi(p);
 					/* Load latched values into upper byte of shift regs */
 					p->pt_hi_shift_reg >>= 8;
@@ -1145,7 +1183,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					p->at_current = p->at_latch;
 					p->nt_addr_current = p->vram_addr;
 					break;
-				case 7:
+				case 7: // Cycle 328 (and +8)
 					// Update Scroll
 					inc_horz_scroll(p);
 					break;
@@ -1155,19 +1193,19 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 			// Pre-render scanline
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
 				switch ((p->cycle - 1) & 0x07) {
-				case 0:
+				case 0: // Cycle 256, 257 (and +8)
 					fetch_nt_byte(p);
 					break;
-				case 2:
+				case 2: // Cycle 258, 259 (and +8)
 					fetch_at_byte(p);
 					break;
-				case 4:
+				case 4: // Cycle 260, 261 (and +8)
 					fetch_pt_lo(p);
 					break;
-				case 6:
+				case 6: // Cycle 262 (and +8)
 					fetch_pt_hi(p);
 					break;
-				case 7:
+				case 7: // Cycle 263 (and +8)
 					// No need to fill shift registers as nothing is being rendered here
 					// Update scroll
 					inc_horz_scroll(p);
@@ -1184,19 +1222,19 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 				p->vram_addr = (p->vram_addr & ~0x7BE0) | (p->vram_tmp_addr & 0x7BE0);
 			} else if (p->cycle >= 321 && p->cycle <= 336) { // 1st 16 pixels of next scanline
 				switch ((p->cycle - 1) & 0x07) {
-				case 0:
+				case 0: // Cycle 321 (and + 8)
 					fetch_nt_byte(p);
 					break;
-				case 1:
+				case 1: // Cycle 322 (and +8)
 					fill_attribute_shift_reg(p, p->nt_addr_current, p->at_current);
 					break;
-				case 2:
+				case 2: // Cycle 323, 324 (and +8)
 					fetch_at_byte(p);
 					break;
-				case 4:
+				case 4: // Cycle 325, 326 (and +8)
 					fetch_pt_lo(p);
 					break;
-				case 6:
+				case 6: // Cycle 327 (and +8)
 					fetch_pt_hi(p);
 					/* Load latched values into upper byte of shift regs */
 					p->pt_hi_shift_reg >>= 8;
@@ -1207,7 +1245,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					p->at_current = p->at_latch;
 					p->nt_addr_current = p->vram_addr;
 					break;
-				case 7:
+				case 7: // Cycle 328 (and +8)
 					// Update Scroll
 					inc_horz_scroll(p);
 					break;
