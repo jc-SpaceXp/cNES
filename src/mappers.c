@@ -54,13 +54,13 @@ void mapper_write(Cpu6502* cpu, uint16_t addr, uint8_t val)
 void change_nt_mirroring(Cpu6502* cpu)
 {
 	// If not using single_screen
-	if ((*(cpu->cpu_ppu_io->mirroring) != 2)
-	   || (*(cpu->cpu_ppu_io->mirroring) != 3)) {
-		if (*(cpu->cpu_ppu_io->mirroring) == 0) {
+	if ((*(cpu->cpu_ppu_io->nametable_mirroring) != SINGLE_SCREEN_A)
+	   || (*(cpu->cpu_ppu_io->nametable_mirroring) != SINGLE_SCREEN_B)) {
+		if (*(cpu->cpu_ppu_io->nametable_mirroring) == HORIZONTAL) {
 			// Horizontal mirroring
 			memcpy(&cpu->cpu_ppu_io->vram[0x2400], &cpu->cpu_ppu_io->vram[0x2000], KiB);
 			memcpy(&cpu->cpu_ppu_io->vram[0x2800], &cpu->cpu_ppu_io->vram[0x2C00], KiB);
-	   } else if (*(cpu->cpu_ppu_io->mirroring) == 1) {
+	   } else if (*(cpu->cpu_ppu_io->nametable_mirroring) == VERTICAL) {
 			// Verical mirroring
 			memcpy(&cpu->cpu_ppu_io->vram[0x2800], &cpu->cpu_ppu_io->vram[0x2000], KiB);
 			memcpy(&cpu->cpu_ppu_io->vram[0x2400], &cpu->cpu_ppu_io->vram[0x2C00], KiB);
@@ -149,20 +149,20 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 			// MM bits
 			switch (buffer & 0x03) {
 			case 0x00: // 1-screen mirroring nametable 0
-				*(cpu->cpu_ppu_io->mirroring) = 2;
+				*(cpu->cpu_ppu_io->nametable_mirroring) = SINGLE_SCREEN_A;
 				puts("Switch to lower nametable");
 				printf("%d\n", cpu->cycle);
 				break;
 			case 0x01: // 1-screen mirroring nametable 1
-				*(cpu->cpu_ppu_io->mirroring) = 3;
+				*(cpu->cpu_ppu_io->nametable_mirroring) = SINGLE_SCREEN_B;
 				puts("Switch to upper nametable");
 				break;
 			case 0x02: // 0b10 vertical mirroring
-				*(cpu->cpu_ppu_io->mirroring) = 1;
+				*(cpu->cpu_ppu_io->nametable_mirroring) = VERTICAL;
 				change_nt_mirroring(cpu);
 				break;
 			case 0x03: // 0b11 horizontal mirroring
-				*(cpu->cpu_ppu_io->mirroring) = 0;
+				*(cpu->cpu_ppu_io->nametable_mirroring) = HORIZONTAL;
 				change_nt_mirroring(cpu);
 				break;
 			}

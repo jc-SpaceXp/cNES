@@ -80,7 +80,7 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 	ppu->cpu_ppu_io->buffer_2007 = 0;
 	ppu->cpu_ppu_io->vram_addr = &ppu->vram_addr;
 	ppu->cpu_ppu_io->vram_tmp_addr = &ppu->vram_tmp_addr;
-	ppu->cpu_ppu_io->mirroring = &ppu->mirroring;
+	ppu->cpu_ppu_io->nametable_mirroring = &ppu->nametable_mirroring;
 	ppu->cpu_ppu_io->fine_x = &ppu->fine_x;
 	ppu->cpu_ppu_io->write_debug = false;
 	ppu->cpu_ppu_io->clear_status = false;
@@ -369,8 +369,7 @@ static void write_vram(uint8_t data, Cpu6502* cpu)
 
 	// Nametable mirroring
 	if (addr >= 0x2000 && addr < 0x3000) {
-		if (*(cpu->cpu_ppu_io->mirroring) == 0) {
-			// Horiz mirroring
+		if (*(cpu->cpu_ppu_io->nametable_mirroring) == HORIZONTAL) {
 			if (addr < 0x2800) {
 				// mask = 0x23FF, so that address is in the first nametable space 0x2000 to 0x23FF
 				cpu->cpu_ppu_io->vram[addr & 0x23FF] = data;
@@ -380,15 +379,14 @@ static void write_vram(uint8_t data, Cpu6502* cpu)
 				cpu->cpu_ppu_io->vram[addr & 0x2BFF] = data;
 				cpu->cpu_ppu_io->vram[(addr & 0x2BFF) + 0x0400] = data;
 			}
-		} else if (*(cpu->cpu_ppu_io->mirroring) == 1) {
-			// Vertical mirroring
+		} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == VERTICAL) {
 			// mask = 0x27FF, so that address is in the first two nametable spaces 0x2000 to 0x27FF
 			cpu->cpu_ppu_io->vram[addr & 0x27FF] = data;
 			cpu->cpu_ppu_io->vram[(addr & 0x27FF) + 0x0800] = data;
-		} else if (*(cpu->cpu_ppu_io->mirroring) == 4) {
-			// 4 Screen
+		} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == FOUR_SCREEN) {
 			cpu->cpu_ppu_io->vram[addr] = data; // Do nothing (no mirroring)
-		} else if (*(cpu->cpu_ppu_io->mirroring) == 2 || *(cpu->cpu_ppu_io->mirroring) == 3) {
+		} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == SINGLE_SCREEN_A
+		          || *(cpu->cpu_ppu_io->nametable_mirroring) == SINGLE_SCREEN_B) {
 			// Single-screen mirroring
 			// mask = 0x23FF, so that address is in the first nametable space 0x2000 to 0x23FF
 			cpu->cpu_ppu_io->vram[addr & 0x23FF] = data;

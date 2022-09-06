@@ -117,11 +117,11 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 
 	/* Byte 6, common for both iNES and NES2.0 */
 	if (header[6] & PPU_4_SCREEN_MASK) {
-		ppu->mirroring = 4;
+		ppu->nametable_mirroring = FOUR_SCREEN;
 	} else if (header[6] & PPU_VERT_MIRROR_MASK) {
-		ppu->mirroring = 1;
+		ppu->nametable_mirroring = VERTICAL;
 	} else if (!(header[6] & PPU_VERT_MIRROR_MASK)) {
-		ppu->mirroring = 0;
+		ppu->nametable_mirroring = HORIZONTAL;
 	}
 
 	if (header[6] & NON_VOLATILE_MEM_MASK) { // "Battery bit"
@@ -281,11 +281,11 @@ static void log_cart_info(const Cartridge* cart, const char* filename, const Cpu
 	print_yes_or_no(cart->non_volatile_mem);
 
 	printf("Mirroring mode: ");
-	if (ppu->mirroring == 1) {
+	if (ppu->nametable_mirroring == VERTICAL) {
 		printf("Vertical\n");
-	} else if (ppu->mirroring == 0) {
+	} else if (ppu->nametable_mirroring == HORIZONTAL) {
 		printf("Horizontal\n");
-	} else if (ppu->mirroring == 4) {
+	} else if (ppu->nametable_mirroring == FOUR_SCREEN) {
 		printf("4-screen\n");
 	}
 }

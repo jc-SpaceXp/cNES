@@ -25,6 +25,14 @@ typedef enum {
 	PAL = 1,
 } VideoType;
 
+typedef enum {
+	HORIZONTAL,
+	VERTICAL,
+	SINGLE_SCREEN_A, // "lower nametable"
+	SINGLE_SCREEN_B, // "upper nametable"
+	FOUR_SCREEN,
+} PpuNametableMirroringType;
+
 /* Struct for the different banks of memory present in a ROM i.e CHR_RAM
  * Data represents the actual data present in the bank and size represents
  * how large this data is in KiB.
@@ -112,7 +120,7 @@ typedef struct {
 	uint8_t return_value;
 	uint16_t* vram_addr; /* VRAM address - LoopyV (v) */
 	uint16_t* vram_tmp_addr; /* Temp VRAM address - LoopyT (t) */
-	unsigned* mirroring; // 0 = Horz, 1 = vert, 4 = 4 screen
+	PpuNametableMirroringType* nametable_mirroring;
 	uint8_t* fine_x; /* Fine X Scroll - only lower 4 bits are used */
 	bool write_toggle; /* 1st/2nd Write toggle */
 } CpuPpuShare;  // PPU MMIO
@@ -242,7 +250,7 @@ typedef struct {
 	uint16_t nt_addr_tmp; /* Address used to generate nt byte */
 	uint16_t nt_addr_current; /* Current tile address for pixels 1 - 8 in pipeline */
 
-	unsigned mirroring; // 0 = Horz, 1 = vert, 4 = 4 screen
+	PpuNametableMirroringType nametable_mirroring;
 
 	// lookahead hit
 	unsigned bg_lo_reg;
