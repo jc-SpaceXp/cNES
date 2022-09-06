@@ -23,7 +23,7 @@ Ppu2C02* ppu_init(CpuPpuShare* cp);
 
 /* Debug Functions */
 void debug_ppu_regs(Cpu6502* cpu);
-void ppu_mem_hexdump_addr_range(Ppu2C02* p, const enum PpuMemoryTypes ppu_mem, unsigned start_addr, uint16_t end_addr);
+void ppu_mem_hexdump_addr_range(const Ppu2C02* p, const enum PpuMemoryTypes ppu_mem, unsigned start_addr, uint16_t end_addr);
 
 /* Read & Write Functions */
 uint8_t read_ppu_reg(const uint16_t addr, Cpu6502* cpu); /* For addresses exposed to CPU */

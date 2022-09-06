@@ -213,7 +213,7 @@ void debug_ppu_regs(Cpu6502* cpu)
 	printf("3F01: %.2X\n\n", read_from_cpu(cpu, 0x3F01));
 }
 
-void ppu_mem_hexdump_addr_range(Ppu2C02* ppu, const enum PpuMemoryTypes ppu_mem, unsigned start_addr, uint16_t end_addr)
+void ppu_mem_hexdump_addr_range(const Ppu2C02* ppu, const enum PpuMemoryTypes ppu_mem, unsigned start_addr, uint16_t end_addr)
 {
 	if (end_addr <= start_addr) {
 		fprintf(stderr, "Hexdump failed, need more than 1 byte to read (end_addr must be greater than start_addr)\n");
