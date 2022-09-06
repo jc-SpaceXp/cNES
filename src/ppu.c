@@ -826,14 +826,14 @@ static void render_pixel(Ppu2C02 *p)
 	 */
 	unsigned RGB = p->vram[bg_palette_addr + bg_colour_index]; // Get RGB values
 
-	/* Shift each cycle */
+	/* Shift out each cycle */
 	p->pt_hi_shift_reg >>= 1;
 	p->pt_lo_shift_reg >>= 1;
 	p->at_hi_shift_reg >>= 1;
 	p->at_lo_shift_reg >>= 1;
 
 	/* Sprite Stuff */
-	unsigned sprite_colour_index[8] = {0, 0, 0, 0, 0, 0, 0};
+	unsigned sprite_colour_index[8] = {0};
 	// Is sprite active
 	for (int i = 7; i >= 0; i--) { // Low priority sprites first (high priority overwrites them)
 		if (p->sprite_x_counter[i] != 0) {
