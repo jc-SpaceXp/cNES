@@ -1031,6 +1031,14 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 		}
 	}
 
+	// odd frame skip
+	if (!cpu->cpu_ppu_io->bg_early_disable_mask
+		&& (cpu->cpu_ppu_io->bg_early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
+		if (p->odd_frame && p->scanline == 261 && p->cycle == 339) {
+			++p->cycle;
+		}
+	}
+
 	ppu_vblank_warmup_seq(p, cpu);
 
 	// cpu is clocked first, ppu must be updated after the ppu runs its clock
@@ -1111,14 +1119,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 
 
 	p->cpu_ppu_io->suppress_nmi_flag = false;
-
-	// odd frame skip
-	if (!cpu->cpu_ppu_io->bg_early_disable_mask
-		&& (cpu->cpu_ppu_io->bg_early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
-		if (p->odd_frame && p->scanline == 261 && p->cycle == 339) {
-			++p->cycle;
-		}
-	}
 
 
 	if (ppu_show_bg(p) || ppu_show_sprite(p)) {
