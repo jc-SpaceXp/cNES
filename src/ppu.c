@@ -773,6 +773,12 @@ static unsigned eight_to_one_mux(uint16_t input, unsigned select_lines)
 	return (input & (1 << select_lines)) >> select_lines;
 }
 
+static inline bool sprite_is_front_priority(const Ppu2C02* p, unsigned array_index)
+{
+	// if mask w/ 0x20 is zero then sprite is front priority
+	return (!(p->sprite_at_latches[array_index] & 0x20)) ? 1 : 0;
+}
+
 static void render_pixel(Ppu2C02 *p)
 {
 	// We don't use fine_x to mux the attribute shift regs as when
@@ -801,6 +807,23 @@ static void render_pixel(Ppu2C02 *p)
 		bg_colour_index = 0;
 	}
 
+	/* Summary of which pixel is chosen (BG or sprite):
+	 *
+	 * Regardless of sprite priority:
+	 *   If bg_colour_index is non-zero and sprites colour index is 0, output BG
+	 *   If sprite colour index is non-zero and bg_colour_index is 0, output sprite
+	 *   If both sprite and bg colour indexes are 0, output BG @ 0x3F00
+	 *
+	 * If sprite priority is front (over background) and sprite colour index
+	 * is non-zero, output sprite
+	 *
+	 * If sprite priority is back (behing background) and bg colour index
+	 * is non zero, output BG
+	 *
+	 * Above process is simplified by always first "outputting" the BG and then
+	 * overwritting this RGB value w/ the sprite version if the any of the two
+	 * cases for sprite output are true
+	 */
 	unsigned RGB = p->vram[bg_palette_addr + bg_colour_index]; // Get RGB values
 
 	/* Shift each cycle */
@@ -810,21 +833,20 @@ static void render_pixel(Ppu2C02 *p)
 	p->at_lo_shift_reg >>= 1;
 
 	/* Sprite Stuff */
-	unsigned sprite_palette_offset[8] = {0, 0, 0, 0, 0, 0, 0};
+	unsigned sprite_colour_index[8] = {0, 0, 0, 0, 0, 0, 0};
 	// Is sprite active
 	for (int i = 7; i >= 0; i--) { // Low priority sprites first (high priority overwrites them)
 		if (p->sprite_x_counter[i] != 0) {
 			p->sprite_x_counter[i] -= 1;
 		} else {
-			sprite_palette_offset[i] = ((p->sprite_pt_hi_shift_reg[i] & 0x01) << 1) | (p->sprite_pt_lo_shift_reg[i] & 0x01);
+			sprite_colour_index[i] = ((p->sprite_pt_hi_shift_reg[i] & 0x01) << 1)
+			                       |  (p->sprite_pt_lo_shift_reg[i] & 0x01);
 			// Render sprites
 			unsigned sprite_palette_addr = p->sprite_at_latches[i] & 0x03;
 			sprite_palette_addr <<= 2;
 			sprite_palette_addr += 0x3F10;
-			if ((((p->sprite_at_latches[i] & 0x20) == 0) || !bg_colour_index) && sprite_palette_offset[i]) { // front priority
-				RGB = p->vram[sprite_palette_addr + sprite_palette_offset[i]]; // Output sprite
-			} else if (((p->sprite_at_latches[i] & 0x20) == 0x20) && bg_colour_index) {
-				RGB = p->vram[bg_palette_addr + bg_colour_index];
+			if ((sprite_is_front_priority(p, i) || !bg_colour_index) && sprite_colour_index[i]) {
+				RGB = p->vram[sprite_palette_addr + sprite_colour_index[i]]; // Output sprite
 			}
 			p->sprite_pt_lo_shift_reg[i] >>= 1;
 			p->sprite_pt_hi_shift_reg[i] >>= 1;
