@@ -790,18 +790,18 @@ static void render_pixel(Ppu2C02 *p)
 	bg_palette_addr <<= 2;
 	bg_palette_addr += 0x3F00; // bg palette mem starts here
 
-	unsigned bg_palette_offset = (eight_to_one_mux(p->pt_hi_shift_reg, p->fine_x) << 1)
-	                           |  eight_to_one_mux(p->pt_lo_shift_reg, p->fine_x);
-	if (!bg_palette_offset) {
+	unsigned bg_colour_index = (eight_to_one_mux(p->pt_hi_shift_reg, p->fine_x) << 1)
+	                         |  eight_to_one_mux(p->pt_lo_shift_reg, p->fine_x);
+	if (!bg_colour_index) {
 		bg_palette_addr = 0x3F00; // Take background colour (transparent)
 	}
 
 	if ((ppu_mask_left_8px_bg(p) && p->cycle < 8) || !ppu_show_bg(p)) {
 		bg_palette_addr = 0x3F00;
-		bg_palette_offset = 0;
+		bg_colour_index = 0;
 	}
 
-	unsigned RGB = p->vram[bg_palette_addr + bg_palette_offset]; // Get RGB values
+	unsigned RGB = p->vram[bg_palette_addr + bg_colour_index]; // Get RGB values
 
 	/* Shift each cycle */
 	p->pt_hi_shift_reg >>= 1;
@@ -821,10 +821,10 @@ static void render_pixel(Ppu2C02 *p)
 			unsigned sprite_palette_addr = p->sprite_at_latches[i] & 0x03;
 			sprite_palette_addr <<= 2;
 			sprite_palette_addr += 0x3F10;
-			if ((((p->sprite_at_latches[i] & 0x20) == 0) || !bg_palette_offset) && sprite_palette_offset[i]) { // front priority 
+			if ((((p->sprite_at_latches[i] & 0x20) == 0) || !bg_colour_index) && sprite_palette_offset[i]) { // front priority
 				RGB = p->vram[sprite_palette_addr + sprite_palette_offset[i]]; // Output sprite
-			} else if (((p->sprite_at_latches[i] & 0x20) == 0x20) && bg_palette_offset) {
-				RGB = p->vram[bg_palette_addr + bg_palette_offset];
+			} else if (((p->sprite_at_latches[i] & 0x20) == 0x20) && bg_colour_index) {
+				RGB = p->vram[bg_palette_addr + bg_colour_index];
 			}
 			p->sprite_pt_lo_shift_reg[i] >>= 1;
 			p->sprite_pt_hi_shift_reg[i] >>= 1;
