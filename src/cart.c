@@ -215,7 +215,7 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 
 
 // lsb/msb is least/most significant byte
-static uint16_t concat_lsb_and_msb_to_16_bit_val(const uint8_t lsb, const uint8_t msb)
+static inline uint16_t concat_lsb_and_msb_to_16_bit_val(const uint8_t lsb, const uint8_t msb)
 {
 	return ((msb << 8) | lsb);
 }
@@ -233,7 +233,7 @@ static void print_header(const Cartridge* cart, const uint8_t* header_bytes)
 	printf("\n");
 }
 
-static void inline print_yes_or_no(const int check_non_zero)
+static inline void print_yes_or_no(const int check_non_zero)
 {
 	if (check_non_zero) {
 		printf("Yes\n");
