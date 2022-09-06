@@ -218,7 +218,7 @@ int main(int argc, char** argv)
 	screen_clear(nes_screen);
 	nes_screen = NULL;
 
-	//cpu_mem_16_byte_viewer(cpu, 0, 2048);
+	//cpu_mem_hexdump_addr_range(cpu, 0x0000, 0x2000);
 	//ppu_mem_hexdump_addr_range(ppu, VRAM, 0x0000, 0x2000);
 
 	ret = 0;

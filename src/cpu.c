@@ -359,21 +359,40 @@ static unsigned read_4017(Cpu6502* cpu)
 	return ret;
 }
 
-// start_addr = start address of the memory you wish to insepct (16 byte boundry alligned)
-// total rows is the number of rows (multiple of 16 bytes) you wish to see from the start addr
-void cpu_mem_16_byte_viewer(Cpu6502* cpu, unsigned start_addr, unsigned total_rows)
+void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_t end_addr)
 {
-	printf("\n##################### CPU MEM #######################\n");
-	printf("      00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F\n");
-	unsigned mem = start_addr;
-	while (start_addr < total_rows) {
-		printf("%.4X: ", start_addr << 4);
-		for (int x = 0; x < 16; x++) {
-			printf("%.2X ", cpu->mem[mem]);
-			++mem;
+	if (end_addr <= start_addr) {
+		fprintf(stderr, "Hexdump failed, need more than 1 byte to read (end_addr must be greater than start_addr)\n");
+		return;
+	}
+
+	printf("\n########################  CPU  MEM  ##################\n");
+	// print header for memory addresses, e.g. 0x00 through 0x0F
+	printf("      ");
+	for (int h = 0; h < 16; h++) {
+		printf("%.2X ", (start_addr & 0x0F) + h);
+		// halfway point, print extra space for readability
+		if (h == 7) {
+			printf(" ");
 		}
+	}
+	printf("\n");
+
+	// acutally perform hexdump here
+	while (start_addr < end_addr) {
+		printf("%.4X: ", start_addr);
+		for (int x = 0; x < 16; x++) {
+			if ((start_addr + x) > end_addr) {
+				break; // early stop
+			}
+			printf("%.2X ", cpu->mem[start_addr + x]);
+			// halfway point, print extra space for readability
+			if (x == 7) {
+				printf(" ");
+			}
+		}
+		start_addr += 16;
 		printf("\n");
-		++start_addr;
 	}
 }
 

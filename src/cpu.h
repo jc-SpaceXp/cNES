@@ -41,7 +41,7 @@ void clock_cpu(Cpu6502* cpu, const bool no_logging);
 // Helper functions
 void init_pc(Cpu6502* cpu); /* Set PC via reset vector */
 uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr);  // Read byte from CPU mempry
-void cpu_mem_16_byte_viewer(Cpu6502* cpu, unsigned start_addr, unsigned total_rows);
+void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_t end_addr);
 void update_cpu_info(Cpu6502* cpu);
 
 
