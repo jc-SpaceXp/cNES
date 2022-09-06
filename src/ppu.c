@@ -84,8 +84,8 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 	ppu->cpu_ppu_io->fine_x = &ppu->fine_x;
 	ppu->cpu_ppu_io->write_debug = false;
 	ppu->cpu_ppu_io->clear_status = false;
-	ppu->cpu_ppu_io->early_disable_mask = false;
-	ppu->cpu_ppu_io->early_enable_mask = false;
+	ppu->cpu_ppu_io->bg_early_disable_mask = false;
+	ppu->cpu_ppu_io->bg_early_enable_mask = false;
 
 	ppu->cycle = 27;
 	ppu->scanline = 0;
@@ -1038,23 +1038,26 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 	// this means a buffer system needs to be implemented to preserve this behaviour
 	if (p->cpu_ppu_io->buffer_write) {
 		--p->cpu_ppu_io->buffer_counter;
+		// buffering a write to enable bg render sets flag
 		if (p->cpu_ppu_io->buffer_address == 0x2001 && (p->cpu_ppu_io->buffer_value & 0x08)) {
 			if (p->cpu_ppu_io->buffer_counter == 3) {
-				cpu->cpu_ppu_io->early_enable_mask = true;
+				cpu->cpu_ppu_io->bg_early_enable_mask = true;
 			}
 		}
 
+		// buffering a write to disable bg render sets flag
 		if (p->cpu_ppu_io->buffer_address == 0x2001 && !(p->cpu_ppu_io->buffer_value & 0x08)) {
 			if (p->cpu_ppu_io->buffer_counter == 3) {
-				cpu->cpu_ppu_io->early_disable_mask = true;
+				cpu->cpu_ppu_io->bg_early_disable_mask = true;
 			}
 		}
 		if (!p->cpu_ppu_io->buffer_counter) {
 			write_ppu_reg(p->cpu_ppu_io->buffer_address, p->cpu_ppu_io->buffer_value, cpu);
 			p->cpu_ppu_io->buffer_write = false;
 			p->cpu_ppu_io->buffer_counter = 6; // reset to non-zero value
-			cpu->cpu_ppu_io->early_enable_mask = false;
-			cpu->cpu_ppu_io->early_disable_mask = false;
+			// clear flags about buffered writes to enable/disable bg rendering
+			cpu->cpu_ppu_io->bg_early_enable_mask = false;
+			cpu->cpu_ppu_io->bg_early_disable_mask = false;
 		}
 	}
 
@@ -1110,8 +1113,8 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 	p->cpu_ppu_io->suppress_nmi_flag = false;
 
 	// odd frame skip
-	if (!cpu->cpu_ppu_io->early_disable_mask
-		&& (cpu->cpu_ppu_io->early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
+	if (!cpu->cpu_ppu_io->bg_early_disable_mask
+		&& (cpu->cpu_ppu_io->bg_early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
 		if (p->odd_frame && p->scanline == 261 && p->cycle == 339) {
 			++p->cycle;
 		}
