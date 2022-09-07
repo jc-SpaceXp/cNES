@@ -4,10 +4,15 @@ CFLAGS += $(shell pkg-config --cflags sdl2)
 LDFLAGS := $(shell pkg-config --libs sdl2)
 DEPFLAGS = -MMD -MP -MF $(@:$(OBJDIR)/%.o=$(DEPDIR)/%.d)
 
+ASAN ?= 0
 DEBUG ?= 0
 ifeq ($(DEBUG), 1)
         CFLAGS += -g -D__DEBUG__
         CONFIG = debug
+        ifeq ($(ASAN), 1)
+                CFLAGS += -fsanitize=address,undefined
+                LDFLAGS += -fsanitize=address,undefined
+        endif
 else
         CFLAGS += -DN__DEBUG__
         CONFIG = release
