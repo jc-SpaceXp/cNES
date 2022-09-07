@@ -857,6 +857,11 @@ static void render_pixel(Ppu2C02 *p)
 
 static void ppu_transfer_oam(Ppu2C02* p, const unsigned index)
 {
+	if (p->sprites_found == 8) {
+		// disable writes to scanline/secondary oam once full
+		return;
+	}
+
 	for (int i = 0; i < 4; i++) {
 		p->scanline_oam[(p->sprites_found * 4) + i] = p->oam[(index * 4) + i]; // Copy remaining bytes
 	}
