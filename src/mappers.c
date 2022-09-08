@@ -26,14 +26,14 @@ static inline void set_prg_rom_bank_2(Cpu6502* cpu, const unsigned prg_bank_offs
 
 static inline void set_chr_bank_1(Cpu6502* cpu, const unsigned chr_bank_offset, const unsigned kib_size)
 {
-	memcpy(&cpu->cpu_ppu_io->vram[0x0000]
+	memcpy(&cpu->cpu_ppu_io->vram->pattern_table_0[0x0000]
 		  , cpu->cpu_mapper_io->chr->data + ((chr_bank_offset) * (kib_size))
 		  , kib_size);
 }
 
 static inline void set_chr_bank_2(Cpu6502* cpu, const unsigned chr_bank_offset)
 {
-	memcpy(&cpu->cpu_ppu_io->vram[0x1000]
+	memcpy(&cpu->cpu_ppu_io->vram->pattern_table_1[0x0000]
 		  , cpu->cpu_mapper_io->chr->data + ((chr_bank_offset) * (4 * KiB))
 		  , 4 * KiB);
 }
@@ -53,23 +53,33 @@ void mapper_write(Cpu6502* cpu, uint16_t addr, uint8_t val)
 // used to change the nametable mirroring on the fly
 void change_nt_mirroring(Cpu6502* cpu)
 {
-	// If not using single_screen
-	if ((*(cpu->cpu_ppu_io->nametable_mirroring) != SINGLE_SCREEN_A)
-	   || (*(cpu->cpu_ppu_io->nametable_mirroring) != SINGLE_SCREEN_B)) {
-		if (*(cpu->cpu_ppu_io->nametable_mirroring) == HORIZONTAL) {
-			// Horizontal mirroring
-			memcpy(&cpu->cpu_ppu_io->vram[0x2400], &cpu->cpu_ppu_io->vram[0x2000], KiB);
-			memcpy(&cpu->cpu_ppu_io->vram[0x2800], &cpu->cpu_ppu_io->vram[0x2C00], KiB);
-	   } else if (*(cpu->cpu_ppu_io->nametable_mirroring) == VERTICAL) {
-			// Verical mirroring
-			memcpy(&cpu->cpu_ppu_io->vram[0x2800], &cpu->cpu_ppu_io->vram[0x2000], KiB);
-			memcpy(&cpu->cpu_ppu_io->vram[0x2400], &cpu->cpu_ppu_io->vram[0x2C00], KiB);
-	   }
+	if (*(cpu->cpu_ppu_io->nametable_mirroring) == SINGLE_SCREEN_A) {
+		cpu->cpu_ppu_io->vram->nametable_0 = &cpu->cpu_ppu_io->vram->nametable_A;
+		cpu->cpu_ppu_io->vram->nametable_1 = &cpu->cpu_ppu_io->vram->nametable_A;
+		cpu->cpu_ppu_io->vram->nametable_2 = &cpu->cpu_ppu_io->vram->nametable_A;
+		cpu->cpu_ppu_io->vram->nametable_3 = &cpu->cpu_ppu_io->vram->nametable_A;
+	} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == SINGLE_SCREEN_B) {
+		cpu->cpu_ppu_io->vram->nametable_0 = &cpu->cpu_ppu_io->vram->nametable_B;
+		cpu->cpu_ppu_io->vram->nametable_1 = &cpu->cpu_ppu_io->vram->nametable_B;
+		cpu->cpu_ppu_io->vram->nametable_2 = &cpu->cpu_ppu_io->vram->nametable_B;
+		cpu->cpu_ppu_io->vram->nametable_3 = &cpu->cpu_ppu_io->vram->nametable_B;
+	} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == HORIZONTAL) {
+		cpu->cpu_ppu_io->vram->nametable_0 = &cpu->cpu_ppu_io->vram->nametable_A;
+		cpu->cpu_ppu_io->vram->nametable_1 = &cpu->cpu_ppu_io->vram->nametable_A;
+		cpu->cpu_ppu_io->vram->nametable_2 = &cpu->cpu_ppu_io->vram->nametable_B;
+		cpu->cpu_ppu_io->vram->nametable_3 = &cpu->cpu_ppu_io->vram->nametable_B;
+	} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == VERTICAL) {
+		cpu->cpu_ppu_io->vram->nametable_0 = &cpu->cpu_ppu_io->vram->nametable_A;
+		cpu->cpu_ppu_io->vram->nametable_1 = &cpu->cpu_ppu_io->vram->nametable_B;
+		cpu->cpu_ppu_io->vram->nametable_2 = &cpu->cpu_ppu_io->vram->nametable_A;
+		cpu->cpu_ppu_io->vram->nametable_3 = &cpu->cpu_ppu_io->vram->nametable_B;
 	}
 }
 
 void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 {
+	// init mirroring mapping
+	change_nt_mirroring(cpu);
 	switch (cpu->cpu_mapper_io->mapper_number) {
 	case 0:
 		mapper_000(cart, cpu, ppu);
@@ -98,7 +108,8 @@ static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 
 	/* Load CHR_ROM data into PPU VRAM */
 	if (cart->chr.rom_size) {
-		memcpy(&ppu->vram[0x0000], cart->chr.data, 8 * KiB);
+		memcpy(&ppu->vram.pattern_table_0[0x0000], cart->chr.data, 4 * KiB);
+		memcpy(&ppu->vram.pattern_table_1[0x0000], cart->chr.data + (4 * KiB), 4 * KiB);
 	}
 	free(cart->chr.data);
 }
@@ -150,12 +161,11 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 			switch (buffer & 0x03) {
 			case 0x00: // 1-screen mirroring nametable 0
 				*(cpu->cpu_ppu_io->nametable_mirroring) = SINGLE_SCREEN_A;
-				puts("Switch to lower nametable");
-				printf("%d\n", cpu->cycle);
+				change_nt_mirroring(cpu);
 				break;
 			case 0x01: // 1-screen mirroring nametable 1
 				*(cpu->cpu_ppu_io->nametable_mirroring) = SINGLE_SCREEN_B;
-				puts("Switch to upper nametable");
+				change_nt_mirroring(cpu);
 				break;
 			case 0x02: // 0b10 vertical mirroring
 				*(cpu->cpu_ppu_io->nametable_mirroring) = VERTICAL;

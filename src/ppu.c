@@ -75,7 +75,7 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 		return ppu;
 	}
 	ppu->cpu_ppu_io = cp;
-	ppu->cpu_ppu_io->vram = &(ppu->vram[0]); // used so CPU can access PPU VRAM w/o needing the PPU struct
+	ppu->cpu_ppu_io->vram = &ppu->vram; // used so CPU can access PPU VRAM w/o needing the PPU struct
 	ppu->cpu_ppu_io->oam = &(ppu->oam[0]); // used so CPU can access PPU VRAM w/o needing the PPU struct
 	ppu->cpu_ppu_io->buffer_2007 = 0;
 	ppu->cpu_ppu_io->vram_addr = &ppu->vram_addr;
@@ -125,7 +125,6 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 	memset(ppu->sp_opaque_hit, 0, sizeof(ppu->sp_opaque_hit));
 
 	// Zero out arrays
-	memset(ppu->vram, 0, sizeof(ppu->vram));
 	memset(ppu->oam, 0, sizeof(ppu->oam));
 	memset(ppu->scanline_oam, 0, sizeof(ppu->scanline_oam));
 	memset(ppu->sprite_x_counter, 0, sizeof(ppu->sprite_x_counter));
@@ -213,6 +212,88 @@ void debug_ppu_regs(Cpu6502* cpu)
 	printf("3F01: %.2X\n\n", read_from_cpu(cpu, 0x3F01));
 }
 
+/* For ppu calling functions: arg 1 == &p->vram
+ * For cpu calling functions: arg 1 == cpu->cpu_ppu_io->vram
+ */
+static void write_to_ppu_vram(struct PpuMemoryMap* mem, unsigned addr, uint8_t data)
+{
+	if (addr < 0x1000) {
+		// 0x0000 to 0x0FFF
+		mem->pattern_table_0[addr] = data;
+	} else if (addr < 0x2000) {
+		// 0x1000 to 0x1FFF
+		mem->pattern_table_1[addr & 0x0FFF] = data;
+	} else if (addr < 0x2400) {
+		// 0x2000 to 0x23FF
+		(*mem->nametable_0)[addr & 0x03FF] = data;
+	} else if (addr < 0x2800) {
+		// 0x2400 to 0x27FF
+		(*mem->nametable_1)[addr & 0x03FF] = data;
+	} else if (addr < 0x2C00) {
+		// 0x2800 to 0x2BFF
+		(*mem->nametable_2)[addr & 0x03FF] = data;
+	} else if (addr < 0x3000) {
+		// 0x2C00 to 0x2FFF
+		(*mem->nametable_3)[addr & 0x03FF] = data;
+	} else if (addr < 0x3400) {
+		// mirror of 0x2000 to 0x23FF
+		(*mem->nametable_0)[addr & 0x03FF] = data;
+	} else if (addr < 0x3800) {
+		// mirror of 0x2400 to 0x27FF
+		(*mem->nametable_1)[addr & 0x03FF] = data;
+	} else if (addr < 0x3C00) {
+		// mirror 0x2800 to 0x2BFF
+		(*mem->nametable_2)[addr & 0x03FF] = data;
+	} else if (addr < 0x3F00) {
+		// partial mirror of 0x2C00 to 0x2FFF (0x2C00 to 0x2EFF)
+		(*mem->nametable_3)[addr & 0x03FF] = data;
+	} else if (addr < 0x4000) {
+		// 0x3F00 to 0x3F20 and mirrors down to 0x3FFF
+		mem->palette_ram[addr & 0x001F] = data;
+	}
+}
+
+static uint8_t read_from_ppu_vram(const struct PpuMemoryMap* mem, unsigned addr)
+{
+	uint8_t ret = 0;
+	if (addr < 0x1000) {
+		// 0x0000 to 0x0FFF
+		ret = mem->pattern_table_0[addr];
+	} else if (addr < 0x2000) {
+		// 0x1000 to 0x1FFF
+		ret = mem->pattern_table_1[addr & 0x0FFF];
+	} else if (addr < 0x2400) {
+		// 0x2000 to 0x23FF
+		ret = (*mem->nametable_0)[addr & 0x03FF];
+	} else if (addr < 0x2800) {
+		// 0x2400 to 0x27FF
+		ret = (*mem->nametable_1)[addr & 0x03FF];
+	} else if (addr < 0x2C00) {
+		// 0x2800 to 0x2BFF
+		ret = (*mem->nametable_2)[addr & 0x03FF];
+	} else if (addr < 0x3000) {
+		// 0x2C00 to 0x2FFF
+		ret = (*mem->nametable_3)[addr & 0x03FF];
+	} else if (addr < 0x3400) {
+		// mirror of 0x2000 to 0x23FF
+		ret = (*mem->nametable_0)[addr & 0x03FF];
+	} else if (addr < 0x3800) {
+		// mirror of 0x2400 to 0x27FF
+		ret = (*mem->nametable_1)[addr & 0x03FF];
+	} else if (addr < 0x3C00) {
+		// mirror 0x2800 to 0x2BFF
+		ret = (*mem->nametable_2)[addr & 0x03FF];
+	} else if (addr < 0x3F00) {
+		// partial mirror of 0x2C00 to 0x2FFF (0x2C00 to 0x2EFF)
+		ret = (*mem->nametable_3)[addr & 0x03FF];
+	} else if (addr < 0x4000) {
+		// 0x3F00 to 0x3F20 and mirrors down to 0x3FFF
+		ret = mem->palette_ram[addr & 0x001F];
+	}
+
+	return ret;
+}
+
 void ppu_mem_hexdump_addr_range(const Ppu2C02* ppu, const enum PpuMemoryTypes ppu_mem, unsigned start_addr, uint16_t end_addr)
 {
 	if (end_addr <= start_addr) {
@@ -256,7 +337,7 @@ void ppu_mem_hexdump_addr_range(const Ppu2C02* ppu, const enum PpuMemoryTypes pp
 				break;
 			}
 			if (ppu_mem == VRAM) {
-				printf("%.2X ", ppu->vram[start_addr + x]);
+				printf("%.2X ", read_from_ppu_vram(&ppu->vram, start_addr + x));
 			} else if (ppu_mem == PRIMARY_OAM) {
 				printf("%.2X ", ppu->oam[start_addr + x]);
 			} else if (ppu_mem == SECONDARY_OAM) {
@@ -357,56 +438,28 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 	}
 }
 
-// VRAM is written to by the CPU
-static void write_vram(uint8_t data, Cpu6502* cpu)
+// Called from CPU
+static void cpu_writes_to_vram(uint8_t data, Cpu6502* cpu)
 {
+	// keep address in valid range
 	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
 
 	// Write to pattern tables (if using CHR RAM)
-	if (cpu->cpu_mapper_io->chr->ram_size && addr <= 0x1FFF) {
-		cpu->cpu_ppu_io->vram[addr] = data;
+	if ((cpu->cpu_mapper_io->chr->ram_size) && (addr <= 0x1FFF)) {
+		write_to_ppu_vram(cpu->cpu_ppu_io->vram, addr, data);
 	}
 
-	// Nametable mirroring
-	if (addr >= 0x2000 && addr < 0x3000) {
-		if (*(cpu->cpu_ppu_io->nametable_mirroring) == HORIZONTAL) {
-			if (addr < 0x2800) {
-				// mask = 0x23FF, so that address is in the first nametable space 0x2000 to 0x23FF
-				cpu->cpu_ppu_io->vram[addr & 0x23FF] = data;
-				cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x0400] = data;
-			} else if (addr >= 0x2800) {
-				// mask = 0x2BFF, so that address is in the third nametable space 0x2800 to 0x2BFF
-				cpu->cpu_ppu_io->vram[addr & 0x2BFF] = data;
-				cpu->cpu_ppu_io->vram[(addr & 0x2BFF) + 0x0400] = data;
+	// Handle nametable and palette writes
+	if (addr >= 0x2000) {
+		write_to_ppu_vram(cpu->cpu_ppu_io->vram, addr, data);
+		if (addr >= 0x3F00) {
+			if ((addr & 0x0F) == 0) {
+				// If bg palette #0, colour #0 mirror up to sprite's 0th palette and colour
+				write_to_ppu_vram(cpu->cpu_ppu_io->vram, addr + 0x10, data);
+			} else if ((addr & 0x1F) == 0x10) {
+				// If sprite palette #0, colour #0 mirror down to bg's 0th palette and colour
+				write_to_ppu_vram(cpu->cpu_ppu_io->vram, addr - 0x10, data);
 			}
-		} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == VERTICAL) {
-			// mask = 0x27FF, so that address is in the first two nametable spaces 0x2000 to 0x27FF
-			cpu->cpu_ppu_io->vram[addr & 0x27FF] = data;
-			cpu->cpu_ppu_io->vram[(addr & 0x27FF) + 0x0800] = data;
-		} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == FOUR_SCREEN) {
-			cpu->cpu_ppu_io->vram[addr] = data; // Do nothing (no mirroring)
-		} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == SINGLE_SCREEN_A
-		          || *(cpu->cpu_ppu_io->nametable_mirroring) == SINGLE_SCREEN_B) {
-			// Single-screen mirroring
-			// mask = 0x23FF, so that address is in the first nametable space 0x2000 to 0x23FF
-			cpu->cpu_ppu_io->vram[addr & 0x23FF] = data;
-			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x0400] = data;
-			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x0800] = data;
-			cpu->cpu_ppu_io->vram[(addr & 0x23FF) + 0x0C00] = data;
-		}
-	}
-
-	/* Write to palettes */
-	if (addr >= 0x3F00) { addr &= 0x3F1F; } // Handle palette mirroring (by avoiding it)
-	if (addr >= 0x3F00 && addr < 0x3F10) {
-		cpu->cpu_ppu_io->vram[addr] = data;
-		if ((addr & 0x03) == 0) {
-			cpu->cpu_ppu_io->vram[addr + 0x10] = data; // If palette #0 mirror 4 palettes up
-		}
-	} else if (addr >= 0x3F10 && addr < 0x3F20) {
-		cpu->cpu_ppu_io->vram[addr] = data;
-		if ((addr & 0x03) == 0) {
-			cpu->cpu_ppu_io->vram[addr - 0x10] = data; // If palette #0 mirror 4 palettes down
 		}
 	}
 }
@@ -430,11 +483,11 @@ static void read_2007(Cpu6502* cpu)
 	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
 
 	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->buffer_2007;
-	cpu->cpu_ppu_io->buffer_2007 = cpu->cpu_ppu_io->vram[addr];
+	cpu->cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr);
 
 	if (addr >= 0x3F00) {
 		// return non-mirrored address
-		cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->vram[addr & 0x3F1F];
+		cpu->cpu_ppu_io->return_value = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr);
 	}
 
 	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
@@ -494,7 +547,7 @@ static void write_2006(const uint8_t data, Cpu6502* cpu)
 
 static void write_2007(const uint8_t data, Cpu6502* cpu)
 {
-	write_vram(data, cpu);
+	cpu_writes_to_vram(data, cpu);
 	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
 }
 
@@ -664,7 +717,7 @@ static void inc_horz_scroll(Ppu2C02 *p)
 static void fetch_nt_byte(Ppu2C02 *p)
 {
 	p->nt_addr_tmp = 0x2000 | (p->vram_addr & 0x0FFF);
-	p->nt_byte = p->vram[p->nt_addr_tmp];
+	p->nt_byte = read_from_ppu_vram(&p->vram, p->nt_addr_tmp);
 }
 
 /* Get correct at byte from vram_addr
@@ -692,7 +745,7 @@ static void fetch_nt_byte(Ppu2C02 *p)
  */
 static void fetch_at_byte(Ppu2C02 *p)
 {
-	p->at_latch = p->vram[0x23C0 | (p->vram_addr & 0x0C00) | ((p->vram_addr >> 4) & 0x38) | ((p->vram_addr >> 2) & 0x07)];
+	p->at_latch = read_from_ppu_vram(&p->vram, 0x23C0 | (p->vram_addr & 0x0C00) | ((p->vram_addr >> 4) & 0x38) | ((p->vram_addr >> 2) & 0x07));
 }
 
 /* nt_byte represents the tile index (the nametable byte reference)
@@ -706,7 +759,7 @@ static void fetch_at_byte(Ppu2C02 *p)
 static void fetch_pt_lo(Ppu2C02 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12);
-	uint8_t latch = p->vram[ppu_base_pt_address(p) | pt_offset];
+	uint8_t latch = read_from_ppu_vram(&p->vram, ppu_base_pt_address(p) | pt_offset);
 	p->pt_lo_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
 }
 
@@ -715,7 +768,7 @@ static void fetch_pt_lo(Ppu2C02 *p)
 static void fetch_pt_hi(Ppu2C02 *p)
 {
 	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12) + 8;
-	uint8_t latch = p->vram[ppu_base_pt_address(p) | pt_offset];
+	uint8_t latch = read_from_ppu_vram(&p->vram, ppu_base_pt_address(p) | pt_offset);
 	p->pt_hi_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
 }
 
@@ -822,7 +875,7 @@ static void render_pixel(Ppu2C02 *p)
 	 * overwritting this RGB value w/ the sprite version if the any of the two
 	 * cases for sprite output are true
 	 */
-	unsigned RGB = p->vram[bg_palette_addr + bg_colour_index]; // Get RGB values
+	unsigned RGB = read_from_ppu_vram(&p->vram, bg_palette_addr + bg_colour_index); // Get RGB values
 
 	/* Shift out each cycle */
 	p->pt_hi_shift_reg >>= 1;
@@ -844,7 +897,7 @@ static void render_pixel(Ppu2C02 *p)
 			sprite_palette_addr <<= 2;
 			sprite_palette_addr += 0x3F10;
 			if ((sprite_is_front_priority(p, i) || !bg_colour_index) && sprite_colour_index[i]) {
-				RGB = p->vram[sprite_palette_addr + sprite_colour_index[i]]; // Output sprite
+				RGB = read_from_ppu_vram(&p->vram, sprite_palette_addr + sprite_colour_index[i]); // Output sprite
 			}
 			p->sprite_pt_lo_shift_reg[i] >>= 1;
 			p->sprite_pt_hi_shift_reg[i] >>= 1;
@@ -940,12 +993,12 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 				for (int mask = 1; mask < 9; mask++) {
 					p->bg_lo_reg = (p->pt_lo_shift_reg >> (mask + h_offset - 1)) & 0x01;
 					p->bg_hi_reg = (p->pt_hi_shift_reg >> (mask + h_offset - 1)) & 0x01;
-					unsigned tmp_pt_lo = p->vram[(ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + v_offset];
-					unsigned tmp_pt_hi = p->vram[(ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + v_offset + 8];
+					unsigned tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + v_offset);
+					unsigned tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + v_offset + 8);
 					if (ppu_sprite_height(p) == 16) {
 						if (v_offset >= 8) { v_offset += 8; } // avoid overlap w/ hi address space i.e. 0x0008 to 0x000F
-						tmp_pt_lo = p->vram[(0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + v_offset)];
-						tmp_pt_hi = p->vram[(0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + v_offset + 8)];
+						tmp_pt_lo = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + v_offset));
+						tmp_pt_hi = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + v_offset + 8));
 					}
 					// MSB = 1st pixel (not using the reverse_bits function here)
 					p->sp_lo_reg = (tmp_pt_lo >> (8 - mask)) & 0x01;
@@ -957,12 +1010,12 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 					}
 					// flip sprites vertically
 					if (p->oam[2] & 0x80) {
-						tmp_pt_lo = p->vram[(ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 7 - v_offset];
-						tmp_pt_hi = p->vram[(ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 15 - v_offset];
+						tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 7 - v_offset);
+						tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 15 - v_offset);
 						// flip the 8x16 sprites
 						if (ppu_sprite_height(p) == 16) {
-							tmp_pt_lo = p->vram[(0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 23 - v_offset)];
-							tmp_pt_hi = p->vram[(0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 31 - v_offset)];
+							tmp_pt_lo = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 23 - v_offset));
+							tmp_pt_hi = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 31 - v_offset));
 						}
 						p->sp_lo_reg = (tmp_pt_lo >> (8 - mask)) & 0x01;
 						p->sp_hi_reg = (tmp_pt_hi >> (8 - mask)) & 0x01;
@@ -1337,16 +1390,16 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					break;
 				case 4:
 					// Fetch sprite low pt
-					p->sprite_pt_lo_shift_reg[count] = reverse_bits[p->vram[p->sprite_addr]];
+					p->sprite_pt_lo_shift_reg[count] = reverse_bits[read_from_ppu_vram(&p->vram, p->sprite_addr)];
 					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
-						p->sprite_pt_lo_shift_reg[count] = p->vram[p->sprite_addr];
+						p->sprite_pt_lo_shift_reg[count] = read_from_ppu_vram(&p->vram, p->sprite_addr);
 					}
 					break;
 				case 6:
 					// Fetch sprite hi pt, turn into function once all attribute data is processed
-					p->sprite_pt_hi_shift_reg[count] = reverse_bits[p->vram[p->sprite_addr + 8]];
+					p->sprite_pt_hi_shift_reg[count] = reverse_bits[read_from_ppu_vram(&p->vram, p->sprite_addr + 8)];
 					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
-						p->sprite_pt_hi_shift_reg[count] = p->vram[p->sprite_addr + 8];
+						p->sprite_pt_hi_shift_reg[count] = read_from_ppu_vram(&p->vram, p->sprite_addr + 8);
 					}
 					break;
 				case 7: /* 8th Cycle */

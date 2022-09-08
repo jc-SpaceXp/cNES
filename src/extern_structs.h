@@ -114,7 +114,7 @@ typedef struct {
 
 	unsigned nmi_cycles_left;  // PPU sets this CPU decrements it
 
-	uint8_t* vram; // CPU access to VRAM
+	struct PpuMemoryMap* vram; // CPU access to VRAM
 	uint8_t* oam; /* OAM Address Space (Sprite RAM) */
 	uint8_t buffer_2007; /* Read buffer for register 2007 */
 	uint8_t return_value;
@@ -205,13 +205,30 @@ typedef struct {
 	bool process_interrupt;
 } Cpu6502;
 
+// Non-mirrored memory mapping of ppu vram
+struct PpuMemoryMap {
+	uint8_t pattern_table_0[0x1000]; // vram: 0x0000 to 0x0FFF
+	uint8_t pattern_table_1[0x1000]; // vram: 0x1000 to 0x1FFF
+	uint8_t nametable_A[0x0400]; // vram: 0x2000 to 0x2400
+	uint8_t nametable_B[0x0400]; // second pattern table, address depends on nametable mirroring
+	uint8_t palette_ram[0x0020]; // vram: 0x3F00 to 0x3F1F
+
+	// store here, instead of inside ppu struct
+	// allows a generic struct function to read/write the nametables
+	// from both the cpu and ppu calling functions (and saves on code duplication)
+	uint8_t (*nametable_0)[0x0400];
+	uint8_t (*nametable_1)[0x0400];
+	uint8_t (*nametable_2)[0x0400];
+	uint8_t (*nametable_3)[0x0400];
+};
+
 // PPU
 typedef struct {
 	/* Memory mapped I/O */
 	CpuPpuShare* cpu_ppu_io;
 
 	/* Memory */
-	uint8_t vram[16 * KiB]; /* PPU memory space (VRAM) */
+	struct PpuMemoryMap vram;
 	uint8_t oam[256]; /* OAM Address Space (Sprite RAM) */
 
 	/* Sprites */
