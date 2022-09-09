@@ -51,7 +51,7 @@ void mapper_write(Cpu6502* cpu, uint16_t addr, uint8_t val)
 }
 
 // used to change the nametable mirroring on the fly
-void change_nt_mirroring(Cpu6502* cpu)
+static void set_nametable_mirroring(Cpu6502* cpu)
 {
 	if (*(cpu->cpu_ppu_io->nametable_mirroring) == SINGLE_SCREEN_A) {
 		cpu->cpu_ppu_io->vram->nametable_0 = &cpu->cpu_ppu_io->vram->nametable_A;
@@ -79,7 +79,7 @@ void change_nt_mirroring(Cpu6502* cpu)
 void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	// init mirroring mapping
-	change_nt_mirroring(cpu);
+	set_nametable_mirroring(cpu);
 	switch (cpu->cpu_mapper_io->mapper_number) {
 	case 0:
 		mapper_000(cart, cpu, ppu);
@@ -161,19 +161,19 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 			switch (buffer & 0x03) {
 			case 0x00: // 1-screen mirroring nametable 0
 				*(cpu->cpu_ppu_io->nametable_mirroring) = SINGLE_SCREEN_A;
-				change_nt_mirroring(cpu);
+				set_nametable_mirroring(cpu);
 				break;
 			case 0x01: // 1-screen mirroring nametable 1
 				*(cpu->cpu_ppu_io->nametable_mirroring) = SINGLE_SCREEN_B;
-				change_nt_mirroring(cpu);
+				set_nametable_mirroring(cpu);
 				break;
 			case 0x02: // 0b10 vertical mirroring
 				*(cpu->cpu_ppu_io->nametable_mirroring) = VERTICAL;
-				change_nt_mirroring(cpu);
+				set_nametable_mirroring(cpu);
 				break;
 			case 0x03: // 0b11 horizontal mirroring
 				*(cpu->cpu_ppu_io->nametable_mirroring) = HORIZONTAL;
-				change_nt_mirroring(cpu);
+				set_nametable_mirroring(cpu);
 				break;
 			}
 			// H bit

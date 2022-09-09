@@ -4,7 +4,6 @@
 #include "extern_structs.h"
 
 void mapper_write(Cpu6502* cpu, uint16_t addr, uint8_t val);
-void change_nt_mirroring(Cpu6502* cpu);
 void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu);
 
 #endif /* __MAPPERS__ */
