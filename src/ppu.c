@@ -316,6 +316,31 @@ void ppu_mem_hexdump_addr_range(const Ppu2C02* ppu, const enum PpuMemoryTypes pp
 		if (end_addr > 31) {
 			end_addr = 0x1F;  // keep value between 0-31
 		}
+	} else if (ppu_mem == PATTERN_TABLE_0) {
+		printf("\n################# PPU PATTERN TABLE 0 ################\n");
+		if (end_addr > 0x0FFF) {
+			end_addr = 0x0FFF;  // keep value between 0 and 0x0FFF
+		}
+	} else if (ppu_mem == PATTERN_TABLE_1) {
+		printf("\n################# PPU PATTERN TABLE 1 ################\n");
+		if (end_addr > 0x0FFF) {
+			end_addr = 0x0FFF;  // keep value between 0 and 0x0FFF
+		}
+	} else if (ppu_mem == NAMETABLE_A) {
+		printf("\n################### PPU NAMETABLE A ##################\n");
+		if (end_addr > 0x03FF) {
+			end_addr = 0x03FF;  // keep value between 0 and 0x03FF
+		}
+	} else if (ppu_mem == NAMETABLE_B) {
+		printf("\n################### PPU NAMETABLE B ##################\n");
+		if (end_addr > 0x03FF) {
+			end_addr = 0x03FF;  // keep value between 0 and 0x03FF
+		}
+	} else if (ppu_mem == PALETTE_RAM) {
+		printf("\n################### PPU PALETTE RAM ##################\n");
+		if (end_addr > 0x001F) {
+			end_addr = 0x001F;  // keep value between 0 and 0x001F
+		}
 	}
 	// print header for memory addresses
 	printf("      ");
@@ -342,6 +367,16 @@ void ppu_mem_hexdump_addr_range(const Ppu2C02* ppu, const enum PpuMemoryTypes pp
 				printf("%.2X ", ppu->oam[start_addr + x]);
 			} else if (ppu_mem == SECONDARY_OAM) {
 				printf("%.2X ", ppu->scanline_oam[start_addr + x]);
+			} else if (ppu_mem == PATTERN_TABLE_0) {
+				printf("%.2X ", ppu->vram.pattern_table_0[start_addr + x]);
+			} else if (ppu_mem == PATTERN_TABLE_1) {
+				printf("%.2X ", ppu->vram.pattern_table_1[start_addr + x]);
+			} else if (ppu_mem == NAMETABLE_A) {
+				printf("%.2X ", ppu->vram.nametable_A[start_addr + x]);
+			} else if (ppu_mem == NAMETABLE_B) {
+				printf("%.2X ", ppu->vram.nametable_B[start_addr + x]);
+			} else if (ppu_mem == PALETTE_RAM) {
+				printf("%.2X ", ppu->vram.palette_ram[start_addr + x]);
 			}
 			// halfway point, print extra space for readability
 			if (x == 7) {

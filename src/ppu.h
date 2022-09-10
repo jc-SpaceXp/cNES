@@ -15,7 +15,11 @@ enum PpuMemoryTypes {
 	VRAM,
 	PRIMARY_OAM,
 	SECONDARY_OAM,
-	PATTERN_TABLE_1
+	PATTERN_TABLE_0,
+	PATTERN_TABLE_1,
+	NAMETABLE_A,
+	NAMETABLE_B,
+	PALETTE_RAM
 };
 
 /* Initialise Function */
