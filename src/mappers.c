@@ -218,12 +218,18 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 				// so can just shift out the lsb and offset each bank by 8K
 				bank_select >>= 1;
 			}
-			set_chr_bank_1(cpu, bank_select, cpu->cpu_mapper_io->chr_bank_size * KiB);
+			// Only copy CHR ROM
+			if (cpu->cpu_mapper_io->chr->rom_size) {
+				set_chr_bank_1(cpu, bank_select, cpu->cpu_mapper_io->chr_bank_size * KiB);
+			}
 		} else if ((addr >= 0xC000) && (addr <= 0xDFFF)) {
 			// reg 2: RxxC CCCC (ignored if CHR banks are in 8K mode)
 			unsigned bank_select = buffer & 0x1F;
 			if (cpu->cpu_mapper_io->chr_bank_size == 4) {
-				set_chr_bank_2(cpu, bank_select);
+				// Only copy CHR ROM
+				if (cpu->cpu_mapper_io->chr->rom_size) {
+					set_chr_bank_2(cpu, bank_select);
+				}
 			}
 		} else if (addr >= 0xE000) { // else (addr >= 0xE000 && addr <= 0xFFFF)
 			// reg 3: RxxB PPPP
