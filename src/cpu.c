@@ -200,8 +200,8 @@ CpuMapperShare* cpu_mapper_init(Cartridge* cart)
 	i->prg_rom_bank_size = 0;
 	i->chr_bank_size = 0;
 
-	i->is_upper_fixed = false;
-	i->is_lower_fixed = false;
+	i->prg_low_bank_fixed = false;
+	i->prg_high_bank_fixed = false;
 	i->enable_prg_ram = false;
 
 	return i;

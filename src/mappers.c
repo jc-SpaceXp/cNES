@@ -98,7 +98,7 @@ void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	/* Load PRG_ROM into CPU program memory space */
-	if (cart->prg_rom.size == 16 * KiB) {
+	if (cart->prg_rom.size == (16 * KiB)) {
 		memcpy(&cpu->mem[0x8000], cart->prg_rom.data, 16 * KiB); // First 16KiB
 		memcpy(&cpu->mem[0xC000], cart->prg_rom.data, 16 * KiB); // Last 16KiB (Mirrored)
 	} else {
@@ -133,7 +133,7 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 	static unsigned write_cycle = 0;
 
 	// ignore adjacent writes
-	if (write_cycle == cpu->cycle - 1) {
+	if (write_cycle == (cpu->cycle - 1)) {
 		return;
 	}
 
@@ -143,7 +143,7 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 		buffer = 0;
 
 		unsigned prg_rom_banks = cpu->cpu_mapper_io->prg_rom->size / (16 * KiB);
-		cpu->cpu_mapper_io->is_lower_fixed = true;
+		cpu->cpu_mapper_io->prg_high_bank_fixed = true;
 		cpu->cpu_mapper_io->prg_rom_bank_size = 16;
 		set_prg_rom_bank_2(cpu, prg_rom_banks - 1);
 
@@ -151,12 +151,14 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 		return; // early return
 	}
 
+	// write lsb of val to write_count'th bit (bits 0 through 4)
 	buffer |= (val & 0x01) << write_count;
 	++write_count;
 	write_cycle = cpu->cycle;  // update write_cycle
 
 	if (write_count == 5) {
-		if (addr >= 0x8000 && addr <= 0x9FFF) { // reg 0 (control)
+		if ((addr >= 0x8000) && (addr <= 0x9FFF)) {
+			// reg 0: xxxC FHMM
 			// MM bits
 			switch (buffer & 0x03) {
 			case 0x00: // 1-screen mirroring nametable 0
@@ -177,18 +179,19 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 				break;
 			}
 			// H bit
-			switch (buffer >> 2 & 0x01) {
-			case 0: // 0 = fixed upper bank
-				cpu->cpu_mapper_io->is_upper_fixed = true;
-				cpu->cpu_mapper_io->is_lower_fixed = false;
+			switch ((buffer >> 2) & 0x01) {
+			case 0: // 0 = fixed lower bank
+				cpu->cpu_mapper_io->prg_low_bank_fixed = true;
+				cpu->cpu_mapper_io->prg_high_bank_fixed = false;
 				break;
-			case 1: // 1 = fixed lower bank
-				cpu->cpu_mapper_io->is_lower_fixed = true;
-				cpu->cpu_mapper_io->is_upper_fixed = false;
+			case 1: // 1 = fixed upper bank
+				cpu->cpu_mapper_io->prg_low_bank_fixed = false;
+				cpu->cpu_mapper_io->prg_high_bank_fixed = true;
 				break;
 			}
 			// F bit
-			switch (buffer >> 3 & 0x01) {
+			switch ((buffer >> 3) & 0x01) {
+			// Size in KiB
 			case 0:
 				cpu->cpu_mapper_io->prg_rom_bank_size = 32;
 				break;
@@ -197,37 +200,45 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 				break;
 			}
 			// C bit
-			switch (buffer >> 4 & 0x01) {
+			switch ((buffer >> 4) & 0x01) {
 			case 0: // can either be rom or ram
+			// Size in KiB
 				cpu->cpu_mapper_io->chr_bank_size = 8;
 				break;
 			case 1:
 				cpu->cpu_mapper_io->chr_bank_size = 4;
 				break;
 			}
-		} else if (addr >= 0xA000 && addr <= 0xBFFF) { // reg 1
+		} else if ((addr >= 0xA000) && (addr <= 0xBFFF)) {
+			// reg 1: RxxC CCCC
 			// C bits
 			unsigned bank_select = buffer & 0x1F;
 			if (cpu->cpu_mapper_io->chr_bank_size == 8) {
+				// ignore lowest bit (can only be aligned to even 4K banks: 0, 2, 4 etc.)
+				// so can just shift out the lsb and offset each bank by 8K
 				bank_select >>= 1;
 			}
 			set_chr_bank_1(cpu, bank_select, cpu->cpu_mapper_io->chr_bank_size * KiB);
-		} else if (addr >= 0xC000 && addr <= 0xDFFF) { // reg 2
+		} else if ((addr >= 0xC000) && (addr <= 0xDFFF)) {
+			// reg 2: RxxC CCCC (ignored if CHR banks are in 8K mode)
 			unsigned bank_select = buffer & 0x1F;
 			if (cpu->cpu_mapper_io->chr_bank_size == 4) {
 				set_chr_bank_2(cpu, bank_select);
 			}
-		} else if (addr >= 0xE000) { // else (addr >= 0xE000 && addr <= 0xFFFF) --> reg 3
+		} else if (addr >= 0xE000) { // else (addr >= 0xE000 && addr <= 0xFFFF)
+			// reg 3: RxxB PPPP
 			unsigned bank_select = buffer & 0x0F;
 			unsigned prg_rom_banks = cpu->cpu_mapper_io->prg_rom->size / (16 * KiB);
 			if (cpu->cpu_mapper_io->prg_rom_bank_size == 32) {
+				// ignore lowest bit (can only be aligned to even 16K banks: 0, 2, 4 etc.)
+				// so can just shift out the lsb and offset each bank by 32K
 				bank_select >>= 1;
-				set_prg_rom_bank_1(cpu, bank_select, 32);
+				set_prg_rom_bank_1(cpu, bank_select, 32 * KiB);
 			} else {
-				if (cpu->cpu_mapper_io->is_upper_fixed) {
+				if (cpu->cpu_mapper_io->prg_low_bank_fixed) {
 					set_prg_rom_bank_1(cpu, 0, 16 * KiB);
 					set_prg_rom_bank_2(cpu, bank_select);
-				} else if (cpu->cpu_mapper_io->is_lower_fixed) {
+				} else if (cpu->cpu_mapper_io->prg_high_bank_fixed) {
 					set_prg_rom_bank_1(cpu, bank_select, 16 * KiB);
 					set_prg_rom_bank_2(cpu, prg_rom_banks - 1);
 				}

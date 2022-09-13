@@ -72,8 +72,8 @@ typedef struct {
 	unsigned chr_bank_size;
 
 	// prg_rom helpers
-	bool is_upper_fixed;
-	bool is_lower_fixed;
+	bool prg_low_bank_fixed;  // Bank $8000 to $BFFF is fixed
+	bool prg_high_bank_fixed; // Bank $C000 to $FFFF is fixed
 
 	bool enable_prg_ram;
 } CpuMapperShare;
