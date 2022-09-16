@@ -521,8 +521,11 @@ static void read_2007(Cpu6502* cpu)
 	cpu->cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr);
 
 	if (addr >= 0x3F00) {
-		// return non-mirrored address
+		// palette data isn't buffered
 		cpu->cpu_ppu_io->return_value = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr);
+		// buffer data would be if the nametable mirroring kept going
+		// use minus 0x1000 to get out of palette addresses and read from nametable mirrors
+		cpu->cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr - 0x1000);
 	}
 
 	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
