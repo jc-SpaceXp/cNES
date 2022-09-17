@@ -137,41 +137,29 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 	return ppu;
 }
 
-// common masks, bit set and clear operations
-static inline bool ppu_status_vblank_bit_set(const Ppu2C02* p)
+/* common masks, bit set and clear operations for ppu registers
+ *
+ * For ppu calling functions: arg 1 == p->cpu_ppu_io
+ * For cpu calling functions: arg 1 == cpu->cpu_ppu_io
+ */
+static inline bool ppu_status_vblank_bit_set(const CpuPpuShare* cpu_ppu_io)
 {
-	return ((p->cpu_ppu_io->ppu_status & 0x80) ? 1 : 0);
+	return ((cpu_ppu_io->ppu_status & 0x80) ? 1 : 0);
 }
 
-static inline bool ppu_ctrl_gen_nmi_bit_set(const Ppu2C02* p)
+static inline bool ppu_ctrl_gen_nmi_bit_set(const CpuPpuShare* cpu_ppu_io)
 {
-	return ((p->cpu_ppu_io->ppu_ctrl & 0x80) ? 1 : 0);
+	return ((cpu_ppu_io->ppu_ctrl & 0x80) ? 1 : 0);
 }
 
-static inline void clear_ppu_status_vblank_bit(Ppu2C02* p)
+static inline void clear_ppu_status_vblank_bit(CpuPpuShare* cpu_ppu_io)
 {
-	p->cpu_ppu_io->ppu_status &= ~0x80;
+	cpu_ppu_io->ppu_status &= ~0x80;
 }
 
-static inline void set_ppu_status_vblank_bit(Ppu2C02* p)
+static inline void set_ppu_status_vblank_bit(CpuPpuShare* cpu_ppu_io)
 {
-	p->cpu_ppu_io->ppu_status |= 0x80;
-}
-
-// CPU sided versions of above functions
-static inline bool cpu_mapped_ppu_status_vblank_bit_set(const Cpu6502* cpu)
-{
-	return ((cpu->cpu_ppu_io->ppu_status & 0x80) ? 1 : 0);
-}
-
-static inline bool cpu_mapped_ppu_ctrl_gen_nmi_bit_set(const Cpu6502* cpu)
-{
-	return ((cpu->cpu_ppu_io->ppu_ctrl & 0x80) ? 1 : 0);
-}
-
-static inline void cpu_clears_ppu_status_vblank_bit(Cpu6502* cpu)
-{
-	cpu->cpu_ppu_io->ppu_status &= ~0x80;
+	cpu_ppu_io->ppu_status |= 0x80;
 }
 
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
@@ -179,13 +167,13 @@ static void ppu_vblank_warmup_seq(Ppu2C02* p, const Cpu6502* cpu)
 {
 	static unsigned count = 0;
 	if (!count) {
-		clear_ppu_status_vblank_bit(p);
+		clear_ppu_status_vblank_bit(p->cpu_ppu_io);
 		++count;
 	} else if ((count == 1) && cpu->cycle >= 27383) {
-		set_ppu_status_vblank_bit(p);
+		set_ppu_status_vblank_bit(p->cpu_ppu_io);
 		++count;
 	} else if ((count == 2) && cpu->cycle >= 57164) {
-		set_ppu_status_vblank_bit(p);
+		set_ppu_status_vblank_bit(p->cpu_ppu_io);
 		++count;
 	}
 }
@@ -431,8 +419,8 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 	switch (addr) {
 	case (0x2000):
 		/* PPU CTRL */
-		if (cpu_mapped_ppu_status_vblank_bit_set(cpu)
-			&& !cpu_mapped_ppu_ctrl_gen_nmi_bit_set(cpu)
+		if (ppu_status_vblank_bit_set(cpu->cpu_ppu_io)
+			&& !ppu_ctrl_gen_nmi_bit_set(cpu->cpu_ppu_io)
 			&& (data & 0x80)) {
 			cpu->cpu_ppu_io->nmi_pending = true;
 			cpu->delay_nmi = true;
@@ -508,7 +496,7 @@ static void cpu_writes_to_vram(uint8_t data, Cpu6502* cpu)
 static void read_2002(Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->ppu_status;
-	cpu_clears_ppu_status_vblank_bit(cpu);
+	clear_ppu_status_vblank_bit(cpu->cpu_ppu_io);
 	cpu->cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
 	cpu->cpu_ppu_io->suppress_nmi_flag = true;
 
@@ -1220,11 +1208,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 	/* NMI, VBlank and ppu_status register handling */
 	if (p->scanline == p->nmi_start) {
 		if (p->cycle == 0) {
-			set_ppu_status_vblank_bit(p); // In VBlank
+			set_ppu_status_vblank_bit(p->cpu_ppu_io); // In VBlank
 			p->cpu_ppu_io->nmi_lookahead = true;
 			p->cpu_ppu_io->clear_status = true;
 		}
-		if (ppu_ctrl_gen_nmi_bit_set(p)) {
+		if (ppu_ctrl_gen_nmi_bit_set(p->cpu_ppu_io)) {
 			if (p->cycle == 1) {
 				p->cpu_ppu_io->nmi_pending = true;
 				p->cpu_ppu_io->nmi_lookahead = true; // nmi is delayed
@@ -1242,7 +1230,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 		}
 
 		// Must also disable NMI after disabling NMI flag
-		if (!ppu_ctrl_gen_nmi_bit_set(p) && p->cpu_ppu_io->nmi_pending) {
+		if (!ppu_ctrl_gen_nmi_bit_set(p->cpu_ppu_io) && p->cpu_ppu_io->nmi_pending) {
 			if (p->cycle < 5) {
 				p->cpu_ppu_io->ignore_nmi = true;
 				p->cpu_ppu_io->nmi_pending = false;
@@ -1252,7 +1240,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 		// clear VBlank flag if cpu clock is aligned w/ the ppu clock
 		// hard coded for NTSC currently
 		if (p->cpu_ppu_io->suppress_nmi_flag && (cpu->cycle % 3 == 0)) {
-			clear_ppu_status_vblank_bit(p);
+			clear_ppu_status_vblank_bit(p->cpu_ppu_io);
 		}
 	} else if (p->scanline == 261 && p->cycle == 0) { // Pre-render scanline
 		p->cpu_ppu_io->ppu_status &= ~0x40;
