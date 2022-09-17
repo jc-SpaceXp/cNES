@@ -1049,37 +1049,48 @@ static void sprite_evaluation(Ppu2C02* p)
 }
 
 
+/* Sprite 0 hit peek for the next 8 pixels to be rendered
+ */
 static void sprite_hit_lookahead(Ppu2C02* p)
 {
+	// Check if sprite is in Y range
 	// -1 as Y pos of sprite is delayed until the next scanline
 	if ((p->scanline - p->oam[0] - 1) < ppu_sprite_height(p)
 		&& (p->scanline > 0)
 		&& (p->scanline < 240)) {
 		// should be looking @ px 9-16 (1 index) @ cyc 8
-		switch ((p->cycle - 1) & 0x07) {
-		case 7:
+		if (((p->cycle - 1) & 0x07) == 0x07) {
 			// perform our check on the start of a tile boundry i.e. 0, 8, 16 ...
+			// and make sure that the sprite 0 x pos is range
 			if (((p->oam[3] / 8) == (p->cycle / 8)) && (p->cycle < 256)) {
 				// reset hit_pos
 				p->l_sl = 10000;
 				p->l_cl = 10000;
-				unsigned h_offset = p->oam[3] % 8;
-				unsigned v_offset = p->scanline - p->oam[0] - 1;
+				unsigned sp_h_offset = p->oam[3] % 8;
+				unsigned sp_v_offset = p->scanline - p->oam[0] - 1;
 				for (int i = 0; i < 8; i++) {
+					// set to an invalid value
 					p->bg_opaque_hit[i] = -10;
 					p->sp_opaque_hit[i] = -10;
 				}
 
 				for (int mask = 1; mask < 9; mask++) {
-					p->bg_lo_reg = (p->pt_lo_shift_reg >> (mask + h_offset - 1)) & 0x01;
-					p->bg_hi_reg = (p->pt_hi_shift_reg >> (mask + h_offset - 1)) & 0x01;
-					unsigned tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + v_offset);
-					unsigned tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + v_offset + 8);
+					// get correct bit/pixel from bg pattern tables:
+					//   h_offset is the x offset to the non-scrolled bg tile
+					//     making the bg aligned to the sprite (non-scrolled)
+					//   fine_x to get the correct scrolled pixel of bg tile
+					//   mask iterates through 8 pixels to get our lookahead
+					p->bg_lo_reg = (p->pt_lo_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
+					p->bg_hi_reg = (p->pt_hi_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
+					unsigned tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + sp_v_offset);
+					unsigned tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + sp_v_offset + 8);
 					if (ppu_sprite_height(p) == 16) {
-						if (v_offset >= 8) { v_offset += 8; } // avoid overlap w/ hi address space i.e. 0x0008 to 0x000F
-						tmp_pt_lo = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + v_offset));
-						tmp_pt_hi = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + v_offset + 8));
+						if (sp_v_offset >= 8) { sp_v_offset += 8; } // avoid overlap w/ hi address space i.e. 0x0008 to 0x000F
+						tmp_pt_lo = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + sp_v_offset));
+						tmp_pt_hi = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + sp_v_offset + 8));
 					}
+
+					// Ger correct bit from sprite pattern tables
 					// MSB = 1st pixel (not using the reverse_bits function here)
 					p->sp_lo_reg = (tmp_pt_lo >> (8 - mask)) & 0x01;
 					p->sp_hi_reg = (tmp_pt_hi >> (8 - mask)) & 0x01;
@@ -1090,12 +1101,12 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 					}
 					// flip sprites vertically
 					if (p->oam[2] & 0x80) {
-						tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 7 - v_offset);
-						tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 15 - v_offset);
+						tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 7 - sp_v_offset);
+						tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 15 - sp_v_offset);
 						// flip the 8x16 sprites
 						if (ppu_sprite_height(p) == 16) {
-							tmp_pt_lo = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 23 - v_offset));
-							tmp_pt_hi = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 31 - v_offset));
+							tmp_pt_lo = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 23 - sp_v_offset));
+							tmp_pt_hi = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 31 - sp_v_offset));
 						}
 						p->sp_lo_reg = (tmp_pt_lo >> (8 - mask)) & 0x01;
 						p->sp_hi_reg = (tmp_pt_hi >> (8 - mask)) & 0x01;
@@ -1104,6 +1115,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 							p->sp_hi_reg = (reverse_bits[tmp_pt_hi] >> (8 - mask)) & 0x01;
 						}
 					}
+					// report if any bg and sprite pixel is non-transparent
 					// using the p->sprite_pt_xx_shift_reg[0] produces some incorrect values
 					// i.e. in bases loaded: after sprite zero hit SL: 118 onwards should
 					// report 0xFF when calling the lo_pt[0] instead for 118 I get 0x00
@@ -1133,9 +1145,6 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 					}
 				}
 			}
-			break;
-		default:
-			break;
 		}
 	}
 }
