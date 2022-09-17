@@ -479,7 +479,7 @@ static void cpu_writes_to_vram(uint8_t data, Cpu6502* cpu)
 	// keep address in valid range
 	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
 
-	// Write to pattern tables (if using CHR RAM)
+	// Write to pattern tables (if using CHR RAM), otherwise we are using CHR ROM
 	if ((cpu->cpu_mapper_io->chr->ram_size) && (addr <= 0x1FFF)) {
 		write_to_ppu_vram(cpu->cpu_ppu_io->vram, addr, data);
 	}
@@ -500,6 +500,11 @@ static void cpu_writes_to_vram(uint8_t data, Cpu6502* cpu)
 }
 
 /* Read Functions */
+
+/* Reading $2002 will always clear the write toggle
+ * It will also clear VBLANK flag bit (bit 7)
+ * The value read-back may have the VBLANK flag set or not (when close to NMI)
+ */
 static void read_2002(Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->ppu_status;
@@ -532,34 +537,64 @@ static void read_2007(Cpu6502* cpu)
 }
 
 /* Write Functions */
+
+/* PPUCTRL writes (for scrolling), previous function that calls this
+ * updates the PPUCTRL bits/flags
+ *
+ * vram_addr byte layout: 0yyy NNYY YYYX XXXX (and vram_tmp_addr byte layout)
+ *
+ * For scrolling clear NN bits and later set them
+ * Same NN bits get written to PPUCTLR's first two bits earlier
+ */
 static void write_2000(const uint8_t data, Cpu6502* cpu)
 {
-	*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x0C00; /* Clear bits to be set */
+	*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x0C00;
 	*(cpu->cpu_ppu_io->vram_tmp_addr) |= (data & 0x03) << 10;
 }
 
+/* Set OAMADDR: The value of OAMADDR when sprite_evaluation() is first called
+ * determines the first sprite to be checked (this is the sprite 0)
+ */
 static inline void write_2003(const uint8_t data, Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->oam_addr = data;
 }
 
+/* Write OAMDATA to previously set OAMADDR (through a $2003 write)
+ * OAMADDR is incremented after the write
+ */
 static void write_2004(const uint8_t data, Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] = data;
 	++cpu->cpu_ppu_io->oam_addr;
 }
 
+/* Update PPUSCROLL value (scroll position), needs two writes for a complete update
+ * The scroll position being CoarseX, fine_x, CoarseY and fine_y
+ *
+ * vram_addr byte layout: 0yyy NNYY YYYX XXXX (and vram_tmp_addr byte layout)
+ * Notice first write clears CoarseX (XX bits from vram_tmp)
+ * Whilst setting fine_x and CoarseX (by shifting out fine_x from the write value)
+ *
+ * The second write clears fine_y and CoarseY bits (yy and YYY bits)
+ * Incoming data is: YYYY Yyyy
+ * So we bit mask w/ 0x07 to get fine_y and we mask w/ 0xF8 to get CoarseY
+ * We then move those bits to the correct positions through bit shifts
+ *
+ * First and second writes are kept track of via a write toggle flag, each write will
+ * toggle the flag
+ */
 static void write_2005(const uint8_t data, Cpu6502* cpu)
 {
 	// Valid address = 0x0000 to 0x3FFF
 	if (!cpu->cpu_ppu_io->write_toggle) {
 		// First Write
-		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x001F; /* Clear bits that are to be set */
+		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x001F;
 		*(cpu->cpu_ppu_io->vram_tmp_addr) |= (data >> 3);
-		*(cpu->cpu_ppu_io->fine_x) = data & 0x07; /* same as data % 8 */
+		*(cpu->cpu_ppu_io->fine_x) = data & 0x07;
 	} else {
 		// Second Write
-		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x73E0; /* Clear bits that are to be set */
+		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x73E0;
 		*(cpu->cpu_ppu_io->vram_tmp_addr) |= ((data & 0xF8) << 2) | ((data & 0x07) << 12);
 		cpu->cpu_ppu_io->ppu_scroll = *(cpu->cpu_ppu_io->vram_tmp_addr);
 	}
@@ -567,15 +602,29 @@ static void write_2005(const uint8_t data, Cpu6502* cpu)
 }
 
 
+/* Update PPUADDR value, needs two writes for a complete update
+ *
+ * vram_addr byte layout: 0yyy NNYY YYYX XXXX (and vram_tmp_addr byte layout)
+ * Notice first write clears the higher byte
+ * Mask incoming data w/ 0x3F to discard the upper y bit (as this keeps the
+ * address within 0x0000 to 0x3FFF, and the msb bit is always 0, vram_addr is
+ * 15 bits wide)
+ *
+ * The second write clears the lower byte and later sets it too
+ * Vram_addr is updated from vram_tmp_addr
+ *
+ * First and second writes are kept track of via a write toggle flag, each write will
+ * toggle the flag
+ */
 static void write_2006(const uint8_t data, Cpu6502* cpu)
 {
 	// Valid address = 0x0000 to 0x3FFF
 	if (!cpu->cpu_ppu_io->write_toggle) {
-		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x7F00; /* Clear Higher Byte */
-		*(cpu->cpu_ppu_io->vram_tmp_addr) |= (uint16_t) ((data & 0x3F) << 8); /* 14th bit should be clear */
+		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x7F00;
+		*(cpu->cpu_ppu_io->vram_tmp_addr) |= (uint16_t) ((data & 0x3F) << 8);
 	} else {
-		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x00FF; /* Clear Lower Byte */
-		*(cpu->cpu_ppu_io->vram_tmp_addr) |= data; /* Lower byte */
+		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x00FF;
+		*(cpu->cpu_ppu_io->vram_tmp_addr) |= data;
 		*(cpu->cpu_ppu_io->vram_addr) = *(cpu->cpu_ppu_io->vram_tmp_addr);
 		cpu->cpu_ppu_io->ppu_addr = *(cpu->cpu_ppu_io->vram_tmp_addr);
 	}
@@ -583,6 +632,9 @@ static void write_2006(const uint8_t data, Cpu6502* cpu)
 }
 
 
+/* Write to PPU VRAM through PPUDATA register
+ * Update vram_addr after write by looking at PPUCTRL register
+ */
 static void write_2007(const uint8_t data, Cpu6502* cpu)
 {
 	cpu_writes_to_vram(data, cpu);
@@ -590,6 +642,8 @@ static void write_2007(const uint8_t data, Cpu6502* cpu)
 }
 
 
+/* Set DMA flag so that when the CPU is clocked it is triggered
+ */
 void write_4014(const uint8_t data, Cpu6502* cpu)
 {
 	cpu->cpu_ppu_io->dma_pending = true;
@@ -647,9 +701,9 @@ static uint16_t ppu_sprite_pattern_table_addr(const Ppu2C02* p)
 static uint8_t ppu_sprite_height(const Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
-		return 16; /* 8 x 16 */
+		return 16; // 8 x 16 sprites
 	} else {
-		return 8; /* 8 x 8 */
+		return 8; // 8 x 8 sprites
 	}
 }
 
@@ -1116,11 +1170,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 
 	p->cycle++;
 	if (p->cycle > 340) {
-		p->cycle = 0; /* Reset cycle count to 0, max val = 340 */
+		p->cycle = 0; // Reset cycle count to 0, max val = 340
 
 		p->scanline++;
 		if (p->scanline > 261) {
-			p->scanline = 0; /* Reset scanline to 0, max val == 261 */
+			p->scanline = 0; // Reset scanline to 0, max val == 261
 			p->odd_frame = !p->odd_frame;
 		}
 	}
@@ -1166,7 +1220,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 	/* NMI, VBlank and ppu_status register handling */
 	if (p->scanline == p->nmi_start) {
 		if (p->cycle == 0) {
-			set_ppu_status_vblank_bit(p); /* In VBlank */
+			set_ppu_status_vblank_bit(p); // In VBlank
 			p->cpu_ppu_io->nmi_lookahead = true;
 			p->cpu_ppu_io->clear_status = true;
 		}
@@ -1200,9 +1254,9 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 		if (p->cpu_ppu_io->suppress_nmi_flag && (cpu->cycle % 3 == 0)) {
 			clear_ppu_status_vblank_bit(p);
 		}
-	} else if (p->scanline == 261 && p->cycle == 0) { /* Pre-render scanline */
+	} else if (p->scanline == 261 && p->cycle == 0) { // Pre-render scanline
 		p->cpu_ppu_io->ppu_status &= ~0x40;
-	} else if (p->scanline == 261 && p->cycle == 1) { /* Pre-render scanline */
+	} else if (p->scanline == 261 && p->cycle == 1) { // Pre-render scanline
 		// Clear VBlank, sprite hit and sprite overflow flags
 		p->cpu_ppu_io->ppu_status &= ~0xE0;
 	} else if (p->scanline == 240 && p->cycle == 340) {
@@ -1217,7 +1271,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 
 	if (ppu_show_bg(p) || ppu_show_sprite(p)) {
 		// Sprites are evaluated for either BG or sprite rendering
-		if (p->scanline <= 239) { /* Visible scanlines */
+		if (p->scanline <= 239) { // Visible scanlines
 			if (p->cycle > 64 && p->cycle <= 256) {
 				sprite_evaluation(p);
 			}
@@ -1225,7 +1279,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 	}
 
 	// Fill pixel buffer and then render frame
-	if (p->scanline <= 239) { /* Visible scanlines */
+	if (p->scanline <= 239) { // Visible scanlines
 		if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
 			render_pixel(p); // Render pixel every cycle
 		}
@@ -1235,7 +1289,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 
 	/* Process BG Scanlines */
 	if (ppu_show_bg(p)) {
-		if (p->scanline <= 239) { /* Visible scanlines */
+		if (p->scanline <= 239) { // Visible scanlines
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
 				// reload at shift registers when we move onto a new tile
 				// (the original pixels 9-16 in the pipeline)
@@ -1293,7 +1347,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					break;
 				case 6: // Cycle 327 (and +8)
 					fetch_pt_hi(p);
-					/* Load latched values into upper byte of shift regs */
+					// Load latched values into upper byte of shift regs
 					p->pt_hi_shift_reg >>= 8;
 					p->pt_lo_shift_reg >>= 8;
 					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
@@ -1355,7 +1409,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					break;
 				case 6: // Cycle 327 (and +8)
 					fetch_pt_hi(p);
-					/* Load latched values into upper byte of shift regs */
+					// Load latched values into upper byte of shift regs
 					p->pt_hi_shift_reg >>= 8;
 					p->pt_lo_shift_reg >>= 8;
 					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
@@ -1375,7 +1429,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 
 	/* Process Sprites */
 	if (ppu_show_sprite(p)) {
-		if (p->scanline <= 239) { /* Visible scanlines */
+		if (p->scanline <= 239) { // Visible scanlines
 			if (p->cycle <= 64 && (p->cycle != 0)) {
 				reset_secondary_oam(p);
 			} else if (p->cycle > 256 && p->cycle <= 320) { // Sprite data fetches
@@ -1440,7 +1494,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 						p->sprite_pt_hi_shift_reg[count] = read_from_ppu_vram(&p->vram, p->sprite_addr + 8);
 					}
 					break;
-				case 7: /* 8th Cycle */
+				case 7: // 8th Cycle
 					count++;
 					for (int i = p->sprites_found; i < 8; i++) { // Less than 8 sprites, zero out pattern table for remainding sprites
 						p->sprite_pt_lo_shift_reg[i] = 0; // Empty slots should have transparent/bg pixel values
@@ -1449,7 +1503,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					break;
 				}
 			}
-		} else if (p->scanline == 261) { /* Pre-render scanline */
+		} else if (p->scanline == 261) { // Pre-render scanline
 			p->sp_frame_hit_lookahead = false;
 			// only bg fetches occur
 	
