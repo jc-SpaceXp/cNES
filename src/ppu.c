@@ -56,6 +56,7 @@ uint32_t pixels[256 * 240];
 
 // Static prototype functions
 static void read_2002(Cpu6502* cpu);
+static void read_2004(Cpu6502* cpu);
 static void read_2007(Cpu6502* cpu);
 static void write_2000(const uint8_t data, Cpu6502* cpu); // OAM_ADDR
 static void write_2003(const uint8_t data, Cpu6502* cpu); // OAM_ADDR
@@ -387,7 +388,8 @@ uint8_t read_ppu_reg(const uint16_t addr, Cpu6502* cpu)
 		break;
 	case (0x2004):
 		/* OAM Data (read & write) */
-		ret = cpu->cpu_ppu_io->oam_data;
+		read_2004(cpu);
+		ret = cpu->cpu_ppu_io->return_value;
 		break;
 	case (0x2007):
 		/* PPU DATA */
@@ -504,6 +506,22 @@ static void read_2002(Cpu6502* cpu)
 		cpu->cpu_ppu_io->return_value &= ~0x80;
 		cpu->cpu_ppu_io->clear_status = false;
 	}
+}
+
+static void read_2004(Cpu6502* cpu)
+{
+	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr];
+	if ((cpu->cpu_ppu_io->oam_addr & 0x03) == 0x02) {
+		// if reading back attribute bytes, return 0 for unused bitss
+		cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] & 0xE3;
+	}
+
+	if (ppu_status_vblank_bit_set(cpu->cpu_ppu_io)
+		|| !(cpu->cpu_ppu_io->ppu_mask & 0x18)) {
+		// don't increment oam_addr on VBLANK or if rendering is disabled
+		return;
+	}
+	++cpu->cpu_ppu_io->oam_addr;
 }
 
 static void read_2007(Cpu6502* cpu)
