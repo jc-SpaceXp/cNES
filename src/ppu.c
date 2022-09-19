@@ -982,6 +982,7 @@ static void render_pixel(Ppu2C02 *p)
 	 * cases for sprite output are true
 	 */
 	unsigned RGB = read_from_ppu_vram(&p->vram, bg_palette_addr + bg_colour_index); // Get RGB values
+	if (ppu_show_greyscale(p)) { RGB &= 0x30; }
 
 	/* Shift out each cycle */
 	p->pt_hi_shift_reg >>= 1;
@@ -1004,6 +1005,7 @@ static void render_pixel(Ppu2C02 *p)
 			sprite_palette_addr += 0x3F10;
 			if ((sprite_is_front_priority(p, i) || !bg_colour_index) && sprite_colour_index[i]) {
 				RGB = read_from_ppu_vram(&p->vram, sprite_palette_addr + sprite_colour_index[i]); // Output sprite
+				if (ppu_show_greyscale(p)) { RGB &= 0x30; }
 			}
 			p->sprite_pt_lo_shift_reg[i] >>= 1;
 			p->sprite_pt_hi_shift_reg[i] >>= 1;
