@@ -1051,6 +1051,26 @@ static void render_pixel(Ppu2C02 *p)
 	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
 }
 
+static inline uint8_t secondary_oam_y_pos(const Ppu2C02* p, const unsigned sprite_index)
+{
+	return (p->scanline_oam[sprite_index * 4]);
+}
+
+static inline uint8_t secondary_oam_tile_number(const Ppu2C02* p, const unsigned sprite_index)
+{
+	return (p->scanline_oam[(sprite_index * 4) + 1]);
+}
+
+static inline uint8_t secondary_oam_at_byte(const Ppu2C02* p, const unsigned sprite_index)
+{
+	return (p->scanline_oam[(sprite_index * 4) + 2]);
+}
+
+static inline uint8_t secondary_oam_x_pos(const Ppu2C02* p, const unsigned sprite_index)
+{
+	return (p->scanline_oam[(sprite_index * 4) + 3]);
+}
+
 static void ppu_transfer_oam(Ppu2C02* p, const unsigned index)
 {
 	if (p->sprites_found == 8) {
@@ -1507,14 +1527,14 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 				case 1:
 					// When not in range the sprite is filled w/ FF
 					p->sprite_addr = ppu_sprite_pattern_table_addr(p)
-					               | (uint16_t) p->scanline_oam[(count * 4) + 1] << 4; // Read tile numb
+					               | (uint16_t) secondary_oam_tile_number(p, count) << 4;
 					// 8x16 sprites don't use ppu_ctrl to determine base pt address
 					if (ppu_sprite_height(p) == 16) {
 						// Bit 0 determines base pt address, 0x1000 or 0x000
-						p->sprite_addr = (0x1000 * (p->scanline_oam[(count * 4) + 1] & 0x01))
-						               | (uint16_t) (p->scanline_oam[(count * 4) + 1] & 0xFE) << 4; // Read tile numb (ignoring bit 0, see & 0xFE)
+						p->sprite_addr = (0x1000 * (secondary_oam_tile_number(p, count) & 0x01))
+					                   | (uint16_t) (secondary_oam_tile_number(p, count) & 0xFE) << 4;
 					}
-					offset = p->scanline - p->scanline_oam[count * 4];
+					offset = p->scanline - secondary_oam_y_pos(p, count);
 					if (offset < 0) { // Keep address static until we reach the scanline in range
 						offset = 0; // Stops out of bounds access for -1
 					}
@@ -1528,18 +1548,19 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					break;
 				case 2:
 					// Garbage AT byte - no need to emulate
-					p->sprite_at_latches[count] = p->scanline_oam[(count * 4) + 2];
+					p->sprite_at_latches[count] = secondary_oam_at_byte(p, count);
 
 					if (p->sprite_at_latches[count] & 0x80) { // Flip vertical pixles
 						// undo offset, then go from offset_max down to 0
 						// e.g. 0-7 is now flipped to 7-0 (for sprites 8px high)
 						p->sprite_addr = p->sprite_addr - offset
-						                 + (ppu_sprite_height(p) - 1) - (offset % ppu_sprite_height(p));
+						                 + (ppu_sprite_height(p) - 1)
+						                 - (offset % ppu_sprite_height(p));
 					}
 					break;
 				case 3:
 					// Read X Pos (In NES it's re-read until the 8th cycle)
-					p->sprite_x_counter[count] = p->scanline_oam[(count * 4) + 3];
+					p->sprite_x_counter[count] = secondary_oam_x_pos(p, count);
 					break;
 				case 4:
 					// Fetch sprite low pt
