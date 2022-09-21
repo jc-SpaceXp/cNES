@@ -788,28 +788,63 @@ static bool sprite_overflow_occured(const Ppu2C02* p)
  * Helper Functions
  */
 
-// Taken from wiki.nesdev
+/* Increment fine_y after every scanline has output its pixels
+ * (after 256 pixels have been rendered)
+ *
+ * When fine_y reaches 7 we cannot increment fine_y again, we must reset
+ * fine_y and increment coarse Y as we've moved onto the next tile in the
+ * vertical direction
+ *
+ * vram_addr byte layout: 0yyy NNYY YYYX XXXX
+ * X is coarse X, Y is coarse Y, N is nametable select, y is fine Y
+ *
+ * Each nametable can represent a 32x30 (coarseX and coarseY, 8x8 region)
+ *
+ * Therefore we must change the NN bit (bit XORing w/ 0x80) when going
+ * from one nametable to the other in the Y direction (including warping from
+ * the bottom back to the top e.g. $2800 to $2000, hence the XOR)
+ *
+ * Since coarse Y is a 5 bit number and there are 32 possible numbers (0-31)
+ * This gives us two free numbers (seeing as there are only 30 coarse Y tiles
+ * to render to screen) which are out of bounds. This causes the PPU to interpret
+ * the "tile data" as attribute data (as we've moved onto those memory addresses).
+ * When trying to increment from coarse Y from 31, coarse Y is reset but the nametable
+ * remains unchanged
+ */
 static void inc_vert_scroll(Ppu2C02 *p)
 {
 	uint16_t addr = p->vram_addr;
-	if ((addr & 0x7000) != 0x7000) { // If fine Y < 7
-		addr += 0x1000; // Increment fineY
+	if ((addr & 0x7000) != 0x7000) { // If fine_y < 7
+		addr += 0x1000; // Increment fine_y
 	} else {
-		addr &= ~0x7000; // fine Y = 0
-		int y = (addr & 0x03E0) >> 5; // y = coarse Y
-		if (y == 29) {
-			y = 0; // coarse Y = 0
-			addr ^= 0x0800; // Switch vertical nametable
-		} else if (y == 31) {
-			y = 0; // coarse Y = 0, nametable not switched
+		addr &= ~0x7000; // Clear fine_y bits
+		int coarse_y = (addr & 0x03E0) >> 5;
+		if (coarse_y == 29) {
+			coarse_y = 0;
+			addr ^= 0x0800;
+		} else if (coarse_y == 31) {
+			coarse_y = 0;
 		} else {
-			y++;
+			coarse_y++;
 		}
-		addr = (addr & ~0x03E0) | (y << 5); // Put y back into vram_addr
+		addr = (addr & ~0x03E0) | (coarse_y << 5); // Put coarse Y back into vram_addr
 	}
 	p->vram_addr = addr;
 }
 
+/* Increment coarseX after every scanline has output its pixels
+ * (after 256 pixels have been rendered)
+ *
+ * vram_addr byte layout: 0yyy NNYY YYYX XXXX
+ * X is coarse X, Y is coarse Y, N is nametable select, y is fine Y
+ *
+ * Each nametable can represent a 32x30 (coarseX and coarseY, 8x8 region)
+ *
+ * So we can just increment coarse X until we reach our 32nd value (31 as
+ * 0 is a valid number) and reset coarse X on that specific value
+ *
+ * fine_x handles the horizontal pixel offset and isn't adjusted here
+ */
 static void inc_horz_scroll(Ppu2C02 *p)
 {
 	if ((p->vram_addr & 0x001F) == 31) {
