@@ -1051,6 +1051,18 @@ static void render_pixel(Ppu2C02 *p)
 	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
 }
 
+/* Intended for ppu cycles 257-320
+ * Forms the 0-7 array indexes for secondary oam fetches
+ * based on the current ppu cycle
+ */
+static inline unsigned sprite_fetch_index(const Ppu2C02* p)
+{
+	// 0: 257-264
+	// 1: 265-272
+	// etc.
+	return (((p->cycle - 1) / 8) - 32);
+}
+
 static inline uint8_t secondary_oam_y_pos(const Ppu2C02* p, const unsigned sprite_index)
 {
 	return (p->scanline_oam[sprite_index * 4]);
@@ -1515,10 +1527,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 				reset_secondary_oam(p);
 			} else if (p->cycle > 256 && p->cycle <= 320) { // Sprite data fetches
 				static unsigned count = 0; // Counts 8 secondary OAM
-				if (p->cycle == 257) {
-					p->sprite_index = 0; // Using to access scanline_oam
-					count = 0;
-				}
+				count = sprite_fetch_index(p); // keep count within array bounds
 				static int offset = 0;
 				switch ((p->cycle - 1) & 0x07) {
 				case 0:
