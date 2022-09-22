@@ -572,12 +572,12 @@ static inline void write_2003(const uint8_t data, Cpu6502* cpu)
  */
 static void write_2004(const uint8_t data, Cpu6502* cpu)
 {
-	// If rendering is enabled and we aren't in VBLANK (scanlines 0-239 and pre-render scanline)
-	// disable writes to OAM, but increment OAM
-	// VBLANK flag is still set on scanline 240-241 so there is a slight error here
-	// cpu doesn't have access to what scanline the ppu is on
-	if ((cpu->cpu_ppu_io->ppu_mask & 0x18) && !ppu_status_vblank_bit_set(cpu->cpu_ppu_io)) {
-		++cpu->cpu_ppu_io->oam_addr;
+	// If rendering is enabled (either bg or sprite) during
+	// scanlines 0-239 and pre-render scanline
+	// OAM writes are disabled, but glitchy OAM increment occurs
+	bool bg_or_sprite_enabled = (cpu->cpu_ppu_io->ppu_mask & 0x18);
+	if (bg_or_sprite_enabled && cpu->cpu_ppu_io->ppu_rendering_period) {
+		cpu->cpu_ppu_io->oam_addr += 4;  // only increment high 6 bits (same as +4)
 		return;
 	}
 	cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] = data;
