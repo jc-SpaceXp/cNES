@@ -1528,7 +1528,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 			} else if (p->cycle > 256 && p->cycle <= 320) { // Sprite data fetches
 				static unsigned count = 0; // Counts 8 secondary OAM
 				count = sprite_fetch_index(p); // keep count within array bounds
-				static int offset = 0;
+				static int sprite_y_offset = 0;
 				switch ((p->cycle - 1) & 0x07) {
 				case 0:
 					// Garbage NT byte - no need to emulate
@@ -1543,16 +1543,16 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 						p->sprite_addr = (0x1000 * (secondary_oam_tile_number(p, count) & 0x01))
 					                   | (uint16_t) (secondary_oam_tile_number(p, count) & 0xFE) << 4;
 					}
-					offset = p->scanline - secondary_oam_y_pos(p, count);
-					if (offset < 0) { // Keep address static until we reach the scanline in range
-						offset = 0; // Stops out of bounds access for -1
+					sprite_y_offset = p->scanline - secondary_oam_y_pos(p, count);
+					if (sprite_y_offset < 0) { // Keep address static until we reach the scanline in range
+						sprite_y_offset = 0; // Stops out of bounds access for -1
 					}
 
 					// addr for rows 9-16 of 8x16 sprites
 					if (ppu_sprite_height(p) == 16) {
-						if (offset >= 8) { offset += 8; }
+						if (sprite_y_offset >= 8) { sprite_y_offset += 8; }
 					}
-					p->sprite_addr += offset;
+					p->sprite_addr += sprite_y_offset;
 
 					break;
 				case 2:
@@ -1560,11 +1560,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					p->sprite_at_latches[count] = secondary_oam_at_byte(p, count);
 
 					if (p->sprite_at_latches[count] & 0x80) { // Flip vertical pixles
-						// undo offset, then go from offset_max down to 0
+						// undo y_offset, then go from y_offset_max down to 0
 						// e.g. 0-7 is now flipped to 7-0 (for sprites 8px high)
-						p->sprite_addr = p->sprite_addr - offset
+						p->sprite_addr = p->sprite_addr - sprite_y_offset
 						                 + (ppu_sprite_height(p) - 1)
-						                 - (offset % ppu_sprite_height(p));
+						                 - (sprite_y_offset % ppu_sprite_height(p));
 					}
 					break;
 				case 3:
