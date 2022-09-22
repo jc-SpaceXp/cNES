@@ -517,9 +517,9 @@ static void read_2004(Cpu6502* cpu)
 		cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] & 0xE3;
 	}
 
-	if (ppu_status_vblank_bit_set(cpu->cpu_ppu_io)
-		|| !(cpu->cpu_ppu_io->ppu_mask & 0x18)) {
-		// don't increment oam_addr on VBLANK or if rendering is disabled
+	bool bg_or_sprite_enabled = (cpu->cpu_ppu_io->ppu_mask & 0x18);
+	if (!cpu->cpu_ppu_io->ppu_rendering_period || !bg_or_sprite_enabled) {
+		// don't increment oam_addr outside of ppu rendering or if bg and sprite rendering is disabled
 		return;
 	}
 	++cpu->cpu_ppu_io->oam_addr;
