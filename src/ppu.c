@@ -164,6 +164,11 @@ static inline void set_ppu_status_vblank_bit(CpuPpuShare* cpu_ppu_io)
 	cpu_ppu_io->ppu_status |= 0x80;
 }
 
+static inline bool ppu_mask_bg_or_sprite_enabled(const CpuPpuShare* cpu_ppu_io)
+{
+	return ((cpu_ppu_io->ppu_mask & 0x18) ? 1 : 0);
+}
+
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
 static void ppu_vblank_warmup_seq(Ppu2C02* p, const Cpu6502* cpu)
 {
@@ -517,8 +522,8 @@ static void read_2004(Cpu6502* cpu)
 		cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] & 0xE3;
 	}
 
-	bool bg_or_sprite_enabled = (cpu->cpu_ppu_io->ppu_mask & 0x18);
-	if (!cpu->cpu_ppu_io->ppu_rendering_period || !bg_or_sprite_enabled) {
+	if (!cpu->cpu_ppu_io->ppu_rendering_period
+	   || !ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)) {
 		// don't increment oam_addr outside of ppu rendering or if bg and sprite rendering is disabled
 		return;
 	}
@@ -575,8 +580,8 @@ static void write_2004(const uint8_t data, Cpu6502* cpu)
 	// If rendering is enabled (either bg or sprite) during
 	// scanlines 0-239 and pre-render scanline
 	// OAM writes are disabled, but glitchy OAM increment occurs
-	bool bg_or_sprite_enabled = (cpu->cpu_ppu_io->ppu_mask & 0x18);
-	if (bg_or_sprite_enabled && cpu->cpu_ppu_io->ppu_rendering_period) {
+	if (ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)
+	    && cpu->cpu_ppu_io->ppu_rendering_period) {
 		cpu->cpu_ppu_io->oam_addr += 4;  // only increment high 6 bits (same as +4)
 		return;
 	}
