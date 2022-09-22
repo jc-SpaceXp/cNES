@@ -100,6 +100,7 @@ typedef struct {
 	bool write_debug;  // Trigger debug of PPU only when the CPU writes to the disassembler
 	bool bg_early_enable_mask; // when true this represents the buffered/delayed $2001 write for when bg rendering has been enabled
 	bool bg_early_disable_mask; // same as above but for disabling bg rendering
+	bool ppu_rendering_period; // set true for scanlines 0-239 and pre-render scanline, otherwise false
 
 	// cpu/ppu nmi synchronisation, when the cpu runs its clock it can be out of sync
 	// with the ppu by 3 ppu clocks, this is set to true for the last 3 ppu clocks

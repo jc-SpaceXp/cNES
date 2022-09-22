@@ -87,6 +87,7 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 	ppu->cpu_ppu_io->clear_status = false;
 	ppu->cpu_ppu_io->bg_early_disable_mask = false;
 	ppu->cpu_ppu_io->bg_early_enable_mask = false;
+	ppu->cpu_ppu_io->ppu_rendering_period = false;
 
 	ppu->cycle = 27;
 	ppu->scanline = 0;
@@ -1269,6 +1270,13 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 			p->scanline = 0; // Reset scanline to 0, max val == 261
 			p->odd_frame = !p->odd_frame;
 		}
+	}
+
+	// set on pre-render scanline and visible frames (0-239)
+	if ((p->scanline == 261) || (p->scanline <= 239)) {
+		p->cpu_ppu_io->ppu_rendering_period = true;
+	} else if (p->scanline == 240) { // only set once, no need for >=
+		p->cpu_ppu_io->ppu_rendering_period = false;
 	}
 
 	ppu_vblank_warmup_seq(p, cpu);
