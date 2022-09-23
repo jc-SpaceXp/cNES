@@ -532,6 +532,18 @@ static void read_2004(Cpu6502* cpu)
 	++cpu->cpu_ppu_io->oam_addr;
 }
 
+/* Vram read data register:
+ *
+ * Reads to non-palette data return an internal read buffer
+ * This buffer is only updated when reading $2007
+ * Palette data isn't buffered however
+ * It will update the internal buffer in an unusual way (see below)
+ *
+ * Accessing this register will cause the vram address to increment outside of rendering
+ * via the PPUCTRL register
+ * Reads while rendering cause the vram address is incremented in an odd way by
+ * simultaneously updating horizontal (coarse X) and vertical (Y) scrolling
+ */
 static void read_2007(Cpu6502* cpu)
 {
 	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
@@ -540,14 +552,18 @@ static void read_2007(Cpu6502* cpu)
 	cpu->cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr);
 
 	if (addr >= 0x3F00) {
-		// palette data isn't buffered
 		cpu->cpu_ppu_io->return_value = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr);
 		// buffer data would be if the nametable mirroring kept going
 		// use minus 0x1000 to get out of palette addresses and read from nametable mirrors
 		cpu->cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr - 0x1000);
 	}
 
-	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
+	if (cpu->cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)) {
+		inc_vert_scroll(cpu->cpu_ppu_io);
+		inc_horz_scroll(cpu->cpu_ppu_io);
+	} else {
+		*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
+	}
 }
 
 /* Write Functions */
@@ -655,12 +671,22 @@ static void write_2006(const uint8_t data, Cpu6502* cpu)
 
 
 /* Write to PPU VRAM through PPUDATA register
- * Update vram_addr after write by looking at PPUCTRL register
+ *
+ * Writing to this register will cause the vram address to increment outside of rendering
+ * via the PPUCTRL register
+ * Writing while rendering causes the vram address is incremented in an odd way
+ * by simultaneously updating horizontal (coarse X) and vertical (Y) scrolling
  */
 static void write_2007(const uint8_t data, Cpu6502* cpu)
 {
 	cpu_writes_to_vram(data, cpu);
-	*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
+
+	if (cpu->cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)) {
+		inc_vert_scroll(cpu->cpu_ppu_io);
+		inc_horz_scroll(cpu->cpu_ppu_io);
+	} else {
+		*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
+	}
 }
 
 
