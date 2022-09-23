@@ -1455,12 +1455,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					// Used to fill at shift registers later
 					p->at_current = p->at_latch;
 					p->nt_addr_current = p->vram_addr;
-					// Update Scroll
-					inc_horz_scroll(p->cpu_ppu_io);
 					break;
-				}
-				if (p->cycle == 256) {
-					inc_vert_scroll(p->cpu_ppu_io);
 				}
 			} else if (p->cycle == 257) {
 				// Copy horz scroll bits from t
@@ -1491,8 +1486,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					p->nt_addr_current = p->vram_addr;
 					break;
 				case 7: // Cycle 328 (and +8)
-					// Update Scroll
-					inc_horz_scroll(p->cpu_ppu_io);
 					break;
 				}
 			}
@@ -1514,12 +1507,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					break;
 				case 7: // Cycle 263 (and +8)
 					// No need to fill shift registers as nothing is being rendered here
-					// Update scroll
-					inc_horz_scroll(p->cpu_ppu_io);
 					break;
-				}
-				if (p->cycle == 256) {
-					inc_vert_scroll(p->cpu_ppu_io);
 				}
 			} else if (p->cycle == 257) {
 				// Copy horz scroll bits from t
@@ -1553,8 +1541,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					p->nt_addr_current = p->vram_addr;
 					break;
 				case 7: // Cycle 328 (and +8)
-					// Update Scroll
-					inc_horz_scroll(p->cpu_ppu_io);
 					break;
 				}
 			}
@@ -1660,5 +1646,22 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 		p->cpu_ppu_io->ppu_status |= 0x40; // Sprite #0 hit
 		p->l_sl = 10000;
 		p->l_cl = 10000;
+	}
+
+	// increment coarse X and Y scrolling pos on visible scanlines and if rendering is enabled
+	if (cpu->cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)) {
+		if (p->cycle <= 256 && (p->cycle != 0)) {
+			if (((p->cycle - 1) & 0x07) == 0x07) { // cycles divisble by 8
+				inc_horz_scroll(p->cpu_ppu_io);
+			} if (p->cycle == 256) {
+				inc_vert_scroll(p->cpu_ppu_io);
+			}
+		} else if (p->cycle >= 321 && p->cycle <= 336) { // 1st 16 pixels of next scanline
+			if (((p->cycle - 1) & 0x07) == 0x07) { // cycles divisble by 8
+				inc_horz_scroll(p->cpu_ppu_io);
+			} if (p->cycle == 256) {
+				inc_vert_scroll(p->cpu_ppu_io);
+			}
+		}
 	}
 }
