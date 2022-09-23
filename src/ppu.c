@@ -66,6 +66,8 @@ static void write_2006(const uint8_t data, Cpu6502* cpu); // PPU_ADDR
 static void write_2007(const uint8_t data, Cpu6502* cpu); // PPU_DATA
 static void write_4014(const uint8_t data, Cpu6502* cpu); // DMA_DATA
 static uint8_t ppu_vram_addr_inc(const Cpu6502* cpu);
+static void inc_vert_scroll(CpuPpuShare* cpu_ppu_io);
+static void inc_horz_scroll(CpuPpuShare* cpu_ppu_io);
 
 
 Ppu2C02* ppu_init(CpuPpuShare* cp)
@@ -817,9 +819,9 @@ static bool sprite_overflow_occured(const Ppu2C02* p)
  * When trying to increment from coarse Y from 31, coarse Y is reset but the nametable
  * remains unchanged
  */
-static void inc_vert_scroll(Ppu2C02 *p)
+static void inc_vert_scroll(CpuPpuShare* cpu_ppu_io)
 {
-	uint16_t addr = p->vram_addr;
+	uint16_t addr = *(cpu_ppu_io->vram_addr);
 	if ((addr & 0x7000) != 0x7000) { // If fine_y < 7
 		addr += 0x1000; // Increment fine_y
 	} else {
@@ -835,7 +837,7 @@ static void inc_vert_scroll(Ppu2C02 *p)
 		}
 		addr = (addr & ~0x03E0) | (coarse_y << 5); // Put coarse Y back into vram_addr
 	}
-	p->vram_addr = addr;
+	*(cpu_ppu_io->vram_addr) = addr;
 }
 
 /* Increment coarseX after every scanline has output its pixels
@@ -851,13 +853,13 @@ static void inc_vert_scroll(Ppu2C02 *p)
  *
  * fine_x handles the horizontal pixel offset and isn't adjusted here
  */
-static void inc_horz_scroll(Ppu2C02 *p)
+static void inc_horz_scroll(CpuPpuShare* cpu_ppu_io)
 {
-	if ((p->vram_addr & 0x001F) == 31) {
-		p->vram_addr &= ~0x001F;
-		p->vram_addr ^= 0x0400;
+	if ((*(cpu_ppu_io->vram_addr) & 0x001F) == 31) {
+		*(cpu_ppu_io->vram_addr) &= ~0x001F;
+		*(cpu_ppu_io->vram_addr) ^= 0x0400;
 	} else {
-		p->vram_addr++;
+		*(cpu_ppu_io->vram_addr) += 1;
 	}
 }
 
@@ -1428,11 +1430,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					p->at_current = p->at_latch;
 					p->nt_addr_current = p->vram_addr;
 					// Update Scroll
-					inc_horz_scroll(p);
+					inc_horz_scroll(p->cpu_ppu_io);
 					break;
 				}
 				if (p->cycle == 256) {
-					inc_vert_scroll(p);
+					inc_vert_scroll(p->cpu_ppu_io);
 				}
 			} else if (p->cycle == 257) {
 				// Copy horz scroll bits from t
@@ -1464,7 +1466,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					break;
 				case 7: // Cycle 328 (and +8)
 					// Update Scroll
-					inc_horz_scroll(p);
+					inc_horz_scroll(p->cpu_ppu_io);
 					break;
 				}
 			}
@@ -1487,11 +1489,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 				case 7: // Cycle 263 (and +8)
 					// No need to fill shift registers as nothing is being rendered here
 					// Update scroll
-					inc_horz_scroll(p);
+					inc_horz_scroll(p->cpu_ppu_io);
 					break;
 				}
 				if (p->cycle == 256) {
-					inc_vert_scroll(p);
+					inc_vert_scroll(p->cpu_ppu_io);
 				}
 			} else if (p->cycle == 257) {
 				// Copy horz scroll bits from t
@@ -1526,7 +1528,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					break;
 				case 7: // Cycle 328 (and +8)
 					// Update Scroll
-					inc_horz_scroll(p);
+					inc_horz_scroll(p->cpu_ppu_io);
 					break;
 				}
 			}
