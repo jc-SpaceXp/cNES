@@ -1221,8 +1221,9 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 					p->sp_hi_reg = (tmp_pt_hi >> (8 - mask)) & 0x01;
 					// flip sprites horizontally
 					if (p->oam[2] & 0x40) {
-						p->sp_lo_reg = (reverse_bits[tmp_pt_lo] >> (8 - mask)) & 0x01;
-						p->sp_hi_reg = (reverse_bits[tmp_pt_hi] >> (8 - mask)) & 0x01;
+						// already fetched pattern table data just reverse it
+						p->sp_lo_reg = reverse_bits[p->sp_lo_reg];
+						p->sp_hi_reg = reverse_bits[p->sp_hi_reg];
 					}
 					// flip sprites vertically
 					if (p->oam[2] & 0x80) {
@@ -1236,8 +1237,9 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 						p->sp_lo_reg = (tmp_pt_lo >> (8 - mask)) & 0x01;
 						p->sp_hi_reg = (tmp_pt_hi >> (8 - mask)) & 0x01;
 						if (p->oam[2] & 0x40) {
-							p->sp_lo_reg = (reverse_bits[tmp_pt_lo] >> (8 - mask)) & 0x01;
-							p->sp_hi_reg = (reverse_bits[tmp_pt_hi] >> (8 - mask)) & 0x01;
+							// already fetched pattern table data just reverse it
+							p->sp_lo_reg = reverse_bits[p->sp_lo_reg];
+							p->sp_hi_reg = reverse_bits[p->sp_hi_reg];
 						}
 					}
 					// report if any bg and sprite pixel is non-transparent
@@ -1598,14 +1600,16 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					// Fetch sprite low pt
 					p->sprite_pt_lo_shift_reg[count] = reverse_bits[read_from_ppu_vram(&p->vram, p->sprite_addr)];
 					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
-						p->sprite_pt_lo_shift_reg[count] = read_from_ppu_vram(&p->vram, p->sprite_addr);
+						// already fetched pattern table data just reverse bits again
+						p->sprite_pt_lo_shift_reg[count] = reverse_bits[p->sprite_pt_lo_shift_reg[count]];
 					}
 					break;
 				case 6:
 					// Fetch sprite hi pt, turn into function once all attribute data is processed
 					p->sprite_pt_hi_shift_reg[count] = reverse_bits[read_from_ppu_vram(&p->vram, p->sprite_addr + 8)];
 					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
-						p->sprite_pt_hi_shift_reg[count] = read_from_ppu_vram(&p->vram, p->sprite_addr + 8);
+						// already fetched pattern table data just reverse bits again
+						p->sprite_pt_hi_shift_reg[count] = reverse_bits[p->sprite_pt_hi_shift_reg[count]];
 					}
 					break;
 				case 7: // 8th Cycle
