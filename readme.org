@@ -61,6 +61,8 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 
 =-c CYCLES= Run cNES for a fixed number of CPU cycles (note: CYCLES must be provided)
 
+=-u UI_SCALE_FACTOR = Scaling factor (integer) to be applied to the displayed output
+
 =-l= Outputs CPU and PPU information to a file called "trace_log.txt"
 
 =-s= Disable CPU and PPU logging (disables either writing to disk or terminal)

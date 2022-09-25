@@ -7,7 +7,7 @@
 const unsigned SCREEN_HEIGHT = 240;
 const unsigned SCREEN_WIDTH = 256;
 
-Display* screen_init(void)
+Display* screen_init(int scale_factor)
 {
 	Display* nes = malloc(sizeof(Display));
 	if (!nes) {
@@ -21,9 +21,15 @@ Display* screen_init(void)
 
 	SDL_Init(SDL_INIT_VIDEO);
 	nes->window = SDL_CreateWindow("cNES", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-			SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+	              SCREEN_WIDTH * scale_factor, SCREEN_HEIGHT * scale_factor, SDL_WINDOW_SHOWN);
 	nes->renderer = SDL_CreateRenderer(nes->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	nes->framebuffer = SDL_CreateTexture(nes->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+	nes->framebuffer = SDL_CreateTexture(nes->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
+
+	// Apply scaling factor
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
+	SDL_RenderSetLogicalSize(nes->renderer, SCREEN_WIDTH, SCREEN_HEIGHT); // preserve original aspect ratio
+	SDL_RenderSetScale(nes->renderer, scale_factor, scale_factor);
 	return nes;
 }
 

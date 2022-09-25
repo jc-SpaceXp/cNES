@@ -36,7 +36,8 @@ void emu_usuage(const char* program_name)
 	fprintf(stderr, "\t-l\n\tEnable logging to a file\n\n");
 	fprintf(stderr, "\t-s\n\tSuppress logging to file or terminal\n\n");
 	fprintf(stderr, "\t-o FILE\n\tOpen the provided file\n\n");
-	fprintf(stderr, "\t-c CYCLES\n\tRun the CPU up to the specified number of cycles\n");
+	fprintf(stderr, "\t-c CYCLES\n\tRun the CPU up to the specified number of cycles\n\n");
+	fprintf(stderr, "\t-u UI_SCALE_FACTOR\n\tScaling factor (integer) to be applied to the displayed output\n");
 }
 
 int main(int argc, char** argv)
@@ -49,6 +50,7 @@ int main(int argc, char** argv)
 	bool help = false;
 	bool log_to_file = false;
 	bool no_logging = false;
+	int ui_scale_factor = 1;
 
 	// process command line arguments
 	while ((argc > 1) && (argv[1][0] == '-')) {
@@ -92,6 +94,16 @@ int main(int argc, char** argv)
 			++argv;
 			max_cycles = atoi(&argv[1][0]);
 			break;
+		case 'u': // u - change ui scale factor of emulator
+			if (argc < 3 || (argv[2][0] == '-')) {
+				fprintf(stderr, "Please provide an integer\n");
+				help = true;
+				break;
+			}
+			--argc;
+			++argv;
+			ui_scale_factor = atoi(&argv[1][0]);
+			break;
 		}
 		// increment argv and decrement argc
 		--argc;
@@ -111,7 +123,7 @@ int main(int argc, char** argv)
 	CpuPpuShare* cpu_ppu = mmio_init();
 	Cpu6502* cpu = cpu_init(0xC000, cpu_ppu, cpu_mapper);
 	Ppu2C02* ppu = ppu_init(cpu_ppu);
-	Display* nes_screen = screen_init();
+	Display* nes_screen = screen_init(ui_scale_factor);
 
 	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu || !nes_screen) {
 		goto program_exit;
