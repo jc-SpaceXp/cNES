@@ -1609,11 +1609,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 					}
 					break;
 				case 7: // 8th Cycle
-					count++;
-					for (int i = p->sprites_found; i < 8; i++) { // Less than 8 sprites, zero out pattern table for remainding sprites
-						p->sprite_pt_lo_shift_reg[i] = 0; // Empty slots should have transparent/bg pixel values
-						p->sprite_pt_hi_shift_reg[i] = 0; // Empty slots should have transparent/bg pixel values
-					}
 					break;
 				}
 			}
