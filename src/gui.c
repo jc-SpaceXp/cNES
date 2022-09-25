@@ -48,17 +48,3 @@ void draw_pixels(uint32_t* pixels, Display* nes)
 	SDL_RenderCopy(nes->renderer, nes->framebuffer, NULL, NULL);
 	SDL_RenderPresent(nes->renderer);
 }
-
-/*
-void draw_texture(uint32_t *pixels, Display *nes)
-{
-	SDL_UpdateTexture(nes->framebuffer, NULL, pixels, SCREEN_WIDTH * sizeof(uint32_t));
-}
-
-void draw_display(Display *nes)
-{
-	SDL_RenderClear(nes->renderer);
-	SDL_RenderCopy(nes->renderer, nes->framebuffer, NULL, NULL);
-	SDL_RenderPresent(nes->renderer);
-}
-*/
