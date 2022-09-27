@@ -443,9 +443,6 @@ void clock_cpu(Cpu6502* cpu, const bool no_logging)
 		}
 		if (cpu->instruction_state == EXECUTE) {
 			cpu->instruction_state = FETCH;
-#ifdef ENABLE_PIPELINING
-			fetch_opcode(cpu);
-#endif /* ENABLE_PIPELINING */
 			execute_opcode_lut[cpu->opcode](cpu); // can change the PC which the early fetch made!
 
 			if (cpu->cpu_ppu_io->nmi_pending) {
