@@ -195,19 +195,6 @@ static void append_ppu_info(Ppu2C02* ppu)
 	ppu->old_scanline = ppu->scanline;
 }
 
-void debug_ppu_regs(Cpu6502* cpu)
-{
-	printf("2000: %.2X\n", read_from_cpu(cpu, 0x2000));
-	printf("2001: %.2X\n", read_from_cpu(cpu, 0x2001));
-	printf("2002: %.2X\n", read_from_cpu(cpu, 0x2002));
-	printf("2003: %.2X\n", read_from_cpu(cpu, 0x2003));
-	printf("2004: %.2X\n", read_from_cpu(cpu, 0x2004));
-	printf("2005: %.2X\n", read_from_cpu(cpu, 0x2005));
-	printf("2006: %.2X\n", read_from_cpu(cpu, 0x2006));
-	printf("2007: %.2X\n", read_from_cpu(cpu, 0x2007));
-	printf("3F00: %.2X\n", read_from_cpu(cpu, 0x3F00));
-	printf("3F01: %.2X\n\n", read_from_cpu(cpu, 0x3F01));
-}
 
 /* For ppu calling functions: arg 1 == &p->vram
  * For cpu calling functions: arg 1 == cpu->cpu_ppu_io->vram
