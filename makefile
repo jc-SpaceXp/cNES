@@ -2,6 +2,7 @@ CC := gcc
 CFLAGS := -Wall -Wextra -std=c99
 CFLAGS += $(shell pkg-config --cflags sdl2)
 LDFLAGS := $(shell pkg-config --libs sdl2)
+LIBCHECK_FLAGS = $(shell pkg-config --cflags --libs check)
 DEPFLAGS = -MMD -MP -MF $(@:$(OBJDIR)/%.o=$(DEPDIR)/%.d)
 
 ASAN ?= 0
@@ -31,11 +32,16 @@ SRCS := $(SRCDIR)/cart.c \
         $(SRCDIR)/mappers.c \
         $(SRCDIR)/ppu.c
 
-OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
-DEPS := $(SRCS:%.c=$(DEPDIR)/%.d)
+SRC_OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
+SRC_DEPS := $(SRCS:%.c=$(DEPDIR)/%.d)
+
+TSTDIR := tests
+TSTS := $(wildcard $(TSTDIR)/*.c)
+TST_OBJS := $(TSTS:%.c=$(OBJDIR)/%.o)
+TST_DEPS := $(TSTS:%.c=$(DEPDIR)/%.d)
 
 .PHONY: all
-all: $(BINDIR)/cnes
+all: $(BINDIR)/cnes $(BINDIR)/test_all
 
 $(OBJDIR)/%.o : %.c
 	@mkdir -p $(@D)
@@ -45,10 +51,22 @@ $(OBJDIR)/%.o : %.c
 $(BINDIR):
 	mkdir -p $@
 
-$(BINDIR)/cnes: $(OBJS) | $(BINDIR)
+$(BINDIR)/cnes: $(SRC_OBJS) | $(BINDIR)
 	@echo "--- Linking target"
-	$(CC) -o $@ $(OBJS) $(LDFLAGS)
+	$(CC) -o $@ $(SRC_OBJS) $(LDFLAGS)
 	@echo "--- Done: Linking target"
+
+$(BINDIR)/test_all: $(TST_OBJS) | $(BINDIR)
+	@echo "--- Linking tests"
+	$(CC) -o $@ $(TST_OBJS) $(LIBCHECK_FLAGS)
+	@echo "--- Done: Linking tests"
+	@echo "--- Running tests"
+	@./$(BINDIR)/test_all
+
+.PHONY: test
+test:
+	@echo "--- Running tests"
+	@./$(BINDIR)/test_all
 
 .PHONY: clean
 clean:
@@ -56,4 +74,5 @@ clean:
 	rm -f $(BINDIR)/cnes
 	rm -rf $(BUILDDIR)
 
--include $(DEPS)
+-include $(SRC_DEPS)
+-include $(TST_DEPS)
