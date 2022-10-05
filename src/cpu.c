@@ -126,7 +126,7 @@ static void execute_NMI(Cpu6502* cpu);
 static void execute_DMA(Cpu6502* cpu, const bool no_logging);
 
 // 0 denotes illegal op codes
-static const uint8_t max_cycles_opcode_lut[256] = {
+const uint8_t max_cycles_opcode_lut[256] = {
 	0x0007, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0003, 0x0002, 0x0002,      0,      0, 0x0004, 0x0006,      0,
 	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
 	0x0006, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0004, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
@@ -145,7 +145,7 @@ static const uint8_t max_cycles_opcode_lut[256] = {
 	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0
 };
 
-static void (*decode_opcode_lut[256])(Cpu6502* cpu) = {
+void (*decode_opcode_lut[256])(Cpu6502* cpu) = {
 	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PUSH, decode_IMM_read_store , decode_ACC,  bad_op_code, bad_op_code           , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
 	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PULL, decode_IMM_read_store , decode_ACC , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
@@ -164,7 +164,7 @@ static void (*decode_opcode_lut[256])(Cpu6502* cpu) = {
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code
 };
 
-static void (*execute_opcode_lut[256])(Cpu6502* cpu) = {
+void (*execute_opcode_lut[256])(Cpu6502* cpu) = {
 	execute_BRK, execute_ORA, bad_op_code, bad_op_code, bad_op_code, execute_ORA, execute_ASL, bad_op_code, execute_PHP, execute_ORA, execute_ASL, bad_op_code, bad_op_code, execute_ORA, execute_ASL, bad_op_code,
 	execute_BPL, execute_ORA, bad_op_code, bad_op_code, bad_op_code, execute_ORA, execute_ASL, bad_op_code, execute_CLC, execute_ORA, bad_op_code, bad_op_code, bad_op_code, execute_ORA, execute_ASL, bad_op_code,
 	execute_JSR, execute_AND, bad_op_code, bad_op_code, execute_BIT, execute_AND, execute_ROL, bad_op_code, execute_PLP, execute_AND, execute_ROL, bad_op_code, execute_BIT, execute_AND, execute_ROL, bad_op_code,
