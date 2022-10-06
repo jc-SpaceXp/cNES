@@ -46,7 +46,7 @@ all: $(BINDIR)/cnes $(BINDIR)/test_all
 $(OBJDIR)/%.o : %.c
 	@mkdir -p $(@D)
 	@mkdir -p $(DEPDIR)/$(<D)
-	$(CC) $(CFLAGS) $(DEPFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEPFLAGS) -I $(SRCDIR) -c $< -o $@
 
 $(BINDIR):
 	mkdir -p $@
@@ -58,7 +58,7 @@ $(BINDIR)/cnes: $(SRC_OBJS) | $(BINDIR)
 
 $(BINDIR)/test_all: $(TST_OBJS) | $(BINDIR)
 	@echo "--- Linking tests"
-	$(CC) -o $@ $(TST_OBJS) $(LIBCHECK_FLAGS)
+	$(CC) -o $@ $(TST_OBJS) $(OBJDIR)/$(SRCDIR)/cpu.o $(OBJDIR)/$(SRCDIR)/mappers.o $(OBJDIR)/$(SRCDIR)/ppu.o $(OBJDIR)/$(SRCDIR)/gui.o $(LIBCHECK_FLAGS) $(LDFLAGS)
 	@echo "--- Done: Linking tests"
 	@echo "--- Running tests"
 	@./$(BINDIR)/test_all
