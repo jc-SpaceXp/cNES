@@ -259,6 +259,8 @@ START_TEST (cpu_test_addr_mode_imm)
 	cpu->instruction_cycles_remaining = 1; // 1 cycle for the IMM decoder
 	decode_opcode_lut[cpu->opcode](cpu);
 	ck_assert_uint_eq(0xA1, cpu->operand);
+
+	free(ins);
 }
 END_TEST
 
@@ -291,6 +293,8 @@ START_TEST (cpu_test_ind_jmp_bug)
 	ck_assert_uint_eq(0x20, cpu->addr_lo);
 	ck_assert_uint_eq(0x01, cpu->addr_hi);
 	ck_assert_uint_eq(0x0120, cpu->PC);
+
+	free(ins);
 }
 END_TEST
 
