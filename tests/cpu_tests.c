@@ -229,6 +229,30 @@ START_TEST (test_strcmp_reverse_opcode_lut)
 }
 END_TEST
 
+START_TEST (cpu_test_addr_mode_imm)
+{
+	Cpu6502* cpu = cpu_init(0xFFFCU, NULL, NULL); // allocate memory
+
+	if (!cpu) {
+		// fail, lack of memory
+		ck_abort_msg("Failed to allocate memory to cpu struct");
+	}
+
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "ADC", 4);
+	cpu->opcode = reverse_opcode_lut(ins, IMM);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xA1; // IMM byte
+
+	cpu->instruction_cycles_remaining = 1; // 1 cycle for the IMM decoder
+	decode_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xA1, cpu->operand);
+
+	free(cpu);
+}
+END_TEST
+
 START_TEST (cpu_test_ind_jmp_bug)
 {
 	Cpu6502* cpu = cpu_init(0xFFFCU, NULL, NULL); // allocate memory
@@ -274,12 +298,16 @@ Suite* cpu_suite(void)
 {
 	Suite* s;
 	TCase* tc_core;
+	TCase* tc_address_modes;
 
 	s = suite_create("Cpu Tests");
 	tc_core = tcase_create("Core");
 	tcase_add_test(tc_core, test_strcmp_reverse_opcode_lut);
-	tcase_add_test(tc_core, cpu_test_ind_jmp_bug);
 	suite_add_tcase(s, tc_core);
+	tc_address_modes = tcase_create("Address Modes");
+	tcase_add_test(tc_address_modes, cpu_test_ind_jmp_bug);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_imm);
+	suite_add_tcase(s, tc_address_modes);
 
 	return s;
 }
