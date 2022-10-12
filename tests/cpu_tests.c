@@ -229,15 +229,26 @@ START_TEST (test_strcmp_reverse_opcode_lut)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_imm)
+// globals for unit tests (as setup/teardown take void args)
+Cpu6502* cpu;
+
+void setup(void)
 {
-	Cpu6502* cpu = cpu_init(0xFFFCU, NULL, NULL); // allocate memory
+	cpu = cpu_init(0xFFFCU, NULL, NULL); // allocate memory
 
 	if (!cpu) {
 		// fail, lack of memory
 		ck_abort_msg("Failed to allocate memory to cpu struct");
 	}
+}
 
+void teardown(void)
+{
+	free(cpu);
+}
+
+START_TEST (cpu_test_addr_mode_imm)
+{
 	char (*ins)[4] = malloc(sizeof *ins);
 	strncpy((char*) ins, "ADC", 4);
 	cpu->opcode = reverse_opcode_lut(ins, IMM);
@@ -248,20 +259,11 @@ START_TEST (cpu_test_addr_mode_imm)
 	cpu->instruction_cycles_remaining = 1; // 1 cycle for the IMM decoder
 	decode_opcode_lut[cpu->opcode](cpu);
 	ck_assert_uint_eq(0xA1, cpu->operand);
-
-	free(cpu);
 }
 END_TEST
 
 START_TEST (cpu_test_ind_jmp_bug)
 {
-	Cpu6502* cpu = cpu_init(0xFFFCU, NULL, NULL); // allocate memory
-
-	if (!cpu) {
-		// fail, lack of memory
-		ck_abort_msg("Failed to allocate memory to cpu struct");
-	}
-
 	char (*ins)[4] = malloc(sizeof *ins);
 	strncpy((char*) ins, "JMP", 4);
 	cpu->opcode = reverse_opcode_lut(ins, IND);
@@ -289,8 +291,6 @@ START_TEST (cpu_test_ind_jmp_bug)
 	ck_assert_uint_eq(0x20, cpu->addr_lo);
 	ck_assert_uint_eq(0x01, cpu->addr_hi);
 	ck_assert_uint_eq(0x0120, cpu->PC);
-
-	free(cpu);
 }
 END_TEST
 
@@ -305,6 +305,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_core, test_strcmp_reverse_opcode_lut);
 	suite_add_tcase(s, tc_core);
 	tc_address_modes = tcase_create("Address Modes");
+	tcase_add_checked_fixture(tc_address_modes, setup, teardown);
 	tcase_add_test(tc_address_modes, cpu_test_ind_jmp_bug);
 	tcase_add_test(tc_address_modes, cpu_test_addr_mode_imm);
 	suite_add_tcase(s, tc_address_modes);
