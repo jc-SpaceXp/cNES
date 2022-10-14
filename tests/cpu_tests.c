@@ -229,6 +229,14 @@ START_TEST (test_strcmp_reverse_opcode_lut)
 }
 END_TEST
 
+static void set_opcode_from_address_mode_and_instruction(Cpu6502* cpu, char* input, AddressMode address_mode)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, input, 4);
+	cpu->opcode = reverse_opcode_lut(ins, address_mode);
+	free(ins);
+}
+
 // globals for unit tests (as setup/teardown take void args)
 Cpu6502* cpu;
 
@@ -249,9 +257,7 @@ void teardown(void)
 
 START_TEST (cpu_test_addr_mode_imm)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "ADC", 4);
-	cpu->opcode = reverse_opcode_lut(ins, IMM);
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0xA1; // IMM byte
@@ -259,16 +265,12 @@ START_TEST (cpu_test_addr_mode_imm)
 	cpu->instruction_cycles_remaining = 1; // 1 cycle for the IMM decoder
 	decode_opcode_lut[cpu->opcode](cpu);
 	ck_assert_uint_eq(0xA1, cpu->operand);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_abs_read_store)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "SBC", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ABS);
+	set_opcode_from_address_mode_and_instruction(cpu, "SBC", ABS);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0xC0; // addr_lo
@@ -282,16 +284,12 @@ START_TEST (cpu_test_addr_mode_abs_read_store)
 	ck_assert_uint_eq(0xC0, cpu->addr_lo);
 	ck_assert_uint_eq(0x00, cpu->addr_hi);
 	ck_assert_uint_eq(0x00C0, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_abs_rmw)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "INC", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ABS);
+	set_opcode_from_address_mode_and_instruction(cpu, "INC", ABS);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0xC0; // addr_lo
@@ -305,16 +303,12 @@ START_TEST (cpu_test_addr_mode_abs_rmw)
 	ck_assert_uint_eq(0xC0, cpu->addr_lo);
 	ck_assert_uint_eq(0x00, cpu->addr_hi);
 	ck_assert_uint_eq(0x00C0, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_abs_jmp)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "JMP", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ABS);
+	set_opcode_from_address_mode_and_instruction(cpu, "JMP", ABS);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0x90; // addr_lo
@@ -330,16 +324,12 @@ START_TEST (cpu_test_addr_mode_abs_jmp)
 	ck_assert_uint_eq(0xB4, cpu->addr_hi);
 	ck_assert_uint_eq(0xB490, cpu->target_addr);
 	ck_assert_uint_eq(0xB490, cpu->PC);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_absx_read_store)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "EOR", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ABSX);
+	set_opcode_from_address_mode_and_instruction(cpu, "EOR", ABSX);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0xE1; // addr_lo
@@ -354,16 +344,12 @@ START_TEST (cpu_test_addr_mode_absx_read_store)
 	ck_assert_uint_eq(0xE1, cpu->addr_lo);
 	ck_assert_uint_eq(0x07, cpu->addr_hi);
 	ck_assert_uint_eq(0x07F0, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_absx_rmw)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "ASL", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ABSX);
+	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ABSX);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0x04; // addr_lo
@@ -378,16 +364,12 @@ START_TEST (cpu_test_addr_mode_absx_rmw)
 	ck_assert_uint_eq(0x04, cpu->addr_lo);
 	ck_assert_uint_eq(0x10, cpu->addr_hi);
 	ck_assert_uint_eq(0x100A, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_absy_read_store)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "LDA", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ABSY);
+	set_opcode_from_address_mode_and_instruction(cpu, "LDA", ABSY);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0x25; // addr_lo
@@ -402,16 +384,12 @@ START_TEST (cpu_test_addr_mode_absy_read_store)
 	ck_assert_uint_eq(0x25, cpu->addr_lo);
 	ck_assert_uint_eq(0x04, cpu->addr_hi);
 	ck_assert_uint_eq(0x042A, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_zp_read_store)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "BIT", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ZP);
+	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ZP);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0xDE; // addr_lo, addr_hi fixed to 0x00
@@ -423,16 +401,12 @@ START_TEST (cpu_test_addr_mode_zp_read_store)
 	}
 	ck_assert_uint_eq(0xDE, cpu->addr_lo);
 	ck_assert_uint_eq(0x00DE, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_zp_rmw)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "LSR", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ZP);
+	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZP);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0x02; // addr_lo, addr_hi fixed to 0x00
@@ -444,16 +418,12 @@ START_TEST (cpu_test_addr_mode_zp_rmw)
 	}
 	ck_assert_uint_eq(0x02, cpu->addr_lo);
 	ck_assert_uint_eq(0x0002, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_zpx_read_store)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "STY", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ZPX);
+	set_opcode_from_address_mode_and_instruction(cpu, "STY", ZPX);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0x04; // addr_lo, addr_hi fixed to 0x00
@@ -466,16 +436,12 @@ START_TEST (cpu_test_addr_mode_zpx_read_store)
 	}
 	ck_assert_uint_eq(0x04, cpu->addr_lo);
 	ck_assert_uint_eq(0x00B0, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_zpx_rmw)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "ROL", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ZPX);
+	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0xFA; // addr_lo, addr_hi fixed to 0x00
@@ -488,16 +454,12 @@ START_TEST (cpu_test_addr_mode_zpx_rmw)
 	}
 	ck_assert_uint_eq(0xFA, cpu->addr_lo);
 	ck_assert_uint_eq(0x00FD, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_zpy_read_store)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "LDX", 4);
-	cpu->opcode = reverse_opcode_lut(ins, ZPY);
+	set_opcode_from_address_mode_and_instruction(cpu, "LDX", ZPY);
 
 	cpu->PC = 0x8000;
 	cpu->mem[cpu->PC] = 0x63; // addr_lo, addr_hi fixed to 0x00
@@ -510,16 +472,12 @@ START_TEST (cpu_test_addr_mode_zpy_read_store)
 	}
 	ck_assert_uint_eq(0x63, cpu->addr_lo);
 	ck_assert_uint_eq(0x0066, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_ind_jmp)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "JMP", 4);
-	cpu->opcode = reverse_opcode_lut(ins, IND);
+	set_opcode_from_address_mode_and_instruction(cpu, "JMP", IND);
 
 	// set index_lo and index_hi for IND address mode
 	// then also set the address it points from that indexed address
@@ -543,16 +501,12 @@ START_TEST (cpu_test_ind_jmp)
 	ck_assert_uint_eq(0x11, cpu->addr_lo);
 	ck_assert_uint_eq(0x01, cpu->addr_hi);
 	ck_assert_uint_eq(0x0111, cpu->PC);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_ind_jmp_bug)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "JMP", 4);
-	cpu->opcode = reverse_opcode_lut(ins, IND);
+	set_opcode_from_address_mode_and_instruction(cpu, "JMP", IND);
 
 	// set index_lo and index_hi for IND address mode
 	// then also set the address it points from that indexed address
@@ -577,16 +531,12 @@ START_TEST (cpu_test_ind_jmp_bug)
 	ck_assert_uint_eq(0x20, cpu->addr_lo);
 	ck_assert_uint_eq(0x01, cpu->addr_hi);
 	ck_assert_uint_eq(0x0120, cpu->PC);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_indx_read_store)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "ORA", 4);
-	cpu->opcode = reverse_opcode_lut(ins, INDX);
+	set_opcode_from_address_mode_and_instruction(cpu, "ORA", INDX);
 
 	// set index_lo and index_hi for IND address mode
 	// then also set the address it points from that indexed address
@@ -608,16 +558,12 @@ START_TEST (cpu_test_addr_mode_indx_read_store)
 	ck_assert_uint_eq(0xCD, cpu->addr_lo);
 	ck_assert_uint_eq(0x09, cpu->addr_hi);
 	ck_assert_uint_eq(0x09CD, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
 START_TEST (cpu_test_addr_mode_indy_read_store)
 {
-	char (*ins)[4] = malloc(sizeof *ins);
-	strncpy((char*) ins, "CMP", 4);
-	cpu->opcode = reverse_opcode_lut(ins, INDY);
+	set_opcode_from_address_mode_and_instruction(cpu, "CMP", INDY);
 
 	// set index_lo and index_hi for IND address mode
 	// then also set the address it points from that indexed address
@@ -639,8 +585,6 @@ START_TEST (cpu_test_addr_mode_indy_read_store)
 	ck_assert_uint_eq(0xB1, cpu->addr_lo);
 	ck_assert_uint_eq(0x13, cpu->addr_hi);
 	ck_assert_uint_eq(0x13C8, cpu->target_addr);
-
-	free(ins);
 }
 END_TEST
 
