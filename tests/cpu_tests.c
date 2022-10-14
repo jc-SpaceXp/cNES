@@ -20,11 +20,11 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	int opcode = -1;  // error for -1
 
 	// Offical opcodes
-	if (!strncmp(*instruction, "BRK", 4)) { opcode = 0x00; }
+	if (!strncmp(*instruction, "BRK", 4))        /* SPECIAL*/            { opcode = 0x00; }
 	else if (!strncmp(*instruction, "ORA", 4) && (address_mode == INDX)) { opcode = 0x01; }
 	else if (!strncmp(*instruction, "ORA", 4) && (address_mode == ZP)) { opcode = 0x05; }
 	else if (!strncmp(*instruction, "ASL", 4) && (address_mode == ZP)) { opcode = 0x06; }
-	else if (!strncmp(*instruction, "PHP", 4)) { opcode = 0x08; }
+	else if (!strncmp(*instruction, "PHP", 4))   /* IMP */             { opcode = 0x08; }
 	else if (!strncmp(*instruction, "ORA", 4) && (address_mode == IMM)) { opcode = 0x09; }
 	else if (!strncmp(*instruction, "ASL", 4) && (address_mode == ACC)) { opcode = 0x0A; }
 	else if (!strncmp(*instruction, "ORA", 4) && (address_mode == ABS)) { opcode = 0x0D; }
@@ -34,17 +34,17 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "ORA", 4) && (address_mode == INDY)) { opcode = 0x11; }
 	else if (!strncmp(*instruction, "ORA", 4) && (address_mode == ZPX)) { opcode = 0x15; }
 	else if (!strncmp(*instruction, "ASL", 4) && (address_mode == ZPX)) { opcode = 0x16; }
-	else if (!strncmp(*instruction, "CLC", 4) && (address_mode == IMP)) { opcode = 0x18; }
+	else if (!strncmp(*instruction, "CLC", 4))   /* IMP */               { opcode = 0x18; }
 	else if (!strncmp(*instruction, "ORA", 4) && (address_mode == ABSY)) { opcode = 0x19; }
 	else if (!strncmp(*instruction, "ORA", 4) && (address_mode == ABSX)) { opcode = 0x1D; }
 	else if (!strncmp(*instruction, "ASL", 4) && (address_mode == ABSX)) { opcode = 0x1E; }
 	// row 3
-	else if (!strncmp(*instruction, "JSR", 4) && (address_mode == SPECIAL)) { opcode = 0x20; }
+	else if (!strncmp(*instruction, "JSR", 4))   /* SPECIAL */           { opcode = 0x20; }
 	else if (!strncmp(*instruction, "AND", 4) && (address_mode == INDX)) { opcode = 0x21; }
 	else if (!strncmp(*instruction, "BIT", 4) && (address_mode == ZP)) { opcode = 0x24; }
 	else if (!strncmp(*instruction, "AND", 4) && (address_mode == ZP)) { opcode = 0x25; }
 	else if (!strncmp(*instruction, "ROL", 4) && (address_mode == ZP)) { opcode = 0x26; }
-	else if (!strncmp(*instruction, "PLP", 4) && (address_mode == IMP)) { opcode = 0x28; }
+	else if (!strncmp(*instruction, "PLP", 4))   /* IMP */              { opcode = 0x28; }
 	else if (!strncmp(*instruction, "AND", 4) && (address_mode == IMM)) { opcode = 0x29; }
 	else if (!strncmp(*instruction, "ROL", 4) && (address_mode == ACC)) { opcode = 0x2A; }
 	else if (!strncmp(*instruction, "BIT", 4) && (address_mode == ABS)) { opcode = 0x2C; }
@@ -55,7 +55,7 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "AND", 4) && (address_mode == INDY)) { opcode = 0x31; }
 	else if (!strncmp(*instruction, "AND", 4) && (address_mode == ZPX)) { opcode = 0x35; }
 	else if (!strncmp(*instruction, "ROL", 4) && (address_mode == ZPX)) { opcode = 0x36; }
-	else if (!strncmp(*instruction, "SEC", 4) && (address_mode == IMP)) { opcode = 0x38; }
+	else if (!strncmp(*instruction, "SEC", 4))   /* IMP */               { opcode = 0x38; }
 	else if (!strncmp(*instruction, "AND", 4) && (address_mode == ABSY)) { opcode = 0x39; }
 	else if (!strncmp(*instruction, "AND", 4) && (address_mode == ABSX)) { opcode = 0x3D; }
 	else if (!strncmp(*instruction, "ROL", 4) && (address_mode == ABSX)) { opcode = 0x3E; }
@@ -64,7 +64,7 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "EOR", 4) && (address_mode == INDX)) { opcode = 0x41; }
 	else if (!strncmp(*instruction, "EOR", 4) && (address_mode == ZP)) { opcode = 0x45; }
 	else if (!strncmp(*instruction, "LSR", 4) && (address_mode == ZP)) { opcode = 0x46; }
-	else if (!strncmp(*instruction, "PHA", 4) && (address_mode == IMP)) { opcode = 0x48; }
+	else if (!strncmp(*instruction, "PHA", 4))   /* IMP */              { opcode = 0x48; }
 	else if (!strncmp(*instruction, "EOR", 4) && (address_mode == IMM)) { opcode = 0x49; }
 	else if (!strncmp(*instruction, "LSR", 4) && (address_mode == ACC)) { opcode = 0x4A; }
 	else if (!strncmp(*instruction, "JMP", 4) && (address_mode == ABS)) { opcode = 0x4C; }
@@ -75,16 +75,16 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "EOR", 4) && (address_mode == INDY)) { opcode = 0x51; }
 	else if (!strncmp(*instruction, "EOR", 4) && (address_mode == ZPX)) { opcode = 0x55; }
 	else if (!strncmp(*instruction, "LSR", 4) && (address_mode == ZPX)) { opcode = 0x56; }
-	else if (!strncmp(*instruction, "CLI", 4) && (address_mode == IMP)) { opcode = 0x58; }
+	else if (!strncmp(*instruction, "CLI", 4))   /* IMP */               { opcode = 0x58; }
 	else if (!strncmp(*instruction, "EOR", 4) && (address_mode == ABSY)) { opcode = 0x59; }
 	else if (!strncmp(*instruction, "EOR", 4) && (address_mode == ABSX)) { opcode = 0x5D; }
 	else if (!strncmp(*instruction, "LSR", 4) && (address_mode == ABSX)) { opcode = 0x5E; }
 	// row 7
-	else if (!strncmp(*instruction, "RTS", 4) && (address_mode == IMP)) { opcode = 0x60; }
+	else if (!strncmp(*instruction, "RTS", 4))   /* IMP */               { opcode = 0x60; }
 	else if (!strncmp(*instruction, "ADC", 4) && (address_mode == INDX)) { opcode = 0x61; }
 	else if (!strncmp(*instruction, "ADC", 4) && (address_mode == ZP)) { opcode = 0x65; }
 	else if (!strncmp(*instruction, "ROR", 4) && (address_mode == ZP)) { opcode = 0x66; }
-	else if (!strncmp(*instruction, "PLA", 4) && (address_mode == IMP)) { opcode = 0x68; }
+	else if (!strncmp(*instruction, "PLA", 4))   /* IMP */              { opcode = 0x68; }
 	else if (!strncmp(*instruction, "ADC", 4) && (address_mode == IMM)) { opcode = 0x69; }
 	else if (!strncmp(*instruction, "ROR", 4) && (address_mode == ACC)) { opcode = 0x6A; }
 	else if (!strncmp(*instruction, "JMP", 4) && (address_mode == IND)) { opcode = 0x6C; }
@@ -95,7 +95,7 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "ADC", 4) && (address_mode == INDY)) { opcode = 0x71; }
 	else if (!strncmp(*instruction, "ADC", 4) && (address_mode == ZPX)) { opcode = 0x75; }
 	else if (!strncmp(*instruction, "ROR", 4) && (address_mode == ZPX)) { opcode = 0x76; }
-	else if (!strncmp(*instruction, "SEI", 4) && (address_mode == IMP)) { opcode = 0x78; }
+	else if (!strncmp(*instruction, "SEI", 4))   /* IMP */               { opcode = 0x78; }
 	else if (!strncmp(*instruction, "ADC", 4) && (address_mode == ABSY)) { opcode = 0x79; }
 	else if (!strncmp(*instruction, "ADC", 4) && (address_mode == ABSX)) { opcode = 0x7D; }
 	else if (!strncmp(*instruction, "ROR", 4) && (address_mode == ABSX)) { opcode = 0x7E; }
@@ -104,8 +104,8 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "STY", 4) && (address_mode == ZP)) { opcode = 0x84; }
 	else if (!strncmp(*instruction, "STA", 4) && (address_mode == ZP)) { opcode = 0x85; }
 	else if (!strncmp(*instruction, "STX", 4) && (address_mode == ZP)) { opcode = 0x86; }
-	else if (!strncmp(*instruction, "DEY", 4) && (address_mode == IMP)) { opcode = 0x88; }
-	else if (!strncmp(*instruction, "TXA", 4) && (address_mode == IMP)) { opcode = 0x8A; }
+	else if (!strncmp(*instruction, "DEY", 4))   /* IMP */              { opcode = 0x88; }
+	else if (!strncmp(*instruction, "TXA", 4))   /* IMP */              { opcode = 0x8A; }
 	else if (!strncmp(*instruction, "STY", 4) && (address_mode == ABS)) { opcode = 0x8C; }
 	else if (!strncmp(*instruction, "STA", 4) && (address_mode == ABS)) { opcode = 0x8D; }
 	else if (!strncmp(*instruction, "STX", 4) && (address_mode == ABS)) { opcode = 0x8E; }
@@ -115,9 +115,9 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "STY", 4) && (address_mode == ZPX)) { opcode = 0x94; }
 	else if (!strncmp(*instruction, "STA", 4) && (address_mode == ZPX)) { opcode = 0x95; }
 	else if (!strncmp(*instruction, "STX", 4) && (address_mode == ZPY)) { opcode = 0x96; }
-	else if (!strncmp(*instruction, "TYA", 4) && (address_mode == IMP)) { opcode = 0x98; }
+	else if (!strncmp(*instruction, "TYA", 4))   /* IMP */               { opcode = 0x98; }
 	else if (!strncmp(*instruction, "STA", 4) && (address_mode == ABSY)) { opcode = 0x99; }
-	else if (!strncmp(*instruction, "TXS", 4) && (address_mode == IMP)) { opcode = 0x9A; }
+	else if (!strncmp(*instruction, "TXS", 4))   /* IMP */               { opcode = 0x9A; }
 	else if (!strncmp(*instruction, "STA", 4) && (address_mode == ABSX)) { opcode = 0x9D; }
 	// row 11
 	else if (!strncmp(*instruction, "LDY", 4) && (address_mode == IMM)) { opcode = 0xA0; }
@@ -140,7 +140,7 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "LDX", 4) && (address_mode == ZPY)) { opcode = 0xB6; }
 	else if (!strncmp(*instruction, "CLV", 4) && (address_mode == IMP)) { opcode = 0xB8; }
 	else if (!strncmp(*instruction, "LDA", 4) && (address_mode == ABSY)) { opcode = 0xB9; }
-	else if (!strncmp(*instruction, "TSX", 4) && (address_mode == IMP)) { opcode = 0xBA; }
+	else if (!strncmp(*instruction, "TSX", 4))   /* IMP */               { opcode = 0xBA; }
 	else if (!strncmp(*instruction, "LDY", 4) && (address_mode == ABSX)) { opcode = 0xBC; }
 	else if (!strncmp(*instruction, "LDA", 4) && (address_mode == ABSX)) { opcode = 0xBD; }
 	else if (!strncmp(*instruction, "LDX", 4) && (address_mode == ABSY)) { opcode = 0xBE; }
@@ -150,9 +150,9 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "CPY", 4) && (address_mode == ZP)) { opcode = 0xC4; }
 	else if (!strncmp(*instruction, "CMP", 4) && (address_mode == ZP)) { opcode = 0xC5; }
 	else if (!strncmp(*instruction, "DEC", 4) && (address_mode == ZP)) { opcode = 0xC6; }
-	else if (!strncmp(*instruction, "INY", 4) && (address_mode == IMP)) { opcode = 0xC8; }
+	else if (!strncmp(*instruction, "INY", 4))   /* IMP */              { opcode = 0xC8; }
 	else if (!strncmp(*instruction, "CMP", 4) && (address_mode == IMM)) { opcode = 0xC9; }
-	else if (!strncmp(*instruction, "DEX", 4) && (address_mode == IMP)) { opcode = 0xCA; }
+	else if (!strncmp(*instruction, "DEX", 4))   /* IMP */              { opcode = 0xCA; }
 	else if (!strncmp(*instruction, "CPY", 4) && (address_mode == ABS)) { opcode = 0xCC; }
 	else if (!strncmp(*instruction, "CMP", 4) && (address_mode == ABS)) { opcode = 0xCD; }
 	else if (!strncmp(*instruction, "DEC", 4) && (address_mode == ABS)) { opcode = 0xCE; }
@@ -171,7 +171,7 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "CPX", 4) && (address_mode == ZP)) { opcode = 0xE4; }
 	else if (!strncmp(*instruction, "SBC", 4) && (address_mode == ZP)) { opcode = 0xE5; }
 	else if (!strncmp(*instruction, "INC", 4) && (address_mode == ZP)) { opcode = 0xE6; }
-	else if (!strncmp(*instruction, "INX", 4) && (address_mode == IMP)) { opcode = 0xE8; }
+	else if (!strncmp(*instruction, "INX", 4))   /* IMP */              { opcode = 0xE8; }
 	else if (!strncmp(*instruction, "SBC", 4) && (address_mode == IMM)) { opcode = 0xE9; }
 	else if (!strncmp(*instruction, "NOP", 4) && (address_mode == IMP)) { opcode = 0xEA; }
 	else if (!strncmp(*instruction, "CPX", 4) && (address_mode == ABS)) { opcode = 0xEC; }
@@ -182,7 +182,7 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "SBC", 4) && (address_mode == INDY)) { opcode = 0xF1; }
 	else if (!strncmp(*instruction, "SBC", 4) && (address_mode == ZPX)) { opcode = 0xF5; }
 	else if (!strncmp(*instruction, "INC", 4) && (address_mode == ZPX)) { opcode = 0xF6; }
-	else if (!strncmp(*instruction, "SED", 4) && (address_mode == IMP)) { opcode = 0xF8; }
+	else if (!strncmp(*instruction, "SED", 4))   /* IMP */               { opcode = 0xF8; }
 	else if (!strncmp(*instruction, "SBC", 4) && (address_mode == ABSY)) { opcode = 0xF9; }
 	else if (!strncmp(*instruction, "SBC", 4) && (address_mode == ABSX)) { opcode = 0xFD; }
 	else if (!strncmp(*instruction, "INC", 4) && (address_mode == ABSX)) { opcode = 0xFE; }
