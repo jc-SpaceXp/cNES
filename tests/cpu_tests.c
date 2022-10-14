@@ -264,6 +264,290 @@ START_TEST (cpu_test_addr_mode_imm)
 }
 END_TEST
 
+START_TEST (cpu_test_addr_mode_abs_read_store)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "SBC", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ABS);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xC0; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x00; // addr_hi (from cpu->PC + 1)
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0xC0, cpu->addr_lo);
+	ck_assert_uint_eq(0x00, cpu->addr_hi);
+	ck_assert_uint_eq(0x00C0, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_abs_rmw)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "INC", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ABS);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xC0; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x00; // addr_hi (from cpu->PC + 1)
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0xC0, cpu->addr_lo);
+	ck_assert_uint_eq(0x00, cpu->addr_hi);
+	ck_assert_uint_eq(0x00C0, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_abs_jmp)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "JMP", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ABS);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x90; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0xB4; // addr_hi (from cpu->PC + 1)
+
+	decode_opcode_lut[cpu->opcode](cpu); // setup needed for the for loop below
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		execute_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0x90, cpu->addr_lo);
+	ck_assert_uint_eq(0xB4, cpu->addr_hi);
+	ck_assert_uint_eq(0xB490, cpu->target_addr);
+	ck_assert_uint_eq(0xB490, cpu->PC);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_absx_read_store)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "EOR", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ABSX);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xE1; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x07; // addr_hi (from cpu->PC + 1)
+	cpu->X = 0x0F; // X offset to ABS address
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0xE1, cpu->addr_lo);
+	ck_assert_uint_eq(0x07, cpu->addr_hi);
+	ck_assert_uint_eq(0x07F0, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_absx_rmw)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "ASL", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ABSX);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x04; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x10; // addr_hi (from cpu->PC + 1)
+	cpu->X = 0x06; // X offset to ABS address
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0x04, cpu->addr_lo);
+	ck_assert_uint_eq(0x10, cpu->addr_hi);
+	ck_assert_uint_eq(0x100A, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_absy_read_store)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "LDA", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ABSY);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x25; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x04; // addr_hi (from cpu->PC + 1)
+	cpu->Y = 0x05; // X offset to ABS address
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0x25, cpu->addr_lo);
+	ck_assert_uint_eq(0x04, cpu->addr_hi);
+	ck_assert_uint_eq(0x042A, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_zp_read_store)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "BIT", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ZP);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xDE; // addr_lo, addr_hi fixed to 0x00
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0xDE, cpu->addr_lo);
+	ck_assert_uint_eq(0x00DE, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_zp_rmw)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "LSR", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ZP);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x02; // addr_lo, addr_hi fixed to 0x00
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0x02, cpu->addr_lo);
+	ck_assert_uint_eq(0x0002, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_zpx_read_store)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "STY", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ZPX);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x04; // addr_lo, addr_hi fixed to 0x00
+	cpu->X = 0xAC;
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0x04, cpu->addr_lo);
+	ck_assert_uint_eq(0x00B0, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_zpx_rmw)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "ROL", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ZPX);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xFA; // addr_lo, addr_hi fixed to 0x00
+	cpu->X = 0x03;
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0xFA, cpu->addr_lo);
+	ck_assert_uint_eq(0x00FD, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_zpy_read_store)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "LDX", 4);
+	cpu->opcode = reverse_opcode_lut(ins, ZPY);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x63; // addr_lo, addr_hi fixed to 0x00
+	cpu->Y = 0x03;
+
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode] - 1;
+	for (int i = 0; i < (max_cycles_opcode_lut[cpu->opcode] - 1); i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+	ck_assert_uint_eq(0x63, cpu->addr_lo);
+	ck_assert_uint_eq(0x0066, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_ind_jmp)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "JMP", 4);
+	cpu->opcode = reverse_opcode_lut(ins, IND);
+
+	// set index_lo and index_hi for IND address mode
+	// then also set the address it points from that indexed address
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x24; // index_lo
+	cpu->mem[cpu->PC + 1] = 0x04; // index_hi (from cpu->PC + 1)
+	cpu->mem[0x0424] = 0x11;  // addr_lo
+	cpu->mem[0x0425] = 0x01;  // addr_hi
+
+	// JMP instruction has no decode logic so loop execute function
+	// and decrement instruction_cycles_remaining
+	cpu->address_mode = IND;
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		execute_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+
+	ck_assert_uint_eq(0x24, cpu->index_lo);
+	ck_assert_uint_eq(0x04, cpu->index_hi);
+	ck_assert_uint_eq(0x11, cpu->addr_lo);
+	ck_assert_uint_eq(0x01, cpu->addr_hi);
+	ck_assert_uint_eq(0x0111, cpu->PC);
+
+	free(ins);
+}
+END_TEST
+
 START_TEST (cpu_test_ind_jmp_bug)
 {
 	char (*ins)[4] = malloc(sizeof *ins);
@@ -298,6 +582,70 @@ START_TEST (cpu_test_ind_jmp_bug)
 }
 END_TEST
 
+START_TEST (cpu_test_addr_mode_indx_read_store)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "ORA", 4);
+	cpu->opcode = reverse_opcode_lut(ins, INDX);
+
+	// set index_lo and index_hi for IND address mode
+	// then also set the address it points from that indexed address
+	cpu->X = 0x15;
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x24; // base_addr
+	cpu->mem[0x0039] = 0xCD;  // addr_lo
+	cpu->mem[0x003A] = 0x09;  // addr_hi
+
+	// JMP instruction has no decode logic so loop execute function
+	// and decrement instruction_cycles_remaining
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+
+	ck_assert_uint_eq(0x24, cpu->base_addr);
+	ck_assert_uint_eq(0xCD, cpu->addr_lo);
+	ck_assert_uint_eq(0x09, cpu->addr_hi);
+	ck_assert_uint_eq(0x09CD, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+START_TEST (cpu_test_addr_mode_indy_read_store)
+{
+	char (*ins)[4] = malloc(sizeof *ins);
+	strncpy((char*) ins, "CMP", 4);
+	cpu->opcode = reverse_opcode_lut(ins, INDY);
+
+	// set index_lo and index_hi for IND address mode
+	// then also set the address it points from that indexed address
+	cpu->Y = 0x17;
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x71; // base_addr
+	cpu->mem[0x0071] = 0xB1;  // addr_lo
+	cpu->mem[0x0072] = 0x13;  // addr_hi
+
+	// JMP instruction has no decode logic so loop execute function
+	// and decrement instruction_cycles_remaining
+	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	for (int i = 0; i < max_cycles_opcode_lut[cpu->opcode]; i++) {
+		decode_opcode_lut[cpu->opcode](cpu);
+		cpu->instruction_cycles_remaining -= 1;
+	}
+
+	ck_assert_uint_eq(0x71, cpu->base_addr);
+	ck_assert_uint_eq(0xB1, cpu->addr_lo);
+	ck_assert_uint_eq(0x13, cpu->addr_hi);
+	ck_assert_uint_eq(0x13C8, cpu->target_addr);
+
+	free(ins);
+}
+END_TEST
+
+// need ACC, IMP, PUSH, PULL, SPECIAL?, Bxx (REL), RTS
+
 Suite* cpu_suite(void)
 {
 	Suite* s;
@@ -310,8 +658,22 @@ Suite* cpu_suite(void)
 	suite_add_tcase(s, tc_core);
 	tc_address_modes = tcase_create("Address Modes");
 	tcase_add_checked_fixture(tc_address_modes, setup, teardown);
-	tcase_add_test(tc_address_modes, cpu_test_ind_jmp_bug);
 	tcase_add_test(tc_address_modes, cpu_test_addr_mode_imm);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_abs_read_store);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_abs_rmw);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_abs_jmp);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_absx_read_store);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_absx_rmw);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_absy_read_store);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zp_read_store);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zp_rmw);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zpx_read_store);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zpx_rmw);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zpy_read_store);
+	tcase_add_test(tc_address_modes, cpu_test_ind_jmp);
+	tcase_add_test(tc_address_modes, cpu_test_ind_jmp_bug);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_indx_read_store);
+	tcase_add_test(tc_address_modes, cpu_test_addr_mode_indy_read_store);
 	suite_add_tcase(s, tc_address_modes);
 
 	return s;
