@@ -588,7 +588,6 @@ START_TEST (cpu_test_addr_mode_indy_read_store)
 }
 END_TEST
 
-// need ACC, IMP, PUSH, PULL, SPECIAL?, Bxx (REL), RTS
 
 Suite* cpu_suite(void)
 {
