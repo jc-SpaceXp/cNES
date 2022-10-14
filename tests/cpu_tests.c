@@ -11,7 +11,7 @@
 /* Get opcode from instruction and addressing mode
  * input is a pointer to an array of 3 chars (plus null char) e.g. LDA, BRK etc.
  */
-int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
+static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 {
 	// Normalise input to uppercase chars
 	for (int i = 0; i < 3; i++) {
