@@ -39,6 +39,10 @@ TSTDIR := tests
 TSTS := $(wildcard $(TSTDIR)/*.c)
 TST_OBJS := $(TSTS:%.c=$(OBJDIR)/%.o)
 TST_DEPS := $(TSTS:%.c=$(DEPDIR)/%.d)
+TST_TMP_OBJS := $(OBJDIR)/$(SRCDIR)/cpu.o \
+                $(OBJDIR)/$(SRCDIR)/mappers.o \
+                $(OBJDIR)/$(SRCDIR)/ppu.o \
+                $(OBJDIR)/$(SRCDIR)/gui.o
 
 .PHONY: all
 all: $(BINDIR)/cnes $(BINDIR)/test_all
@@ -56,7 +60,7 @@ $(BINDIR)/cnes: $(SRC_OBJS) | $(BINDIR)
 	$(CC) -o $@ $(SRC_OBJS) $(LDFLAGS)
 	@echo "--- Done: Linking target"
 
-$(BINDIR)/test_all: $(TST_OBJS) $(OBJDIR)/$(SRCDIR)/cpu.o $(OBJDIR)/$(SRCDIR)/mappers.o $(OBJDIR)/$(SRCDIR)/ppu.o $(OBJDIR)/$(SRCDIR)/gui.o | $(BINDIR)
+$(BINDIR)/test_all: $(TST_OBJS) $(TST_TMP_OBJS) | $(BINDIR)
 	@echo "--- Linking tests"
 	$(CC) -o $@ $^ $(LIBCHECK_FLAGS) $(LDFLAGS)
 	@echo "--- Done: Linking tests"
