@@ -229,7 +229,8 @@ START_TEST (test_strcmp_reverse_opcode_lut)
 }
 END_TEST
 
-static void set_opcode_from_address_mode_and_instruction(Cpu6502* cpu, char* input, AddressMode address_mode)
+static void set_opcode_from_address_mode_and_instruction(Cpu6502* cpu, char* input
+                                                        , AddressMode address_mode)
 {
 	char (*ins)[4] = malloc(sizeof *ins);
 	strncpy((char*) ins, input, 4);
