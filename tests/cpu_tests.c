@@ -564,14 +564,14 @@ END_TEST
 Suite* cpu_suite(void)
 {
 	Suite* s;
-	TCase* tc_core;
+	TCase* tc_test_helpers;
 	TCase* tc_address_modes;
 
 	s = suite_create("Cpu Tests");
-	tc_core = tcase_create("Core");
-	tcase_add_test(tc_core, test_strcmp_reverse_opcode_lut);
-	suite_add_tcase(s, tc_core);
-	tc_address_modes = tcase_create("Address Modes");
+	tc_test_helpers = tcase_create("Test Helpers");
+	tcase_add_test(tc_test_helpers, test_strcmp_reverse_opcode_lut);
+	suite_add_tcase(s, tc_test_helpers);
+	tc_address_modes = tcase_create("Address Modes Correct Address");
 	tcase_add_checked_fixture(tc_address_modes, setup, teardown);
 	tcase_add_test(tc_address_modes, cpu_test_addr_mode_imm);
 	tcase_add_test(tc_address_modes, cpu_test_addr_mode_abs_read_store);
