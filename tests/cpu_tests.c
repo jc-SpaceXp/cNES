@@ -616,6 +616,43 @@ START_TEST (cpu_test_ram_read_mirrored_bank_3)
 	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF + 0x1800));
 }
 
+START_TEST (cpu_test_ram_write_non_mirrored_check_all_reads)
+{
+	write_to_cpu(cpu, 0x0248, 0x20);
+	ck_assert_uint_eq(0x20, read_from_cpu(cpu, 0x0248));
+	ck_assert_uint_eq(0x20, read_from_cpu(cpu, 0x0248 + 0x0800));
+	ck_assert_uint_eq(0x20, read_from_cpu(cpu, 0x0248 + 0x1000));
+	ck_assert_uint_eq(0x20, read_from_cpu(cpu, 0x0248 + 0x1800));
+}
+
+// Ensures writes to banks can also be read-back correctly from their mirrors
+START_TEST (cpu_test_ram_write_mirrored_bank_1_check_all_reads)
+{
+	write_to_cpu(cpu, 0x0248 + 0x0800, 0x21);
+	ck_assert_uint_eq(0x21, read_from_cpu(cpu, 0x0248));
+	ck_assert_uint_eq(0x21, read_from_cpu(cpu, 0x0248 + 0x0800));
+	ck_assert_uint_eq(0x21, read_from_cpu(cpu, 0x0248 + 0x1000));
+	ck_assert_uint_eq(0x21, read_from_cpu(cpu, 0x0248 + 0x1800));
+}
+
+START_TEST (cpu_test_ram_write_mirrored_bank_2_check_all_reads)
+{
+	write_to_cpu(cpu, 0x0248 + 0x1000, 0x22);
+	ck_assert_uint_eq(0x22, read_from_cpu(cpu, 0x0248));
+	ck_assert_uint_eq(0x22, read_from_cpu(cpu, 0x0248 + 0x0800));
+	ck_assert_uint_eq(0x22, read_from_cpu(cpu, 0x0248 + 0x1000));
+	ck_assert_uint_eq(0x22, read_from_cpu(cpu, 0x0248 + 0x1800));
+}
+
+START_TEST (cpu_test_ram_write_mirrored_bank_3_check_all_reads)
+{
+	write_to_cpu(cpu, 0x0248 + 0x1800, 0x23);
+	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248));
+	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248 + 0x0800));
+	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248 + 0x1000));
+	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248 + 0x1800));
+}
+
 
 Suite* cpu_suite(void)
 {
@@ -623,6 +660,7 @@ Suite* cpu_suite(void)
 	TCase* tc_test_helpers;
 	TCase* tc_address_modes;
 	TCase* tc_cpu_reads;
+	TCase* tc_cpu_writes;
 
 	s = suite_create("Cpu Tests");
 	tc_test_helpers = tcase_create("Test Helpers");
@@ -654,6 +692,13 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_mirrored_bank_2);
 	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_mirrored_bank_3);
 	suite_add_tcase(s, tc_cpu_reads);
+	tc_cpu_writes = tcase_create("Cpu Memory Mapped Writes");
+	tcase_add_checked_fixture(tc_cpu_writes, setup, teardown);
+	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_non_mirrored_check_all_reads);
+	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_1_check_all_reads);
+	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_2_check_all_reads);
+	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_3_check_all_reads);
+	suite_add_tcase(s, tc_cpu_writes);
 
 	return s;
 }
