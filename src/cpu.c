@@ -304,7 +304,7 @@ static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr)
 	return ((read_from_cpu(cpu, addr + 1) << 8) | read_from_cpu(cpu, addr));
 }
 
-static void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
+void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 {
 	if (addr < (ADDR_RAM_END + 1)) { // write to RAM (non-mirrored)
 		cpu->mem[addr & RAM_NON_MIRROR_MASK] = val;
