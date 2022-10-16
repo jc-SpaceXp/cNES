@@ -560,12 +560,69 @@ START_TEST (cpu_test_addr_mode_indy_read_store)
 }
 END_TEST
 
+START_TEST (cpu_test_ram_read_non_mirrored)
+{
+	cpu->mem[0x0010] = 0xAA;
+	cpu->mem[0x0124] = 0x83;
+	cpu->mem[0x0505] = 0x52;
+	cpu->mem[0x04FF] = 0x01;
+	cpu->mem[0x07FF] = 0xB0;
+	ck_assert_uint_eq(0xAA, read_from_cpu(cpu, 0x0010));
+	ck_assert_uint_eq(0x83, read_from_cpu(cpu, 0x0124));
+	ck_assert_uint_eq(0x52, read_from_cpu(cpu, 0x0505));
+	ck_assert_uint_eq(0x01, read_from_cpu(cpu, 0x04FF));
+	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF));
+}
+
+START_TEST (cpu_test_ram_read_mirrored_bank_1)
+{
+	cpu->mem[0x0010] = 0xAA;
+	cpu->mem[0x0124] = 0x83;
+	cpu->mem[0x0505] = 0x52;
+	cpu->mem[0x04FF] = 0x01;
+	cpu->mem[0x07FF] = 0xB0;
+	ck_assert_uint_eq(0xAA, read_from_cpu(cpu, 0x0010 + 0x0800));
+	ck_assert_uint_eq(0x83, read_from_cpu(cpu, 0x0124 + 0x0800));
+	ck_assert_uint_eq(0x52, read_from_cpu(cpu, 0x0505 + 0x0800));
+	ck_assert_uint_eq(0x01, read_from_cpu(cpu, 0x04FF + 0x0800));
+	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF + 0x0800));
+}
+
+START_TEST (cpu_test_ram_read_mirrored_bank_2)
+{
+	cpu->mem[0x0010] = 0xAA;
+	cpu->mem[0x0124] = 0x83;
+	cpu->mem[0x0505] = 0x52;
+	cpu->mem[0x04FF] = 0x01;
+	cpu->mem[0x07FF] = 0xB0;
+	ck_assert_uint_eq(0xAA, read_from_cpu(cpu, 0x0010 + 0x1000));
+	ck_assert_uint_eq(0x83, read_from_cpu(cpu, 0x0124 + 0x1000));
+	ck_assert_uint_eq(0x52, read_from_cpu(cpu, 0x0505 + 0x1000));
+	ck_assert_uint_eq(0x01, read_from_cpu(cpu, 0x04FF + 0x1000));
+	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF + 0x1000));
+}
+
+START_TEST (cpu_test_ram_read_mirrored_bank_3)
+{
+	cpu->mem[0x0010] = 0xAA;
+	cpu->mem[0x0124] = 0x83;
+	cpu->mem[0x0505] = 0x52;
+	cpu->mem[0x04FF] = 0x01;
+	cpu->mem[0x07FF] = 0xB0;
+	ck_assert_uint_eq(0xAA, read_from_cpu(cpu, 0x0010 + 0x1800));
+	ck_assert_uint_eq(0x83, read_from_cpu(cpu, 0x0124 + 0x1800));
+	ck_assert_uint_eq(0x52, read_from_cpu(cpu, 0x0505 + 0x1800));
+	ck_assert_uint_eq(0x01, read_from_cpu(cpu, 0x04FF + 0x1800));
+	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF + 0x1800));
+}
+
 
 Suite* cpu_suite(void)
 {
 	Suite* s;
 	TCase* tc_test_helpers;
 	TCase* tc_address_modes;
+	TCase* tc_cpu_reads;
 
 	s = suite_create("Cpu Tests");
 	tc_test_helpers = tcase_create("Test Helpers");
@@ -590,6 +647,13 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_address_modes, cpu_test_addr_mode_indx_read_store);
 	tcase_add_test(tc_address_modes, cpu_test_addr_mode_indy_read_store);
 	suite_add_tcase(s, tc_address_modes);
+	tc_cpu_reads = tcase_create("Cpu Memory Mapped Reads");
+	tcase_add_checked_fixture(tc_cpu_reads, setup, teardown);
+	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_non_mirrored);
+	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_mirrored_bank_1);
+	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_mirrored_bank_2);
+	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_mirrored_bank_3);
+	suite_add_tcase(s, tc_cpu_reads);
 
 	return s;
 }
