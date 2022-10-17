@@ -653,6 +653,138 @@ START_TEST (cpu_test_ram_write_mirrored_bank_3_check_all_reads)
 	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248 + 0x1800));
 }
 
+START_TEST (cpu_test_isa_lda_result_only_imm)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDA", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x44;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x44, cpu->A);
+}
+
+START_TEST (cpu_test_isa_lda_result_only_non_imm_mode)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDA", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 0x22);
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x22, cpu->A);
+}
+
+START_TEST (cpu_test_isa_ldx_result_only_imm)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDX", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x44;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x44, cpu->X);
+}
+
+START_TEST (cpu_test_isa_ldx_result_only_non_imm_mode)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDX", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 0x22);
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x22, cpu->X);
+}
+
+START_TEST (cpu_test_isa_ldy_result_only_imm)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDY", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x44;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x44, cpu->Y);
+}
+
+START_TEST (cpu_test_isa_ldy_result_only_non_imm_mode)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDY", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 0x22);
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x22, cpu->Y);
+}
+
+START_TEST (cpu_test_isa_sta_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "STA", ABSX);
+	cpu->target_addr = 0x002C;
+	cpu->A = 0x03;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(cpu->A, read_from_cpu(cpu, cpu->target_addr));
+}
+
+START_TEST (cpu_test_isa_stx_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "STX", ZP);
+	cpu->target_addr = 0x000F;
+	cpu->X = 0x03;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(cpu->X, read_from_cpu(cpu, cpu->target_addr));
+}
+
+START_TEST (cpu_test_isa_sty_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "STY", ZPX);
+	cpu->target_addr = 0x000F;
+	cpu->Y = 0x03;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(cpu->Y, read_from_cpu(cpu, cpu->target_addr));
+}
+
+START_TEST (cpu_test_isa_tax_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TAX", IMP);
+	cpu->A = 0x91;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(cpu->X, cpu->A);
+}
+
+START_TEST (cpu_test_isa_tay_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TAY", IMP);
+	cpu->A = 0x91;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(cpu->Y, cpu->A);
+}
+
+START_TEST (cpu_test_isa_tsx_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TSX", IMP);
+	cpu->stack = 0x91;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(cpu->X, cpu->stack);
+}
+
+START_TEST (cpu_test_isa_txa_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TXA", IMP);
+	cpu->X = 0x91;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(cpu->A, cpu->X);
+}
+
+START_TEST (cpu_test_isa_txs_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TXS", IMP);
+	cpu->X = 0x91;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(cpu->stack, cpu->X);
+}
+
+START_TEST (cpu_test_isa_tya_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TYA", IMP);
+	cpu->Y = 0x91;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(cpu->A, cpu->Y);
+}
+
 
 Suite* cpu_suite(void)
 {
@@ -661,6 +793,7 @@ Suite* cpu_suite(void)
 	TCase* tc_address_modes;
 	TCase* tc_cpu_reads;
 	TCase* tc_cpu_writes;
+	TCase* tc_cpu_isa;
 
 	s = suite_create("Cpu Tests");
 	tc_test_helpers = tcase_create("Test Helpers");
@@ -699,6 +832,24 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_2_check_all_reads);
 	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_3_check_all_reads);
 	suite_add_tcase(s, tc_cpu_writes);
+	tc_cpu_isa = tcase_create("Cpu Instruction Set Architecture Core Results");
+	tcase_add_checked_fixture(tc_cpu_isa, setup, teardown);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_lda_result_only_imm);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_lda_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_ldx_result_only_imm);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_ldx_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_ldy_result_only_imm);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_ldy_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_sta_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_stx_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_sty_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_tax_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_tay_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_tsx_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_txa_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_txs_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_tya_result_only);
+	suite_add_tcase(s, tc_cpu_isa);
 
 	return s;
 }
