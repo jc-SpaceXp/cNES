@@ -785,6 +785,132 @@ START_TEST (cpu_test_isa_tya_result_only)
 	ck_assert_uint_eq(cpu->A, cpu->Y);
 }
 
+START_TEST (cpu_test_isa_adc_result_only_imm)
+{
+	// Result of ADC: is A + M + C (where M is a value from memory)
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x40;
+	cpu->A = 0x40;
+	cpu->P |= FLAG_C;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x81, cpu->A);
+}
+
+START_TEST (cpu_test_isa_adc_result_only_non_imm_mode)
+{
+	// Result of ADC: is A + M + C (where M is a value from memory)
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", INDY);
+	cpu->address_mode = INDY;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 0x40);
+	cpu->A = 0x40;
+	cpu->P |= FLAG_C;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x81, cpu->A);
+}
+
+START_TEST (cpu_test_isa_adc_result_only_imm_overflow)
+{
+	// Result of ADC: is A + M + C (where M is a value from memory)
+	// When result is greater than 0xFF it will be constrained to 8-bits
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0xFF;
+	cpu->A = 0xF0;
+	cpu->P |= FLAG_C;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xF0, cpu->A);
+}
+
+START_TEST (cpu_test_isa_dec_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "DEC", ABSX);
+	cpu->target_addr = 0x0C43;
+	write_to_cpu(cpu, cpu->target_addr, 0xA9);
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xA8, read_from_cpu(cpu, cpu->target_addr));
+}
+
+START_TEST (cpu_test_isa_dex_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "DEX", IMP);
+	cpu->X = 0xFF;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFE, cpu->X);
+}
+
+START_TEST (cpu_test_isa_dey_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "DEY", IMP);
+	cpu->Y = 0xFF;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFE, cpu->Y);
+}
+
+START_TEST (cpu_test_isa_inc_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "INC", ABS);
+	cpu->target_addr = 0x0C43;
+	write_to_cpu(cpu, cpu->target_addr, 0xA9);
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xAA, read_from_cpu(cpu, cpu->target_addr));
+}
+
+START_TEST (cpu_test_isa_inx_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "INX", IMP);
+	cpu->X = 0xFE;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFF, cpu->X);
+}
+
+START_TEST (cpu_test_isa_iny_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "INY", IMP);
+	cpu->Y = 0xFE;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFF, cpu->Y);
+}
+
+START_TEST (cpu_test_isa_sbc_result_only_imm)
+{
+	// Result of ADC: is A - M - !C (where M is a value from memory)
+	set_opcode_from_address_mode_and_instruction(cpu, "SBC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x40;
+	cpu->A = 0x40;
+	cpu->P &= ~FLAG_C;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFF, cpu->A);
+}
+
+START_TEST (cpu_test_isa_sbc_result_only_non_imm_mode)
+{
+	// Result of ADC: is A - M - !C (where M is a value from memory)
+	set_opcode_from_address_mode_and_instruction(cpu, "SBC", INDY);
+	cpu->address_mode = INDY;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 0x40);
+	cpu->A = 0x40;
+	cpu->P &= ~FLAG_C;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFF, cpu->A);
+}
+
+START_TEST (cpu_test_isa_sbc_result_only_imm_underflow)
+{
+	// Result of ADC: is A - M - !C (where M is a value from memory)
+	// When result is less than than 0x00 it will be constrained to 8-bits
+	set_opcode_from_address_mode_and_instruction(cpu, "SBC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0xF1;
+	cpu->A = 0xF0;
+	cpu->P &= ~FLAG_C;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFE, cpu->A);
+}
+
 
 Suite* cpu_suite(void)
 {
@@ -849,6 +975,18 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_txa_result_only);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_txs_result_only);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_tya_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_adc_result_only_imm);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_adc_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_adc_result_only_imm_overflow);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_dec_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_dex_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_dey_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_inc_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_inx_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_iny_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_sbc_result_only_imm);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_sbc_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_sbc_result_only_imm_underflow);
 	suite_add_tcase(s, tc_cpu_isa);
 
 	return s;
