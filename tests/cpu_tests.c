@@ -911,6 +911,167 @@ START_TEST (cpu_test_isa_sbc_result_only_imm_underflow)
 	ck_assert_uint_eq(0xFE, cpu->A);
 }
 
+START_TEST (cpu_test_isa_and_result_only_imm)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "AND", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x1F;
+	cpu->A = 0x10;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x10, cpu->A);
+}
+
+START_TEST (cpu_test_isa_and_result_only_non_imm_mode)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "AND", ZP);
+	cpu->address_mode = ZP;
+	cpu->target_addr = 0x00F2;
+	write_to_cpu(cpu, cpu->target_addr, 0x1F);
+	cpu->A = 0x10;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x10, cpu->A);
+}
+
+START_TEST (cpu_test_isa_asl_result_only_acc)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0x7F;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFE, cpu->A);
+}
+
+START_TEST (cpu_test_isa_asl_result_only_non_acc_mode)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00F2;
+	write_to_cpu(cpu, cpu->target_addr, 0x7F);
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFE, read_from_cpu(cpu, cpu->target_addr));
+}
+
+// Skip BIT as it only updates the flags which will be a separate test case
+
+START_TEST (cpu_test_isa_eor_result_only_imm)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "EOR", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x1F;
+	cpu->A = 0x10;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x0F, cpu->A);
+}
+
+START_TEST (cpu_test_isa_eor_result_only_non_imm_mode)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "EOR", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x0C12;
+	write_to_cpu(cpu, cpu->target_addr, 0x1F);
+	cpu->A = 0x10;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x0F, cpu->A);
+}
+
+START_TEST (cpu_test_isa_lsr_result_only_acc)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0x1E;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x0F, cpu->A);
+}
+
+START_TEST (cpu_test_isa_lsr_result_only_non_acc_mode)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	write_to_cpu(cpu, cpu->target_addr, 0x1E);
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x0F, read_from_cpu(cpu, cpu->target_addr));
+}
+
+START_TEST (cpu_test_isa_ora_result_only_imm)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ORA", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x1F;
+	cpu->A = 0x10;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x1F, cpu->A);
+}
+
+START_TEST (cpu_test_isa_ora_result_only_non_imm_mode)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ORA", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x0C12;
+	write_to_cpu(cpu, cpu->target_addr, 0x1F);
+	cpu->A = 0x10;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x1F, cpu->A);
+}
+
+START_TEST (cpu_test_isa_rol_result_only_acc_carry_not_set)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0x7F;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFE, cpu->A);
+}
+
+START_TEST (cpu_test_isa_rol_result_only_non_acc_mode_carry_not_set)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	write_to_cpu(cpu, cpu->target_addr, 0x7F);
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFE, read_from_cpu(cpu, cpu->target_addr));
+}
+
+START_TEST (cpu_test_isa_rol_result_only_acc_carry_set)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0x7F;
+	cpu->P |= FLAG_C; // Carry moves into vacated LSB spot
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFF, cpu->A);
+}
+
+START_TEST (cpu_test_isa_ror_result_only_acc_carry_not_set)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0xFE;
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x7F, cpu->A);
+}
+
+START_TEST (cpu_test_isa_ror_result_only_non_acc_mode_carry_not_set)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	write_to_cpu(cpu, cpu->target_addr, 0xFE);
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0x7F, read_from_cpu(cpu, cpu->target_addr));
+}
+
+START_TEST (cpu_test_isa_ror_result_only_acc_carry_set)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0xFE;
+	cpu->P |= FLAG_C; // Carry moves into vacated MSB spot
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert_uint_eq(0xFF, cpu->A);
+}
+
 
 Suite* cpu_suite(void)
 {
@@ -987,6 +1148,22 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_sbc_result_only_imm);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_sbc_result_only_non_imm_mode);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_sbc_result_only_imm_underflow);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_and_result_only_imm);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_and_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_asl_result_only_acc);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_asl_result_only_non_acc_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_eor_result_only_imm);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_eor_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_lsr_result_only_acc);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_lsr_result_only_non_acc_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_ora_result_only_imm);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_ora_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_rol_result_only_acc_carry_not_set);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_rol_result_only_non_acc_mode_carry_not_set);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_rol_result_only_acc_carry_set);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_ror_result_only_acc_carry_not_set);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_ror_result_only_non_acc_mode_carry_not_set);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_ror_result_only_acc_carry_set);
 	suite_add_tcase(s, tc_cpu_isa);
 
 	return s;
