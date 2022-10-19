@@ -866,6 +866,151 @@ START_TEST (cpu_test_bvs_taken_correct_addr)
 }
 END_TEST
 
+START_TEST (cpu_test_bcc_take_page_cross_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BCC", REL);
+	cpu->P &= ~FLAG_C;
+
+	cpu->PC = 0x80FF;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1-T3 cycles
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bcs_take_page_cross_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BCS", REL);
+	cpu->P |= FLAG_C;
+
+	cpu->PC = 0x80FF;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1-T3 cycles
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_beq_take_page_cross_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BEQ", REL);
+	cpu->P |= FLAG_Z;
+
+	cpu->PC = 0x80FF;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1-T3 cycles
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bmi_take_page_cross_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BMI", REL);
+	cpu->P |= FLAG_N;
+
+	cpu->PC = 0x80FF;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1-T3 cycles
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bne_take_page_cross_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BNE", REL);
+	cpu->P &= ~FLAG_Z;
+
+	cpu->PC = 0x80FF;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1-T3 cycles
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bpl_take_page_cross_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BPL", REL);
+	cpu->P &= ~FLAG_N;
+
+	cpu->PC = 0x80FF;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1-T3 cycles
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bvc_take_page_cross_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BVC", REL);
+	cpu->P &= ~FLAG_V;
+
+	cpu->PC = 0x80FF;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1-T3 cycles
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bvs_take_page_cross_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BVS", REL);
+	cpu->P |= FLAG_V;
+
+	cpu->PC = 0x80FF;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1-T3 cycles
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+
 START_TEST (cpu_test_ram_read_non_mirrored)
 {
 	cpu->mem[0x0010] = 0xAA;
@@ -1386,6 +1531,7 @@ Suite* cpu_suite(void)
 	TCase* tc_address_modes;
 	TCase* tc_branch_not_taken_addr;
 	TCase* tc_branch_taken_addr;
+	TCase* tc_branch_take_page_cross;
 	TCase* tc_cpu_reads;
 	TCase* tc_cpu_writes;
 	TCase* tc_cpu_isa;
@@ -1435,6 +1581,17 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_branch_taken_addr, cpu_test_bvc_taken_correct_addr);
 	tcase_add_test(tc_branch_taken_addr, cpu_test_bvs_taken_correct_addr);
 	suite_add_tcase(s, tc_branch_taken_addr);
+	tc_branch_take_page_cross = tcase_create("Branch Taken Correct Page Cross Address");
+	tcase_add_checked_fixture(tc_branch_take_page_cross, setup, teardown);
+	tcase_add_test(tc_branch_take_page_cross, cpu_test_bcc_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, cpu_test_bcs_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, cpu_test_beq_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, cpu_test_bmi_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, cpu_test_bne_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, cpu_test_bpl_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, cpu_test_bvc_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, cpu_test_bvs_take_page_cross_correct_addr);
+	suite_add_tcase(s, tc_branch_take_page_cross);
 	tc_cpu_reads = tcase_create("Cpu Memory Mapped Reads");
 	tcase_add_checked_fixture(tc_cpu_reads, setup, teardown);
 	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_non_mirrored);
