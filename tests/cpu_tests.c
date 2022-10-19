@@ -239,12 +239,14 @@ static void set_opcode_from_address_mode_and_instruction(Cpu6502* cpu, char* inp
 }
 
 static void run_logic_cycle_by_cycle(Cpu6502* cpu, void (*opcode_lut[256])(Cpu6502* cpu)
-                                    , int cycles_remaining)
+                                    , int cycles_remaining, InstructionStates stop_condition)
 {
 	cpu->instruction_cycles_remaining = cycles_remaining;
 	for (int i = 0; i < cycles_remaining; i++) {
-		opcode_lut[cpu->opcode](cpu);
-		cpu->instruction_cycles_remaining -= 1;
+		if (cpu->instruction_state != stop_condition) {
+			opcode_lut[cpu->opcode](cpu);
+			cpu->instruction_cycles_remaining -= 1;
+		}
 	}
 }
 
@@ -288,7 +290,8 @@ START_TEST (cpu_test_addr_mode_abs_read_store)
 	cpu->mem[cpu->PC + 1] = 0x00; // addr_hi (from cpu->PC + 1)
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0xC0, cpu->addr_lo);
 	ck_assert_uint_eq(0x00, cpu->addr_hi);
@@ -305,7 +308,8 @@ START_TEST (cpu_test_addr_mode_abs_rmw)
 	cpu->mem[cpu->PC + 1] = 0x00; // addr_hi (from cpu->PC + 1)
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0xC0, cpu->addr_lo);
 	ck_assert_uint_eq(0x00, cpu->addr_hi);
@@ -322,7 +326,8 @@ START_TEST (cpu_test_addr_mode_abs_jmp)
 	cpu->mem[cpu->PC + 1] = 0xB4; // addr_hi (from cpu->PC + 1)
 
 	decode_opcode_lut[cpu->opcode](cpu); // setup needed for the for loop below
-	run_logic_cycle_by_cycle(cpu, execute_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, execute_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, FETCH);
 
 	ck_assert_uint_eq(0x90, cpu->addr_lo);
 	ck_assert_uint_eq(0xB4, cpu->addr_hi);
@@ -341,7 +346,8 @@ START_TEST (cpu_test_addr_mode_absx_read_store)
 	cpu->X = 0x0F; // X offset to ABS address
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0xE1, cpu->addr_lo);
 	ck_assert_uint_eq(0x07, cpu->addr_hi);
@@ -359,7 +365,8 @@ START_TEST (cpu_test_addr_mode_absx_rmw)
 	cpu->X = 0x06; // X offset to ABS address
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0x04, cpu->addr_lo);
 	ck_assert_uint_eq(0x10, cpu->addr_hi);
@@ -377,7 +384,8 @@ START_TEST (cpu_test_addr_mode_absy_read_store)
 	cpu->Y = 0x05; // X offset to ABS address
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0x25, cpu->addr_lo);
 	ck_assert_uint_eq(0x04, cpu->addr_hi);
@@ -393,7 +401,8 @@ START_TEST (cpu_test_addr_mode_zp_read_store)
 	cpu->mem[cpu->PC] = 0xDE; // addr_lo, addr_hi fixed to 0x00
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0xDE, cpu->addr_lo);
 	ck_assert_uint_eq(0x00DE, cpu->target_addr);
@@ -408,7 +417,8 @@ START_TEST (cpu_test_addr_mode_zp_rmw)
 	cpu->mem[cpu->PC] = 0x02; // addr_lo, addr_hi fixed to 0x00
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0x02, cpu->addr_lo);
 	ck_assert_uint_eq(0x0002, cpu->target_addr);
@@ -424,7 +434,8 @@ START_TEST (cpu_test_addr_mode_zpx_read_store)
 	cpu->X = 0xAC;
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0x04, cpu->addr_lo);
 	ck_assert_uint_eq(0x00B0, cpu->target_addr);
@@ -440,7 +451,8 @@ START_TEST (cpu_test_addr_mode_zpx_rmw)
 	cpu->X = 0x03;
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0xFA, cpu->addr_lo);
 	ck_assert_uint_eq(0x00FD, cpu->target_addr);
@@ -456,7 +468,8 @@ START_TEST (cpu_test_addr_mode_zpy_read_store)
 	cpu->Y = 0x03;
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0x63, cpu->addr_lo);
 	ck_assert_uint_eq(0x0066, cpu->target_addr);
@@ -477,9 +490,10 @@ START_TEST (cpu_test_ind_jmp)
 
 	// JMP instruction has no decode logic so loop execute function
 	// and decrement instruction_cycles_remaining
-	cpu->address_mode = IND;
+	decode_opcode_lut[cpu->opcode](cpu); // setup needed for the for loop below
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, execute_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, execute_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, FETCH);
 
 	ck_assert_uint_eq(0x24, cpu->index_lo);
 	ck_assert_uint_eq(0x04, cpu->index_hi);
@@ -505,8 +519,10 @@ START_TEST (cpu_test_ind_jmp_bug)
 	// JMP instruction has no decode logic so loop execute function
 	// and decrement instruction_cycles_remaining
 	cpu->address_mode = IND;
+	decode_opcode_lut[cpu->opcode](cpu); // setup needed for the for loop below
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, execute_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, execute_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, FETCH);
 
 	ck_assert_uint_eq(0xFF, cpu->index_lo);
 	ck_assert_uint_eq(0x01, cpu->index_hi);
@@ -529,7 +545,8 @@ START_TEST (cpu_test_addr_mode_indx_read_store)
 	cpu->mem[0x003A] = 0x09;  // addr_hi
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0x24, cpu->base_addr);
 	ck_assert_uint_eq(0xCD, cpu->addr_lo);
@@ -551,12 +568,301 @@ START_TEST (cpu_test_addr_mode_indy_read_store)
 	cpu->mem[0x0072] = 0x13;  // addr_hi
 
 	// minus one as we skip the fetch cycle
-	run_logic_cycle_by_cycle(cpu, decode_opcode_lut, max_cycles_opcode_lut[cpu->opcode] - 1);
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
 
 	ck_assert_uint_eq(0x71, cpu->base_addr);
 	ck_assert_uint_eq(0xB1, cpu->addr_lo);
 	ck_assert_uint_eq(0x13, cpu->addr_hi);
 	ck_assert_uint_eq(0x13C8, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bcc_not_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BCC", REL);
+	cpu->P |= FLAG_C;
+
+	// set offset to be non-zero to detect any errors if the branch is taken
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 cycle, cycles T2 and onwards should be skipped
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(old_PC + 1, cpu->target_addr); // T0 increments PC and so does T1
+}
+END_TEST
+
+START_TEST (cpu_test_bcs_not_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BCS", REL);
+	cpu->P &= ~FLAG_C;
+
+	// set offset to be non-zero to detect any errors if the branch is taken
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 cycle, cycles T2 and onwards should be skipped
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(old_PC + 1, cpu->target_addr); // T0 increments PC and so does T1
+}
+END_TEST
+
+START_TEST (cpu_test_beq_not_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BEQ", REL);
+	cpu->P &= ~FLAG_Z;
+
+	// set offset to be non-zero to detect any errors if the branch is taken
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 cycle, cycles T2 and onwards should be skipped
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(old_PC + 1, cpu->target_addr); // T0 increments PC and so does T1
+}
+END_TEST
+
+START_TEST (cpu_test_bmi_not_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BMI", REL);
+	cpu->P &= ~FLAG_N;
+
+	// set offset to be non-zero to detect any errors if the branch is taken
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 cycle, cycles T2 and onwards should be skipped
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(old_PC + 1, cpu->target_addr); // T0 increments PC and so does T1
+}
+END_TEST
+
+START_TEST (cpu_test_bne_not_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BNE", REL);
+	cpu->P |= FLAG_Z;
+
+	// set offset to be non-zero to detect any errors if the branch is taken
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 cycle, cycles T2 and onwards should be skipped
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(old_PC + 1, cpu->target_addr); // T0 increments PC and so does T1
+}
+END_TEST
+
+START_TEST (cpu_test_bpl_not_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BPL", REL);
+	cpu->P |= FLAG_N;
+
+	// set offset to be non-zero to detect any errors if the branch is taken
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 cycle, cycles T2 and onwards should be skipped
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(old_PC + 1, cpu->target_addr); // T0 increments PC and so does T1
+}
+END_TEST
+
+START_TEST (cpu_test_bvc_not_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BVC", REL);
+	cpu->P |= FLAG_V;
+
+	// set offset to be non-zero to detect any errors if the branch is taken
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 cycle, cycles T2 and onwards should be skipped
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(old_PC + 1, cpu->target_addr); // T0 increments PC and so does T1
+}
+END_TEST
+
+START_TEST (cpu_test_bvs_not_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BVS", REL);
+	cpu->P &= ~FLAG_V;
+
+	// set offset to be non-zero to detect any errors if the branch is taken
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 cycle, cycles T2 and onwards should be skipped
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(old_PC + 1, cpu->target_addr); // T0 increments PC and so does T1
+}
+END_TEST
+
+START_TEST (cpu_test_bcc_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BCC", REL);
+	cpu->P &= ~FLAG_C;
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 and T2 cycles, T3 cycle should be skipped (page cross)
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bcs_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BCS", REL);
+	cpu->P |= FLAG_C;
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 and T2 cycles, T3 cycle should be skipped (page cross)
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_beq_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BEQ", REL);
+	cpu->P |= FLAG_Z;
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 and T2 cycles, T3 cycle should be skipped (page cross)
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bmi_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BMI", REL);
+	cpu->P |= FLAG_N;
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 and T2 cycles, T3 cycle should be skipped (page cross)
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bne_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BNE", REL);
+	cpu->P &= ~FLAG_Z;
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 and T2 cycles, T3 cycle should be skipped (page cross)
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bpl_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BPL", REL);
+	cpu->P &= ~FLAG_N;
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 and T2 cycles, T3 cycle should be skipped (page cross)
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bvc_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BVC", REL);
+	cpu->P &= ~FLAG_V;
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 and T2 cycles, T3 cycle should be skipped (page cross)
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (cpu_test_bvs_taken_correct_addr)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BVS", REL);
+	cpu->P |= FLAG_V;
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x50;
+	uint16_t old_PC = cpu->PC;
+
+	// Simulate T1 and T2 cycles, T3 cycle should be skipped (page cross)
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	// T0 increments PC and so does T1
+	ck_assert_uint_eq(old_PC + 1 + (int8_t) 0x50, cpu->target_addr);
 }
 END_TEST
 
@@ -1078,6 +1384,8 @@ Suite* cpu_suite(void)
 	Suite* s;
 	TCase* tc_test_helpers;
 	TCase* tc_address_modes;
+	TCase* tc_branch_not_taken_addr;
+	TCase* tc_branch_taken_addr;
 	TCase* tc_cpu_reads;
 	TCase* tc_cpu_writes;
 	TCase* tc_cpu_isa;
@@ -1105,6 +1413,28 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_address_modes, cpu_test_addr_mode_indx_read_store);
 	tcase_add_test(tc_address_modes, cpu_test_addr_mode_indy_read_store);
 	suite_add_tcase(s, tc_address_modes);
+	tc_branch_not_taken_addr = tcase_create("Branch Not Taken Correct Address");
+	tcase_add_checked_fixture(tc_branch_not_taken_addr, setup, teardown);
+	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bcc_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bcs_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, cpu_test_beq_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bmi_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bne_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bpl_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bvc_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bvs_not_taken_correct_addr);
+	suite_add_tcase(s, tc_branch_not_taken_addr);
+	tc_branch_taken_addr = tcase_create("Branch Taken Correct Address");
+	tcase_add_checked_fixture(tc_branch_taken_addr, setup, teardown);
+	tcase_add_test(tc_branch_taken_addr, cpu_test_bcc_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, cpu_test_bcs_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, cpu_test_beq_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, cpu_test_bmi_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, cpu_test_bne_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, cpu_test_bpl_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, cpu_test_bvc_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, cpu_test_bvs_taken_correct_addr);
+	suite_add_tcase(s, tc_branch_taken_addr);
 	tc_cpu_reads = tcase_create("Cpu Memory Mapped Reads");
 	tcase_add_checked_fixture(tc_cpu_reads, setup, teardown);
 	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_non_mirrored);
