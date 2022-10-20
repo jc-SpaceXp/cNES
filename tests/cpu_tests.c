@@ -1575,6 +1575,76 @@ START_TEST (cpu_test_isa_rts_result_only)
 	ck_assert_uint_eq(0x8003, cpu->PC); // PC == PCH, PCL + 1 for RTS
 }
 
+START_TEST (cpu_test_isa_clc_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CLC", IMP);
+	cpu->P = 0xBF;
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+}
+
+START_TEST (cpu_test_isa_cld_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CLD", IMP);
+	cpu->P = 0xBF;
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert((cpu->P & FLAG_D) != FLAG_D);
+}
+
+START_TEST (cpu_test_isa_cli_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CLI", IMP);
+	cpu->P = 0xBF;
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert((cpu->P & FLAG_I) != FLAG_I);
+}
+
+START_TEST (cpu_test_isa_clv_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CLV", IMP);
+	cpu->P = 0xBF;
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+}
+
+START_TEST (cpu_test_isa_sec_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "SEC", IMP);
+	cpu->P = 0xBF & ~FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (cpu_test_isa_sed_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "SED", IMP);
+	cpu->P = 0xBF & ~FLAG_D;
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert((cpu->P & FLAG_D) == FLAG_D);
+}
+
+START_TEST (cpu_test_isa_sei_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "SEI", IMP);
+	cpu->P = 0xBF & ~FLAG_I;
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
 
 Suite* cpu_suite(void)
 {
@@ -1706,6 +1776,13 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_jsr_result_only);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_rti_result_only);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_rts_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_clc_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_cld_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_cli_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_clv_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_sec_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_sed_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_sei_result_only);
 	suite_add_tcase(s, tc_cpu_isa);
 
 	return s;
