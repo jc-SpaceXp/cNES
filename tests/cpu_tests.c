@@ -1104,6 +1104,80 @@ START_TEST (cpu_test_ram_write_mirrored_bank_3_check_all_reads)
 	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248 + 0x1800));
 }
 
+START_TEST (cpu_test_stack_push)
+{
+	cpu->stack = SP_OFFSET; // End of stack is SP_OFFSET (0xFF)
+	stack_push(cpu, 0x01);
+	ck_assert_uint_eq(0xFF - 0x01, cpu->stack);
+	ck_assert_uint_eq(0x01, read_from_cpu(cpu, SP_START + cpu->stack + 1));
+
+	stack_push(cpu, 0x02);
+	ck_assert_uint_eq(0xFF - 0x02, cpu->stack);
+	ck_assert_uint_eq(0x02, read_from_cpu(cpu, SP_START + cpu->stack + 1));
+
+	stack_push(cpu, 0xFF);
+	ck_assert_uint_eq(0xFF - 0x03, cpu->stack);
+	ck_assert_uint_eq(0xFF, read_from_cpu(cpu, SP_START + cpu->stack + 1));
+	// make sure we don't overwrite previous writes too
+	ck_assert_uint_eq(0x02, read_from_cpu(cpu, SP_START + cpu->stack + 2));
+	ck_assert_uint_eq(0x01, read_from_cpu(cpu, SP_START + cpu->stack + 3));
+	// make sure we don't have a off by one error too
+	ck_assert_uint_ne(0xFF, read_from_cpu(cpu, SP_START + cpu->stack));
+}
+
+START_TEST (cpu_test_stack_push_overflow)
+{
+	cpu->stack = 0;
+	stack_push(cpu, 0x0F);
+	ck_assert_uint_eq(0xFF, cpu->stack); // stack pointer should wrap back around to 0xFF
+	ck_assert_uint_eq(0x0F, read_from_cpu(cpu, SP_START));
+
+	// make sure we don't have a off by one error too
+	ck_assert_uint_ne(0x0F, read_from_cpu(cpu, SP_START + 1));
+	ck_assert_uint_ne(0x0F, read_from_cpu(cpu, SP_START + SP_OFFSET));
+}
+
+START_TEST (cpu_test_stack_pull)
+{
+	// note stack pulls will automatically increment the stack pointer
+	cpu->stack = 0x8C; // End of stack is SP_OFFSET (0xFF)
+	stack_push(cpu, 0x01);
+	stack_push(cpu, 0x02);
+	stack_push(cpu, 0xFF);
+
+	// Inversion of stack pushes
+	ck_assert_uint_eq(0xFF, stack_pull(cpu));
+	ck_assert_uint_eq(0x8C - 0x02, cpu->stack);
+	ck_assert_uint_eq(0x02, stack_pull(cpu));
+	ck_assert_uint_eq(0x8C - 0x01, cpu->stack);
+	ck_assert_uint_eq(0x01, stack_pull(cpu));
+	ck_assert_uint_eq(0x8C - 0x00, cpu->stack);
+}
+
+START_TEST (cpu_test_stack_pull_underflow)
+{
+	// note stack pulls will automatically increment the stack pointer
+	cpu->stack = 0x02;
+	stack_push(cpu, 0xA1);
+	stack_push(cpu, 0xA2);
+	stack_push(cpu, 0xA3);
+	cpu->stack = 0xFF;
+	stack_push(cpu, 0x01);
+	stack_push(cpu, 0x02);
+
+
+	// Inversion of stack pushes
+	ck_assert_uint_eq(0x02, stack_pull(cpu));
+	ck_assert_uint_eq(0xFE, cpu->stack);
+	ck_assert_uint_eq(0x01, stack_pull(cpu));
+	ck_assert_uint_eq(0xFF, cpu->stack);
+	// Stack pointer should wrap back around to 0x00
+	ck_assert_uint_eq(0xA3, stack_pull(cpu));
+	ck_assert_uint_eq(0x00, cpu->stack);
+	ck_assert_uint_eq(0xA2, stack_pull(cpu));
+	ck_assert_uint_eq(0x01, cpu->stack);
+}
+
 START_TEST (cpu_test_isa_lda_result_only_imm)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDA", IMM);
@@ -1656,6 +1730,7 @@ Suite* cpu_suite(void)
 	TCase* tc_branch_take_page_cross;
 	TCase* tc_cpu_reads;
 	TCase* tc_cpu_writes;
+	TCase* tc_cpu_stack_op;
 	TCase* tc_cpu_isa;
 
 	s = suite_create("Cpu Tests");
@@ -1728,6 +1803,13 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_2_check_all_reads);
 	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_3_check_all_reads);
 	suite_add_tcase(s, tc_cpu_writes);
+	tc_cpu_stack_op = tcase_create("Cpu Stack Operations");
+	tcase_add_checked_fixture(tc_cpu_stack_op, setup, teardown);
+	tcase_add_test(tc_cpu_stack_op, cpu_test_stack_push);
+	tcase_add_test(tc_cpu_stack_op, cpu_test_stack_push_overflow);
+	tcase_add_test(tc_cpu_stack_op, cpu_test_stack_pull);
+	tcase_add_test(tc_cpu_stack_op, cpu_test_stack_pull_underflow);
+	suite_add_tcase(s, tc_cpu_stack_op);
 	tc_cpu_isa = tcase_create("Cpu Instruction Set Architecture Core Results");
 	tcase_add_checked_fixture(tc_cpu_isa, setup, teardown);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_lda_result_only_imm);
