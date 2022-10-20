@@ -613,14 +613,14 @@ static bool page_cross_occurs(const unsigned low_byte, const unsigned offset)
 	return ((low_byte + offset) > 0xFF) ? 1 : 0;
 }
 
-static void stack_push(Cpu6502* cpu, const uint8_t value)
+void stack_push(Cpu6502* cpu, const uint8_t value)
 {
 	cpu->mem[SP_START + cpu->stack] = value;
 	--cpu->stack; // automatically wraps around (8-bit variable)
 }
 
 
-static uint8_t stack_pull(Cpu6502* cpu)
+uint8_t stack_pull(Cpu6502* cpu)
 {
 	unsigned result = 0;
 	++cpu->stack; // automatically wraps around (8-bit variable)

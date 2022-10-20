@@ -45,6 +45,8 @@ extern void (*execute_opcode_lut[256])(Cpu6502* cpu);
 void init_pc(Cpu6502* cpu); /* Set PC via reset vector */
 uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr);  // Read byte from CPU mempry
 void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val);
+void stack_push(Cpu6502* cpu, uint8_t val);
+uint8_t stack_pull(Cpu6502* cpu);
 void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_t end_addr);
 void update_cpu_info(Cpu6502* cpu);
 

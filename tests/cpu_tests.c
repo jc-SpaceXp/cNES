@@ -60,7 +60,7 @@ static int reverse_opcode_lut(char (*instruction)[4], AddressMode address_mode)
 	else if (!strncmp(*instruction, "AND", 4) && (address_mode == ABSX)) { opcode = 0x3D; }
 	else if (!strncmp(*instruction, "ROL", 4) && (address_mode == ABSX)) { opcode = 0x3E; }
 	// row 5
-	else if (!strncmp(*instruction, "RTI", 4) && (address_mode == IMP)) { opcode = 0x40; }
+	else if (!strncmp(*instruction, "RTI", 4))   /* IMP */               { opcode = 0x40; }
 	else if (!strncmp(*instruction, "EOR", 4) && (address_mode == INDX)) { opcode = 0x41; }
 	else if (!strncmp(*instruction, "EOR", 4) && (address_mode == ZP)) { opcode = 0x45; }
 	else if (!strncmp(*instruction, "LSR", 4) && (address_mode == ZP)) { opcode = 0x46; }
@@ -1523,6 +1523,58 @@ START_TEST (cpu_test_isa_ror_result_only_acc_carry_set)
 	ck_assert_uint_eq(0xFF, cpu->A);
 }
 
+START_TEST (cpu_test_isa_jsr_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "JSR", IMP);
+	cpu->PC = 0x9000;
+	cpu->mem[cpu->PC] = 0x00; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x80; // addr_hi
+
+
+	decode_opcode_lut[cpu->opcode](cpu); // setup needed for the for loop below
+	run_logic_cycle_by_cycle(cpu, execute_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, FETCH);
+
+	ck_assert_uint_eq(0x00, cpu->addr_lo);
+	ck_assert_uint_eq(0x80, cpu->addr_hi);
+	ck_assert_uint_eq(0x8000, cpu->target_addr);
+	ck_assert_uint_eq(0x8000, cpu->PC);
+}
+
+START_TEST (cpu_test_isa_rti_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "RTI", IMP);
+	// inverse of pull operations
+	stack_push(cpu, 0x80); // push addr_hi onto stack
+	stack_push(cpu, 0x01); // push addr_lo onto stack
+	stack_push(cpu, 0x40); // push status reg onto stack
+
+	decode_opcode_lut[cpu->opcode](cpu); // setup needed for the for loop below
+	run_logic_cycle_by_cycle(cpu, execute_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, FETCH);
+
+	ck_assert_uint_eq(0x01, cpu->addr_lo);
+	ck_assert_uint_eq(0x80, cpu->addr_hi);
+	ck_assert_uint_eq(0x8001, cpu->PC);
+}
+
+START_TEST (cpu_test_isa_rts_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "RTS", IMP);
+	// inverse of pull operations
+	stack_push(cpu, 0x80); // push addr_hi onto stack
+	stack_push(cpu, 0x02); // push addr_lo onto stack
+
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+	execute_opcode_lut[cpu->opcode](cpu); // set PC from logic above
+
+	ck_assert_uint_eq(0x02, cpu->addr_lo);
+	ck_assert_uint_eq(0x80, cpu->addr_hi);
+	ck_assert_uint_eq(0x8002, cpu->target_addr);
+	ck_assert_uint_eq(0x8003, cpu->PC); // PC == PCH, PCL + 1 for RTS
+}
+
 
 Suite* cpu_suite(void)
 {
@@ -1651,6 +1703,9 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_ror_result_only_acc_carry_not_set);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_ror_result_only_non_acc_mode_carry_not_set);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_ror_result_only_acc_carry_set);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_jsr_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_rti_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_rts_result_only);
 	suite_add_tcase(s, tc_cpu_isa);
 
 	return s;
