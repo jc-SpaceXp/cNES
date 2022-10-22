@@ -1719,6 +1719,53 @@ START_TEST (cpu_test_isa_sei_result_only)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
+START_TEST (cpu_test_isa_pha_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "PHA", IMP);
+	cpu->A = 0x54;
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert_uint_eq(cpu->A, stack_pull(cpu));
+}
+
+START_TEST (cpu_test_isa_php_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "PHP", IMP);
+	cpu->P = FLAG_N | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	// PHP will push bits 5 and 4 of the status reg onto the stack
+	// as they don't exist on the status reg
+	ck_assert_uint_eq(cpu->P | 0x30, stack_pull(cpu));
+}
+
+START_TEST (cpu_test_isa_pla_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "PLA", IMP);
+	cpu->A = 0x54;
+	stack_push(cpu, 0xA0);
+	stack_push(cpu, 0xA4);
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert_uint_eq(0xA4, cpu->A);
+}
+
+START_TEST (cpu_test_isa_plp_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "PLP", IMP);
+	stack_push(cpu, 0xA0);
+	stack_push(cpu, FLAG_N | FLAG_C);
+
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	// Read last entry into stack and store into status reg
+	// The unused bit (bit 5) is always set to 1 due to its open state behaviour
+	ck_assert_uint_eq(FLAG_N | FLAG_C | 0x20, cpu->P);
+}
+
 
 Suite* cpu_suite(void)
 {
@@ -1865,6 +1912,10 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_sec_result_only);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_sed_result_only);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_sei_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_pha_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_php_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_pla_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_plp_result_only);
 	suite_add_tcase(s, tc_cpu_isa);
 
 	return s;
