@@ -1766,6 +1766,44 @@ START_TEST (cpu_test_isa_plp_result_only)
 	ck_assert_uint_eq(FLAG_N | FLAG_C | 0x20, cpu->P);
 }
 
+START_TEST (cpu_test_isa_brk_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BRK", IMP);
+	cpu->mem[BRK_VECTOR] = 0x0A; // addr_lo
+	cpu->mem[BRK_VECTOR + 1] = 0x90; // addr_hi
+
+	cpu->instruction_state = EXECUTE;
+	run_logic_cycle_by_cycle(cpu, execute_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, FETCH);
+
+	ck_assert_uint_eq(0x0A, cpu->addr_lo);
+	ck_assert_uint_eq(0x90, cpu->addr_hi);
+	ck_assert_uint_eq(0x900A, cpu->PC);
+}
+END_TEST
+
+START_TEST (cpu_test_isa_nop_result_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "NOP", IMP);
+
+	// Not really much to check for a NOP
+	// So looking if any of the important internal registers change (excluding status reg)
+	// PC should be unchanged, PC would be incremented by fetch stage
+	uint16_t old_PC = cpu->PC;
+	uint16_t old_A = cpu->A;
+	uint16_t old_X = cpu->X;
+	uint16_t old_Y = cpu->Y;
+
+	cpu->instruction_state = EXECUTE;
+	execute_opcode_lut[cpu->opcode](cpu); // only a single cycle instruction
+
+	ck_assert_uint_eq(old_PC, cpu->PC);
+	ck_assert_uint_eq(old_A, cpu->A);
+	ck_assert_uint_eq(old_X, cpu->X);
+	ck_assert_uint_eq(old_Y, cpu->Y);
+}
+END_TEST
+
 
 Suite* cpu_suite(void)
 {
@@ -1916,6 +1954,8 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_php_result_only);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_pla_result_only);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_plp_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_brk_result_only);
+	tcase_add_test(tc_cpu_isa, cpu_test_isa_nop_result_only);
 	suite_add_tcase(s, tc_cpu_isa);
 
 	return s;
