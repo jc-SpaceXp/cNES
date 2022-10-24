@@ -1804,6 +1804,285 @@ START_TEST (cpu_test_isa_nop_result_only)
 }
 END_TEST
 
+START_TEST (cpu_test_isa_flag_update_adc_imm_overflow)
+{
+	// Result of ADC: is A + M + C (where M is a value from memory)
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
+	cpu->address_mode = IMM;
+
+	// ADC uses signed addition, so the inputs are limited to -128 to 127
+	// Overflow occurs only when both operands have the same sign
+	// For overflow the result will have a different sign to the inputs
+	cpu->operand = 3;
+	cpu->A = 127;
+	cpu->P &= ~FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	// Extra flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_sbc_imm_overflow)
+{
+	// Result of SBC: is A - M + !C (where M is a value from memory)
+	set_opcode_from_address_mode_and_instruction(cpu, "SBC", IMM);
+	cpu->address_mode = IMM;
+
+	// SBC uses signed addition, so the inputs are limited to -128 to 127
+	// Overflow occurs only when both operands have the same sign
+	// For overflow the result will have a different sign to the inputs
+	cpu->operand = -24;
+	cpu->A = 127;
+	cpu->P &= ~FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	// Extra flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_bit_set_all_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
+
+	cpu->P = 0;
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, 0xFF);
+	cpu->A = 0x00;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_bit_set_overflow)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
+
+	cpu->P = 0;
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, 0xFF & ~FLAG_N);
+	cpu->A = 0xFF & ~FLAG_N;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_bit_set_negative)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
+
+	cpu->P = 0;
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, 0xFF & ~FLAG_V);
+	cpu->A = 0xFF & ~FLAG_V;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_bit_set_zero)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
+
+	cpu->P = 0;
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, 0xFF & ~FLAG_N & ~FLAG_V);
+	cpu->A = FLAG_N; // make sure no matching bits
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_cmp_set_negative)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CMP", IMM);
+	cpu->address_mode = IMM;
+
+	cpu->P = 0;
+	// Similar to SBC, signed subtraction from -128 to 127 w/o carry
+	cpu->operand = 50;
+	cpu->A = 10;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	// note comparisons which set the flags are unsigned comparisons
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C); // C is set if register >= memory
+}
+END_TEST
+
+// Carry is also set when Z flag is set
+START_TEST (cpu_test_isa_flag_update_cmp_set_zero_and_carry)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CMP", ZP);
+	cpu->address_mode = ZP;
+
+	cpu->P = 0;
+	// Similar to SBC, signed subtraction from -128 to 127 w/o carry
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, -113);
+	cpu->A = -113;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	// note comparisons which set the flags are unsigned comparisons
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // C is set if register >= memory
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_cmp_set_carry_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CMP", ABSX);
+	cpu->address_mode = ABSX;
+
+	cpu->P = 0;
+	// Similar to SBC, signed subtraction from -128 to 127 w/o carry
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, 20);
+	cpu->A = -113;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	// note comparisons which set the flags are unsigned comparisons
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // C is set if register >= memory
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_cpx_set_negative)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CPX", IMM);
+	cpu->address_mode = IMM;
+
+	cpu->P = 0;
+	// Similar to SBC, signed subtraction from -128 to 127 w/o carry
+	cpu->operand = 150;
+	cpu->X = 77;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	// note comparisons which set the flags are unsigned comparisons
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C); // C is set if register >= memory
+}
+END_TEST
+
+// Carry is also set when Z flag is set
+START_TEST (cpu_test_isa_flag_update_cpx_set_zero_and_carry)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CPX", ZP);
+	cpu->address_mode = ZP;
+
+	cpu->P = 0;
+	// Similar to SBC, signed subtraction from -128 to 127 w/o carry
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, -113);
+	cpu->X = -113;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	// note comparisons which set the flags are unsigned comparisons
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // C is set if register >= memory
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_cpx_set_carry_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CPX", ABS);
+	cpu->address_mode = ABS;
+
+	cpu->P = 0;
+	// Similar to SBC, signed subtraction from -128 to 127 w/o carry
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, 20);
+	cpu->X = -113;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	// note comparisons which set the flags are unsigned comparisons
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // C is set if register >= memory
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_cpy_set_negative)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CPY", IMM);
+	cpu->address_mode = IMM;
+
+	cpu->P = 0;
+	// Similar to SBC, signed subtraction from -128 to 127 w/o carry
+	cpu->operand = 150;
+	cpu->Y = 40;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	// note comparisons which set the flags are unsigned comparisons
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C); // C is set if register >= memory
+}
+END_TEST
+
+// Carry is also set when Z flag is set
+START_TEST (cpu_test_isa_flag_update_cpy_set_zero_and_carry)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CPY", ZP);
+	cpu->address_mode = ZP;
+
+	cpu->P = 0;
+	// Similar to SBC, signed subtraction from -128 to 127 w/o carry
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, -80);
+	cpu->Y = -80;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	// note comparisons which set the flags are unsigned comparisons
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // C is set if register >= memory
+}
+END_TEST
+
+START_TEST (cpu_test_isa_flag_update_cpy_set_carry_only)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CPY", ABS);
+	cpu->address_mode = ABS;
+
+	cpu->P = 0;
+	// Similar to SBC, signed subtraction from -128 to 127 w/o carry
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, -20);
+	cpu->Y = -1; // -1 is 0xFF
+
+	execute_opcode_lut[cpu->opcode](cpu);
+	// note comparisons which set the flags are unsigned comparisons
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // C is set if register >= memory
+}
+END_TEST
+
 
 Suite* cpu_suite(void)
 {
@@ -1817,6 +2096,7 @@ Suite* cpu_suite(void)
 	TCase* tc_cpu_writes;
 	TCase* tc_cpu_stack_op;
 	TCase* tc_cpu_isa;
+	TCase* tc_cpu_isa_flags;
 
 	s = suite_create("Cpu Tests");
 	tc_test_helpers = tcase_create("Test Helpers");
@@ -1957,6 +2237,24 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_brk_result_only);
 	tcase_add_test(tc_cpu_isa, cpu_test_isa_nop_result_only);
 	suite_add_tcase(s, tc_cpu_isa);
+	tc_cpu_isa_flags = tcase_create("Cpu Instruction Set Architecture Flag Updates");
+	tcase_add_checked_fixture(tc_cpu_isa_flags, setup, teardown);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_adc_imm_overflow);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_sbc_imm_overflow);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_bit_set_all_flags);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_bit_set_overflow);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_bit_set_negative);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_bit_set_zero);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cmp_set_negative);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cmp_set_zero_and_carry);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cmp_set_carry_only);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpx_set_negative);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpx_set_zero_and_carry);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpx_set_carry_only);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpy_set_negative);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpy_set_zero_and_carry);
+	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpy_set_carry_only);
+	suite_add_tcase(s, tc_cpu_isa_flags);
 
 	return s;
 }
