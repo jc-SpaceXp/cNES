@@ -268,7 +268,7 @@ void teardown(void)
 	free(cpu);
 }
 
-START_TEST (cpu_test_addr_mode_imm)
+START_TEST (addr_mode_imm)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
 
@@ -281,7 +281,7 @@ START_TEST (cpu_test_addr_mode_imm)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_abs_read_store)
+START_TEST (addr_mode_abs_read_store)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "SBC", ABS);
 
@@ -299,7 +299,7 @@ START_TEST (cpu_test_addr_mode_abs_read_store)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_abs_rmw)
+START_TEST (addr_mode_abs_rmw)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "INC", ABS);
 
@@ -317,7 +317,7 @@ START_TEST (cpu_test_addr_mode_abs_rmw)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_abs_jmp)
+START_TEST (addr_mode_abs_jmp)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "JMP", ABS);
 
@@ -336,7 +336,7 @@ START_TEST (cpu_test_addr_mode_abs_jmp)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_absx_read_store)
+START_TEST (addr_mode_absx_read_store)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "EOR", ABSX);
 
@@ -355,7 +355,7 @@ START_TEST (cpu_test_addr_mode_absx_read_store)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_absx_rmw)
+START_TEST (addr_mode_absx_rmw)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ABSX);
 
@@ -374,7 +374,7 @@ START_TEST (cpu_test_addr_mode_absx_rmw)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_absy_read_store)
+START_TEST (addr_mode_absy_read_store)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDA", ABSY);
 
@@ -393,7 +393,7 @@ START_TEST (cpu_test_addr_mode_absy_read_store)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_zp_read_store)
+START_TEST (addr_mode_zp_read_store)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ZP);
 
@@ -409,7 +409,7 @@ START_TEST (cpu_test_addr_mode_zp_read_store)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_zp_rmw)
+START_TEST (addr_mode_zp_rmw)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZP);
 
@@ -425,7 +425,7 @@ START_TEST (cpu_test_addr_mode_zp_rmw)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_zpx_read_store)
+START_TEST (addr_mode_zpx_read_store)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "STY", ZPX);
 
@@ -442,7 +442,7 @@ START_TEST (cpu_test_addr_mode_zpx_read_store)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_zpx_rmw)
+START_TEST (addr_mode_zpx_rmw)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
 
@@ -459,7 +459,7 @@ START_TEST (cpu_test_addr_mode_zpx_rmw)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_zpy_read_store)
+START_TEST (addr_mode_zpy_read_store)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDX", ZPY);
 
@@ -476,7 +476,7 @@ START_TEST (cpu_test_addr_mode_zpy_read_store)
 }
 END_TEST
 
-START_TEST (cpu_test_ind_jmp)
+START_TEST (ind_jmp)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "JMP", IND);
 
@@ -503,7 +503,7 @@ START_TEST (cpu_test_ind_jmp)
 }
 END_TEST
 
-START_TEST (cpu_test_ind_jmp_bug)
+START_TEST (ind_jmp_bug)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "JMP", IND);
 
@@ -532,7 +532,7 @@ START_TEST (cpu_test_ind_jmp_bug)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_indx_read_store)
+START_TEST (addr_mode_indx_read_store)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ORA", INDX);
 
@@ -555,7 +555,7 @@ START_TEST (cpu_test_addr_mode_indx_read_store)
 }
 END_TEST
 
-START_TEST (cpu_test_addr_mode_indy_read_store)
+START_TEST (addr_mode_indy_read_store)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CMP", INDY);
 
@@ -578,7 +578,7 @@ START_TEST (cpu_test_addr_mode_indy_read_store)
 }
 END_TEST
 
-START_TEST (cpu_test_bcc_not_taken_correct_addr)
+START_TEST (bcc_not_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BCC", REL);
 	cpu->P |= FLAG_C;
@@ -596,7 +596,7 @@ START_TEST (cpu_test_bcc_not_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bcs_not_taken_correct_addr)
+START_TEST (bcs_not_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BCS", REL);
 	cpu->P &= ~FLAG_C;
@@ -614,7 +614,7 @@ START_TEST (cpu_test_bcs_not_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_beq_not_taken_correct_addr)
+START_TEST (beq_not_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BEQ", REL);
 	cpu->P &= ~FLAG_Z;
@@ -632,7 +632,7 @@ START_TEST (cpu_test_beq_not_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bmi_not_taken_correct_addr)
+START_TEST (bmi_not_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BMI", REL);
 	cpu->P &= ~FLAG_N;
@@ -650,7 +650,7 @@ START_TEST (cpu_test_bmi_not_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bne_not_taken_correct_addr)
+START_TEST (bne_not_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BNE", REL);
 	cpu->P |= FLAG_Z;
@@ -668,7 +668,7 @@ START_TEST (cpu_test_bne_not_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bpl_not_taken_correct_addr)
+START_TEST (bpl_not_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BPL", REL);
 	cpu->P |= FLAG_N;
@@ -686,7 +686,7 @@ START_TEST (cpu_test_bpl_not_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bvc_not_taken_correct_addr)
+START_TEST (bvc_not_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BVC", REL);
 	cpu->P |= FLAG_V;
@@ -704,7 +704,7 @@ START_TEST (cpu_test_bvc_not_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bvs_not_taken_correct_addr)
+START_TEST (bvs_not_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BVS", REL);
 	cpu->P &= ~FLAG_V;
@@ -722,7 +722,7 @@ START_TEST (cpu_test_bvs_not_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bcc_taken_correct_addr)
+START_TEST (bcc_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BCC", REL);
 	cpu->P &= ~FLAG_C;
@@ -740,7 +740,7 @@ START_TEST (cpu_test_bcc_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bcs_taken_correct_addr)
+START_TEST (bcs_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BCS", REL);
 	cpu->P |= FLAG_C;
@@ -758,7 +758,7 @@ START_TEST (cpu_test_bcs_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_beq_taken_correct_addr)
+START_TEST (beq_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BEQ", REL);
 	cpu->P |= FLAG_Z;
@@ -776,7 +776,7 @@ START_TEST (cpu_test_beq_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bmi_taken_correct_addr)
+START_TEST (bmi_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BMI", REL);
 	cpu->P |= FLAG_N;
@@ -794,7 +794,7 @@ START_TEST (cpu_test_bmi_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bne_taken_correct_addr)
+START_TEST (bne_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BNE", REL);
 	cpu->P &= ~FLAG_Z;
@@ -812,7 +812,7 @@ START_TEST (cpu_test_bne_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bpl_taken_correct_addr)
+START_TEST (bpl_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BPL", REL);
 	cpu->P &= ~FLAG_N;
@@ -830,7 +830,7 @@ START_TEST (cpu_test_bpl_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bvc_taken_correct_addr)
+START_TEST (bvc_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BVC", REL);
 	cpu->P &= ~FLAG_V;
@@ -848,7 +848,7 @@ START_TEST (cpu_test_bvc_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bvs_taken_correct_addr)
+START_TEST (bvs_taken_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BVS", REL);
 	cpu->P |= FLAG_V;
@@ -866,7 +866,7 @@ START_TEST (cpu_test_bvs_taken_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bcc_take_page_cross_correct_addr)
+START_TEST (bcc_take_page_cross_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BCC", REL);
 	cpu->P &= ~FLAG_C;
@@ -884,7 +884,7 @@ START_TEST (cpu_test_bcc_take_page_cross_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bcs_take_page_cross_correct_addr)
+START_TEST (bcs_take_page_cross_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BCS", REL);
 	cpu->P |= FLAG_C;
@@ -902,7 +902,7 @@ START_TEST (cpu_test_bcs_take_page_cross_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_beq_take_page_cross_correct_addr)
+START_TEST (beq_take_page_cross_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BEQ", REL);
 	cpu->P |= FLAG_Z;
@@ -920,7 +920,7 @@ START_TEST (cpu_test_beq_take_page_cross_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bmi_take_page_cross_correct_addr)
+START_TEST (bmi_take_page_cross_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BMI", REL);
 	cpu->P |= FLAG_N;
@@ -938,7 +938,7 @@ START_TEST (cpu_test_bmi_take_page_cross_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bne_take_page_cross_correct_addr)
+START_TEST (bne_take_page_cross_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BNE", REL);
 	cpu->P &= ~FLAG_Z;
@@ -956,7 +956,7 @@ START_TEST (cpu_test_bne_take_page_cross_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bpl_take_page_cross_correct_addr)
+START_TEST (bpl_take_page_cross_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BPL", REL);
 	cpu->P &= ~FLAG_N;
@@ -974,7 +974,7 @@ START_TEST (cpu_test_bpl_take_page_cross_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bvc_take_page_cross_correct_addr)
+START_TEST (bvc_take_page_cross_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BVC", REL);
 	cpu->P &= ~FLAG_V;
@@ -992,7 +992,7 @@ START_TEST (cpu_test_bvc_take_page_cross_correct_addr)
 }
 END_TEST
 
-START_TEST (cpu_test_bvs_take_page_cross_correct_addr)
+START_TEST (bvs_take_page_cross_correct_addr)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BVS", REL);
 	cpu->P |= FLAG_V;
@@ -1011,7 +1011,7 @@ START_TEST (cpu_test_bvs_take_page_cross_correct_addr)
 END_TEST
 
 
-START_TEST (cpu_test_ram_read_non_mirrored)
+START_TEST (ram_read_non_mirrored)
 {
 	cpu->mem[0x0010] = 0xAA;
 	cpu->mem[0x0124] = 0x83;
@@ -1025,7 +1025,7 @@ START_TEST (cpu_test_ram_read_non_mirrored)
 	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF));
 }
 
-START_TEST (cpu_test_ram_read_mirrored_bank_1)
+START_TEST (ram_read_mirrored_bank_1)
 {
 	cpu->mem[0x0010] = 0xAA;
 	cpu->mem[0x0124] = 0x83;
@@ -1039,7 +1039,7 @@ START_TEST (cpu_test_ram_read_mirrored_bank_1)
 	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF + 0x0800));
 }
 
-START_TEST (cpu_test_ram_read_mirrored_bank_2)
+START_TEST (ram_read_mirrored_bank_2)
 {
 	cpu->mem[0x0010] = 0xAA;
 	cpu->mem[0x0124] = 0x83;
@@ -1053,7 +1053,7 @@ START_TEST (cpu_test_ram_read_mirrored_bank_2)
 	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF + 0x1000));
 }
 
-START_TEST (cpu_test_ram_read_mirrored_bank_3)
+START_TEST (ram_read_mirrored_bank_3)
 {
 	cpu->mem[0x0010] = 0xAA;
 	cpu->mem[0x0124] = 0x83;
@@ -1067,7 +1067,7 @@ START_TEST (cpu_test_ram_read_mirrored_bank_3)
 	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF + 0x1800));
 }
 
-START_TEST (cpu_test_ram_write_non_mirrored_check_all_reads)
+START_TEST (ram_write_non_mirrored_check_all_reads)
 {
 	write_to_cpu(cpu, 0x0248, 0x20);
 	ck_assert_uint_eq(0x20, read_from_cpu(cpu, 0x0248));
@@ -1077,7 +1077,7 @@ START_TEST (cpu_test_ram_write_non_mirrored_check_all_reads)
 }
 
 // Ensures writes to banks can also be read-back correctly from their mirrors
-START_TEST (cpu_test_ram_write_mirrored_bank_1_check_all_reads)
+START_TEST (ram_write_mirrored_bank_1_check_all_reads)
 {
 	write_to_cpu(cpu, 0x0248 + 0x0800, 0x21);
 	ck_assert_uint_eq(0x21, read_from_cpu(cpu, 0x0248));
@@ -1086,7 +1086,7 @@ START_TEST (cpu_test_ram_write_mirrored_bank_1_check_all_reads)
 	ck_assert_uint_eq(0x21, read_from_cpu(cpu, 0x0248 + 0x1800));
 }
 
-START_TEST (cpu_test_ram_write_mirrored_bank_2_check_all_reads)
+START_TEST (ram_write_mirrored_bank_2_check_all_reads)
 {
 	write_to_cpu(cpu, 0x0248 + 0x1000, 0x22);
 	ck_assert_uint_eq(0x22, read_from_cpu(cpu, 0x0248));
@@ -1095,7 +1095,7 @@ START_TEST (cpu_test_ram_write_mirrored_bank_2_check_all_reads)
 	ck_assert_uint_eq(0x22, read_from_cpu(cpu, 0x0248 + 0x1800));
 }
 
-START_TEST (cpu_test_ram_write_mirrored_bank_3_check_all_reads)
+START_TEST (ram_write_mirrored_bank_3_check_all_reads)
 {
 	write_to_cpu(cpu, 0x0248 + 0x1800, 0x23);
 	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248));
@@ -1104,7 +1104,7 @@ START_TEST (cpu_test_ram_write_mirrored_bank_3_check_all_reads)
 	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248 + 0x1800));
 }
 
-START_TEST (cpu_test_stack_push)
+START_TEST (stack_push_no_overflow)
 {
 	cpu->stack = SP_OFFSET; // End of stack is SP_OFFSET (0xFF)
 	stack_push(cpu, 0x01);
@@ -1125,7 +1125,7 @@ START_TEST (cpu_test_stack_push)
 	ck_assert_uint_ne(0xFF, read_from_cpu(cpu, SP_START + cpu->stack));
 }
 
-START_TEST (cpu_test_stack_push_overflow)
+START_TEST (stack_push_overflow)
 {
 	cpu->stack = 0;
 	stack_push(cpu, 0x0F);
@@ -1137,7 +1137,7 @@ START_TEST (cpu_test_stack_push_overflow)
 	ck_assert_uint_ne(0x0F, read_from_cpu(cpu, SP_START + SP_OFFSET));
 }
 
-START_TEST (cpu_test_stack_pull)
+START_TEST (stack_pull_no_underflow)
 {
 	// note stack pulls will automatically increment the stack pointer
 	cpu->stack = 0x8C; // End of stack is SP_OFFSET (0xFF)
@@ -1154,7 +1154,7 @@ START_TEST (cpu_test_stack_pull)
 	ck_assert_uint_eq(0x8C - 0x00, cpu->stack);
 }
 
-START_TEST (cpu_test_stack_pull_underflow)
+START_TEST (stack_pull_underflow)
 {
 	// note stack pulls will automatically increment the stack pointer
 	cpu->stack = 0x02;
@@ -1178,7 +1178,7 @@ START_TEST (cpu_test_stack_pull_underflow)
 	ck_assert_uint_eq(0x01, cpu->stack);
 }
 
-START_TEST (cpu_test_isa_lda_result_only_imm)
+START_TEST (isa_lda_result_only_imm)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDA", IMM);
 	cpu->address_mode = IMM;
@@ -1187,7 +1187,7 @@ START_TEST (cpu_test_isa_lda_result_only_imm)
 	ck_assert_uint_eq(0x44, cpu->A);
 }
 
-START_TEST (cpu_test_isa_lda_result_only_non_imm_mode)
+START_TEST (isa_lda_result_only_non_imm_mode)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDA", ABS);
 	cpu->address_mode = ABS;
@@ -1197,7 +1197,7 @@ START_TEST (cpu_test_isa_lda_result_only_non_imm_mode)
 	ck_assert_uint_eq(0x22, cpu->A);
 }
 
-START_TEST (cpu_test_isa_ldx_result_only_imm)
+START_TEST (isa_ldx_result_only_imm)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDX", IMM);
 	cpu->address_mode = IMM;
@@ -1206,7 +1206,7 @@ START_TEST (cpu_test_isa_ldx_result_only_imm)
 	ck_assert_uint_eq(0x44, cpu->X);
 }
 
-START_TEST (cpu_test_isa_ldx_result_only_non_imm_mode)
+START_TEST (isa_ldx_result_only_non_imm_mode)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDX", ABS);
 	cpu->address_mode = ABS;
@@ -1216,7 +1216,7 @@ START_TEST (cpu_test_isa_ldx_result_only_non_imm_mode)
 	ck_assert_uint_eq(0x22, cpu->X);
 }
 
-START_TEST (cpu_test_isa_ldy_result_only_imm)
+START_TEST (isa_ldy_result_only_imm)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDY", IMM);
 	cpu->address_mode = IMM;
@@ -1225,7 +1225,7 @@ START_TEST (cpu_test_isa_ldy_result_only_imm)
 	ck_assert_uint_eq(0x44, cpu->Y);
 }
 
-START_TEST (cpu_test_isa_ldy_result_only_non_imm_mode)
+START_TEST (isa_ldy_result_only_non_imm_mode)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDY", ABS);
 	cpu->address_mode = ABS;
@@ -1235,7 +1235,7 @@ START_TEST (cpu_test_isa_ldy_result_only_non_imm_mode)
 	ck_assert_uint_eq(0x22, cpu->Y);
 }
 
-START_TEST (cpu_test_isa_sta_result_only)
+START_TEST (isa_sta_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "STA", ABSX);
 	cpu->target_addr = 0x002C;
@@ -1244,7 +1244,7 @@ START_TEST (cpu_test_isa_sta_result_only)
 	ck_assert_uint_eq(cpu->A, read_from_cpu(cpu, cpu->target_addr));
 }
 
-START_TEST (cpu_test_isa_stx_result_only)
+START_TEST (isa_stx_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "STX", ZP);
 	cpu->target_addr = 0x000F;
@@ -1253,7 +1253,7 @@ START_TEST (cpu_test_isa_stx_result_only)
 	ck_assert_uint_eq(cpu->X, read_from_cpu(cpu, cpu->target_addr));
 }
 
-START_TEST (cpu_test_isa_sty_result_only)
+START_TEST (isa_sty_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "STY", ZPX);
 	cpu->target_addr = 0x000F;
@@ -1262,7 +1262,7 @@ START_TEST (cpu_test_isa_sty_result_only)
 	ck_assert_uint_eq(cpu->Y, read_from_cpu(cpu, cpu->target_addr));
 }
 
-START_TEST (cpu_test_isa_tax_result_only)
+START_TEST (isa_tax_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "TAX", IMP);
 	cpu->A = 0x91;
@@ -1270,7 +1270,7 @@ START_TEST (cpu_test_isa_tax_result_only)
 	ck_assert_uint_eq(cpu->X, cpu->A);
 }
 
-START_TEST (cpu_test_isa_tay_result_only)
+START_TEST (isa_tay_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "TAY", IMP);
 	cpu->A = 0x91;
@@ -1278,7 +1278,7 @@ START_TEST (cpu_test_isa_tay_result_only)
 	ck_assert_uint_eq(cpu->Y, cpu->A);
 }
 
-START_TEST (cpu_test_isa_tsx_result_only)
+START_TEST (isa_tsx_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "TSX", IMP);
 	cpu->stack = 0x91;
@@ -1286,7 +1286,7 @@ START_TEST (cpu_test_isa_tsx_result_only)
 	ck_assert_uint_eq(cpu->X, cpu->stack);
 }
 
-START_TEST (cpu_test_isa_txa_result_only)
+START_TEST (isa_txa_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "TXA", IMP);
 	cpu->X = 0x91;
@@ -1294,7 +1294,7 @@ START_TEST (cpu_test_isa_txa_result_only)
 	ck_assert_uint_eq(cpu->A, cpu->X);
 }
 
-START_TEST (cpu_test_isa_txs_result_only)
+START_TEST (isa_txs_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "TXS", IMP);
 	cpu->X = 0x91;
@@ -1302,7 +1302,7 @@ START_TEST (cpu_test_isa_txs_result_only)
 	ck_assert_uint_eq(cpu->stack, cpu->X);
 }
 
-START_TEST (cpu_test_isa_tya_result_only)
+START_TEST (isa_tya_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "TYA", IMP);
 	cpu->Y = 0x91;
@@ -1310,7 +1310,7 @@ START_TEST (cpu_test_isa_tya_result_only)
 	ck_assert_uint_eq(cpu->A, cpu->Y);
 }
 
-START_TEST (cpu_test_isa_adc_result_only_imm)
+START_TEST (isa_adc_result_only_imm)
 {
 	// Result of ADC: is A + M + C (where M is a value from memory)
 	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
@@ -1322,7 +1322,7 @@ START_TEST (cpu_test_isa_adc_result_only_imm)
 	ck_assert_uint_eq(0x81, cpu->A);
 }
 
-START_TEST (cpu_test_isa_adc_result_only_non_imm_mode)
+START_TEST (isa_adc_result_only_non_imm_mode)
 {
 	// Result of ADC: is A + M + C (where M is a value from memory)
 	set_opcode_from_address_mode_and_instruction(cpu, "ADC", INDY);
@@ -1335,7 +1335,7 @@ START_TEST (cpu_test_isa_adc_result_only_non_imm_mode)
 	ck_assert_uint_eq(0x81, cpu->A);
 }
 
-START_TEST (cpu_test_isa_adc_result_only_imm_overflow)
+START_TEST (isa_adc_result_only_imm_overflow)
 {
 	// Result of ADC: is A + M + C (where M is a value from memory)
 	// When result is greater than 0xFF it will be constrained to 8-bits
@@ -1348,7 +1348,7 @@ START_TEST (cpu_test_isa_adc_result_only_imm_overflow)
 	ck_assert_uint_eq(0xF0, cpu->A);
 }
 
-START_TEST (cpu_test_isa_dec_result_only)
+START_TEST (isa_dec_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "DEC", ABSX);
 	cpu->target_addr = 0x0C43;
@@ -1357,7 +1357,7 @@ START_TEST (cpu_test_isa_dec_result_only)
 	ck_assert_uint_eq(0xA8, read_from_cpu(cpu, cpu->target_addr));
 }
 
-START_TEST (cpu_test_isa_dex_result_only)
+START_TEST (isa_dex_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "DEX", IMP);
 	cpu->X = 0xFF;
@@ -1365,7 +1365,7 @@ START_TEST (cpu_test_isa_dex_result_only)
 	ck_assert_uint_eq(0xFE, cpu->X);
 }
 
-START_TEST (cpu_test_isa_dey_result_only)
+START_TEST (isa_dey_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "DEY", IMP);
 	cpu->Y = 0xFF;
@@ -1373,7 +1373,7 @@ START_TEST (cpu_test_isa_dey_result_only)
 	ck_assert_uint_eq(0xFE, cpu->Y);
 }
 
-START_TEST (cpu_test_isa_inc_result_only)
+START_TEST (isa_inc_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "INC", ABS);
 	cpu->target_addr = 0x0C43;
@@ -1382,7 +1382,7 @@ START_TEST (cpu_test_isa_inc_result_only)
 	ck_assert_uint_eq(0xAA, read_from_cpu(cpu, cpu->target_addr));
 }
 
-START_TEST (cpu_test_isa_inx_result_only)
+START_TEST (isa_inx_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "INX", IMP);
 	cpu->X = 0xFE;
@@ -1390,7 +1390,7 @@ START_TEST (cpu_test_isa_inx_result_only)
 	ck_assert_uint_eq(0xFF, cpu->X);
 }
 
-START_TEST (cpu_test_isa_iny_result_only)
+START_TEST (isa_iny_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "INY", IMP);
 	cpu->Y = 0xFE;
@@ -1398,7 +1398,7 @@ START_TEST (cpu_test_isa_iny_result_only)
 	ck_assert_uint_eq(0xFF, cpu->Y);
 }
 
-START_TEST (cpu_test_isa_sbc_result_only_imm)
+START_TEST (isa_sbc_result_only_imm)
 {
 	// Result of ADC: is A - M - !C (where M is a value from memory)
 	set_opcode_from_address_mode_and_instruction(cpu, "SBC", IMM);
@@ -1410,7 +1410,7 @@ START_TEST (cpu_test_isa_sbc_result_only_imm)
 	ck_assert_uint_eq(0xFF, cpu->A);
 }
 
-START_TEST (cpu_test_isa_sbc_result_only_non_imm_mode)
+START_TEST (isa_sbc_result_only_non_imm_mode)
 {
 	// Result of ADC: is A - M - !C (where M is a value from memory)
 	set_opcode_from_address_mode_and_instruction(cpu, "SBC", INDY);
@@ -1423,7 +1423,7 @@ START_TEST (cpu_test_isa_sbc_result_only_non_imm_mode)
 	ck_assert_uint_eq(0xFF, cpu->A);
 }
 
-START_TEST (cpu_test_isa_sbc_result_only_imm_underflow)
+START_TEST (isa_sbc_result_only_imm_underflow)
 {
 	// Result of ADC: is A - M - !C (where M is a value from memory)
 	// When result is less than than 0x00 it will be constrained to 8-bits
@@ -1436,7 +1436,7 @@ START_TEST (cpu_test_isa_sbc_result_only_imm_underflow)
 	ck_assert_uint_eq(0xFE, cpu->A);
 }
 
-START_TEST (cpu_test_isa_and_result_only_imm)
+START_TEST (isa_and_result_only_imm)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "AND", IMM);
 	cpu->address_mode = IMM;
@@ -1446,7 +1446,7 @@ START_TEST (cpu_test_isa_and_result_only_imm)
 	ck_assert_uint_eq(0x10, cpu->A);
 }
 
-START_TEST (cpu_test_isa_and_result_only_non_imm_mode)
+START_TEST (isa_and_result_only_non_imm_mode)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "AND", ZP);
 	cpu->address_mode = ZP;
@@ -1457,7 +1457,7 @@ START_TEST (cpu_test_isa_and_result_only_non_imm_mode)
 	ck_assert_uint_eq(0x10, cpu->A);
 }
 
-START_TEST (cpu_test_isa_asl_result_only_acc)
+START_TEST (isa_asl_result_only_acc)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
 	cpu->address_mode = ACC;
@@ -1466,7 +1466,7 @@ START_TEST (cpu_test_isa_asl_result_only_acc)
 	ck_assert_uint_eq(0xFE, cpu->A);
 }
 
-START_TEST (cpu_test_isa_asl_result_only_non_acc_mode)
+START_TEST (isa_asl_result_only_non_acc_mode)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ZPX);
 	cpu->address_mode = ZPX;
@@ -1478,7 +1478,7 @@ START_TEST (cpu_test_isa_asl_result_only_non_acc_mode)
 
 // Skip BIT as it only updates the flags which will be a separate test case
 
-START_TEST (cpu_test_isa_eor_result_only_imm)
+START_TEST (isa_eor_result_only_imm)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "EOR", IMM);
 	cpu->address_mode = IMM;
@@ -1488,7 +1488,7 @@ START_TEST (cpu_test_isa_eor_result_only_imm)
 	ck_assert_uint_eq(0x0F, cpu->A);
 }
 
-START_TEST (cpu_test_isa_eor_result_only_non_imm_mode)
+START_TEST (isa_eor_result_only_non_imm_mode)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "EOR", ABS);
 	cpu->address_mode = ABS;
@@ -1499,7 +1499,7 @@ START_TEST (cpu_test_isa_eor_result_only_non_imm_mode)
 	ck_assert_uint_eq(0x0F, cpu->A);
 }
 
-START_TEST (cpu_test_isa_lsr_result_only_acc)
+START_TEST (isa_lsr_result_only_acc)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ACC);
 	cpu->address_mode = ACC;
@@ -1508,7 +1508,7 @@ START_TEST (cpu_test_isa_lsr_result_only_acc)
 	ck_assert_uint_eq(0x0F, cpu->A);
 }
 
-START_TEST (cpu_test_isa_lsr_result_only_non_acc_mode)
+START_TEST (isa_lsr_result_only_non_acc_mode)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZPX);
 	cpu->address_mode = ZPX;
@@ -1518,7 +1518,7 @@ START_TEST (cpu_test_isa_lsr_result_only_non_acc_mode)
 	ck_assert_uint_eq(0x0F, read_from_cpu(cpu, cpu->target_addr));
 }
 
-START_TEST (cpu_test_isa_ora_result_only_imm)
+START_TEST (isa_ora_result_only_imm)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ORA", IMM);
 	cpu->address_mode = IMM;
@@ -1528,7 +1528,7 @@ START_TEST (cpu_test_isa_ora_result_only_imm)
 	ck_assert_uint_eq(0x1F, cpu->A);
 }
 
-START_TEST (cpu_test_isa_ora_result_only_non_imm_mode)
+START_TEST (isa_ora_result_only_non_imm_mode)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ORA", ABS);
 	cpu->address_mode = ABS;
@@ -1539,7 +1539,7 @@ START_TEST (cpu_test_isa_ora_result_only_non_imm_mode)
 	ck_assert_uint_eq(0x1F, cpu->A);
 }
 
-START_TEST (cpu_test_isa_rol_result_only_acc_carry_not_set)
+START_TEST (isa_rol_result_only_acc_carry_not_set)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
 	cpu->address_mode = ACC;
@@ -1548,7 +1548,7 @@ START_TEST (cpu_test_isa_rol_result_only_acc_carry_not_set)
 	ck_assert_uint_eq(0xFE, cpu->A);
 }
 
-START_TEST (cpu_test_isa_rol_result_only_non_acc_mode_carry_not_set)
+START_TEST (isa_rol_result_only_non_acc_mode_carry_not_set)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
 	cpu->address_mode = ZPX;
@@ -1558,7 +1558,7 @@ START_TEST (cpu_test_isa_rol_result_only_non_acc_mode_carry_not_set)
 	ck_assert_uint_eq(0xFE, read_from_cpu(cpu, cpu->target_addr));
 }
 
-START_TEST (cpu_test_isa_rol_result_only_acc_carry_set)
+START_TEST (isa_rol_result_only_acc_carry_set)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
 	cpu->address_mode = ACC;
@@ -1568,7 +1568,7 @@ START_TEST (cpu_test_isa_rol_result_only_acc_carry_set)
 	ck_assert_uint_eq(0xFF, cpu->A);
 }
 
-START_TEST (cpu_test_isa_ror_result_only_acc_carry_not_set)
+START_TEST (isa_ror_result_only_acc_carry_not_set)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ACC);
 	cpu->address_mode = ACC;
@@ -1577,7 +1577,7 @@ START_TEST (cpu_test_isa_ror_result_only_acc_carry_not_set)
 	ck_assert_uint_eq(0x7F, cpu->A);
 }
 
-START_TEST (cpu_test_isa_ror_result_only_non_acc_mode_carry_not_set)
+START_TEST (isa_ror_result_only_non_acc_mode_carry_not_set)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ZPX);
 	cpu->address_mode = ZPX;
@@ -1587,7 +1587,7 @@ START_TEST (cpu_test_isa_ror_result_only_non_acc_mode_carry_not_set)
 	ck_assert_uint_eq(0x7F, read_from_cpu(cpu, cpu->target_addr));
 }
 
-START_TEST (cpu_test_isa_ror_result_only_acc_carry_set)
+START_TEST (isa_ror_result_only_acc_carry_set)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ACC);
 	cpu->address_mode = ACC;
@@ -1597,7 +1597,7 @@ START_TEST (cpu_test_isa_ror_result_only_acc_carry_set)
 	ck_assert_uint_eq(0xFF, cpu->A);
 }
 
-START_TEST (cpu_test_isa_jsr_result_only)
+START_TEST (isa_jsr_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "JSR", IMP);
 	cpu->PC = 0x9000;
@@ -1615,7 +1615,7 @@ START_TEST (cpu_test_isa_jsr_result_only)
 	ck_assert_uint_eq(0x8000, cpu->PC);
 }
 
-START_TEST (cpu_test_isa_rti_result_only)
+START_TEST (isa_rti_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "RTI", IMP);
 	// inverse of pull operations
@@ -1632,7 +1632,7 @@ START_TEST (cpu_test_isa_rti_result_only)
 	ck_assert_uint_eq(0x8001, cpu->PC);
 }
 
-START_TEST (cpu_test_isa_rts_result_only)
+START_TEST (isa_rts_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "RTS", IMP);
 	// inverse of pull operations
@@ -1649,7 +1649,7 @@ START_TEST (cpu_test_isa_rts_result_only)
 	ck_assert_uint_eq(0x8003, cpu->PC); // PC == PCH, PCL + 1 for RTS
 }
 
-START_TEST (cpu_test_isa_clc_result_only)
+START_TEST (isa_clc_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CLC", IMP);
 	cpu->P = 0xBF;
@@ -1659,7 +1659,7 @@ START_TEST (cpu_test_isa_clc_result_only)
 	ck_assert((cpu->P & FLAG_C) != FLAG_C);
 }
 
-START_TEST (cpu_test_isa_cld_result_only)
+START_TEST (isa_cld_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CLD", IMP);
 	cpu->P = 0xBF;
@@ -1669,7 +1669,7 @@ START_TEST (cpu_test_isa_cld_result_only)
 	ck_assert((cpu->P & FLAG_D) != FLAG_D);
 }
 
-START_TEST (cpu_test_isa_cli_result_only)
+START_TEST (isa_cli_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CLI", IMP);
 	cpu->P = 0xBF;
@@ -1679,7 +1679,7 @@ START_TEST (cpu_test_isa_cli_result_only)
 	ck_assert((cpu->P & FLAG_I) != FLAG_I);
 }
 
-START_TEST (cpu_test_isa_clv_result_only)
+START_TEST (isa_clv_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CLV", IMP);
 	cpu->P = 0xBF;
@@ -1689,7 +1689,7 @@ START_TEST (cpu_test_isa_clv_result_only)
 	ck_assert((cpu->P & FLAG_V) != FLAG_V);
 }
 
-START_TEST (cpu_test_isa_sec_result_only)
+START_TEST (isa_sec_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "SEC", IMP);
 	cpu->P = 0xBF & ~FLAG_C;
@@ -1699,7 +1699,7 @@ START_TEST (cpu_test_isa_sec_result_only)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
-START_TEST (cpu_test_isa_sed_result_only)
+START_TEST (isa_sed_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "SED", IMP);
 	cpu->P = 0xBF & ~FLAG_D;
@@ -1709,7 +1709,7 @@ START_TEST (cpu_test_isa_sed_result_only)
 	ck_assert((cpu->P & FLAG_D) == FLAG_D);
 }
 
-START_TEST (cpu_test_isa_sei_result_only)
+START_TEST (isa_sei_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "SEI", IMP);
 	cpu->P = 0xBF & ~FLAG_I;
@@ -1719,7 +1719,7 @@ START_TEST (cpu_test_isa_sei_result_only)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (cpu_test_isa_pha_result_only)
+START_TEST (isa_pha_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "PHA", IMP);
 	cpu->A = 0x54;
@@ -1729,7 +1729,7 @@ START_TEST (cpu_test_isa_pha_result_only)
 	ck_assert_uint_eq(cpu->A, stack_pull(cpu));
 }
 
-START_TEST (cpu_test_isa_php_result_only)
+START_TEST (isa_php_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "PHP", IMP);
 	cpu->P = FLAG_N | FLAG_C;
@@ -1741,7 +1741,7 @@ START_TEST (cpu_test_isa_php_result_only)
 	ck_assert_uint_eq(cpu->P | 0x30, stack_pull(cpu));
 }
 
-START_TEST (cpu_test_isa_pla_result_only)
+START_TEST (isa_pla_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "PLA", IMP);
 	cpu->A = 0x54;
@@ -1753,7 +1753,7 @@ START_TEST (cpu_test_isa_pla_result_only)
 	ck_assert_uint_eq(0xA4, cpu->A);
 }
 
-START_TEST (cpu_test_isa_plp_result_only)
+START_TEST (isa_plp_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "PLP", IMP);
 	stack_push(cpu, 0xA0);
@@ -1766,7 +1766,7 @@ START_TEST (cpu_test_isa_plp_result_only)
 	ck_assert_uint_eq(FLAG_N | FLAG_C | 0x20, cpu->P);
 }
 
-START_TEST (cpu_test_isa_brk_result_only)
+START_TEST (isa_brk_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BRK", IMP);
 	cpu->mem[BRK_VECTOR] = 0x0A; // addr_lo
@@ -1782,7 +1782,7 @@ START_TEST (cpu_test_isa_brk_result_only)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_nop_result_only)
+START_TEST (isa_nop_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "NOP", IMP);
 
@@ -1804,7 +1804,7 @@ START_TEST (cpu_test_isa_nop_result_only)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_adc_imm_overflow)
+START_TEST (isa_flag_update_adc_imm_overflow)
 {
 	// Result of ADC: is A + M + C (where M is a value from memory)
 	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
@@ -1826,7 +1826,7 @@ START_TEST (cpu_test_isa_flag_update_adc_imm_overflow)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_sbc_imm_overflow)
+START_TEST (isa_flag_update_sbc_imm_overflow)
 {
 	// Result of SBC: is A - M + !C (where M is a value from memory)
 	set_opcode_from_address_mode_and_instruction(cpu, "SBC", IMM);
@@ -1848,7 +1848,7 @@ START_TEST (cpu_test_isa_flag_update_sbc_imm_overflow)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_bit_set_all_flags)
+START_TEST (isa_flag_update_bit_set_all_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
 
@@ -1864,7 +1864,7 @@ START_TEST (cpu_test_isa_flag_update_bit_set_all_flags)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_bit_set_overflow)
+START_TEST (isa_flag_update_bit_set_overflow)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
 
@@ -1880,7 +1880,7 @@ START_TEST (cpu_test_isa_flag_update_bit_set_overflow)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_bit_set_negative)
+START_TEST (isa_flag_update_bit_set_negative)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
 
@@ -1896,7 +1896,7 @@ START_TEST (cpu_test_isa_flag_update_bit_set_negative)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_bit_set_zero)
+START_TEST (isa_flag_update_bit_set_zero)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
 
@@ -1912,7 +1912,7 @@ START_TEST (cpu_test_isa_flag_update_bit_set_zero)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_cmp_set_negative)
+START_TEST (isa_flag_update_cmp_set_negative)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CMP", IMM);
 	cpu->address_mode = IMM;
@@ -1931,7 +1931,7 @@ START_TEST (cpu_test_isa_flag_update_cmp_set_negative)
 END_TEST
 
 // Carry is also set when Z flag is set
-START_TEST (cpu_test_isa_flag_update_cmp_set_zero_and_carry)
+START_TEST (isa_flag_update_cmp_set_zero_and_carry)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CMP", ZP);
 	cpu->address_mode = ZP;
@@ -1950,7 +1950,7 @@ START_TEST (cpu_test_isa_flag_update_cmp_set_zero_and_carry)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_cmp_set_carry_only)
+START_TEST (isa_flag_update_cmp_set_carry_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CMP", ABSX);
 	cpu->address_mode = ABSX;
@@ -1969,7 +1969,7 @@ START_TEST (cpu_test_isa_flag_update_cmp_set_carry_only)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_cpx_set_negative)
+START_TEST (isa_flag_update_cpx_set_negative)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPX", IMM);
 	cpu->address_mode = IMM;
@@ -1988,7 +1988,7 @@ START_TEST (cpu_test_isa_flag_update_cpx_set_negative)
 END_TEST
 
 // Carry is also set when Z flag is set
-START_TEST (cpu_test_isa_flag_update_cpx_set_zero_and_carry)
+START_TEST (isa_flag_update_cpx_set_zero_and_carry)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPX", ZP);
 	cpu->address_mode = ZP;
@@ -2007,7 +2007,7 @@ START_TEST (cpu_test_isa_flag_update_cpx_set_zero_and_carry)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_cpx_set_carry_only)
+START_TEST (isa_flag_update_cpx_set_carry_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPX", ABS);
 	cpu->address_mode = ABS;
@@ -2026,7 +2026,7 @@ START_TEST (cpu_test_isa_flag_update_cpx_set_carry_only)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_cpy_set_negative)
+START_TEST (isa_flag_update_cpy_set_negative)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPY", IMM);
 	cpu->address_mode = IMM;
@@ -2045,7 +2045,7 @@ START_TEST (cpu_test_isa_flag_update_cpy_set_negative)
 END_TEST
 
 // Carry is also set when Z flag is set
-START_TEST (cpu_test_isa_flag_update_cpy_set_zero_and_carry)
+START_TEST (isa_flag_update_cpy_set_zero_and_carry)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPY", ZP);
 	cpu->address_mode = ZP;
@@ -2064,7 +2064,7 @@ START_TEST (cpu_test_isa_flag_update_cpy_set_zero_and_carry)
 }
 END_TEST
 
-START_TEST (cpu_test_isa_flag_update_cpy_set_carry_only)
+START_TEST (isa_flag_update_cpy_set_carry_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPY", ABS);
 	cpu->address_mode = ABS;
@@ -2104,156 +2104,156 @@ Suite* cpu_suite(void)
 	suite_add_tcase(s, tc_test_helpers);
 	tc_address_modes = tcase_create("Address Modes Correct Address");
 	tcase_add_checked_fixture(tc_address_modes, setup, teardown);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_imm);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_abs_read_store);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_abs_rmw);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_abs_jmp);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_absx_read_store);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_absx_rmw);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_absy_read_store);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zp_read_store);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zp_rmw);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zpx_read_store);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zpx_rmw);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_zpy_read_store);
-	tcase_add_test(tc_address_modes, cpu_test_ind_jmp);
-	tcase_add_test(tc_address_modes, cpu_test_ind_jmp_bug);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_indx_read_store);
-	tcase_add_test(tc_address_modes, cpu_test_addr_mode_indy_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_imm);
+	tcase_add_test(tc_address_modes, addr_mode_abs_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_abs_rmw);
+	tcase_add_test(tc_address_modes, addr_mode_abs_jmp);
+	tcase_add_test(tc_address_modes, addr_mode_absx_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_absx_rmw);
+	tcase_add_test(tc_address_modes, addr_mode_absy_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_zp_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_zp_rmw);
+	tcase_add_test(tc_address_modes, addr_mode_zpx_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_zpx_rmw);
+	tcase_add_test(tc_address_modes, addr_mode_zpy_read_store);
+	tcase_add_test(tc_address_modes, ind_jmp);
+	tcase_add_test(tc_address_modes, ind_jmp_bug);
+	tcase_add_test(tc_address_modes, addr_mode_indx_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_indy_read_store);
 	suite_add_tcase(s, tc_address_modes);
 	tc_branch_not_taken_addr = tcase_create("Branch Not Taken Correct Address");
 	tcase_add_checked_fixture(tc_branch_not_taken_addr, setup, teardown);
-	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bcc_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bcs_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, cpu_test_beq_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bmi_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bne_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bpl_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bvc_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, cpu_test_bvs_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bcc_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bcs_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, beq_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bmi_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bne_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bpl_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bvc_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bvs_not_taken_correct_addr);
 	suite_add_tcase(s, tc_branch_not_taken_addr);
 	tc_branch_taken_addr = tcase_create("Branch Taken Correct Address");
 	tcase_add_checked_fixture(tc_branch_taken_addr, setup, teardown);
-	tcase_add_test(tc_branch_taken_addr, cpu_test_bcc_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, cpu_test_bcs_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, cpu_test_beq_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, cpu_test_bmi_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, cpu_test_bne_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, cpu_test_bpl_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, cpu_test_bvc_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, cpu_test_bvs_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bcc_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bcs_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, beq_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bmi_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bne_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bpl_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bvc_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bvs_taken_correct_addr);
 	suite_add_tcase(s, tc_branch_taken_addr);
 	tc_branch_take_page_cross = tcase_create("Branch Taken Correct Page Cross Address");
 	tcase_add_checked_fixture(tc_branch_take_page_cross, setup, teardown);
-	tcase_add_test(tc_branch_take_page_cross, cpu_test_bcc_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, cpu_test_bcs_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, cpu_test_beq_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, cpu_test_bmi_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, cpu_test_bne_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, cpu_test_bpl_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, cpu_test_bvc_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, cpu_test_bvs_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bcc_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bcs_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, beq_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bmi_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bne_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bpl_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bvc_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bvs_take_page_cross_correct_addr);
 	suite_add_tcase(s, tc_branch_take_page_cross);
 	tc_cpu_reads = tcase_create("Cpu Memory Mapped Reads");
 	tcase_add_checked_fixture(tc_cpu_reads, setup, teardown);
-	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_non_mirrored);
-	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_mirrored_bank_1);
-	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_mirrored_bank_2);
-	tcase_add_test(tc_cpu_reads, cpu_test_ram_read_mirrored_bank_3);
+	tcase_add_test(tc_cpu_reads, ram_read_non_mirrored);
+	tcase_add_test(tc_cpu_reads, ram_read_mirrored_bank_1);
+	tcase_add_test(tc_cpu_reads, ram_read_mirrored_bank_2);
+	tcase_add_test(tc_cpu_reads, ram_read_mirrored_bank_3);
 	suite_add_tcase(s, tc_cpu_reads);
 	tc_cpu_writes = tcase_create("Cpu Memory Mapped Writes");
 	tcase_add_checked_fixture(tc_cpu_writes, setup, teardown);
-	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_non_mirrored_check_all_reads);
-	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_1_check_all_reads);
-	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_2_check_all_reads);
-	tcase_add_test(tc_cpu_writes, cpu_test_ram_write_mirrored_bank_3_check_all_reads);
+	tcase_add_test(tc_cpu_writes, ram_write_non_mirrored_check_all_reads);
+	tcase_add_test(tc_cpu_writes, ram_write_mirrored_bank_1_check_all_reads);
+	tcase_add_test(tc_cpu_writes, ram_write_mirrored_bank_2_check_all_reads);
+	tcase_add_test(tc_cpu_writes, ram_write_mirrored_bank_3_check_all_reads);
 	suite_add_tcase(s, tc_cpu_writes);
 	tc_cpu_stack_op = tcase_create("Cpu Stack Operations");
 	tcase_add_checked_fixture(tc_cpu_stack_op, setup, teardown);
-	tcase_add_test(tc_cpu_stack_op, cpu_test_stack_push);
-	tcase_add_test(tc_cpu_stack_op, cpu_test_stack_push_overflow);
-	tcase_add_test(tc_cpu_stack_op, cpu_test_stack_pull);
-	tcase_add_test(tc_cpu_stack_op, cpu_test_stack_pull_underflow);
+	tcase_add_test(tc_cpu_stack_op, stack_push_no_overflow);
+	tcase_add_test(tc_cpu_stack_op, stack_push_overflow);
+	tcase_add_test(tc_cpu_stack_op, stack_pull_no_underflow);
+	tcase_add_test(tc_cpu_stack_op, stack_pull_underflow);
 	suite_add_tcase(s, tc_cpu_stack_op);
 	tc_cpu_isa = tcase_create("Cpu Instruction Set Architecture Core Results");
 	tcase_add_checked_fixture(tc_cpu_isa, setup, teardown);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_lda_result_only_imm);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_lda_result_only_non_imm_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_ldx_result_only_imm);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_ldx_result_only_non_imm_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_ldy_result_only_imm);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_ldy_result_only_non_imm_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_sta_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_stx_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_sty_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_tax_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_tay_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_tsx_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_txa_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_txs_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_tya_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_adc_result_only_imm);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_adc_result_only_non_imm_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_adc_result_only_imm_overflow);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_dec_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_dex_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_dey_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_inc_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_inx_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_iny_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_sbc_result_only_imm);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_sbc_result_only_non_imm_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_sbc_result_only_imm_underflow);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_and_result_only_imm);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_and_result_only_non_imm_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_asl_result_only_acc);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_asl_result_only_non_acc_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_eor_result_only_imm);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_eor_result_only_non_imm_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_lsr_result_only_acc);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_lsr_result_only_non_acc_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_ora_result_only_imm);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_ora_result_only_non_imm_mode);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_rol_result_only_acc_carry_not_set);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_rol_result_only_non_acc_mode_carry_not_set);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_rol_result_only_acc_carry_set);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_ror_result_only_acc_carry_not_set);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_ror_result_only_non_acc_mode_carry_not_set);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_ror_result_only_acc_carry_set);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_jsr_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_rti_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_rts_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_clc_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_cld_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_cli_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_clv_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_sec_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_sed_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_sei_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_pha_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_php_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_pla_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_plp_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_brk_result_only);
-	tcase_add_test(tc_cpu_isa, cpu_test_isa_nop_result_only);
+	tcase_add_test(tc_cpu_isa, isa_lda_result_only_imm);
+	tcase_add_test(tc_cpu_isa, isa_lda_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, isa_ldx_result_only_imm);
+	tcase_add_test(tc_cpu_isa, isa_ldx_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, isa_ldy_result_only_imm);
+	tcase_add_test(tc_cpu_isa, isa_ldy_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, isa_sta_result_only);
+	tcase_add_test(tc_cpu_isa, isa_stx_result_only);
+	tcase_add_test(tc_cpu_isa, isa_sty_result_only);
+	tcase_add_test(tc_cpu_isa, isa_tax_result_only);
+	tcase_add_test(tc_cpu_isa, isa_tay_result_only);
+	tcase_add_test(tc_cpu_isa, isa_tsx_result_only);
+	tcase_add_test(tc_cpu_isa, isa_txa_result_only);
+	tcase_add_test(tc_cpu_isa, isa_txs_result_only);
+	tcase_add_test(tc_cpu_isa, isa_tya_result_only);
+	tcase_add_test(tc_cpu_isa, isa_adc_result_only_imm);
+	tcase_add_test(tc_cpu_isa, isa_adc_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, isa_adc_result_only_imm_overflow);
+	tcase_add_test(tc_cpu_isa, isa_dec_result_only);
+	tcase_add_test(tc_cpu_isa, isa_dex_result_only);
+	tcase_add_test(tc_cpu_isa, isa_dey_result_only);
+	tcase_add_test(tc_cpu_isa, isa_inc_result_only);
+	tcase_add_test(tc_cpu_isa, isa_inx_result_only);
+	tcase_add_test(tc_cpu_isa, isa_iny_result_only);
+	tcase_add_test(tc_cpu_isa, isa_sbc_result_only_imm);
+	tcase_add_test(tc_cpu_isa, isa_sbc_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, isa_sbc_result_only_imm_underflow);
+	tcase_add_test(tc_cpu_isa, isa_and_result_only_imm);
+	tcase_add_test(tc_cpu_isa, isa_and_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, isa_asl_result_only_acc);
+	tcase_add_test(tc_cpu_isa, isa_asl_result_only_non_acc_mode);
+	tcase_add_test(tc_cpu_isa, isa_eor_result_only_imm);
+	tcase_add_test(tc_cpu_isa, isa_eor_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, isa_lsr_result_only_acc);
+	tcase_add_test(tc_cpu_isa, isa_lsr_result_only_non_acc_mode);
+	tcase_add_test(tc_cpu_isa, isa_ora_result_only_imm);
+	tcase_add_test(tc_cpu_isa, isa_ora_result_only_non_imm_mode);
+	tcase_add_test(tc_cpu_isa, isa_rol_result_only_acc_carry_not_set);
+	tcase_add_test(tc_cpu_isa, isa_rol_result_only_non_acc_mode_carry_not_set);
+	tcase_add_test(tc_cpu_isa, isa_rol_result_only_acc_carry_set);
+	tcase_add_test(tc_cpu_isa, isa_ror_result_only_acc_carry_not_set);
+	tcase_add_test(tc_cpu_isa, isa_ror_result_only_non_acc_mode_carry_not_set);
+	tcase_add_test(tc_cpu_isa, isa_ror_result_only_acc_carry_set);
+	tcase_add_test(tc_cpu_isa, isa_jsr_result_only);
+	tcase_add_test(tc_cpu_isa, isa_rti_result_only);
+	tcase_add_test(tc_cpu_isa, isa_rts_result_only);
+	tcase_add_test(tc_cpu_isa, isa_clc_result_only);
+	tcase_add_test(tc_cpu_isa, isa_cld_result_only);
+	tcase_add_test(tc_cpu_isa, isa_cli_result_only);
+	tcase_add_test(tc_cpu_isa, isa_clv_result_only);
+	tcase_add_test(tc_cpu_isa, isa_sec_result_only);
+	tcase_add_test(tc_cpu_isa, isa_sed_result_only);
+	tcase_add_test(tc_cpu_isa, isa_sei_result_only);
+	tcase_add_test(tc_cpu_isa, isa_pha_result_only);
+	tcase_add_test(tc_cpu_isa, isa_php_result_only);
+	tcase_add_test(tc_cpu_isa, isa_pla_result_only);
+	tcase_add_test(tc_cpu_isa, isa_plp_result_only);
+	tcase_add_test(tc_cpu_isa, isa_brk_result_only);
+	tcase_add_test(tc_cpu_isa, isa_nop_result_only);
 	suite_add_tcase(s, tc_cpu_isa);
 	tc_cpu_isa_flags = tcase_create("Cpu Instruction Set Architecture Flag Updates");
 	tcase_add_checked_fixture(tc_cpu_isa_flags, setup, teardown);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_adc_imm_overflow);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_sbc_imm_overflow);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_bit_set_all_flags);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_bit_set_overflow);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_bit_set_negative);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_bit_set_zero);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cmp_set_negative);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cmp_set_zero_and_carry);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cmp_set_carry_only);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpx_set_negative);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpx_set_zero_and_carry);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpx_set_carry_only);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpy_set_negative);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpy_set_zero_and_carry);
-	tcase_add_test(tc_cpu_isa_flags, cpu_test_isa_flag_update_cpy_set_carry_only);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_adc_imm_overflow);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_sbc_imm_overflow);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_bit_set_all_flags);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_bit_set_overflow);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_bit_set_negative);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_bit_set_zero);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_cmp_set_negative);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_cmp_set_zero_and_carry);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_cmp_set_carry_only);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_cpx_set_negative);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_cpx_set_zero_and_carry);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_cpx_set_carry_only);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_cpy_set_negative);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_cpy_set_zero_and_carry);
+	tcase_add_test(tc_cpu_isa_flags, isa_flag_update_cpy_set_carry_only);
 	suite_add_tcase(s, tc_cpu_isa_flags);
 
 	return s;
