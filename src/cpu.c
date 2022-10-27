@@ -280,6 +280,19 @@ void init_pc(Cpu6502* cpu)
 	cpu->PC = return_little_endian(cpu, RST_VECTOR);
 }
 
+uint8_t cpu_generic_read(Cpu6502* cpu, enum CpuMemType mem_type
+                        , AddressMode address_mode
+                        , uint16_t read_address, const uint8_t* internal_reg)
+{
+	uint8_t read_val = read_from_cpu(cpu, read_address); // default val
+
+	if ((mem_type == INTERNAL_REG) && (internal_reg != NULL)) {
+		read_val = *internal_reg; // should point to X, Y or A registers
+	}
+
+	return read_val;
+}
+
 uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr)
 {
 	unsigned read;

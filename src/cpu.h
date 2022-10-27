@@ -32,6 +32,11 @@
 #define NMI_VECTOR 0xFFFAU  // NMI vector: 0xFFFA and 0xFFFB
 #define RST_VECTOR 0xFFFCU  // Reset vector: 0xFFFC and 0xFFFD
 
+enum CpuMemType {
+	INTERNAL_REG,
+	INTERNAL_MEM,
+	ADDRESS_MODE_DEP,
+};
 
 CpuMapperShare* cpu_mapper_init(Cartridge* cart);
 CpuPpuShare* mmio_init(void);
@@ -43,6 +48,9 @@ extern void (*execute_opcode_lut[256])(Cpu6502* cpu);
 
 // Helper functions
 void init_pc(Cpu6502* cpu); /* Set PC via reset vector */
+uint8_t cpu_generic_read(Cpu6502* cpu, enum CpuMemType mem_type
+                        , AddressMode address_mode
+                        , uint16_t read_address, const uint8_t* internal_reg);
 uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr);  // Read byte from CPU mempry
 void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val);
 void stack_push(Cpu6502* cpu, uint8_t val);

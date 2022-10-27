@@ -1067,6 +1067,24 @@ START_TEST (ram_read_mirrored_bank_3)
 	ck_assert_uint_eq(0xB0, read_from_cpu(cpu, 0x07FF + 0x1800));
 }
 
+START_TEST (generic_read_x_reg)
+{
+	cpu->X = 0xC4;
+	ck_assert_uint_eq(0xC4, cpu_generic_read(cpu, INTERNAL_REG, ZPX, 0x0000, &cpu->X));
+}
+
+START_TEST (generic_read_y_reg)
+{
+	cpu->Y = 0xF9;
+	ck_assert_uint_eq(0xF9, cpu_generic_read(cpu, INTERNAL_REG, ABS, 0x00FF, &cpu->Y));
+}
+
+START_TEST (generic_read_a_reg)
+{
+	cpu->A = 0xA3;
+	ck_assert_uint_eq(0xA3, cpu_generic_read(cpu, INTERNAL_REG, INDY, 0x4112, &cpu->A));
+}
+
 START_TEST (ram_write_non_mirrored_check_all_reads)
 {
 	write_to_cpu(cpu, 0x0248, 0x20);
@@ -3862,6 +3880,9 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_reads, ram_read_mirrored_bank_1);
 	tcase_add_test(tc_cpu_reads, ram_read_mirrored_bank_2);
 	tcase_add_test(tc_cpu_reads, ram_read_mirrored_bank_3);
+	tcase_add_test(tc_cpu_reads, generic_read_x_reg);
+	tcase_add_test(tc_cpu_reads, generic_read_y_reg);
+	tcase_add_test(tc_cpu_reads, generic_read_a_reg);
 	suite_add_tcase(s, tc_cpu_reads);
 	tc_cpu_writes = tcase_create("Cpu Memory Mapped Writes");
 	tcase_add_checked_fixture(tc_cpu_writes, setup, teardown);
