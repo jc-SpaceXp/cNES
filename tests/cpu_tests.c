@@ -1223,6 +1223,44 @@ START_TEST (isa_lda_non_imm_mode_clear_nz_flags)
 	ck_assert((cpu->P & FLAG_C) != FLAG_C);
 }
 
+START_TEST (isa_lda_imm_set_n_clear_z_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDA", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x80;
+	cpu->P = FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x80, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_lda_imm_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDA", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x00;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
 START_TEST (isa_ldx_imm_clear_nz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDX", IMM);
@@ -1262,6 +1300,46 @@ START_TEST (isa_ldx_non_imm_mode_clear_nz_flags)
 	ck_assert((cpu->P & FLAG_C) != FLAG_C);
 }
 
+START_TEST (isa_ldx_non_imm_mode_set_n_clear_z_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDX", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 0x89);
+	cpu->P = FLAG_V | FLAG_I | FLAG_Z;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x89, cpu->X);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+}
+
+START_TEST (isa_ldx_non_imm_mode_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDX", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 0x00);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, cpu->X);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+}
+
 START_TEST (isa_ldy_imm_clear_nz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDY", IMM);
@@ -1281,7 +1359,7 @@ START_TEST (isa_ldy_imm_clear_nz_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
-START_TEST (isa_ldy_non_imm_mode_clear_flags)
+START_TEST (isa_ldy_non_imm_mode_clear_nz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LDY", ABS);
 	cpu->address_mode = ABS;
@@ -1299,6 +1377,44 @@ START_TEST (isa_ldy_non_imm_mode_clear_flags)
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+}
+
+START_TEST (isa_ldy_imm_set_n_clear_z_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDY", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x8C;
+	cpu->P = FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x8C, cpu->Y);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_ldy_imm_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDY", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x00;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, cpu->Y);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
 START_TEST (isa_sta_result_only)
@@ -1334,6 +1450,24 @@ START_TEST (isa_sty_result_only)
 	ck_assert_uint_eq(cpu->Y, read_from_cpu(cpu, cpu->target_addr));
 }
 
+START_TEST (isa_tax_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TAX", IMP);
+	cpu->A = 0x38;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->X, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
 START_TEST (isa_tax_set_n_clear_z_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "TAX", IMP);
@@ -1345,6 +1479,42 @@ START_TEST (isa_tax_set_n_clear_z_flags)
 	ck_assert_uint_eq(cpu->X, cpu->A);
 	// Flag checks
 	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_tax_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TAX", IMP);
+	cpu->A = 0x00;
+	cpu->P = FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->X, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_tay_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TAY", IMP);
+	cpu->A = 0x48;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->Y, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
@@ -1370,6 +1540,42 @@ START_TEST (isa_tay_set_n_clear_z_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
+START_TEST (isa_tay_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TAY", IMP);
+	cpu->A = 0x00;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->Y, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_tsx_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TSX", IMP);
+	cpu->stack = 0x55;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->X, cpu->stack);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
 START_TEST (isa_tsx_set_n_clear_z_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "TSX", IMP);
@@ -1381,6 +1587,42 @@ START_TEST (isa_tsx_set_n_clear_z_flags)
 	ck_assert_uint_eq(cpu->X, cpu->stack);
 	// Flag checks
 	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_tsx_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TSX", IMP);
+	cpu->stack = 0x00;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->X, cpu->stack);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_txa_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TXA", IMP);
+	cpu->X = 0x61;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->A, cpu->X);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
@@ -1406,6 +1648,24 @@ START_TEST (isa_txa_set_n_clear_z_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
+START_TEST (isa_txa_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TXA", IMP);
+	cpu->X = 0x00;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->A, cpu->X);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
 START_TEST (isa_txs_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "TXS", IMP);
@@ -1419,6 +1679,24 @@ START_TEST (isa_txs_result_only)
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_N) != FLAG_N);
 	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_tya_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TYA", IMP);
+	cpu->Y = 0x7F;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->A, cpu->Y);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
@@ -1442,12 +1720,159 @@ START_TEST (isa_tya_set_n_clear_z_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
+START_TEST (isa_tya_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "TYA", IMP);
+	cpu->Y = 0x00;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(cpu->A, cpu->Y);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
 /* ISA unit tests
  *
  * Arithmetic type instructions
  */
 
-START_TEST (isa_adc_imm_set_nv_clear_zc_flags)
+/* ADC impossible flags combinations:
+ *  1) V set (C or N would also be set)
+ *  2) NZ set (contradictory)
+ *  3) NVC set (NV only happens when 2 pos numbers are added, C can't be set in this case)
+ * Current test cases (set flags)
+ *  1) none
+ *  2) C
+ *  3) VZC
+ *  4) NC
+ *  5) NV
+ *  6) ZC
+ */
+START_TEST (isa_adc_imm_no_carry_in_clear_nvzc_flags)
+{
+	// Result of ADC: is A + M + C (where M is a value from memory)
+	// Signed addition from -128 to 127 w/o carry
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 9;
+	cpu->A = 8;
+	cpu->P = FLAG_I;
+	int expected_result = cpu->operand + cpu->A + (cpu->P & FLAG_C);
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq((uint8_t) expected_result, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_adc_imm_no_carry_in_set_c_clear_nvz_flags)
+{
+	// Result of ADC: is A + M + C (where M is a value from memory)
+	// Signed addition from -128 to 127 w/o carry
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 3;
+	cpu->A = -1;
+	cpu->P = FLAG_I;
+	// Works because we have 1111... added to 10
+	// which propagates a 1 in the carry to the carry out bit (setting the C flag)
+	int expected_result = cpu->operand + cpu->A + (cpu->P & FLAG_C);
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq((uint8_t) expected_result, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_adc_imm_no_carry_in_set_zc_clear_nv_flags)
+{
+	// Result of ADC: is A + M + C (where M is a value from memory)
+	// Signed addition from -128 to 127 w/o carry
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 1;
+	cpu->A = -1;
+	cpu->P = FLAG_I;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_adc_imm_no_carry_in_set_vzc_clear_n_flags)
+{
+	// Result of ADC: is A + M + C (where M is a value from memory)
+	// Signed addition from -128 to 127 w/o carry
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = -128;
+	cpu->A = -128;
+	cpu->P = FLAG_I;
+	// -256 is 0xFF00 (9th bit is also sent to C flag)
+	int expected_result = cpu->operand + cpu->A + (cpu->P & FLAG_C);
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq((uint8_t) expected_result, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_adc_imm_carry_in_set_nc_clear_vz_flags)
+{
+	// Result of ADC: is A + M + C (where M is a value from memory)
+	// Signed addition from -128 to 127 w/o carry
+	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = -1;
+	cpu->A = -16;
+	cpu->P = FLAG_I | FLAG_C;
+	int expected_result = cpu->operand + cpu->A + (cpu->P & FLAG_C);
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq((uint8_t) expected_result, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_adc_imm_carry_in_set_nv_clear_zc_flags)
 {
 	// Result of ADC: is A + M + C (where M is a value from memory)
 	// Signed addition from -128 to 127 w/o carry
@@ -1470,7 +1895,7 @@ START_TEST (isa_adc_imm_set_nv_clear_zc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_adc_non_imm_mode_set_nv_clear_zc_flags)
+START_TEST (isa_adc_non_imm_mode_carry_in_set_nv_clear_zc_flags)
 {
 	// Result of ADC: is A + M + C (where M is a value from memory)
 	// Signed addition from -128 to 127 w/o carry
@@ -1494,27 +1919,23 @@ START_TEST (isa_adc_non_imm_mode_set_nv_clear_zc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_adc_imm_set_nc_clear_vz_flags)
+START_TEST (isa_dec_clear_nz_flags)
 {
-	// Result of ADC: is A + M + C (where M is a value from memory)
-	// Signed addition from -128 to 127 w/o carry
-	set_opcode_from_address_mode_and_instruction(cpu, "ADC", IMM);
-	cpu->address_mode = IMM;
-	cpu->operand = -1;
-	cpu->A = -16;
-	cpu->P = FLAG_I | FLAG_C;
-	int expected_result = cpu->operand + cpu->A + (cpu->P & FLAG_C);
+	set_opcode_from_address_mode_and_instruction(cpu, "DEC", ABSX);
+	cpu->target_addr = 0x0C43;
+	write_to_cpu(cpu, cpu->target_addr, 0x19);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
 
 	execute_opcode_lut[cpu->opcode](cpu);
 
-	ck_assert_uint_eq((uint8_t) expected_result, cpu->A);
+	ck_assert_uint_eq(0x18, read_from_cpu(cpu, cpu->target_addr));
 	// Flag checks
-	ck_assert((cpu->P & FLAG_N) == FLAG_N);
-	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
-	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
 START_TEST (isa_dec_set_n_clear_z_flags)
@@ -1529,6 +1950,43 @@ START_TEST (isa_dec_set_n_clear_z_flags)
 	ck_assert_uint_eq(0xA8, read_from_cpu(cpu, cpu->target_addr));
 	// Flag checks
 	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_dec_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "DEC", ABSX);
+	cpu->target_addr = 0x0C43;
+	write_to_cpu(cpu, cpu->target_addr, 0x01);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_dex_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "DEX", IMP);
+	cpu->X = 0x80;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x7F, cpu->X);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
@@ -1554,6 +2012,42 @@ START_TEST (isa_dex_set_n_clear_z_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
+START_TEST (isa_dex_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "DEX", IMP);
+	cpu->X = 0x01;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, cpu->X);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_dey_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "DEY", IMP);
+	cpu->Y = 0x7F;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x7E, cpu->Y);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
 START_TEST (isa_dey_set_n_clear_z_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "DEY", IMP);
@@ -1565,6 +2059,43 @@ START_TEST (isa_dey_set_n_clear_z_flags)
 	ck_assert_uint_eq(0xFE, cpu->Y);
 	// Flag checks
 	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_dey_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "DEY", IMP);
+	cpu->Y = 0x01;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, cpu->Y);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_inc_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "INC", ABS);
+	cpu->target_addr = 0x0C43;
+	write_to_cpu(cpu, cpu->target_addr, 0x2D);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x2E, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
@@ -1591,6 +2122,43 @@ START_TEST (isa_inc_set_n_clear_z_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
+START_TEST (isa_inc_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "INC", ABS);
+	cpu->target_addr = 0x0C43;
+	write_to_cpu(cpu, cpu->target_addr, 0xFF);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_inx_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "INX", IMP);
+	cpu->X = 0x67;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x68, cpu->X);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
 START_TEST (isa_inx_set_n_clear_z_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "INX", IMP);
@@ -1609,15 +2177,51 @@ START_TEST (isa_inx_set_n_clear_z_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
+START_TEST (isa_inx_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "INX", IMP);
+	cpu->X = 0xFF;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, cpu->X);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_iny_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "INY", IMP);
+	cpu->Y = 0x7E;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x7F, cpu->Y);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
 START_TEST (isa_iny_set_n_clear_z_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "INY", IMP);
-	cpu->Y = 0xFE;
+	cpu->Y = 0x7F;
 	cpu->P = FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
 
 	execute_opcode_lut[cpu->opcode](cpu);
 
-	ck_assert_uint_eq(0xFF, cpu->Y);
+	ck_assert_uint_eq(0x80, cpu->Y);
 	// Flag checks
 	ck_assert((cpu->P & FLAG_N) == FLAG_N);
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
@@ -1627,54 +2231,59 @@ START_TEST (isa_iny_set_n_clear_z_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
-START_TEST (isa_sbc_imm_set_n_clear_vzc_flags)
+START_TEST (isa_iny_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "INY", IMP);
+	cpu->Y = 0xFF;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, cpu->Y);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+/* SBC impossible flags combinations
+ *  1) NVZC clear (C is only clear if result is negative)
+ *  2) NZ set (contradictory)
+ *  3) NC set (C is only set when N is clear)
+ * Current test cases (set flags)
+ *  1) C
+ *  2) NV
+ *  3) N
+ *  4) VZC
+ *  5) ZC
+ */
+START_TEST (isa_sbc_imm_carry_in_set_c_clear_nvz_flags)
 {
 	// Result of SBC: is A - M - !C (where M is a value from memory)
 	// Signed subtraction from -128 to 127 w/o carry
 	set_opcode_from_address_mode_and_instruction(cpu, "SBC", IMM);
 	cpu->address_mode = IMM;
-	cpu->operand = 0x40;
-	cpu->A = 0x40;
-	cpu->P = FLAG_I | FLAG_C;
-	cpu->P &= ~FLAG_C;
+	cpu->operand = 17;
+	cpu->A = 79;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C; // Borrow is set when carry in isn't
+	int expected_result = cpu->A - cpu->operand - !(cpu->P & FLAG_C);
 
 	execute_opcode_lut[cpu->opcode](cpu);
 
-	ck_assert_uint_eq(0xFF, cpu->A);
+	ck_assert_uint_eq((uint8_t) expected_result, cpu->A);
 	// Flag checks
-	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
 	ck_assert((cpu->P & FLAG_V) != FLAG_V);
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
-	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // Carry is set on positive results
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_sbc_non_imm_mode_set_n_clear_vzc_flags)
-{
-	// Result of SBC: is A - M - !C (where M is a value from memory)
-	// Signed subtraction from -128 to 127 w/o carry
-	set_opcode_from_address_mode_and_instruction(cpu, "SBC", INDY);
-	cpu->address_mode = INDY;
-	cpu->target_addr = 0x01F0;
-	write_to_cpu(cpu, cpu->target_addr, 0x40);
-	cpu->A = 0x40;
-	cpu->P = FLAG_I | FLAG_C;
-	cpu->P &= ~FLAG_C;
-
-	execute_opcode_lut[cpu->opcode](cpu);
-
-	ck_assert_uint_eq(0xFF, cpu->A);
-	// Flag checks
-	ck_assert((cpu->P & FLAG_N) == FLAG_N);
-	ck_assert((cpu->P & FLAG_V) != FLAG_V);
-	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
-	ck_assert((cpu->P & FLAG_C) != FLAG_C);
-	// Flags that should be unaffected
-	ck_assert((cpu->P & FLAG_I) == FLAG_I);
-}
-
-START_TEST (isa_sbc_imm_set_nv_clear_zc_flags)
+START_TEST (isa_sbc_imm_no_carry_in_set_nv_clear_zc_flags)
 {
 	// Result of SBC: is A - M + !C (where M is a value from memory)
 	set_opcode_from_address_mode_and_instruction(cpu, "SBC", IMM);
@@ -1687,9 +2296,11 @@ START_TEST (isa_sbc_imm_set_nv_clear_zc_flags)
 	cpu->A = 127;
 	cpu->P = FLAG_I | FLAG_C;
 	cpu->P &= ~FLAG_C;
+	int expected_result = cpu->A - cpu->operand - !(cpu->P & FLAG_C);
 
 	execute_opcode_lut[cpu->opcode](cpu);
 
+	ck_assert_uint_eq((uint8_t) expected_result, cpu->A);
 	// Flag checks
 	ck_assert((cpu->P & FLAG_N) == FLAG_N);
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
@@ -1699,6 +2310,105 @@ START_TEST (isa_sbc_imm_set_nv_clear_zc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 END_TEST
+
+START_TEST (isa_sbc_imm_no_carry_in_set_n_clear_vzc_flags)
+{
+	// Result of SBC: is A - M - !C (where M is a value from memory)
+	// Signed subtraction from -128 to 127 w/o carry
+	set_opcode_from_address_mode_and_instruction(cpu, "SBC", IMM);
+	cpu->address_mode = IMM;
+	cpu->operand = 0x40;
+	cpu->A = 0x40;
+	cpu->P = FLAG_I | FLAG_C;
+	cpu->P &= ~FLAG_C; // Borrow is set when carry in isn't
+	int expected_result = cpu->A - cpu->operand - !(cpu->P & FLAG_C);
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq((uint8_t) expected_result, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_sbc_non_imm_mode_no_carry_in_set_n_clear_vzc_flags)
+{
+	// Result of SBC: is A - M - !C (where M is a value from memory)
+	// Signed subtraction from -128 to 127 w/o carry
+	set_opcode_from_address_mode_and_instruction(cpu, "SBC", INDY);
+	cpu->address_mode = INDY;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 0x40);
+	cpu->A = 0x40;
+	cpu->P = FLAG_I | FLAG_C;
+	cpu->P &= ~FLAG_C; // Borrow is set when carry in isn't
+	int expected_result = cpu->A - read_from_cpu(cpu, cpu->target_addr) - !(cpu->P & FLAG_C);
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq((uint8_t) expected_result, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_sbc_non_imm_mode_carry_in_set_vzc_clear_n_flags)
+{
+	// Result of SBC: is A - M - !C (where M is a value from memory)
+	// Signed subtraction from -128 to 127 w/o carry
+	set_opcode_from_address_mode_and_instruction(cpu, "SBC", INDY);
+	cpu->address_mode = INDY;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 127);
+	cpu->A = -128;
+	cpu->P = FLAG_I | FLAG_C;
+	cpu->P &= ~FLAG_C; // Borrow is set when carry in isn't
+	// When going more negative than -128 we wrap back around to 127
+	// so minus 1 to get to 127 (via Borrow) and then minus 127 to get to 0
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // Carry is set on positive results
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_sbc_non_imm_mode_no_carry_in_set_zc_clear_nv_flags)
+{
+	// Result of SBC: is A - M - !C (where M is a value from memory)
+	// Signed subtraction from -128 to 127 w/o carry
+	set_opcode_from_address_mode_and_instruction(cpu, "SBC", INDY);
+	cpu->address_mode = INDY;
+	cpu->target_addr = 0x01F0;
+	write_to_cpu(cpu, cpu->target_addr, 0x3F);
+	cpu->A = 0x40;
+	cpu->P = FLAG_I | FLAG_C;
+	cpu->P &= ~FLAG_C; // Borrow is set when carry in isn't
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_V) != FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // Carry is set on positive results
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
 
 /* ISA unit tests
  *
@@ -1746,7 +2456,68 @@ START_TEST (isa_and_non_imm_mode_clear_nz_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
-START_TEST (isa_asl_acc_set_n_flag)
+START_TEST (isa_and_non_imm_mode_set_n_clear_z_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "AND", ZP);
+	cpu->address_mode = ZP;
+	cpu->target_addr = 0x00F2;
+	write_to_cpu(cpu, cpu->target_addr, 0x8F);
+	cpu->A = 0x80;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x80, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_and_non_imm_mode_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "AND", ZP);
+	cpu->address_mode = ZP;
+	cpu->target_addr = 0x00F2;
+	write_to_cpu(cpu, cpu->target_addr, 0xAF);
+	cpu->A = 0x10;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_asl_acc_clear_nzc_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0x03;
+	cpu->P = FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x06, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_asl_acc_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
 	cpu->address_mode = ACC;
@@ -1765,7 +2536,7 @@ START_TEST (isa_asl_acc_set_n_flag)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_asl_non_acc_mode_set_n_flag)
+START_TEST (isa_asl_non_acc_mode_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ZPX);
 	cpu->address_mode = ZPX;
@@ -1785,6 +2556,104 @@ START_TEST (isa_asl_non_acc_mode_set_n_flag)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
+START_TEST (isa_asl_acc_set_z_clear_nc_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0x00;
+	cpu->P = FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_asl_acc_set_c_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0x81;
+	cpu->P = FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x02, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_asl_acc_set_zc_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0x80;
+	cpu->P = FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_asl_acc_set_nc_clear_z_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0xC0;
+	cpu->P = FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x80, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_bit_clear_nvz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
+
+	cpu->P = 0;
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, 0x01);
+	cpu->A = 0x01;
+	cpu->P = FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N); // Bit 7 from mem
+	ck_assert((cpu->P & FLAG_V) != FLAG_V); // Bit 6 from mem
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z); // Set if A & mem == 0
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+END_TEST
+
 START_TEST (isa_bit_set_nvz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
@@ -1798,16 +2667,37 @@ START_TEST (isa_bit_set_nvz_flags)
 	execute_opcode_lut[cpu->opcode](cpu);
 
 	// Flag checks
-	ck_assert((cpu->P & FLAG_N) == FLAG_N);
-	ck_assert((cpu->P & FLAG_V) == FLAG_V);
-	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_N) == FLAG_N); // Bit 7 from mem
+	ck_assert((cpu->P & FLAG_V) == FLAG_V); // Bit 6 from mem
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z); // Set if A & mem == 0
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 END_TEST
 
-START_TEST (isa_bit_set_v_flag)
+START_TEST (isa_bit_set_vn_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
+
+	cpu->P = FLAG_N | FLAG_I | FLAG_Z | FLAG_C;
+	cpu->target_addr = 0x1000;
+	write_to_cpu(cpu, cpu->target_addr, 0xC1);
+	cpu->A = 0x11;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N); // Bit 7 from mem
+	ck_assert((cpu->P & FLAG_V) == FLAG_V); // Bit 6 from mem
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z); // Set if A & mem == 0
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+END_TEST
+
+START_TEST (isa_bit_set_v_clear_nz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
 
@@ -1819,16 +2709,16 @@ START_TEST (isa_bit_set_v_flag)
 	execute_opcode_lut[cpu->opcode](cpu);
 
 	// Flag checks
-	ck_assert((cpu->P & FLAG_N) != FLAG_N);
-	ck_assert((cpu->P & FLAG_V) == FLAG_V);
-	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_N) != FLAG_N); // Bit 7 from mem
+	ck_assert((cpu->P & FLAG_V) == FLAG_V); // Bit 6 from mem
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z); // Set if A & mem == 0
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 END_TEST
 
-START_TEST (isa_bit_set_n_flag)
+START_TEST (isa_bit_set_n_clear_vz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
 
@@ -1840,16 +2730,16 @@ START_TEST (isa_bit_set_n_flag)
 	execute_opcode_lut[cpu->opcode](cpu);
 
 	// Flag checks
-	ck_assert((cpu->P & FLAG_N) == FLAG_N);
-	ck_assert((cpu->P & FLAG_V) != FLAG_V);
-	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_N) == FLAG_N); // Bit 7 from mem
+	ck_assert((cpu->P & FLAG_V) != FLAG_V); // Bit 6 from mem
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z); // Set if A & mem == 0
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 END_TEST
 
-START_TEST (isa_bit_set_z_flag)
+START_TEST (isa_bit_set_z_clear_nv_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BIT", ABS);
 
@@ -1861,9 +2751,9 @@ START_TEST (isa_bit_set_z_flag)
 	execute_opcode_lut[cpu->opcode](cpu);
 
 	// Flag checks
-	ck_assert((cpu->P & FLAG_N) != FLAG_N);
-	ck_assert((cpu->P & FLAG_V) != FLAG_V);
-	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_N) != FLAG_N); // Bit 7 from mem
+	ck_assert((cpu->P & FLAG_V) != FLAG_V); // Bit 6 from mem
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z); // Set if A & mem == 0
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
@@ -1911,6 +2801,48 @@ START_TEST (isa_eor_non_imm_mode_clear_nz_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
+START_TEST (isa_eor_non_imm_mode_set_n_clear_z_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "EOR", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x0C12;
+	write_to_cpu(cpu, cpu->target_addr, 0x8F);
+	cpu->A = 0x10;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x9F, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_eor_non_imm_mode_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "EOR", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x0C12;
+	write_to_cpu(cpu, cpu->target_addr, 0xFF);
+	cpu->A = 0xFF;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
 START_TEST (isa_lsr_acc_clear_nzc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ACC);
@@ -1942,9 +2874,69 @@ START_TEST (isa_lsr_non_acc_mode_clear_nzc_flags)
 
 	ck_assert_uint_eq(0x0F, read_from_cpu(cpu, cpu->target_addr));
 	// Flag checks
-	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_N) != FLAG_N); // should always be cleared 8th bit is shifted down
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
 	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_lsr_non_acc_mode_set_z_clear_nc_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	write_to_cpu(cpu, cpu->target_addr, 0x00);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N); // should always be cleared 8th bit is shifted down
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_lsr_non_acc_mode_set_c_clear_nz_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	write_to_cpu(cpu, cpu->target_addr, 0x41);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x20, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N); // should always be cleared 8th bit is shifted down
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // C is set when input has a 1 in lowest bit
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_lsr_non_acc_mode_set_zc_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	write_to_cpu(cpu, cpu->target_addr, 0x01);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N); // should always be cleared 8th bit is shifted down
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C); // C is set when input has a 1 in lowest bit
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
@@ -1991,6 +2983,67 @@ START_TEST (isa_ora_non_imm_mode_clear_nz_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
+START_TEST (isa_ora_non_imm_mode_set_n_clear_z_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ORA", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x0C12;
+	write_to_cpu(cpu, cpu->target_addr, 0x22);
+	cpu->A = 0x80;
+	cpu->P = FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0xA2, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_ora_non_imm_mode_set_z_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ORA", ABS);
+	cpu->address_mode = ABS;
+	cpu->target_addr = 0x0C12;
+	write_to_cpu(cpu, cpu->target_addr, 0x00);
+	cpu->A = 0x00;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_C;
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z); // can only be set if both inputs are 0
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+}
+
+START_TEST (isa_rol_acc_no_carry_in_clear_nzc_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0x3F;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z; // can't set carry, used for result
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x7E, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
 START_TEST (isa_rol_acc_no_carry_in_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
@@ -2030,6 +3083,46 @@ START_TEST (isa_rol_non_acc_mode_no_carry_in_set_n_clear_zc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
+START_TEST (isa_rol_non_acc_mode_no_carry_in_set_zc_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z; // can't set carry, used for result
+
+	write_to_cpu(cpu, cpu->target_addr, 0x80);
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x00, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_rol_non_acc_mode_carry_in_set_nc_clear_z_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C; // Carry moves into vacated LSB spot
+
+	write_to_cpu(cpu, cpu->target_addr, 0xC0);
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0x81, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
 START_TEST (isa_rol_acc_carry_in_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
@@ -2043,6 +3136,26 @@ START_TEST (isa_rol_acc_carry_in_set_n_clear_zc_flags)
 	// Flag checks
 	ck_assert((cpu->P & FLAG_N) == FLAG_N);
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_rol_non_acc_mode_no_carry_in_set_z_clear_nc_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z; // can't set carry, used for result
+
+	write_to_cpu(cpu, cpu->target_addr, 0x00);
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
 	ck_assert((cpu->P & FLAG_C) != FLAG_C);
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
@@ -2088,6 +3201,46 @@ START_TEST (isa_ror_acc_mode_no_carry_in_clear_nzc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
+START_TEST (isa_ror_acc_mode_no_carry_in_set_z_clear_nc_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	write_to_cpu(cpu, cpu->target_addr, 0x00);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z; // can't set carry, used for result
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_ror_acc_mode_no_carry_in_set_zc_clear_n_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ZPX);
+	cpu->address_mode = ZPX;
+	cpu->target_addr = 0x00A0;
+	write_to_cpu(cpu, cpu->target_addr, 0x01);
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z; // can't set carry, used for result
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0, read_from_cpu(cpu, cpu->target_addr));
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) != FLAG_N);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
 START_TEST (isa_ror_acc_carry_in_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ACC);
@@ -2099,9 +3252,28 @@ START_TEST (isa_ror_acc_carry_in_set_n_clear_zc_flags)
 
 	ck_assert_uint_eq(0xFF, cpu->A);
 	// Flag checks
-	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_N) == FLAG_N); // only set when Carry in is set too
 	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
 	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+}
+
+START_TEST (isa_ror_acc_carry_in_set_nc_clear_z_flags)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ACC);
+	cpu->address_mode = ACC;
+	cpu->A = 0xF1;
+	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C; // Carry moves into vacated MSB spot
+
+	execute_opcode_lut[cpu->opcode](cpu);
+
+	ck_assert_uint_eq(0xF8, cpu->A);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_N) == FLAG_N); // only set when Carry in is set too
+	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 	// Flags that should be unaffected
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
@@ -2250,7 +3422,11 @@ START_TEST (isa_clv_result_only)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
-START_TEST (isa_cmp_set_n_flag)
+/* CMP, CPX & CPY impossible status reg flag combinations
+ *  1) NZ set (contradictory)
+ *  2) NC set (C is set if register >= mem, therefore result is +ve and N can't be set)
+ */
+START_TEST (isa_cmp_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CMP", IMM);
 	cpu->address_mode = IMM;
@@ -2271,7 +3447,7 @@ START_TEST (isa_cmp_set_n_flag)
 END_TEST
 
 // Carry is also set when Z flag is set
-START_TEST (isa_cmp_set_zc_flags)
+START_TEST (isa_cmp_set_zc_clear_n_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CMP", ZP);
 	cpu->address_mode = ZP;
@@ -2292,7 +3468,7 @@ START_TEST (isa_cmp_set_zc_flags)
 }
 END_TEST
 
-START_TEST (isa_cmp_set_c_flag)
+START_TEST (isa_cmp_set_c_clear_nz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CMP", ABSX);
 	cpu->address_mode = ABSX;
@@ -2313,7 +3489,7 @@ START_TEST (isa_cmp_set_c_flag)
 }
 END_TEST
 
-START_TEST (isa_cpx_set_n_flag)
+START_TEST (isa_cpx_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPX", IMM);
 	cpu->address_mode = IMM;
@@ -2334,7 +3510,7 @@ START_TEST (isa_cpx_set_n_flag)
 END_TEST
 
 // Carry is also set when Z flag is set
-START_TEST (isa_cpx_set_zc_flags)
+START_TEST (isa_cpx_set_zc_clear_n_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPX", ZP);
 	cpu->address_mode = ZP;
@@ -2355,7 +3531,7 @@ START_TEST (isa_cpx_set_zc_flags)
 }
 END_TEST
 
-START_TEST (isa_cpx_set_c_flag)
+START_TEST (isa_cpx_set_c_clear_nz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPX", ABS);
 	cpu->address_mode = ABS;
@@ -2376,7 +3552,7 @@ START_TEST (isa_cpx_set_c_flag)
 }
 END_TEST
 
-START_TEST (isa_cpy_set_n_flag)
+START_TEST (isa_cpy_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPY", IMM);
 	cpu->address_mode = IMM;
@@ -2397,7 +3573,7 @@ START_TEST (isa_cpy_set_n_flag)
 END_TEST
 
 // Carry is also set when Z flag is set
-START_TEST (isa_cpy_set_zc_flags)
+START_TEST (isa_cpy_set_zc_clear_n_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPY", ZP);
 	cpu->address_mode = ZP;
@@ -2418,7 +3594,7 @@ START_TEST (isa_cpy_set_zc_flags)
 }
 END_TEST
 
-START_TEST (isa_cpy_set_c_flag)
+START_TEST (isa_cpy_set_c_clear_nz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "CPY", ABS);
 	cpu->address_mode = ABS;
@@ -2705,51 +3881,109 @@ Suite* cpu_suite(void)
 	tcase_add_checked_fixture(tc_cpu_isa, setup, teardown);
 	tcase_add_test(tc_cpu_isa, isa_lda_imm_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_lda_non_imm_mode_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_lda_imm_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_lda_imm_set_z_clear_n_flags);
 	tcase_add_test(tc_cpu_isa, isa_ldx_imm_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_ldx_non_imm_mode_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_ldx_non_imm_mode_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_ldx_non_imm_mode_set_z_clear_n_flags);
 	tcase_add_test(tc_cpu_isa, isa_ldy_imm_clear_nz_flags);
-	tcase_add_test(tc_cpu_isa, isa_ldy_non_imm_mode_clear_flags);
+	tcase_add_test(tc_cpu_isa, isa_ldy_non_imm_mode_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_ldy_imm_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_ldy_imm_set_z_clear_n_flags);
 	tcase_add_test(tc_cpu_isa, isa_sta_result_only);
 	tcase_add_test(tc_cpu_isa, isa_stx_result_only);
 	tcase_add_test(tc_cpu_isa, isa_sty_result_only);
+	tcase_add_test(tc_cpu_isa, isa_tax_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_tax_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_tax_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_tay_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_tay_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_tay_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_tsx_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_tsx_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_tsx_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_txa_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_txa_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_txa_set_z_clear_n_flags);
 	tcase_add_test(tc_cpu_isa, isa_txs_result_only);
+	tcase_add_test(tc_cpu_isa, isa_tya_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_tya_set_n_clear_z_flags);
-	tcase_add_test(tc_cpu_isa, isa_adc_imm_set_nv_clear_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_adc_non_imm_mode_set_nv_clear_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_adc_imm_set_nc_clear_vz_flags);
+	tcase_add_test(tc_cpu_isa, isa_tya_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_adc_imm_no_carry_in_clear_nvzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_adc_imm_no_carry_in_set_c_clear_nvz_flags);
+	tcase_add_test(tc_cpu_isa, isa_adc_imm_no_carry_in_set_zc_clear_nv_flags);
+	tcase_add_test(tc_cpu_isa, isa_adc_imm_no_carry_in_set_vzc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_adc_imm_carry_in_set_nc_clear_vz_flags);
+	tcase_add_test(tc_cpu_isa, isa_adc_imm_carry_in_set_nv_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_adc_non_imm_mode_carry_in_set_nv_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_dec_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_dec_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_dec_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_dex_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_dex_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_dex_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_dey_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_dey_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_dey_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_inc_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_inc_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_inc_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_inx_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_inx_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_inx_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_iny_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_iny_set_n_clear_z_flags);
-	tcase_add_test(tc_cpu_isa, isa_sbc_imm_set_n_clear_vzc_flags);
-	tcase_add_test(tc_cpu_isa, isa_sbc_non_imm_mode_set_n_clear_vzc_flags);
-	tcase_add_test(tc_cpu_isa, isa_sbc_imm_set_nv_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_iny_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_sbc_imm_carry_in_set_c_clear_nvz_flags);
+	tcase_add_test(tc_cpu_isa, isa_sbc_imm_no_carry_in_set_nv_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_sbc_imm_no_carry_in_set_n_clear_vzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_sbc_non_imm_mode_no_carry_in_set_n_clear_vzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_sbc_non_imm_mode_carry_in_set_vzc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_sbc_non_imm_mode_no_carry_in_set_zc_clear_nv_flags);
 	tcase_add_test(tc_cpu_isa, isa_and_imm_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_and_non_imm_mode_clear_nz_flags);
-	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_n_flag);
-	tcase_add_test(tc_cpu_isa, isa_asl_non_acc_mode_set_n_flag);
+	tcase_add_test(tc_cpu_isa, isa_and_non_imm_mode_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_and_non_imm_mode_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_acc_clear_nzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_non_acc_mode_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_z_clear_nc_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_c_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_zc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_nc_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_bit_clear_nvz_flags);
 	tcase_add_test(tc_cpu_isa, isa_bit_set_nvz_flags);
-	tcase_add_test(tc_cpu_isa, isa_bit_set_v_flag);
-	tcase_add_test(tc_cpu_isa, isa_bit_set_n_flag);
-	tcase_add_test(tc_cpu_isa, isa_bit_set_z_flag);
+	tcase_add_test(tc_cpu_isa, isa_bit_set_vn_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_bit_set_v_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_bit_set_n_clear_vz_flags);
+	tcase_add_test(tc_cpu_isa, isa_bit_set_z_clear_nv_flags);
 	tcase_add_test(tc_cpu_isa, isa_eor_imm_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_eor_non_imm_mode_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_eor_non_imm_mode_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_eor_non_imm_mode_set_z_clear_n_flags);
 	tcase_add_test(tc_cpu_isa, isa_lsr_acc_clear_nzc_flags);
 	tcase_add_test(tc_cpu_isa, isa_lsr_non_acc_mode_clear_nzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_lsr_non_acc_mode_set_z_clear_nc_flags);
+	tcase_add_test(tc_cpu_isa, isa_lsr_non_acc_mode_set_c_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_lsr_non_acc_mode_set_zc_clear_n_flags);
 	tcase_add_test(tc_cpu_isa, isa_ora_imm_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_ora_non_imm_mode_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_ora_non_imm_mode_set_n_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_ora_non_imm_mode_set_z_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_acc_no_carry_in_clear_nzc_flags);
 	tcase_add_test(tc_cpu_isa, isa_rol_acc_no_carry_in_set_n_clear_zc_flags);
 	tcase_add_test(tc_cpu_isa, isa_rol_non_acc_mode_no_carry_in_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_non_acc_mode_no_carry_in_set_z_clear_nc_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_non_acc_mode_no_carry_in_set_zc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_non_acc_mode_carry_in_set_nc_clear_z_flags);
 	tcase_add_test(tc_cpu_isa, isa_rol_acc_carry_in_set_n_clear_zc_flags);
 	tcase_add_test(tc_cpu_isa, isa_ror_acc_no_carry_in_clear_nzc_flags);
 	tcase_add_test(tc_cpu_isa, isa_ror_acc_mode_no_carry_in_clear_nzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_ror_acc_mode_no_carry_in_set_z_clear_nc_flags);
+	tcase_add_test(tc_cpu_isa, isa_ror_acc_mode_no_carry_in_set_zc_clear_n_flags);
 	tcase_add_test(tc_cpu_isa, isa_ror_acc_carry_in_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_ror_acc_carry_in_set_nc_clear_z_flags);
 	tcase_add_test(tc_cpu_isa, isa_jsr_result_only);
 	tcase_add_test(tc_cpu_isa, isa_rti_result_only);
 	tcase_add_test(tc_cpu_isa, isa_rts_result_only);
@@ -2757,15 +3991,15 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, isa_cld_result_only);
 	tcase_add_test(tc_cpu_isa, isa_cli_result_only);
 	tcase_add_test(tc_cpu_isa, isa_clv_result_only);
-	tcase_add_test(tc_cpu_isa, isa_cmp_set_n_flag);
-	tcase_add_test(tc_cpu_isa, isa_cmp_set_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_cmp_set_c_flag);
-	tcase_add_test(tc_cpu_isa, isa_cpx_set_n_flag);
-	tcase_add_test(tc_cpu_isa, isa_cpx_set_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_cpx_set_c_flag);
-	tcase_add_test(tc_cpu_isa, isa_cpy_set_n_flag);
-	tcase_add_test(tc_cpu_isa, isa_cpy_set_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_cpy_set_c_flag);
+	tcase_add_test(tc_cpu_isa, isa_cmp_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_cmp_set_zc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_cmp_set_c_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_cpx_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_cpx_set_zc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_cpx_set_c_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_cpy_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_cpy_set_zc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_cpy_set_c_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_sec_result_only);
 	tcase_add_test(tc_cpu_isa, isa_sed_result_only);
 	tcase_add_test(tc_cpu_isa, isa_sei_result_only);
