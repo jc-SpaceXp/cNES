@@ -355,6 +355,25 @@ START_TEST (addr_mode_absx_read_store)
 }
 END_TEST
 
+START_TEST (addr_mode_absx_read_store_page_cross)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "EOR", ABSX);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xE1; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x07; // addr_hi (from cpu->PC + 1)
+	cpu->X = 0x2F; // X offset to ABS address
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(0xE1, cpu->addr_lo);
+	ck_assert_uint_eq(0x07, cpu->addr_hi);
+	ck_assert_uint_eq(0x0810, cpu->target_addr);
+}
+END_TEST
+
 START_TEST (addr_mode_absx_rmw)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ABSX);
@@ -390,6 +409,25 @@ START_TEST (addr_mode_absy_read_store)
 	ck_assert_uint_eq(0x25, cpu->addr_lo);
 	ck_assert_uint_eq(0x04, cpu->addr_hi);
 	ck_assert_uint_eq(0x042A, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (addr_mode_absy_read_store_page_cross)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDA", ABSY);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x25; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x04; // addr_hi (from cpu->PC + 1)
+	cpu->Y = 0xF3; // X offset to ABS address
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(0x25, cpu->addr_lo);
+	ck_assert_uint_eq(0x04, cpu->addr_hi);
+	ck_assert_uint_eq(0x0518, cpu->target_addr);
 }
 END_TEST
 
@@ -442,6 +480,23 @@ START_TEST (addr_mode_zpx_read_store)
 }
 END_TEST
 
+START_TEST (addr_mode_zpx_read_store_page_cross)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "STY", ZPX);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x08; // addr_lo, addr_hi fixed to 0x00
+	cpu->X = 0xFD;
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(0x08, cpu->addr_lo);
+	ck_assert_uint_eq(0x0005, cpu->target_addr); // address is always a zero page one
+}
+END_TEST
+
 START_TEST (addr_mode_zpx_rmw)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
@@ -473,6 +528,23 @@ START_TEST (addr_mode_zpy_read_store)
 
 	ck_assert_uint_eq(0x63, cpu->addr_lo);
 	ck_assert_uint_eq(0x0066, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (addr_mode_zpy_read_store_page_cross)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "LDX", ZPY);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x63; // addr_lo, addr_hi fixed to 0x00
+	cpu->Y = 0xFA;
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(0x63, cpu->addr_lo);
+	ck_assert_uint_eq(0x005D, cpu->target_addr); // address is always a zero page one
 }
 END_TEST
 
@@ -575,6 +647,29 @@ START_TEST (addr_mode_indy_read_store)
 	ck_assert_uint_eq(0xB1, cpu->addr_lo);
 	ck_assert_uint_eq(0x13, cpu->addr_hi);
 	ck_assert_uint_eq(0x13C8, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (addr_mode_indy_read_store_page_cross)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "CMP", INDY);
+
+	// set index_lo and index_hi for IND address mode
+	// then also set the address it points from that indexed address
+	cpu->Y = 0x7A;
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x71; // base_addr
+	cpu->mem[0x0071] = 0xB1;  // addr_lo
+	cpu->mem[0x0072] = 0x13;  // addr_hi
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(0x71, cpu->base_addr);
+	ck_assert_uint_eq(0xB1, cpu->addr_lo);
+	ck_assert_uint_eq(0x13, cpu->addr_hi);
+	ck_assert_uint_eq(0x142B, cpu->target_addr);
 }
 END_TEST
 
@@ -3829,17 +3924,22 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_address_modes, addr_mode_abs_rmw);
 	tcase_add_test(tc_address_modes, addr_mode_abs_jmp);
 	tcase_add_test(tc_address_modes, addr_mode_absx_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_absx_read_store_page_cross);
 	tcase_add_test(tc_address_modes, addr_mode_absx_rmw);
 	tcase_add_test(tc_address_modes, addr_mode_absy_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_absy_read_store_page_cross);
 	tcase_add_test(tc_address_modes, addr_mode_zp_read_store);
 	tcase_add_test(tc_address_modes, addr_mode_zp_rmw);
 	tcase_add_test(tc_address_modes, addr_mode_zpx_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_zpx_read_store_page_cross);
 	tcase_add_test(tc_address_modes, addr_mode_zpx_rmw);
 	tcase_add_test(tc_address_modes, addr_mode_zpy_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_zpy_read_store_page_cross);
 	tcase_add_test(tc_address_modes, ind_jmp);
 	tcase_add_test(tc_address_modes, ind_jmp_bug);
 	tcase_add_test(tc_address_modes, addr_mode_indx_read_store);
 	tcase_add_test(tc_address_modes, addr_mode_indy_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_indy_read_store_page_cross);
 	suite_add_tcase(s, tc_address_modes);
 	tc_branch_not_taken_addr = tcase_create("Branch Not Taken Correct Address");
 	tcase_add_checked_fixture(tc_branch_not_taken_addr, setup, teardown);
