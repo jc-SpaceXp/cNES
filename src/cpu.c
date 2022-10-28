@@ -317,6 +317,11 @@ static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr)
 	return ((read_from_cpu(cpu, addr + 1) << 8) | read_from_cpu(cpu, addr));
 }
 
+static uint16_t concat_address_bus_bytes(uint8_t adh, uint8_t adl)
+{
+	return ((adh << 8) | adl);
+}
+
 void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 {
 	if (addr < (ADDR_RAM_END + 1)) { // write to RAM (non-mirrored)
@@ -690,7 +695,7 @@ static void decode_ABS_read_store(Cpu6502* cpu)
 		++cpu->PC;
 		break;
 	case 1: //T3
-		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo);
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo);
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -710,7 +715,7 @@ static void decode_ABS_rmw(Cpu6502* cpu)
 		++cpu->PC;
 		break;
 	case 3: // T3 (dummy read?)
-		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo);
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo);
 		break;
 	case 2: // T4 (dummy write)
 		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
@@ -736,12 +741,12 @@ static void decode_ABSX_read_store(Cpu6502* cpu)
 		++cpu->PC;
 		break;
 	case 2: // T3
-		cpu->target_addr = cpu->addr_hi << 8 | ((cpu->addr_lo + cpu->X) & 0xFF);
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->X);
 		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->X)) { cpu->instruction_state = EXECUTE; }
 		// dummy read not implemented
 		break;
 	case 1: // T4 (page cross)
-		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo) + cpu->X;
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X;
 		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		cpu->instruction_state = EXECUTE;
 		break;
@@ -762,10 +767,10 @@ static void decode_ABSX_rmw(Cpu6502* cpu)
 		++cpu->PC;
 		break;
 	case 4: // T3 (dummy read) [not implemented]
-		cpu->target_addr = cpu->addr_hi << 8 | ((cpu->addr_lo + cpu->X) & 0xFF);
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->X);
 		break;
 	case 3: // T4
-		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo) + cpu->X; // data is discarded
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X; // data is discarded
 		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 2: // T5 (dummy write)
@@ -791,12 +796,12 @@ static void decode_ABSY_read_store(Cpu6502* cpu)
 		++cpu->PC;
 		break;
 	case 2: // T3
-		cpu->target_addr = cpu->addr_hi << 8 | ((cpu->addr_lo + cpu->Y) & 0xFF);
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->Y);
 		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->Y)) { cpu->instruction_state = EXECUTE; }
 		// dummy read not implemented
 		break;
 	case 1: // T4 (page cross)
-		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo) + cpu->Y;
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -847,7 +852,7 @@ static void decode_INDX_read_store(Cpu6502* cpu)
 		cpu->addr_hi = read_from_cpu(cpu, (cpu->base_addr + cpu->X + 1) & 0xFF);
 		break;
 	case 1: // T5
-		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo);
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo);
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -869,12 +874,12 @@ static void decode_INDY_read_store(Cpu6502* cpu)
 		cpu->addr_hi = read_from_cpu(cpu, (cpu->base_addr + 1) & 0xFF);
 		break;
 	case 2: // T4
-		cpu->target_addr = cpu->addr_hi << 8 | ((cpu->addr_lo + cpu->Y) & 0xFF);
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->Y);
 		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->Y)) { cpu->instruction_state = EXECUTE; }
 		// dummy read not implemented
 		break;
 	case 1: // T5 (page cross)
-		cpu->target_addr = ((cpu->addr_hi << 8) | cpu->addr_lo) + cpu->Y;
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
 		cpu->instruction_state = EXECUTE;
 	}
 }
