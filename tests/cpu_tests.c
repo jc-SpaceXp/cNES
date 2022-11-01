@@ -374,6 +374,30 @@ START_TEST (addr_mode_absx_read_store_page_cross)
 }
 END_TEST
 
+/* Test that calculation of page cross address doesn't affect
+ * STx type instructions when a page isn't crossed (as for
+ * non-STx type instructions the last cycle is skipped if a page
+ * isn't crossed, yielding a different result to the page cross address)
+ */
+START_TEST (addr_mode_absx_read_store_STx_no_page_cross)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "STA", ABSX);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xE1; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x07; // addr_hi (from cpu->PC + 1)
+	cpu->X = 0x0F; // X offset to ABS address
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(0xE1, cpu->addr_lo);
+	ck_assert_uint_eq(0x07, cpu->addr_hi);
+	ck_assert_uint_eq(0x07F0, cpu->target_addr);
+}
+END_TEST
+
 START_TEST (addr_mode_absx_rmw)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ABSX);
@@ -428,6 +452,30 @@ START_TEST (addr_mode_absy_read_store_page_cross)
 	ck_assert_uint_eq(0x25, cpu->addr_lo);
 	ck_assert_uint_eq(0x04, cpu->addr_hi);
 	ck_assert_uint_eq(0x0518, cpu->target_addr);
+}
+END_TEST
+
+/* Test that calculation of page cross address doesn't affect
+ * STx type instructions when a page isn't crossed (as for
+ * non-STx type instructions the last cycle is skipped if a page
+ * isn't crossed, yielding a different result to the page cross address)
+ */
+START_TEST (addr_mode_absy_read_store_STx_no_page_cross)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "STA", ABSY);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x25; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x04; // addr_hi (from cpu->PC + 1)
+	cpu->Y = 0x03; // X offset to ABS address
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(0x25, cpu->addr_lo);
+	ck_assert_uint_eq(0x04, cpu->addr_hi);
+	ck_assert_uint_eq(0x0428, cpu->target_addr);
 }
 END_TEST
 
@@ -670,6 +718,34 @@ START_TEST (addr_mode_indy_read_store_page_cross)
 	ck_assert_uint_eq(0xB1, cpu->addr_lo);
 	ck_assert_uint_eq(0x13, cpu->addr_hi);
 	ck_assert_uint_eq(0x142B, cpu->target_addr);
+}
+END_TEST
+
+/* Test that calculation of page cross address doesn't affect
+ * STx type instructions when a page isn't crossed (as for
+ * non-STx type instructions the last cycle is skipped if a page
+ * isn't crossed, yielding a different result to the page cross address)
+ */
+START_TEST (addr_mode_indy_read_store_STx_no_page_cross)
+{
+	set_opcode_from_address_mode_and_instruction(cpu, "STA", INDY);
+
+	// set index_lo and index_hi for IND address mode
+	// then also set the address it points from that indexed address
+	cpu->Y = 0x2A;
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x71; // base_addr
+	cpu->mem[0x0071] = 0xB1;  // addr_lo
+	cpu->mem[0x0072] = 0x13;  // addr_hi
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, decode_opcode_lut
+	                        , max_cycles_opcode_lut[cpu->opcode] - 1, EXECUTE);
+
+	ck_assert_uint_eq(0x71, cpu->base_addr);
+	ck_assert_uint_eq(0xB1, cpu->addr_lo);
+	ck_assert_uint_eq(0x13, cpu->addr_hi);
+	ck_assert_uint_eq(0x13DB, cpu->target_addr);
 }
 END_TEST
 
@@ -3925,9 +4001,11 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_address_modes, addr_mode_abs_jmp);
 	tcase_add_test(tc_address_modes, addr_mode_absx_read_store);
 	tcase_add_test(tc_address_modes, addr_mode_absx_read_store_page_cross);
+	tcase_add_test(tc_address_modes, addr_mode_absx_read_store_STx_no_page_cross);
 	tcase_add_test(tc_address_modes, addr_mode_absx_rmw);
 	tcase_add_test(tc_address_modes, addr_mode_absy_read_store);
 	tcase_add_test(tc_address_modes, addr_mode_absy_read_store_page_cross);
+	tcase_add_test(tc_address_modes, addr_mode_absy_read_store_STx_no_page_cross);
 	tcase_add_test(tc_address_modes, addr_mode_zp_read_store);
 	tcase_add_test(tc_address_modes, addr_mode_zp_rmw);
 	tcase_add_test(tc_address_modes, addr_mode_zpx_read_store);
@@ -3940,6 +4018,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_address_modes, addr_mode_indx_read_store);
 	tcase_add_test(tc_address_modes, addr_mode_indy_read_store);
 	tcase_add_test(tc_address_modes, addr_mode_indy_read_store_page_cross);
+	tcase_add_test(tc_address_modes, addr_mode_indy_read_store_STx_no_page_cross);
 	suite_add_tcase(s, tc_address_modes);
 	tc_branch_not_taken_addr = tcase_create("Branch Not Taken Correct Address");
 	tcase_add_checked_fixture(tc_branch_not_taken_addr, setup, teardown);
