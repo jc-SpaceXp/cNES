@@ -1377,7 +1377,7 @@ static void execute_INX(Cpu6502* cpu)
 }
 
 
-/* execute_INY: DEY command - Increment Y by one
+/* execute_INY: INY command - Increment Y by one
  */
 static void execute_INY(Cpu6502* cpu)
 {
