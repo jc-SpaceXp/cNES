@@ -881,6 +881,7 @@ static void decode_INDY_read_store(Cpu6502* cpu)
 	case 1: // T5 (page cross address if T5 is skippable, otherwise same as T4)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
 		cpu->instruction_state = EXECUTE;
+		break;
 	}
 }
 
