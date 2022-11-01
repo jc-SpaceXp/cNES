@@ -250,6 +250,20 @@ static void run_logic_cycle_by_cycle(Cpu6502* cpu, void (*opcode_lut[256])(Cpu65
 	}
 }
 
+static void run_hw_interrupt_cycle_by_cycle(Cpu6502* cpu
+                                           , void (*hardware_interrupts[3])(Cpu6502* cpu)
+                                           , int array_index
+                                           , int cycles_remaining, InstructionStates stop_condition)
+{
+	cpu->instruction_cycles_remaining = cycles_remaining;
+	for (int i = 0; i < cycles_remaining; i++) {
+		if (cpu->instruction_state != stop_condition) {
+			hardware_interrupts[array_index](cpu);
+			cpu->instruction_cycles_remaining -= 1;
+		}
+	}
+}
+
 // globals for unit tests (as setup/teardown take void args)
 Cpu6502* cpu;
 
@@ -3976,6 +3990,31 @@ START_TEST (isa_nop_result_only)
 END_TEST
 
 
+START_TEST (irq_correct_interrupt_vector)
+{
+	cpu->mem[IRQ_VECTOR] = 0xFA; // addr_lo
+	cpu->mem[IRQ_VECTOR + 1] = 0xC4; // addr_hi
+	cpu->P = FLAG_N | FLAG_V | FLAG_Z;
+	int total_cycles = 7;
+	cpu->instruction_state = EXECUTE;
+
+	run_hw_interrupt_cycle_by_cycle(cpu, hardware_interrupts, IRQ_INDEX
+	                               , total_cycles - 1, FETCH);
+
+	ck_assert_uint_eq(0xFA, cpu->addr_lo);
+	ck_assert_uint_eq(0xC4, cpu->addr_hi);
+	ck_assert_uint_eq(0xC4FA, cpu->PC);
+	// Flag checks
+	ck_assert((cpu->P & FLAG_I) == FLAG_I);
+	// Flags that should be unaffected
+	ck_assert((cpu->P & FLAG_N) == FLAG_N);
+	ck_assert((cpu->P & FLAG_V) == FLAG_V);
+	ck_assert((cpu->P & FLAG_Z) == FLAG_Z);
+	ck_assert((cpu->P & FLAG_C) != FLAG_C);
+}
+END_TEST
+
+
 Suite* cpu_suite(void)
 {
 	Suite* s;
@@ -3988,6 +4027,7 @@ Suite* cpu_suite(void)
 	TCase* tc_cpu_writes;
 	TCase* tc_cpu_stack_op;
 	TCase* tc_cpu_isa;
+	TCase* tc_cpu_hardware_interrupts;
 
 	s = suite_create("Cpu Tests");
 	tc_test_helpers = tcase_create("Test Helpers");
@@ -4210,6 +4250,10 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, isa_brk_result_only);
 	tcase_add_test(tc_cpu_isa, isa_nop_result_only);
 	suite_add_tcase(s, tc_cpu_isa);
+	tc_cpu_hardware_interrupts = tcase_create("Cpu Hardware Interrupts (no opcodes e.g. IRQ)");
+	tcase_add_checked_fixture(tc_cpu_hardware_interrupts, setup, teardown);
+	tcase_add_test(tc_cpu_hardware_interrupts, irq_correct_interrupt_vector);
+	suite_add_tcase(s, tc_cpu_hardware_interrupts);
 
 	return s;
 }

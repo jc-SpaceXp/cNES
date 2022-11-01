@@ -183,6 +183,10 @@ void (*execute_opcode_lut[256])(Cpu6502* cpu) = {
 	execute_BEQ, execute_SBC, bad_op_code, bad_op_code, bad_op_code, execute_SBC, execute_INC, bad_op_code, execute_SED, execute_SBC, bad_op_code, bad_op_code, bad_op_code, execute_SBC, execute_INC, bad_op_code
 };
 
+void (*hardware_interrupts[3])(Cpu6502* cpu) = {
+	execute_DMA, execute_IRQ, execute_NMI,
+};
+
 CpuMapperShare* cpu_mapper_init(Cartridge* cart)
 {
 	CpuMapperShare* i = malloc(sizeof(CpuMapperShare));

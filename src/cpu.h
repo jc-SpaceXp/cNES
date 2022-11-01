@@ -38,6 +38,12 @@ enum CpuMemType {
 	ADDRESS_MODE_DEP,
 };
 
+enum HardwareInterruptsArrayIndexes {
+	DMA_INDEX = 0,
+	IRQ_INDEX = 1,
+	NMI_INDEX = 2,
+};
+
 CpuMapperShare* cpu_mapper_init(Cartridge* cart);
 CpuPpuShare* mmio_init(void);
 Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm); /* initialise CPU struct */
@@ -45,6 +51,7 @@ void clock_cpu(Cpu6502* cpu, const bool no_logging);
 extern const uint8_t max_cycles_opcode_lut[256];
 extern void (*decode_opcode_lut[256])(Cpu6502* cpu);
 extern void (*execute_opcode_lut[256])(Cpu6502* cpu);
+extern void (*hardware_interrupts[3])(Cpu6502* cpu); // used for unit tests of DMA/IRQ/NMI (non opcode interrupts)
 
 // Helper functions
 void init_pc(Cpu6502* cpu); /* Set PC via reset vector */
