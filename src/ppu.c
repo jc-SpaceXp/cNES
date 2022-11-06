@@ -199,7 +199,7 @@ static void append_ppu_info(Ppu2C02* ppu)
 /* For ppu calling functions: arg 1 == &p->vram
  * For cpu calling functions: arg 1 == cpu->cpu_ppu_io->vram
  */
-static void write_to_ppu_vram(struct PpuMemoryMap* mem, unsigned addr, uint8_t data)
+void write_to_ppu_vram(struct PpuMemoryMap* mem, unsigned addr, uint8_t data)
 {
 	if (addr < 0x1000) {
 		// 0x0000 to 0x0FFF
@@ -237,7 +237,7 @@ static void write_to_ppu_vram(struct PpuMemoryMap* mem, unsigned addr, uint8_t d
 	}
 }
 
-static uint8_t read_from_ppu_vram(const struct PpuMemoryMap* mem, unsigned addr)
+uint8_t read_from_ppu_vram(const struct PpuMemoryMap* mem, unsigned addr)
 {
 	uint8_t ret = 0;
 	if (addr < 0x1000) {

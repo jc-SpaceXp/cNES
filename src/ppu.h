@@ -33,6 +33,8 @@ void ppu_mem_hexdump_addr_range(const Ppu2C02* p, const enum PpuMemoryTypes ppu_
 uint8_t read_ppu_reg(const uint16_t addr, Cpu6502* cpu); /* For addresses exposed to CPU */
 void delay_write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu); /* For addresses exposed to CPU */
 void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu); /* For addresses exposed to CPU */
+void write_to_ppu_vram(struct PpuMemoryMap* mem, unsigned addr, uint8_t data);
+uint8_t read_from_ppu_vram(const struct PpuMemoryMap* mem, unsigned addr);
 
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logging);
