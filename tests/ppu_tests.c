@@ -38,6 +38,78 @@ static void vram_teardown(void)
 	free(vram);
 }
 
+static void check_horizontal_nametable_A_mirroring(struct PpuMemoryMap* vram
+                                                  , uint16_t addr_offset
+                                                  , uint8_t expected_val)
+{
+	// nametable A is nametable 0 (0x2000) and nametable 1 (0x2400)
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2000 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2400 + addr_offset));
+	ck_assert_uint_ne(expected_val, read_from_ppu_vram(vram, 0x2800 + addr_offset));
+	ck_assert_uint_ne(expected_val, read_from_ppu_vram(vram, 0x2C00 + addr_offset));
+}
+
+static void check_horizontal_nametable_B_mirroring(struct PpuMemoryMap* vram
+                                                  , uint16_t addr_offset
+                                                  , uint8_t expected_val)
+{
+	// nametable B is nametable 2 (0x2800) and nametable 3 (0x2C00)
+	ck_assert_uint_ne(expected_val, read_from_ppu_vram(vram, 0x2000 + addr_offset));
+	ck_assert_uint_ne(expected_val, read_from_ppu_vram(vram, 0x2400 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2800 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2C00 + addr_offset));
+}
+
+static void check_vertical_nametable_A_mirroring(struct PpuMemoryMap* vram
+                                                , uint16_t addr_offset
+                                                , uint8_t expected_val)
+{
+	// nametable A is nametable 0 (0x2000) and nametable 2 (0x2800)
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2000 + addr_offset));
+	ck_assert_uint_ne(expected_val, read_from_ppu_vram(vram, 0x2400 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2800 + addr_offset));
+	ck_assert_uint_ne(expected_val, read_from_ppu_vram(vram, 0x2C00 + addr_offset));
+}
+
+static void check_vertical_nametable_B_mirroring(struct PpuMemoryMap* vram
+                                                , uint16_t addr_offset
+                                                , uint8_t expected_val)
+{
+	// nametable B is nametable 1 (0x2400) and nametable 3 (0x2C00)
+	ck_assert_uint_ne(expected_val, read_from_ppu_vram(vram, 0x2000 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2400 + addr_offset));
+	ck_assert_uint_ne(expected_val, read_from_ppu_vram(vram, 0x2800 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2C00 + addr_offset));
+}
+
+static void check_single_screen_A_nametable_mirroring(struct PpuMemoryMap* vram
+                                                     , uint16_t addr_offset
+                                                     , uint8_t expected_val)
+{
+	// nametable A is nametable 0 (0x2000) and nametable 1 (0x2400)
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2000 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2400 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2800 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2C00 + addr_offset));
+	// no writes to nametable B should happen too
+	ck_assert_uint_ne(vram->nametable_B[addr_offset]
+	                 , read_from_ppu_vram(vram, 0x2C00 + addr_offset));
+}
+
+static void check_single_screen_B_nametable_mirroring(struct PpuMemoryMap* vram
+                                                     , uint16_t addr_offset
+                                                     , uint8_t expected_val)
+{
+	// nametable A is nametable 0 (0x2000) and nametable 1 (0x2400)
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2000 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2400 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2800 + addr_offset));
+	ck_assert_uint_eq(expected_val, read_from_ppu_vram(vram, 0x2C00 + addr_offset));
+	// no writes to nametable A should happen too
+	ck_assert_uint_ne(vram->nametable_A[addr_offset]
+	                 , read_from_ppu_vram(vram, 0x2400 + addr_offset));
+}
+
 START_TEST (pattern_table_0_writes_lower_bound)
 {
 	write_to_ppu_vram(vram, 0x0000, 0xD1);
@@ -567,11 +639,160 @@ START_TEST (palette_ram_mirror_reads_upper_bound)
 	ck_assert_uint_eq(0xB0, read_from_ppu_vram(vram, 0x3FFF));
 }
 
+START_TEST (nametable_mirroring_horizontal)
+{
+	vram->nametable_0 = &vram->nametable_A;
+	vram->nametable_1 = &vram->nametable_A;
+	vram->nametable_2 = &vram->nametable_B;
+	vram->nametable_3 = &vram->nametable_B;
+
+	memset(vram->nametable_A, 0x01, sizeof(vram->nametable_A));
+	memset(vram->nametable_B, 0x34, sizeof(vram->nametable_B));
+
+	ck_assert_mem_eq((*vram->nametable_0), vram->nametable_A, sizeof(vram->nametable_A));
+	ck_assert_mem_eq((*vram->nametable_1), vram->nametable_A, sizeof(vram->nametable_A));
+	ck_assert_mem_eq((*vram->nametable_2), vram->nametable_B, sizeof(vram->nametable_B));
+	ck_assert_mem_eq((*vram->nametable_3), vram->nametable_B, sizeof(vram->nametable_B));
+}
+
+START_TEST (nametable_mirroring_horizontal_read_writes)
+{
+	vram->nametable_0 = &vram->nametable_A;
+	vram->nametable_1 = &vram->nametable_A;
+	vram->nametable_2 = &vram->nametable_B;
+	vram->nametable_3 = &vram->nametable_B;
+
+	write_to_ppu_vram(vram, 0x2000 + 0x0200, 0x23);
+	write_to_ppu_vram(vram, 0x2400 + 0x0110, 0x28);
+	write_to_ppu_vram(vram, 0x2800 + 0x000F, 0xB0);
+	write_to_ppu_vram(vram, 0x2C00 + 0x001F, 0xBA);
+
+	// helper ck_assert functions
+	check_horizontal_nametable_A_mirroring(vram, 0x0200, 0x23);
+	check_horizontal_nametable_A_mirroring(vram, 0x0110, 0x28);
+	// check other nametable
+	check_horizontal_nametable_B_mirroring(vram, 0x000F, 0xB0);
+	check_horizontal_nametable_B_mirroring(vram, 0x001F, 0xBA);
+}
+
+START_TEST (nametable_mirroring_vertical)
+{
+	vram->nametable_0 = &vram->nametable_A;
+	vram->nametable_1 = &vram->nametable_B;
+	vram->nametable_2 = &vram->nametable_A;
+	vram->nametable_3 = &vram->nametable_B;
+
+	memset(vram->nametable_A, 0x02, sizeof(vram->nametable_A));
+	memset(vram->nametable_B, 0x13, sizeof(vram->nametable_B));
+
+	ck_assert_mem_eq((*vram->nametable_0), vram->nametable_A, sizeof(vram->nametable_A));
+	ck_assert_mem_eq((*vram->nametable_1), vram->nametable_B, sizeof(vram->nametable_B));
+	ck_assert_mem_eq((*vram->nametable_2), vram->nametable_A, sizeof(vram->nametable_A));
+	ck_assert_mem_eq((*vram->nametable_3), vram->nametable_B, sizeof(vram->nametable_B));
+}
+
+START_TEST (nametable_mirroring_vertical_read_writes)
+{
+	vram->nametable_0 = &vram->nametable_A;
+	vram->nametable_1 = &vram->nametable_B;
+	vram->nametable_2 = &vram->nametable_A;
+	vram->nametable_3 = &vram->nametable_B;
+
+	write_to_ppu_vram(vram, 0x2000 + 0x0200, 0x23);
+	write_to_ppu_vram(vram, 0x2800 + 0x0000, 0x17);
+	write_to_ppu_vram(vram, 0x2400 + 0x0110, 0x4C);
+	write_to_ppu_vram(vram, 0x2C00 + 0x0301, 0x88);
+
+	// helper ck_assert functions
+	check_vertical_nametable_A_mirroring(vram, 0x0200, 0x23);
+	check_vertical_nametable_A_mirroring(vram, 0x0000, 0x17);
+	// check other nametable
+	check_vertical_nametable_B_mirroring(vram, 0x0110, 0x4C);
+	check_vertical_nametable_B_mirroring(vram, 0x0301, 0x88);
+}
+
+START_TEST (nametable_mirroring_single_screen_A)
+{
+	vram->nametable_0 = &vram->nametable_A;
+	vram->nametable_1 = &vram->nametable_A;
+	vram->nametable_2 = &vram->nametable_A;
+	vram->nametable_3 = &vram->nametable_A;
+
+	memset(vram->nametable_A, 0xF0, sizeof(vram->nametable_A));
+	memset(vram->nametable_B, 0xFF, sizeof(vram->nametable_B));
+
+	ck_assert_mem_eq((*vram->nametable_0), vram->nametable_A, sizeof(vram->nametable_A));
+	ck_assert_mem_eq((*vram->nametable_1), vram->nametable_A, sizeof(vram->nametable_A));
+	ck_assert_mem_eq((*vram->nametable_2), vram->nametable_A, sizeof(vram->nametable_A));
+	ck_assert_mem_eq((*vram->nametable_3), vram->nametable_A, sizeof(vram->nametable_A));
+}
+
+START_TEST (nametable_mirroring_single_screen_A_read_writes)
+{
+	vram->nametable_0 = &vram->nametable_A;
+	vram->nametable_1 = &vram->nametable_A;
+	vram->nametable_2 = &vram->nametable_A;
+	vram->nametable_3 = &vram->nametable_A;
+
+	write_to_ppu_vram(vram, 0x2000 + 0x02D0, 0x23);
+	write_to_ppu_vram(vram, 0x2400 + 0x0111, 0x28);
+	write_to_ppu_vram(vram, 0x2800 + 0x000F, 0xB0);
+	write_to_ppu_vram(vram, 0x2C00 + 0x03AF, 0x0A);
+
+	// check nametable 0 writes are mirrored correctly
+	check_single_screen_A_nametable_mirroring(vram, 0x02D0, 0x23);
+	// check nametable 1 writes are mirrored correctly
+	check_single_screen_A_nametable_mirroring(vram, 0x0111, 0x28);
+	// check nametable 2 writes are mirrored correctly
+	check_single_screen_A_nametable_mirroring(vram, 0x000F, 0xB0);
+	// check nametable 3 writes are mirrored correctly
+	check_single_screen_A_nametable_mirroring(vram, 0x03AF, 0x0A);
+}
+
+START_TEST (nametable_mirroring_single_screen_B)
+{
+	vram->nametable_0 = &vram->nametable_B;
+	vram->nametable_1 = &vram->nametable_B;
+	vram->nametable_2 = &vram->nametable_B;
+	vram->nametable_3 = &vram->nametable_B;
+
+	memset(vram->nametable_A, 0xFF, sizeof(vram->nametable_B));
+	memset(vram->nametable_B, 0x0F, sizeof(vram->nametable_B));
+
+	ck_assert_mem_eq((*vram->nametable_0), vram->nametable_B, sizeof(vram->nametable_B));
+	ck_assert_mem_eq((*vram->nametable_1), vram->nametable_B, sizeof(vram->nametable_B));
+	ck_assert_mem_eq((*vram->nametable_2), vram->nametable_B, sizeof(vram->nametable_B));
+	ck_assert_mem_eq((*vram->nametable_3), vram->nametable_B, sizeof(vram->nametable_B));
+}
+
+START_TEST (nametable_mirroring_single_screen_B_read_writes)
+{
+	vram->nametable_0 = &vram->nametable_B;
+	vram->nametable_1 = &vram->nametable_B;
+	vram->nametable_2 = &vram->nametable_B;
+	vram->nametable_3 = &vram->nametable_B;
+
+	write_to_ppu_vram(vram, 0x2000 + 0x0086, 0x02);
+	write_to_ppu_vram(vram, 0x2400 + 0x020C, 0x58);
+	write_to_ppu_vram(vram, 0x2800 + 0x000F, 0x94);
+	write_to_ppu_vram(vram, 0x2C00 + 0x01FF, 0xF8);
+
+	// check nametable 0 writes are mirrored correctly
+	check_single_screen_B_nametable_mirroring(vram, 0x0086, 0x02);
+	// check nametable 1 writes are mirrored correctly
+	check_single_screen_B_nametable_mirroring(vram, 0x020C, 0x58);
+	// check nametable 2 writes are mirrored correctly
+	check_single_screen_B_nametable_mirroring(vram, 0x000F, 0x94);
+	// check nametable 3 writes are mirrored correctly
+	check_single_screen_B_nametable_mirroring(vram, 0x01FF, 0xF8);
+}
+
 
 Suite* ppu_suite(void)
 {
 	Suite* s;
 	TCase* tc_ppu_vram_read_writes;
+	TCase* tc_ppu_rendering;
 
 	s = suite_create("Ppu Tests");
 	tc_ppu_vram_read_writes = tcase_create("VRAM Read/Write Tests");
@@ -652,6 +873,17 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_other_bound_2);
 	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_upper_bound);
 	suite_add_tcase(s, tc_ppu_vram_read_writes);
+	tc_ppu_rendering = tcase_create("PPU Rendering Related Tests");
+	tcase_add_checked_fixture(tc_ppu_rendering, vram_setup, vram_teardown);
+	tcase_add_test(tc_ppu_rendering, nametable_mirroring_horizontal);
+	tcase_add_test(tc_ppu_rendering, nametable_mirroring_horizontal_read_writes);
+	tcase_add_test(tc_ppu_rendering, nametable_mirroring_vertical);
+	tcase_add_test(tc_ppu_rendering, nametable_mirroring_vertical_read_writes);
+	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_A);
+	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_A_read_writes);
+	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_B);
+	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_B_read_writes);
+	suite_add_tcase(s, tc_ppu_rendering);
 
 	return s;
 }
