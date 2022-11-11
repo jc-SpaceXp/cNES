@@ -40,6 +40,73 @@ void emu_usuage(const char* program_name)
 	fprintf(stderr, "\t-u UI_SCALE_FACTOR\n\tScaling factor (integer) to be applied to the displayed output\n");
 }
 
+void process_player_1_input(SDL_Event e, Cpu6502* cpu)
+{
+	// detect player 1 key presses
+	switch (e.type) {
+	case SDL_KEYDOWN:
+		switch (e.key.keysym.sym) {
+		case SDLK_m:
+			cpu->player_1_controller |= A_BUTTON;
+			break;
+		case SDLK_n:
+			cpu->player_1_controller |= B_BUTTON;
+			break;
+		case SDLK_q:
+			cpu->player_1_controller |= SELECT_BUTTON;
+			break;
+		case SDLK_e:
+			cpu->player_1_controller |= START_BUTTON;
+			break;
+		case SDLK_w:
+			cpu->player_1_controller |= UP_BUTTON;
+			break;
+		case SDLK_s:
+			cpu->player_1_controller |= DOWN_BUTTON;
+			break;
+		case SDLK_a:
+			cpu->player_1_controller |= LEFT_BUTTON;
+			break;
+		case SDLK_d:
+			cpu->player_1_controller |= RIGHT_BUTTON;
+			break;
+		default:
+			break;
+		}
+		break; // SDL_KEYDOWN
+	case SDL_KEYUP:
+		switch (e.key.keysym.sym) {
+		case SDLK_m:
+			cpu->player_1_controller &= ~A_BUTTON;
+			break;
+		case SDLK_n:
+			cpu->player_1_controller &= ~B_BUTTON;
+			break;
+		case SDLK_q:
+			cpu->player_1_controller &= ~SELECT_BUTTON;
+			break;
+		case SDLK_e:
+			cpu->player_1_controller &= ~START_BUTTON;
+			break;
+		case SDLK_w:
+			cpu->player_1_controller &= ~UP_BUTTON;
+			break;
+		case SDLK_s:
+			cpu->player_1_controller &= ~DOWN_BUTTON;
+			break;
+		case SDLK_a:
+			cpu->player_1_controller &= ~LEFT_BUTTON;
+			break;
+		case SDLK_d:
+			cpu->player_1_controller &= ~RIGHT_BUTTON;
+			break;
+		default:
+			break;
+		}
+		break; // SDL_KEYUP
+	}
+}
+
 int main(int argc, char** argv)
 {
 	int ret = -1;
@@ -155,72 +222,7 @@ int main(int argc, char** argv)
 					if (e.type == SDL_QUIT) {
 						quit = 1;
 					}
-
-					// detect player 1 key presses (roll into its own function)
-					switch (e.type) {
-					case SDL_KEYDOWN:
-						// store into array and set to 1
-						switch (e.key.keysym.sym) {
-						case SDLK_m:
-							cpu->player_1_controller |= A_BUTTON;
-							break;
-						case SDLK_n:
-							cpu->player_1_controller |= B_BUTTON;
-							break;
-						case SDLK_q:
-							cpu->player_1_controller |= SELECT_BUTTON;
-							break;
-						case SDLK_e:
-							cpu->player_1_controller |= START_BUTTON;
-							break;
-						case SDLK_w:
-							cpu->player_1_controller |= UP_BUTTON;
-							break;
-						case SDLK_s:
-							cpu->player_1_controller |= DOWN_BUTTON;
-							break;
-						case SDLK_a:
-							cpu->player_1_controller |= LEFT_BUTTON;
-							break;
-						case SDLK_d:
-							cpu->player_1_controller |= RIGHT_BUTTON;
-							break;
-						default:
-							break;
-						}
-						break;
-					case SDL_KEYUP:
-						// store into array and set to 0
-						switch (e.key.keysym.sym) {
-						case SDLK_m:
-							cpu->player_1_controller &= ~A_BUTTON;
-							break;
-						case SDLK_n:
-							cpu->player_1_controller &= ~B_BUTTON;
-							break;
-						case SDLK_q:
-							cpu->player_1_controller &= ~SELECT_BUTTON;
-							break;
-						case SDLK_e:
-							cpu->player_1_controller &= ~START_BUTTON;
-							break;
-						case SDLK_w:
-							cpu->player_1_controller &= ~UP_BUTTON;
-							break;
-						case SDLK_s:
-							cpu->player_1_controller &= ~DOWN_BUTTON;
-							break;
-						case SDLK_a:
-							cpu->player_1_controller &= ~LEFT_BUTTON;
-							break;
-						case SDLK_d:
-							cpu->player_1_controller &= ~RIGHT_BUTTON;
-							break;
-						default:
-							break;
-						}
-						break;
-					}
+					process_player_1_input(e, cpu);
 				}
 			}
 			clock_all_units(cpu, ppu, nes_screen, no_logging);
