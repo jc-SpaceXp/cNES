@@ -876,6 +876,23 @@ static void inc_horz_scroll(CpuPpuShare* cpu_ppu_io)
 	}
 }
 
+// unit testable versions to get x and y offsets based on coarse x and y
+// required for debugging all 4 nametables, we sweep through all coarse x and corase y
+// offsets to "print" all 4 nametables to the screen
+uint16_t nametable_x_offset_address(const unsigned coarse_x)
+{
+	// coarse x is between 0-63, values past 31 are mirrors of 0-31
+	return (coarse_x & 31);
+}
+
+uint16_t nametable_y_offset_address(const unsigned coarse_y)
+{
+	// coarse y is between 0-59, values past 29 are mirrors of 0-29
+	// each increment of coarse y, adds 0x0020 to the offset
+	return (coarse_y % 30) << 5;
+}
+
+
 static void fetch_nt_byte(Ppu2C02 *p)
 {
 	p->nt_addr_tmp = 0x2000 | (p->vram_addr & 0x0FFF);

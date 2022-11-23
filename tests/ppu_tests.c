@@ -787,6 +787,22 @@ START_TEST (nametable_mirroring_single_screen_B_read_writes)
 	check_single_screen_B_nametable_mirroring(vram, 0x01FF, 0xF8);
 }
 
+START_TEST (nametable_x_offset_is_valid_for_all_coarse_x)
+{
+	// coarse x can be between 0-63 to refer to any x pos
+	// of a tile in any of the 4 nametable regions, offset
+	// address is relative to the closest nametable region
+	// (e.g. 0x2000, 0x2400 etc.)
+	ck_assert_uint_eq(nametable_x_offset_address(_i), _i % 32);
+}
+
+START_TEST (nametable_y_offset_is_valid_for_all_coarse_y)
+{
+	// coarse y can be between 0-59 to refer to any y pos
+	// of a tile in any of the 4 nametable regions
+	ck_assert_uint_eq(nametable_y_offset_address(_i), (_i % 30) << 5);
+}
+
 
 Suite* ppu_suite(void)
 {
@@ -883,6 +899,8 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_A_read_writes);
 	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_B);
 	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_B_read_writes);
+	tcase_add_loop_test(tc_ppu_rendering, nametable_x_offset_is_valid_for_all_coarse_x, 0, 63);
+	tcase_add_loop_test(tc_ppu_rendering, nametable_y_offset_is_valid_for_all_coarse_y, 0, 59);
 	suite_add_tcase(s, tc_ppu_rendering);
 
 	return s;
