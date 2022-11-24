@@ -893,7 +893,7 @@ uint16_t nametable_y_offset_address(const unsigned coarse_y)
 }
 
 
-static void fetch_nt_byte(Ppu2C02 *p)
+void fetch_nt_byte(Ppu2C02 *p)
 {
 	p->nt_addr_tmp = 0x2000 | (p->vram_addr & 0x0FFF);
 	p->nt_byte = read_from_ppu_vram(&p->vram, p->nt_addr_tmp);
