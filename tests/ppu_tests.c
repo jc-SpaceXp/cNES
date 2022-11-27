@@ -841,7 +841,11 @@ START_TEST (fetch_nametable_byte_nametable_0_addr_no_fine_y)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	ppu->vram_addr = 0x0221;
+	unsigned fine_y = 0;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 17;
+	ppu->vram_addr = nametable_scroll_offsets_to_vram_address(0x2000, fine_y
+	                                                         , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x21);
 
 	fetch_nt_byte(ppu);
@@ -855,12 +859,32 @@ START_TEST (fetch_nametable_byte_nametable_0_addr_fine_y_is_ignored)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	ppu->vram_addr = 0x3221;
+	unsigned fine_y = 3;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 17;
+	ppu->vram_addr = nametable_scroll_offsets_to_vram_address(0x2000, fine_y
+	                                                         , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x21);
 
 	fetch_nt_byte(ppu);
 
 	ck_assert_uint_eq(ppu->nt_byte, 0x21);
+}
+
+START_TEST (fetch_nametable_byte_nametable_0_addr_in_attribute_table)
+{
+	// Possible that the current vram address is in the attribute table
+	// Still must read the attribute table byte as if it was in the nametable section
+	ppu->vram.nametable_0 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
+	ppu->vram_addr = 0x03DC;
+	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xAC);
+
+	fetch_nt_byte(ppu);
+
+	ck_assert_uint_eq(ppu->nt_byte, 0xAC);
 }
 
 START_TEST (fetch_nametable_byte_nametable_1_addr_no_fine_y)
@@ -870,6 +894,11 @@ START_TEST (fetch_nametable_byte_nametable_1_addr_no_fine_y)
 	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
 	ppu->vram_addr = 0x06B1;
+	unsigned fine_y = 0;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 19;
+	ppu->vram_addr = nametable_scroll_offsets_to_vram_address(0x2400, fine_y
+	                                                         , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xB1);
 
 	fetch_nt_byte(ppu);
@@ -883,12 +912,32 @@ START_TEST (fetch_nametable_byte_nametable_1_addr_fine_y_is_ignored)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	ppu->vram_addr = 0x16B1;
+	unsigned fine_y = 1;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 19;
+	ppu->vram_addr = nametable_scroll_offsets_to_vram_address(0x2400, fine_y
+	                                                         , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xB1);
 
 	fetch_nt_byte(ppu);
 
 	ck_assert_uint_eq(ppu->nt_byte, 0xB1);
+}
+
+START_TEST (fetch_nametable_byte_nametable_1_addr_in_attribute_table)
+{
+	// Possible that the current vram address is in the attribute table
+	// Still must read the attribute table byte as if it was in the nametable section
+	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
+	ppu->vram_addr = 0x07C1;
+	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xA1);
+
+	fetch_nt_byte(ppu);
+
+	ck_assert_uint_eq(ppu->nt_byte, 0xA1);
 }
 
 START_TEST (fetch_nametable_byte_nametable_2_addr_no_fine_y)
@@ -897,7 +946,11 @@ START_TEST (fetch_nametable_byte_nametable_2_addr_no_fine_y)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	ppu->vram_addr = 0x0801;
+	unsigned fine_y = 0;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 0;
+	ppu->vram_addr = nametable_scroll_offsets_to_vram_address(0x2800, fine_y
+	                                                         , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x80);
 
 	fetch_nt_byte(ppu);
@@ -911,12 +964,32 @@ START_TEST (fetch_nametable_byte_nametable_2_addr_fine_y_is_ignored)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	ppu->vram_addr = 0x2801;
+	unsigned fine_y = 2;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 0;
+	ppu->vram_addr = nametable_scroll_offsets_to_vram_address(0x2800, fine_y
+	                                                         , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x80);
 
 	fetch_nt_byte(ppu);
 
 	ck_assert_uint_eq(ppu->nt_byte, 0x80);
+}
+
+START_TEST (fetch_nametable_byte_nametable_2_addr_in_attribute_table)
+{
+	// Possible that the current vram address is in the attribute table
+	// Still must read the attribute table byte as if it was in the nametable section
+	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
+	ppu->vram_addr = 0x0BEF;
+	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xAF);
+
+	fetch_nt_byte(ppu);
+
+	ck_assert_uint_eq(ppu->nt_byte, 0xAF);
 }
 
 START_TEST (fetch_nametable_byte_nametable_3_addr_no_fine_y)
@@ -925,7 +998,11 @@ START_TEST (fetch_nametable_byte_nametable_3_addr_no_fine_y)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	ppu->vram_addr = 0x0EED;
+	unsigned fine_y = 0;
+	unsigned coarse_x = 13;
+	unsigned coarse_y = 23;
+	ppu->vram_addr = nametable_scroll_offsets_to_vram_address(0x2C00, fine_y
+	                                                         , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xED);
 
 	fetch_nt_byte(ppu);
@@ -939,12 +1016,32 @@ START_TEST (fetch_nametable_byte_nametable_3_addr_fine_y_is_ignored)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	ppu->vram_addr = 0x7EED;
+	unsigned fine_y = 7;
+	unsigned coarse_x = 13;
+	unsigned coarse_y = 23;
+	ppu->vram_addr = nametable_scroll_offsets_to_vram_address(0x2C00, fine_y
+	                                                         , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xED);
 
 	fetch_nt_byte(ppu);
 
 	ck_assert_uint_eq(ppu->nt_byte, 0xED);
+}
+
+START_TEST (fetch_nametable_byte_nametable_3_addr_in_attribute_table)
+{
+	// Possible that the current vram address is in the attribute table
+	// Still must read the attribute table byte as if it was in the nametable section
+	ppu->vram.nametable_0 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
+	ppu->vram_addr = 0x0FEB;
+	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xAD);
+
+	fetch_nt_byte(ppu);
+
+	ck_assert_uint_eq(ppu->nt_byte, 0xAD);
 }
 
 START_TEST (vram_encoder_nametable_0_no_offset)
@@ -1410,12 +1507,16 @@ Suite* ppu_suite(void)
 	tcase_add_loop_test(tc_ppu_rendering, nametable_y_offset_is_valid_for_all_coarse_y, 0, 59);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_0_addr_no_fine_y);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_0_addr_fine_y_is_ignored);
+	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_0_addr_in_attribute_table);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_1_addr_no_fine_y);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_1_addr_fine_y_is_ignored);
+	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_1_addr_in_attribute_table);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_2_addr_no_fine_y);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_2_addr_fine_y_is_ignored);
+	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_2_addr_in_attribute_table);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_no_fine_y);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_fine_y_is_ignored);
+	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_in_attribute_table);
 	suite_add_tcase(s, tc_ppu_rendering);
 	tc_ppu_unit_test_helpers = tcase_create("PPU Unit Test Helper Functions");
 	tcase_add_checked_fixture(tc_ppu_unit_test_helpers, setup, teardown);
