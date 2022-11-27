@@ -38,6 +38,38 @@ static void vram_teardown(void)
 	free(vram);
 }
 
+/* When the PPU is rendering, its internal vram (and temporary vram) address registers
+ * are formatted as follows: 0yyy NNYY YYYX XXXX
+ *
+ *   where y is fine y
+ *         NN is the base nametbale address, 0 ($2000), 1($2400), 2 ($2800), 3 ($2C00)
+ *         Y is Coarse Y, tile offset in Y direction, incremented every 8 pixels down
+ *         X is Coarse X, tile offset in X direction, incremented every 8 pixels across
+ *
+ * Function is needed to test functions that use this internal encoding of the vram
+ * address
+ *
+ * Much easier to build the correct addresses from this function, rahter than
+ * manually masking and shifting the nametable address
+ */
+static uint16_t nametable_scroll_offsets_to_vram_address(const unsigned nametable_address
+                                                        , unsigned int fine_y
+                                                        , const unsigned int coarse_x
+                                                        , const unsigned int coarse_y)
+{
+	// Keep fine y maxed to 7 when out of bounds
+	// otherwise it just takes on the lowest 3 bits
+	if (fine_y > 7) { fine_y = 7; }
+
+	// minus 0x2000 from base nametable address, e.g. 0x2000, 0x2400 etc minus 0x2000
+	uint16_t vram_address = nametable_address & 0x0C00; // sets NN bits
+	vram_address |= (fine_y & 0x07) << 12;
+	vram_address |= (coarse_y % 30) << 5;
+	vram_address |= coarse_x & 0x1F;
+
+	return vram_address;
+}
+
 static void check_horizontal_nametable_A_mirroring(struct PpuMemoryMap* vram
                                                   , uint16_t addr_offset
                                                   , uint8_t expected_val)
@@ -915,12 +947,375 @@ START_TEST (fetch_nametable_byte_nametable_3_addr_fine_y_is_ignored)
 	ck_assert_uint_eq(ppu->nt_byte, 0xED);
 }
 
+START_TEST (vram_encoder_nametable_0_no_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x0000, nametable_scroll_offsets_to_vram_address(0x2000, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_0_coarse_x_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x0001, nametable_scroll_offsets_to_vram_address(0x23FF, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_0_coarse_x_y_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 2;
+	unsigned coarse_y = 1;
+
+	ck_assert_uint_eq(0x0022, nametable_scroll_offsets_to_vram_address(0x2008, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_0_coarse_x_y_offset_max)
+{
+	// address before attribute bytes (0x23C0 onwards)
+	unsigned fine_y = 0;
+	unsigned coarse_x = 31;
+	unsigned coarse_y = 29;
+
+	ck_assert_uint_eq(0x03BF, nametable_scroll_offsets_to_vram_address(0x2112, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_0_fine_y_only)
+{
+	unsigned fine_y = 7;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x7000, nametable_scroll_offsets_to_vram_address(0x3000, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_0_all_offsets)
+{
+	unsigned fine_y = 4;
+	unsigned coarse_x = 12;
+	unsigned coarse_y = 5;
+
+	ck_assert_uint_eq(0x40AC, nametable_scroll_offsets_to_vram_address(0x0000, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_0_coarse_x_out_of_bounds)
+{
+	// address shouldn't bleed into the adjacent nametable!
+	unsigned fine_y = 0;
+	unsigned coarse_x = 40; // 8 * 1
+	unsigned coarse_y = 3;
+
+	ck_assert_uint_eq(0x0068, nametable_scroll_offsets_to_vram_address(0x239B, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_0_coarse_y_out_of_bounds)
+{
+	// address shouldn't bleed into the attribute tables!
+	unsigned fine_y = 0;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 38; // 8 * 0x0020
+
+	ck_assert_uint_eq(0x0100, nametable_scroll_offsets_to_vram_address(0x239B, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_1_no_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x0400, nametable_scroll_offsets_to_vram_address(0x0400, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_1_coarse_x_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 4;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x0404, nametable_scroll_offsets_to_vram_address(0x24FF, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_1_coarse_x_y_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 2;
+
+	ck_assert_uint_eq(0x0441, nametable_scroll_offsets_to_vram_address(0x2778, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_1_coarse_x_y_offset_max)
+{
+	// address before attribute bytes (0x23C0 onwards)
+	unsigned fine_y = 0;
+	unsigned coarse_x = 31;
+	unsigned coarse_y = 29;
+
+	ck_assert_uint_eq(0x07BF, nametable_scroll_offsets_to_vram_address(0x2512, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_1_fine_y_only)
+{
+	unsigned fine_y = 7;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x7400, nametable_scroll_offsets_to_vram_address(0x3400, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_1_all_offsets)
+{
+	unsigned fine_y = 4;
+	unsigned coarse_x = 12;
+	unsigned coarse_y = 5;
+
+	ck_assert_uint_eq(0x44AC, nametable_scroll_offsets_to_vram_address(0x2400, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_1_fine_y_out_of_bounds)
+{
+	unsigned fine_y = 100; // should be restricted to 7
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x7400, nametable_scroll_offsets_to_vram_address(0x2470, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_1_coarse_x_out_of_bounds)
+{
+	// address shouldn't bleed into the adjacent nametable!
+	unsigned fine_y = 0;
+	unsigned coarse_x = 39; // 7 * 1
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x0407, nametable_scroll_offsets_to_vram_address(0x2687, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_1_coarse_y_out_of_bounds)
+{
+	// address shouldn't bleed into the attribute tables!
+	unsigned fine_y = 0;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 39; // 9 * 0x0020
+
+	ck_assert_uint_eq(0x0520, nametable_scroll_offsets_to_vram_address(0x2439, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_2_no_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x0800, nametable_scroll_offsets_to_vram_address(0x0800, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_2_coarse_x_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 31;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x081F, nametable_scroll_offsets_to_vram_address(0x281F, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_2_coarse_x_y_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 4;
+	unsigned coarse_y = 10;
+
+	ck_assert_uint_eq(0x0944, nametable_scroll_offsets_to_vram_address(0x2878, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_2_coarse_x_y_offset_max)
+{
+	// address before attribute bytes (0x23C0 onwards)
+	unsigned fine_y = 0;
+	unsigned coarse_x = 31;
+	unsigned coarse_y = 29;
+
+	ck_assert_uint_eq(0x0BBF, nametable_scroll_offsets_to_vram_address(0x2812, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_2_fine_y_only)
+{
+	unsigned fine_y = 3;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x3800, nametable_scroll_offsets_to_vram_address(0x3800, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_2_all_offsets)
+{
+	unsigned fine_y = 4;
+	unsigned coarse_x = 11;
+	unsigned coarse_y = 5;
+
+	ck_assert_uint_eq(0x48AB, nametable_scroll_offsets_to_vram_address(0x2900, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_2_fine_y_out_of_bounds)
+{
+	unsigned fine_y = 15; // should be restricted to 7
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x7800, nametable_scroll_offsets_to_vram_address(0x2A15, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_2_coarse_x_out_of_bounds)
+{
+	// address shouldn't bleed into the adjacent nametable!
+	unsigned fine_y = 0;
+	unsigned coarse_x = 42; // 10 * 1
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x080A, nametable_scroll_offsets_to_vram_address(0x2A47, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_2_coarse_y_out_of_bounds)
+{
+	// address shouldn't bleed into the attribute tables!
+	unsigned fine_y = 0;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 41; // 11 * 0x0020
+
+	ck_assert_uint_eq(0x0960, nametable_scroll_offsets_to_vram_address(0x2841, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_3_no_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x0C00, nametable_scroll_offsets_to_vram_address(0x0C00, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_3_coarse_x_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 13;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x0C0D, nametable_scroll_offsets_to_vram_address(0x2D0D, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_3_coarse_x_y_offset)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 11;
+	unsigned coarse_y = 12;
+
+	ck_assert_uint_eq(0x0D8B, nametable_scroll_offsets_to_vram_address(0x2C78, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_3_coarse_x_y_offset_max)
+{
+	// address before attribute bytes (0x23C0 onwards)
+	unsigned fine_y = 0;
+	unsigned coarse_x = 31;
+	unsigned coarse_y = 29;
+
+	ck_assert_uint_eq(0x0FBF, nametable_scroll_offsets_to_vram_address(0x2C12, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_3_fine_y_only)
+{
+	unsigned fine_y = 1;
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x1C00, nametable_scroll_offsets_to_vram_address(0x3C11, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_3_all_offsets)
+{
+	unsigned fine_y = 6;
+	unsigned coarse_x = 21;
+	unsigned coarse_y = 3;
+
+	ck_assert_uint_eq(0x6C75, nametable_scroll_offsets_to_vram_address(0x2D70, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_3_fine_y_out_of_bounds)
+{
+	unsigned fine_y = 31; // should be restricted to 7
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x7C00, nametable_scroll_offsets_to_vram_address(0x2D15, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_3_coarse_x_out_of_bounds)
+{
+	// address shouldn't bleed into the adjacent nametable!
+	unsigned fine_y = 0;
+	unsigned coarse_x = 51; // 19 * 1
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x0C13, nametable_scroll_offsets_to_vram_address(0x2D47, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
+START_TEST (vram_encoder_nametable_3_coarse_y_out_of_bounds)
+{
+	// address shouldn't bleed into the attribute tables!
+	unsigned fine_y = 0;
+	unsigned coarse_x = 3;
+	unsigned coarse_y = 31; // 2 * 0x0020
+
+	ck_assert_uint_eq(0x0C23, nametable_scroll_offsets_to_vram_address(0x2D41, fine_y
+	                                                                  , coarse_x, coarse_y));
+}
+
 
 Suite* ppu_suite(void)
 {
 	Suite* s;
 	TCase* tc_ppu_vram_read_writes;
 	TCase* tc_ppu_rendering;
+	TCase* tc_ppu_unit_test_helpers;
 
 	s = suite_create("Ppu Tests");
 	tc_ppu_vram_read_writes = tcase_create("VRAM Read/Write Tests");
@@ -1022,6 +1417,44 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_no_fine_y);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_fine_y_is_ignored);
 	suite_add_tcase(s, tc_ppu_rendering);
+	tc_ppu_unit_test_helpers = tcase_create("PPU Unit Test Helper Functions");
+	tcase_add_checked_fixture(tc_ppu_unit_test_helpers, setup, teardown);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0_no_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0_coarse_x_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0_coarse_x_y_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0_coarse_x_y_offset_max);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0_fine_y_only);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0_all_offsets);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0_coarse_x_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0_coarse_y_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1_no_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1_coarse_x_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1_coarse_x_y_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1_coarse_x_y_offset_max);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1_fine_y_only);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1_all_offsets);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1_fine_y_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1_coarse_x_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1_coarse_y_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2_no_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2_coarse_x_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2_coarse_x_y_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2_coarse_x_y_offset_max);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2_fine_y_only);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2_all_offsets);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2_fine_y_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2_coarse_x_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2_coarse_y_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_no_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_coarse_x_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_coarse_x_y_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_coarse_x_y_offset_max);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_fine_y_only);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_all_offsets);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_fine_y_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_coarse_x_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_coarse_y_out_of_bounds);
+	suite_add_tcase(s, tc_ppu_unit_test_helpers);
 
 	return s;
 }
