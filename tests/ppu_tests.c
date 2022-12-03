@@ -70,6 +70,31 @@ static uint16_t nametable_scroll_offsets_to_vram_address(const unsigned nametabl
 	return vram_address;
 }
 
+/* Calculating the attribute address from Coarse X/Y is a little different
+ * The encoding of the vram address changes from:
+ *   0yyy NNYY YYYX XXXX
+ * to
+ *   0010 NN11 11YY YXXX
+ *
+ * Where
+ *   Coarse X's lowest two bits are shifted out
+ *   Coarse Y & 0x0C merges into Coarse X (upper two bits from the shift out)
+ *   Coarse Y's upper bit is shifted down by 4 bits (as are the other Coarse Y bits too)
+ *   fine y is ignored
+ */
+static uint16_t nametable_scroll_offsets_to_attribute_address(const unsigned nametable_address
+                                                             , const unsigned int coarse_x
+                                                             , const unsigned int coarse_y)
+{
+	// minus 0x2000 from base nametable address, e.g. 0x2000, 0x2400 etc minus 0x2000
+	uint16_t attribute_address = nametable_address & 0x0C00; // sets NN bits
+	attribute_address |= 0x23C0;  // hard-coded attribute address
+	attribute_address |= ((coarse_y % 30) & 0x1C) << 1;
+	attribute_address |= (coarse_x & 0x1F) >> 2;
+
+	return attribute_address;
+}
+
 static void check_horizontal_nametable_A_mirroring(struct PpuMemoryMap* vram
                                                   , uint16_t addr_offset
                                                   , uint8_t expected_val)
@@ -1406,6 +1431,190 @@ START_TEST (vram_encoder_nametable_3_coarse_y_out_of_bounds)
 	                                                                  , coarse_x, coarse_y));
 }
 
+START_TEST (attribute_address_encoder_nametable_0_no_offset)
+{
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x23C0, nametable_scroll_offsets_to_attribute_address(0x2001
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_0_random_offset)
+{
+	unsigned coarse_x = 20;
+	unsigned coarse_y = 7;
+
+	ck_assert_uint_eq(0x23CD, nametable_scroll_offsets_to_attribute_address(0x201F
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_0_coarse_x_out_of_bounds_wraps_around)
+{
+	unsigned coarse_x = 15 + 32;
+	unsigned coarse_y = 24;
+
+	ck_assert_uint_eq(0x23F3, nametable_scroll_offsets_to_attribute_address(0x2200
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_0_coarse_y_out_of_bounds_wraps_around)
+{
+	unsigned coarse_x = 3;
+	unsigned coarse_y = 16 + 30;
+
+	ck_assert_uint_eq(0x23E0, nametable_scroll_offsets_to_attribute_address(0x2201
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_0_tile_sample_within_at_byte)
+{
+	// indexes are: top left, top right, bottom left and bottom right tiles
+	unsigned coarse_x[4] = {1, 3, 0, 2};
+	unsigned coarse_y[4] = {0, 1, 2, 3};
+
+	ck_assert_uint_eq(0x23C0, nametable_scroll_offsets_to_attribute_address(0x2001
+	                                                                       , coarse_x[_i], coarse_y[_i]));
+}
+
+START_TEST (attribute_address_encoder_nametable_1_no_offset)
+{
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x27C0, nametable_scroll_offsets_to_attribute_address(0x2400
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_1_random_offset)
+{
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 28;
+
+	ck_assert_uint_eq(0x27F8, nametable_scroll_offsets_to_attribute_address(0x241F
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_1_coarse_x_out_of_bounds_wraps_around)
+{
+	unsigned coarse_x = 10 + 32;
+	unsigned coarse_y = 11;
+
+	ck_assert_uint_eq(0x27D2, nametable_scroll_offsets_to_attribute_address(0x27FF
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_1_coarse_y_out_of_bounds_wraps_around)
+{
+	unsigned coarse_x = 29;
+	unsigned coarse_y = 12 + 30;
+
+	ck_assert_uint_eq(0x27DF, nametable_scroll_offsets_to_attribute_address(0x2601
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_1_tile_sample_within_at_byte)
+{
+	// indexes are: top left, top right, bottom left and bottom right tiles
+	unsigned coarse_x[4] = {16, 19, 17, 18};
+	unsigned coarse_y[4] = {5, 4, 6, 7};
+
+	ck_assert_uint_eq(0x27CC, nametable_scroll_offsets_to_attribute_address(0x240D
+	                                                                       , coarse_x[_i], coarse_y[_i]));
+}
+
+START_TEST (attribute_address_encoder_nametable_2_no_offset)
+{
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x2BC0, nametable_scroll_offsets_to_attribute_address(0x1800
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_2_random_offset)
+{
+	unsigned coarse_x = 13;
+	unsigned coarse_y = 13;
+
+	ck_assert_uint_eq(0x2BDB, nametable_scroll_offsets_to_attribute_address(0x291F
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_2_coarse_x_out_of_bounds_wraps_around)
+{
+	unsigned coarse_x = 5 + 32;
+	unsigned coarse_y = 26;
+
+	ck_assert_uint_eq(0x2BF1, nametable_scroll_offsets_to_attribute_address(0x3A00
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_2_coarse_y_out_of_bounds_wraps_around)
+{
+	unsigned coarse_x = 18;
+	unsigned coarse_y = 17 + 30;
+
+	ck_assert_uint_eq(0x2BE4, nametable_scroll_offsets_to_attribute_address(0x2BB1
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_2_tile_sample_within_at_byte)
+{
+	// indexes are: top left, top right, bottom left and bottom right tiles
+	unsigned coarse_x[4] = {24, 27, 25, 26};
+	unsigned coarse_y[4] = {9, 9, 10, 11};
+
+	ck_assert_uint_eq(0x2BD6, nametable_scroll_offsets_to_attribute_address(0x2812
+	                                                                       , coarse_x[_i], coarse_y[_i]));
+}
+
+START_TEST (attribute_address_encoder_nametable_3_no_offset)
+{
+	unsigned coarse_x = 0;
+	unsigned coarse_y = 0;
+
+	ck_assert_uint_eq(0x2FC0, nametable_scroll_offsets_to_attribute_address(0x2C00
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_3_random_offset)
+{
+	unsigned coarse_x = 8;
+	unsigned coarse_y = 29;
+
+	ck_assert_uint_eq(0x2FFA, nametable_scroll_offsets_to_attribute_address(0x2C3F
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_3_coarse_x_out_of_bounds_wraps_around)
+{
+	unsigned coarse_x = 16 + 32;
+	unsigned coarse_y = 6;
+
+	ck_assert_uint_eq(0x2FCC, nametable_scroll_offsets_to_attribute_address(0x2FFF
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_3_coarse_y_out_of_bounds_wraps_around)
+{
+	unsigned coarse_x = 24;
+	unsigned coarse_y = 1 + 30;
+
+	ck_assert_uint_eq(0x2FC6, nametable_scroll_offsets_to_attribute_address(0x2DE1
+	                                                                       , coarse_x, coarse_y));
+}
+
+START_TEST (attribute_address_encoder_nametable_3_tile_sample_within_at_byte)
+{
+	// indexes are: top left, top right, bottom left and bottom right tiles
+	unsigned coarse_x[4] = {16, 18, 17, 18};
+	unsigned coarse_y[4] = {12, 13, 15, 14};
+
+	ck_assert_uint_eq(0x2FDC, nametable_scroll_offsets_to_attribute_address(0x0C0D
+	                                                                       , coarse_x[_i], coarse_y[_i]));
+}
+
 
 Suite* ppu_suite(void)
 {
@@ -1555,6 +1764,26 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_fine_y_out_of_bounds);
 	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_coarse_x_out_of_bounds);
 	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3_coarse_y_out_of_bounds);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_0_no_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_0_random_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_0_coarse_x_out_of_bounds_wraps_around);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_0_coarse_y_out_of_bounds_wraps_around);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_0_tile_sample_within_at_byte, 0, 3);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_1_no_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_1_random_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_1_coarse_x_out_of_bounds_wraps_around);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_1_coarse_y_out_of_bounds_wraps_around);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_1_tile_sample_within_at_byte, 0, 3);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_2_no_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_2_random_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_2_coarse_x_out_of_bounds_wraps_around);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_2_coarse_y_out_of_bounds_wraps_around);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_2_tile_sample_within_at_byte, 0, 3);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_no_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_random_offset);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_coarse_x_out_of_bounds_wraps_around);
+	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_coarse_y_out_of_bounds_wraps_around);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_tile_sample_within_at_byte, 0, 3);
 	suite_add_tcase(s, tc_ppu_unit_test_helpers);
 
 	return s;
