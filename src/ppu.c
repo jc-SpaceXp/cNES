@@ -922,7 +922,7 @@ void fetch_nt_byte(Ppu2C02 *p)
  * So we increment the attribute address in either the x or y direction once
  * we've passed 4 tiles in those directions
  */
-static void fetch_at_byte(Ppu2C02 *p)
+void fetch_at_byte(Ppu2C02 *p)
 {
 	p->at_latch = read_from_ppu_vram(&p->vram, 0x23C0 | (p->vram_addr & 0x0C00) | ((p->vram_addr >> 4) & 0x38) | ((p->vram_addr >> 2) & 0x07));
 }

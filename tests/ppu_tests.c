@@ -1615,6 +1615,98 @@ START_TEST (attribute_address_encoder_nametable_3_tile_sample_within_at_byte)
 	                                                                         , coarse_x[_i], coarse_y[_i]));
 }
 
+START_TEST (fetch_attribute_byte_nametable_0_random_scroll_offsets)
+{
+	unsigned fine_y = 0;
+	unsigned coarse_x = 4;
+	unsigned coarse_y = 20;
+	uint16_t attribute_addr = attribute_address_from_nametable_scroll_offsets(0x2000
+	                                                                         , coarse_x
+	                                                                         , coarse_y);
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2000, fine_y
+	                                                           , coarse_x, coarse_y);
+	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
+	write_to_ppu_vram(&ppu->vram, attribute_addr, 0xED);
+
+
+	fetch_at_byte(ppu);
+
+
+	ck_assert_uint_eq(0xED, ppu->at_latch);
+}
+
+START_TEST (fetch_attribute_byte_nametable_1_random_scroll_offsets)
+{
+	unsigned fine_y = 4;
+	unsigned coarse_x = 30;
+	unsigned coarse_y = 9;
+	uint16_t attribute_addr = attribute_address_from_nametable_scroll_offsets(0x2400
+	                                                                         , coarse_x
+	                                                                         , coarse_y);
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2400, fine_y
+	                                                           , coarse_x, coarse_y);
+	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
+	write_to_ppu_vram(&ppu->vram, attribute_addr, 0x51);
+
+
+	fetch_at_byte(ppu);
+
+
+	ck_assert_uint_eq(0x51, ppu->at_latch);
+}
+
+START_TEST (fetch_attribute_byte_nametable_2_random_scroll_offsets)
+{
+	unsigned fine_y = 1;
+	unsigned coarse_x = 12;
+	unsigned coarse_y = 23;
+	uint16_t attribute_addr = attribute_address_from_nametable_scroll_offsets(0x2800
+	                                                                         , coarse_x
+	                                                                         , coarse_y);
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2800, fine_y
+	                                                           , coarse_x, coarse_y);
+	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
+	write_to_ppu_vram(&ppu->vram, attribute_addr, 0x08);
+
+
+	fetch_at_byte(ppu);
+
+
+	ck_assert_uint_eq(0x08, ppu->at_latch);
+}
+
+START_TEST (fetch_attribute_byte_nametable_3_random_scroll_offsets)
+{
+	unsigned fine_y = 9;
+	unsigned coarse_x = 19 + 32;
+	unsigned coarse_y = 23;
+	uint16_t attribute_addr = attribute_address_from_nametable_scroll_offsets(0x2C00
+	                                                                         , coarse_x
+	                                                                         , coarse_y);
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
+	                                                           , coarse_x, coarse_y);
+	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
+	write_to_ppu_vram(&ppu->vram, attribute_addr, 0xC3);
+
+
+	fetch_at_byte(ppu);
+
+
+	ck_assert_uint_eq(0xC3, ppu->at_latch);
+}
+
 
 Suite* ppu_suite(void)
 {
@@ -1726,6 +1818,10 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_no_fine_y);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_fine_y_is_ignored);
 	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_in_attribute_table);
+	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_0_random_scroll_offsets);
+	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_1_random_scroll_offsets);
+	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_2_random_scroll_offsets);
+	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_3_random_scroll_offsets);
 	suite_add_tcase(s, tc_ppu_rendering);
 	tc_ppu_unit_test_helpers = tcase_create("PPU Unit Test Helper Functions");
 	tcase_add_checked_fixture(tc_ppu_unit_test_helpers, setup, teardown);

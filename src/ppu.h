@@ -39,6 +39,7 @@ void write_to_ppu_vram(struct PpuMemoryMap* mem, unsigned addr, uint8_t data);
 uint8_t read_from_ppu_vram(const struct PpuMemoryMap* mem, unsigned addr);
 
 void fetch_nt_byte(Ppu2C02* p);
+void fetch_at_byte(Ppu2C02* p);
 
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logging);
