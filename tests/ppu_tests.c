@@ -904,8 +904,12 @@ START_TEST (fetch_nametable_byte_nametable_0_addr_in_attribute_table)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	ppu->vram_addr = 0x03DC;
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xAC);
+	unsigned coarse_x = 16;
+	unsigned coarse_y = 12;
+	ppu->vram_addr = attribute_address_from_nametable_scroll_offsets(0x2000
+	                                                                , coarse_x
+	                                                                , coarse_y);
+	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xAC);
 
 	fetch_nt_byte(ppu);
 
@@ -957,8 +961,12 @@ START_TEST (fetch_nametable_byte_nametable_1_addr_in_attribute_table)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	ppu->vram_addr = 0x07C1;
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xA1);
+	unsigned coarse_x = 4;
+	unsigned coarse_y = 3;
+	ppu->vram_addr = attribute_address_from_nametable_scroll_offsets(0x2400
+	                                                                , coarse_x
+	                                                                , coarse_y);
+	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xA1);
 
 	fetch_nt_byte(ppu);
 
@@ -1009,8 +1017,12 @@ START_TEST (fetch_nametable_byte_nametable_2_addr_in_attribute_table)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	ppu->vram_addr = 0x0BEF;
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xAF);
+	unsigned coarse_x = 29;
+	unsigned coarse_y = 22;
+	ppu->vram_addr = attribute_address_from_nametable_scroll_offsets(0x2800
+	                                                                , coarse_x
+	                                                                , coarse_y);
+	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xAF);
 
 	fetch_nt_byte(ppu);
 
@@ -1061,8 +1073,12 @@ START_TEST (fetch_nametable_byte_nametable_3_addr_in_attribute_table)
 	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	ppu->vram_addr = 0x0FEB;
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xAD);
+	unsigned coarse_x = 15;
+	unsigned coarse_y = 21;
+	ppu->vram_addr = attribute_address_from_nametable_scroll_offsets(0x2C00
+	                                                                , coarse_x
+	                                                                , coarse_y);
+	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xAD);
 
 	fetch_nt_byte(ppu);
 
