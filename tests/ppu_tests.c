@@ -95,6 +95,18 @@ static uint16_t attribute_address_from_nametable_scroll_offsets(const unsigned n
 	return attribute_address;
 }
 
+static uint8_t reverse_bits_in_byte(uint8_t input)
+{
+	uint8_t output = 0;
+
+	for (int i = 0; i < 8; i++) {
+		// gets bits 0-7 and shift up to bits 7-0
+		output |= ((input >> i) & 0x01) << (7 - i);
+	}
+
+	return output;
+}
+
 static void check_horizontal_nametable_A_mirroring(struct PpuMemoryMap* vram
                                                   , uint16_t addr_offset
                                                   , uint8_t expected_val)
@@ -1723,6 +1735,13 @@ START_TEST (fetch_attribute_byte_nametable_3_random_scroll_offsets)
 	ck_assert_uint_eq(0xC3, ppu->at_latch);
 }
 
+START_TEST (reverse_bits_function_all_valid_inputs)
+{
+	// re-reversing the reversed bits will produce the original number
+	// and also verify the function works as expected
+	ck_assert_uint_eq(_i, reverse_bits_in_byte(reverse_bits_in_byte(_i)));
+}
+
 
 Suite* ppu_suite(void)
 {
@@ -1896,6 +1915,7 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_coarse_x_out_of_bounds_wraps_around);
 	tcase_add_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_coarse_y_out_of_bounds_wraps_around);
 	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_tile_sample_within_at_byte, 0, 3);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, reverse_bits_function_all_valid_inputs, 0, 255);
 	suite_add_tcase(s, tc_ppu_unit_test_helpers);
 
 	return s;
