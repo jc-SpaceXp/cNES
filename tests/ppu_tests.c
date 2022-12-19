@@ -1742,12 +1742,42 @@ START_TEST (reverse_bits_function_all_valid_inputs)
 	ck_assert_uint_eq(_i, reverse_bits_in_byte(reverse_bits_in_byte(_i)));
 }
 
+START_TEST (ppu_ctrl_base_pt_address_bit_clear_others_clear)
+{
+	ppu->cpu_ppu_io->ppu_ctrl = 0 << 4;
+
+	ck_assert_uint_eq(0x0000, ppu_base_pt_address(ppu));
+}
+
+START_TEST (ppu_ctrl_base_pt_address_bit_clear_others_set)
+{
+	ppu->cpu_ppu_io->ppu_ctrl = 0xFF;
+	ppu->cpu_ppu_io->ppu_ctrl &= ~0x10;
+
+	ck_assert_uint_eq(0x0000, ppu_base_pt_address(ppu));
+}
+
+START_TEST (ppu_ctrl_base_pt_address_bit_set_others_clear)
+{
+	ppu->cpu_ppu_io->ppu_ctrl = 1 << 4;
+
+	ck_assert_uint_eq(0x1000, ppu_base_pt_address(ppu));
+}
+
+START_TEST (ppu_ctrl_base_pt_address_bit_set_others_set)
+{
+	ppu->cpu_ppu_io->ppu_ctrl = 0xFF;
+
+	ck_assert_uint_eq(0x1000, ppu_base_pt_address(ppu));
+}
+
 
 Suite* ppu_suite(void)
 {
 	Suite* s;
 	TCase* tc_ppu_vram_read_writes;
 	TCase* tc_ppu_rendering;
+	TCase* tc_cpu_ppu_registers;
 	TCase* tc_ppu_unit_test_helpers;
 
 	s = suite_create("Ppu Tests");
@@ -1858,6 +1888,13 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_2_random_scroll_offsets);
 	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_3_random_scroll_offsets);
 	suite_add_tcase(s, tc_ppu_rendering);
+	tc_cpu_ppu_registers = tcase_create("CPU/PPU Registers");
+	tcase_add_checked_fixture(tc_cpu_ppu_registers, vram_setup, vram_teardown);
+	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_clear_others_clear);
+	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_clear_others_set);
+	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_set_others_clear);
+	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_set_others_set);
+	suite_add_tcase(s, tc_cpu_ppu_registers);
 	tc_ppu_unit_test_helpers = tcase_create("PPU Unit Test Helper Functions");
 	tcase_add_checked_fixture(tc_ppu_unit_test_helpers, setup, teardown);
 	tcase_add_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0_no_offset);

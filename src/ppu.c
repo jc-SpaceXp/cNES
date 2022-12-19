@@ -715,7 +715,7 @@ static uint16_t ppu_base_nt_address(const Ppu2C02* p)
 }
 
 
-static uint16_t ppu_base_pt_address(const Ppu2C02* p)
+uint16_t ppu_base_pt_address(const Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 4) & 0x01) {
 		return 0x1000;
