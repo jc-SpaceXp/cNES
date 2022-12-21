@@ -44,6 +44,7 @@ uint16_t ppu_base_pt_address(const Ppu2C02* p);
 void fetch_nt_byte(Ppu2C02* p);
 void fetch_at_byte(Ppu2C02* p);
 void fetch_pt_lo(Ppu2C02* p);
+void fetch_pt_hi(Ppu2C02* p);
 
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logging);
