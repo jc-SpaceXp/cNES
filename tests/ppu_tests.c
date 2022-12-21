@@ -1771,6 +1771,42 @@ START_TEST (ppu_ctrl_base_pt_address_bit_set_others_set)
 	ck_assert_uint_eq(0x1000, ppu_base_pt_address(ppu));
 }
 
+START_TEST (fetch_pattern_table_lo_no_fine_y_offset)
+{
+	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
+	ppu->nt_byte = 0x41;
+	uint8_t pt_byte = 0x37;
+	unsigned fine_y = 0;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 21;
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
+	                                                           , coarse_x, coarse_y);
+	uint16_t pattern_table_address = (ppu->nt_byte << 4) + fine_y;
+	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
+
+	fetch_pt_lo(ppu); // fine y is taken from vram_address
+
+	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->pt_lo_latch);
+}
+
+START_TEST (fetch_pattern_table_lo_fine_y_offset)
+{
+	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
+	ppu->nt_byte = 0x8F;
+	uint8_t pt_byte = 0xCE;
+	unsigned fine_y = 5;
+	unsigned coarse_x = 14;
+	unsigned coarse_y = 9;
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2401, fine_y
+	                                                           , coarse_x, coarse_y);
+	uint16_t pattern_table_address = (ppu->nt_byte << 4) + fine_y;
+	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
+
+	fetch_pt_lo(ppu); // fine y is taken from vram_address
+
+	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->pt_lo_latch);
+}
+
 
 Suite* ppu_suite(void)
 {
@@ -1887,6 +1923,8 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_1_random_scroll_offsets);
 	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_2_random_scroll_offsets);
 	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_3_random_scroll_offsets);
+	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_lo_no_fine_y_offset, 0, 2);
+	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_lo_fine_y_offset, 0, 2);
 	suite_add_tcase(s, tc_ppu_rendering);
 	tc_cpu_ppu_registers = tcase_create("CPU/PPU Registers");
 	tcase_add_checked_fixture(tc_cpu_ppu_registers, vram_setup, vram_teardown);

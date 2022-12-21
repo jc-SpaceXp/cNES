@@ -935,9 +935,9 @@ void fetch_at_byte(Ppu2C02 *p)
  * where xx is the tile index (nt_byte << 4)
  * Y offset of tile is fine Y represented as a 3 bit value (0 to 7)
  */
-static void fetch_pt_lo(Ppu2C02 *p)
+void fetch_pt_lo(Ppu2C02 *p)
 {
-	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr  & 0x7000) >> 12);
+	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr & 0x7000) >> 12);
 	uint8_t latch = read_from_ppu_vram(&p->vram, ppu_base_pt_address(p) | pt_offset);
 	p->pt_lo_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
 }
