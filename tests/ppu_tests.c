@@ -1843,6 +1843,78 @@ START_TEST (fetch_pattern_table_hi_fine_y_offset)
 	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->pt_hi_latch);
 }
 
+START_TEST (attribute_shift_reg_from_bottom_right_quadrant)
+{
+	// Bottom right is bits 7-6
+	// bottom set by one in 2^1 bit in coarse_y
+	// right set by one in 2^1 bit in coarse_x
+	uint8_t attribute_byte = 0x8F;
+	unsigned fine_y = 7;
+	unsigned coarse_x = 6;
+	unsigned coarse_y = 14;
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2008, fine_y
+	                                                           , coarse_x, coarse_y);
+
+	fill_attribute_shift_reg(ppu, ppu->vram_addr, attribute_byte);
+
+	ck_assert_uint_eq(0xFF, ppu->at_hi_shift_reg);
+	ck_assert_uint_eq(0x00, ppu->at_lo_shift_reg);
+}
+
+START_TEST (attribute_shift_reg_from_top_right_quadrant)
+{
+	// Top right is bits 3-2
+	// top set by zero in 2^1 bit in coarse_y
+	// right set by one in 2^1 bit in coarse_x
+	uint8_t attribute_byte = 0xFB;
+	unsigned fine_y = 0;
+	unsigned coarse_x = 3;
+	unsigned coarse_y = 21;
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2400, fine_y
+	                                                           , coarse_x, coarse_y);
+
+	fill_attribute_shift_reg(ppu, ppu->vram_addr, attribute_byte);
+
+	ck_assert_uint_eq(0xFF, ppu->at_hi_shift_reg);
+	ck_assert_uint_eq(0x00, ppu->at_lo_shift_reg);
+}
+
+START_TEST (attribute_shift_reg_from_bottom_left_quadrant)
+{
+	// Bottom left is bits 5-4
+	// bottom set by one in 2^1 bit in coarse_y
+	// left set by zero in 2^1 bit in coarse_x
+	uint8_t attribute_byte = 0xCF;
+	unsigned fine_y = 0;
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 2;
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2800, fine_y
+	                                                           , coarse_x, coarse_y);
+
+	fill_attribute_shift_reg(ppu, ppu->vram_addr, attribute_byte);
+
+	ck_assert_uint_eq(0x00, ppu->at_hi_shift_reg);
+	ck_assert_uint_eq(0x00, ppu->at_lo_shift_reg);
+}
+
+START_TEST (attribute_shift_reg_from_top_left_quadrant)
+{
+	// Top left is bits 1-0
+	// top set by zero in 2^1 bit in coarse_y
+	// left set by zero in 2^1 bit in coarse_x
+	uint8_t attribute_byte = 0xFD;
+	unsigned fine_y = 2;
+	unsigned coarse_x = 17;
+	unsigned coarse_y = 17;
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
+	                                                           , coarse_x, coarse_y);
+
+	fill_attribute_shift_reg(ppu, ppu->vram_addr, attribute_byte);
+
+	ck_assert_uint_eq(0x00, ppu->at_hi_shift_reg);
+	ck_assert_uint_eq(0xFF, ppu->at_lo_shift_reg);
+}
+
 
 Suite* ppu_suite(void)
 {
@@ -1963,6 +2035,10 @@ Suite* ppu_suite(void)
 	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_lo_fine_y_offset, 0, 2);
 	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_hi_no_fine_y_offset, 0, 2);
 	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_hi_fine_y_offset, 0, 2);
+	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_bottom_right_quadrant);
+	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_top_right_quadrant);
+	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_bottom_left_quadrant);
+	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_top_left_quadrant);
 	suite_add_tcase(s, tc_ppu_rendering);
 	tc_cpu_ppu_registers = tcase_create("CPU/PPU Registers");
 	tcase_add_checked_fixture(tc_cpu_ppu_registers, vram_setup, vram_teardown);

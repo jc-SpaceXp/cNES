@@ -959,12 +959,12 @@ void fetch_pt_hi(Ppu2C02 *p)
  * nametable_addr byte layout: ???? ??YY YYYX XXXX
  * ?? are don't care bits
  */
-static void fill_attribute_shift_reg(Ppu2C02 *p, uint16_t nametable_addr, uint8_t attribute_data)
+void fill_attribute_shift_reg(Ppu2C02 *p, uint16_t nametable_addr, uint8_t attribute_data)
 {
 	unsigned attr_bits = 0;
 	// Right quadrants (CoarseX / 2): YYYX XXXX (select 0x02 bit)
 	if (nametable_addr & 0x02) {
-		// Bottom quadrants (CoarseY / 2): NNYY YYYX XXXX (select 0x04 bit)
+		// Bottom quadrants (CoarseY / 2): NNYY YYYX XXXX (select 0x040 bit)
 		if (nametable_addr & 0x40) {
 			attr_bits = attribute_data >> 6; // Bottom right
 		} else {

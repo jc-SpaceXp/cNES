@@ -45,6 +45,7 @@ void fetch_nt_byte(Ppu2C02* p);
 void fetch_at_byte(Ppu2C02* p);
 void fetch_pt_lo(Ppu2C02* p);
 void fetch_pt_hi(Ppu2C02* p);
+void fill_attribute_shift_reg(Ppu2C02* p, uint16_t nametable_addr, uint8_t attribute_data);
 
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logging);
