@@ -885,9 +885,9 @@ START_TEST (fetch_nametable_byte_nametable_0_addr_no_fine_y)
 	                                                           , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x21);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0x21);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0x21);
 }
 
 START_TEST (fetch_nametable_byte_nametable_0_addr_fine_y_is_ignored)
@@ -903,9 +903,9 @@ START_TEST (fetch_nametable_byte_nametable_0_addr_fine_y_is_ignored)
 	                                                           , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x21);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0x21);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0x21);
 }
 
 START_TEST (fetch_nametable_byte_nametable_0_addr_in_attribute_table)
@@ -923,9 +923,9 @@ START_TEST (fetch_nametable_byte_nametable_0_addr_in_attribute_table)
 	                                                                , coarse_y);
 	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xAC);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0xAC);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xAC);
 }
 
 START_TEST (fetch_nametable_byte_nametable_1_addr_no_fine_y)
@@ -942,9 +942,9 @@ START_TEST (fetch_nametable_byte_nametable_1_addr_no_fine_y)
 	                                                           , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xB1);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0xB1);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xB1);
 }
 
 START_TEST (fetch_nametable_byte_nametable_1_addr_fine_y_is_ignored)
@@ -960,9 +960,9 @@ START_TEST (fetch_nametable_byte_nametable_1_addr_fine_y_is_ignored)
 	                                                           , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xB1);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0xB1);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xB1);
 }
 
 START_TEST (fetch_nametable_byte_nametable_1_addr_in_attribute_table)
@@ -980,9 +980,9 @@ START_TEST (fetch_nametable_byte_nametable_1_addr_in_attribute_table)
 	                                                                , coarse_y);
 	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xA1);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0xA1);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xA1);
 }
 
 START_TEST (fetch_nametable_byte_nametable_2_addr_no_fine_y)
@@ -998,9 +998,9 @@ START_TEST (fetch_nametable_byte_nametable_2_addr_no_fine_y)
 	                                                           , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x80);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0x80);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0x80);
 }
 
 START_TEST (fetch_nametable_byte_nametable_2_addr_fine_y_is_ignored)
@@ -1016,9 +1016,9 @@ START_TEST (fetch_nametable_byte_nametable_2_addr_fine_y_is_ignored)
 	                                                           , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x80);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0x80);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0x80);
 }
 
 START_TEST (fetch_nametable_byte_nametable_2_addr_in_attribute_table)
@@ -1036,9 +1036,9 @@ START_TEST (fetch_nametable_byte_nametable_2_addr_in_attribute_table)
 	                                                                , coarse_y);
 	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xAF);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0xAF);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xAF);
 }
 
 START_TEST (fetch_nametable_byte_nametable_3_addr_no_fine_y)
@@ -1054,9 +1054,9 @@ START_TEST (fetch_nametable_byte_nametable_3_addr_no_fine_y)
 	                                                           , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xED);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0xED);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xED);
 }
 
 START_TEST (fetch_nametable_byte_nametable_3_addr_fine_y_is_ignored)
@@ -1072,9 +1072,9 @@ START_TEST (fetch_nametable_byte_nametable_3_addr_fine_y_is_ignored)
 	                                                           , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xED);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0xED);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xED);
 }
 
 START_TEST (fetch_nametable_byte_nametable_3_addr_in_attribute_table)
@@ -1092,9 +1092,9 @@ START_TEST (fetch_nametable_byte_nametable_3_addr_in_attribute_table)
 	                                                                , coarse_y);
 	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xAD);
 
-	fetch_nt_byte(ppu);
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->nt_byte, 0xAD);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xAD);
 }
 
 START_TEST (vram_encoder_nametable_0_no_offset)
@@ -1660,10 +1660,10 @@ START_TEST (fetch_attribute_byte_nametable_0_random_scroll_offsets)
 	write_to_ppu_vram(&ppu->vram, attribute_addr, 0xED);
 
 
-	fetch_at_byte(ppu);
+	fetch_at_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
 
-	ck_assert_uint_eq(0xED, ppu->at_latch);
+	ck_assert_uint_eq(0xED, ppu->bkg_internals.at_latch);
 }
 
 START_TEST (fetch_attribute_byte_nametable_1_random_scroll_offsets)
@@ -1683,10 +1683,10 @@ START_TEST (fetch_attribute_byte_nametable_1_random_scroll_offsets)
 	write_to_ppu_vram(&ppu->vram, attribute_addr, 0x51);
 
 
-	fetch_at_byte(ppu);
+	fetch_at_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
 
-	ck_assert_uint_eq(0x51, ppu->at_latch);
+	ck_assert_uint_eq(0x51, ppu->bkg_internals.at_latch);
 }
 
 START_TEST (fetch_attribute_byte_nametable_2_random_scroll_offsets)
@@ -1706,10 +1706,10 @@ START_TEST (fetch_attribute_byte_nametable_2_random_scroll_offsets)
 	write_to_ppu_vram(&ppu->vram, attribute_addr, 0x08);
 
 
-	fetch_at_byte(ppu);
+	fetch_at_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
 
-	ck_assert_uint_eq(0x08, ppu->at_latch);
+	ck_assert_uint_eq(0x08, ppu->bkg_internals.at_latch);
 }
 
 START_TEST (fetch_attribute_byte_nametable_3_random_scroll_offsets)
@@ -1729,10 +1729,10 @@ START_TEST (fetch_attribute_byte_nametable_3_random_scroll_offsets)
 	write_to_ppu_vram(&ppu->vram, attribute_addr, 0xC3);
 
 
-	fetch_at_byte(ppu);
+	fetch_at_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
 
-	ck_assert_uint_eq(0xC3, ppu->at_latch);
+	ck_assert_uint_eq(0xC3, ppu->bkg_internals.at_latch);
 }
 
 START_TEST (reverse_bits_function_all_valid_inputs)
@@ -1774,73 +1774,77 @@ START_TEST (ppu_ctrl_base_pt_address_bit_set_others_set)
 START_TEST (fetch_pattern_table_lo_no_fine_y_offset)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
-	ppu->nt_byte = 0x41;
+	ppu->bkg_internals.nt_byte = 0x41;
 	uint8_t pt_byte = 0x37;
 	unsigned fine_y = 0;
 	unsigned coarse_x = 1;
 	unsigned coarse_y = 21;
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
 	                                                           , coarse_x, coarse_y);
-	uint16_t pattern_table_address = (ppu->nt_byte << 4) + fine_y;
+	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y;
 	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
 
-	fetch_pt_lo(ppu); // fine y is taken from vram_address
+	// fine y is taken from vram_address
+	fetch_pt_lo(&ppu->vram, ppu->vram_addr, ppu_base_pt_address(ppu), &ppu->bkg_internals);
 
-	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->pt_lo_latch);
+	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_lo_latch);
 }
 
 START_TEST (fetch_pattern_table_lo_fine_y_offset)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
-	ppu->nt_byte = 0x8F;
+	ppu->bkg_internals.nt_byte = 0x8F;
 	uint8_t pt_byte = 0xCE;
 	unsigned fine_y = 5;
 	unsigned coarse_x = 14;
 	unsigned coarse_y = 9;
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2401, fine_y
 	                                                           , coarse_x, coarse_y);
-	uint16_t pattern_table_address = (ppu->nt_byte << 4) + fine_y;
+	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y;
 	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
 
-	fetch_pt_lo(ppu); // fine y is taken from vram_address
+	// fine y is taken from vram_address
+	fetch_pt_lo(&ppu->vram, ppu->vram_addr, ppu_base_pt_address(ppu), &ppu->bkg_internals);
 
-	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->pt_lo_latch);
+	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_lo_latch);
 }
 
 START_TEST (fetch_pattern_table_hi_no_fine_y_offset)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
-	ppu->nt_byte = 0x20;
+	ppu->bkg_internals.nt_byte = 0x20;
 	uint8_t pt_byte = 0x19;
 	unsigned fine_y = 0;
 	unsigned coarse_x = 19;
 	unsigned coarse_y = 9;
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
 	                                                           , coarse_x, coarse_y);
-	uint16_t pattern_table_address = (ppu->nt_byte << 4) + fine_y + 8;
+	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y + 8;
 	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
 
-	fetch_pt_hi(ppu); // fine y is taken from vram_address
+	// fine y is taken from vram_address
+	fetch_pt_hi(&ppu->vram, ppu->vram_addr, ppu_base_pt_address(ppu), &ppu->bkg_internals);
 
-	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->pt_hi_latch);
+	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_hi_latch);
 }
 
 START_TEST (fetch_pattern_table_hi_fine_y_offset)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
-	ppu->nt_byte = 0xDB;
+	ppu->bkg_internals.nt_byte = 0xDB;
 	uint8_t pt_byte = 0xA3;
 	unsigned fine_y = 7;
 	unsigned coarse_x = 4;
 	unsigned coarse_y = 23;
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2008, fine_y
 	                                                           , coarse_x, coarse_y);
-	uint16_t pattern_table_address = (ppu->nt_byte << 4) + fine_y + 8;
+	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y + 8;
 	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
 
-	fetch_pt_hi(ppu); // fine y is taken from vram_address
+	// fine y is taken from vram_address
+	fetch_pt_hi(&ppu->vram, ppu->vram_addr, ppu_base_pt_address(ppu), &ppu->bkg_internals);
 
-	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->pt_hi_latch);
+	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_hi_latch);
 }
 
 START_TEST (attribute_shift_reg_from_bottom_right_quadrant)
@@ -1855,10 +1859,10 @@ START_TEST (attribute_shift_reg_from_bottom_right_quadrant)
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2008, fine_y
 	                                                           , coarse_x, coarse_y);
 
-	fill_attribute_shift_reg(ppu, ppu->vram_addr, attribute_byte);
+	fill_attribute_shift_reg(ppu->vram_addr, attribute_byte, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(0xFF, ppu->at_hi_shift_reg);
-	ck_assert_uint_eq(0x00, ppu->at_lo_shift_reg);
+	ck_assert_uint_eq(0xFF, ppu->bkg_internals.at_hi_shift_reg);
+	ck_assert_uint_eq(0x00, ppu->bkg_internals.at_lo_shift_reg);
 }
 
 START_TEST (attribute_shift_reg_from_top_right_quadrant)
@@ -1873,10 +1877,10 @@ START_TEST (attribute_shift_reg_from_top_right_quadrant)
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2400, fine_y
 	                                                           , coarse_x, coarse_y);
 
-	fill_attribute_shift_reg(ppu, ppu->vram_addr, attribute_byte);
+	fill_attribute_shift_reg(ppu->vram_addr, attribute_byte, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(0xFF, ppu->at_hi_shift_reg);
-	ck_assert_uint_eq(0x00, ppu->at_lo_shift_reg);
+	ck_assert_uint_eq(0xFF, ppu->bkg_internals.at_hi_shift_reg);
+	ck_assert_uint_eq(0x00, ppu->bkg_internals.at_lo_shift_reg);
 }
 
 START_TEST (attribute_shift_reg_from_bottom_left_quadrant)
@@ -1891,10 +1895,10 @@ START_TEST (attribute_shift_reg_from_bottom_left_quadrant)
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2800, fine_y
 	                                                           , coarse_x, coarse_y);
 
-	fill_attribute_shift_reg(ppu, ppu->vram_addr, attribute_byte);
+	fill_attribute_shift_reg(ppu->vram_addr, attribute_byte, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(0x00, ppu->at_hi_shift_reg);
-	ck_assert_uint_eq(0x00, ppu->at_lo_shift_reg);
+	ck_assert_uint_eq(0x00, ppu->bkg_internals.at_hi_shift_reg);
+	ck_assert_uint_eq(0x00, ppu->bkg_internals.at_lo_shift_reg);
 }
 
 START_TEST (attribute_shift_reg_from_top_left_quadrant)
@@ -1909,10 +1913,10 @@ START_TEST (attribute_shift_reg_from_top_left_quadrant)
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
 	                                                           , coarse_x, coarse_y);
 
-	fill_attribute_shift_reg(ppu, ppu->vram_addr, attribute_byte);
+	fill_attribute_shift_reg(ppu->vram_addr, attribute_byte, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(0x00, ppu->at_hi_shift_reg);
-	ck_assert_uint_eq(0xFF, ppu->at_lo_shift_reg);
+	ck_assert_uint_eq(0x00, ppu->bkg_internals.at_hi_shift_reg);
+	ck_assert_uint_eq(0xFF, ppu->bkg_internals.at_lo_shift_reg);
 }
 
 

@@ -41,11 +41,24 @@ uint8_t read_from_ppu_vram(const struct PpuMemoryMap* mem, unsigned addr);
 // Cpu/ppu Registers
 uint16_t ppu_base_pt_address(const Ppu2C02* p);
 
-void fetch_nt_byte(Ppu2C02* p);
-void fetch_at_byte(Ppu2C02* p);
-void fetch_pt_lo(Ppu2C02* p);
-void fetch_pt_hi(Ppu2C02* p);
-void fill_attribute_shift_reg(Ppu2C02* p, uint16_t nametable_addr, uint8_t attribute_data);
+// Rendering functions
+void fetch_nt_byte(const struct PpuMemoryMap* vram
+                  , uint16_t vram_addr
+                  , struct BackgroundRenderingInternals* bkg_internals);
+void fetch_at_byte(const struct PpuMemoryMap* vram
+                  , uint16_t vram_addr
+                  , struct BackgroundRenderingInternals* bkg_internals);
+void fetch_pt_lo(const struct PpuMemoryMap* vram
+                , uint16_t vram_addr
+                , uint16_t base_pt_address
+                , struct BackgroundRenderingInternals* bkg_internals);
+void fetch_pt_hi(const struct PpuMemoryMap* vram
+                , uint16_t vram_addr
+                , uint16_t base_pt_address
+                , struct BackgroundRenderingInternals* bkg_internals);
+void fill_attribute_shift_reg(uint16_t nametable_addr
+                             , uint8_t attribute_data
+                             , struct BackgroundRenderingInternals* bkg_internals);
 
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logging);

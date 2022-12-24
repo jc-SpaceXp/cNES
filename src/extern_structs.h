@@ -223,6 +223,22 @@ struct PpuMemoryMap {
 	uint8_t (*nametable_3)[0x0400];
 };
 
+struct BackgroundRenderingInternals {
+	// Internal data latches and shift registers
+	uint8_t pt_lo_latch; // Most recent fetch pt_lo fetch
+	uint8_t pt_hi_latch;
+	uint16_t pt_lo_shift_reg; // Stores 16 pixels in the pipeline, 1st 8 pixels to be rendered are in lowest byte
+	uint16_t pt_hi_shift_reg;
+	uint8_t at_lo_shift_reg; // Matches lowest 8 bits for the pattern table shift register
+	uint8_t at_hi_shift_reg;
+	uint8_t nt_byte; // NT byte that is rendered 16 PPU cycles later
+	uint8_t at_latch; // AT byte that is rendered 16 PPU cycles later
+
+	// Helpers
+	uint8_t at_current; // AT byte for pixels 1-8 in pipeline
+	uint16_t nt_addr_current; // Current tile address for pixels 1-8 in pipeline
+};
+
 // PPU
 typedef struct {
 	/* Memory mapped I/O */
@@ -254,19 +270,7 @@ typedef struct {
 	uint16_t vram_tmp_addr; /* Temp VRAM address - LoopyT (t) */
 	uint8_t fine_x; /* Fine X Scroll - only lower 4 bits are used */
 
-	/* Latches & Shift registers */
-	uint8_t pt_lo_latch; /* Most recent fetch pt_lo fetch */
-	uint8_t pt_hi_latch;
-	uint16_t pt_lo_shift_reg; /* Stores a 16 pixels in the pipeline - 1st 8 pixels to be rendered are in lowest byte */
-	uint16_t pt_hi_shift_reg;
-	uint8_t at_lo_shift_reg; /* Matches lowest 8 bits for the pattern table shift register */
-	uint8_t at_hi_shift_reg;
-	uint8_t nt_byte; /* NT byte that is rendered 16 PPU cycles later */
-	uint8_t at_latch; /* AT byte that is rendered 16 PPU cycles later */
-	uint8_t at_current; /* AT byte for pixels 1 - 8 in pipeline */
-
-	uint16_t nt_addr_tmp; /* Address used to generate nt byte */
-	uint16_t nt_addr_current; /* Current tile address for pixels 1 - 8 in pipeline */
+	struct BackgroundRenderingInternals bkg_internals;
 
 	PpuNametableMirroringType nametable_mirroring;
 

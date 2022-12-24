@@ -97,17 +97,16 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 	ppu->old_cycle = ppu->cycle;
 	ppu->old_scanline = ppu->scanline;
 	ppu->odd_frame = false;
-	ppu->nt_addr_current = 0;
 
 	/* Set PPU Latches and shift reg to 0 */
-	ppu->pt_lo_shift_reg = 0;
-	ppu->pt_hi_shift_reg = 0;
-	ppu->pt_lo_latch = 0;
-	ppu->pt_hi_latch = 0;
-	ppu->at_lo_shift_reg = 0;
-	ppu->at_hi_shift_reg = 0;
-	ppu->at_current = 0;
-	ppu->nt_addr_current = 0;
+	ppu->bkg_internals.pt_lo_shift_reg = 0;
+	ppu->bkg_internals.pt_hi_shift_reg = 0;
+	ppu->bkg_internals.pt_lo_latch = 0;
+	ppu->bkg_internals.pt_hi_latch = 0;
+	ppu->bkg_internals.at_lo_shift_reg = 0;
+	ppu->bkg_internals.at_hi_shift_reg = 0;
+	ppu->bkg_internals.at_current = 0;
+	ppu->bkg_internals.nt_addr_current = 0;
 
 	/* Sprite stuff */
 	ppu->sprites_found = 0;
@@ -893,10 +892,12 @@ uint16_t nametable_y_offset_address(const unsigned coarse_y)
 }
 
 
-void fetch_nt_byte(Ppu2C02 *p)
+void fetch_nt_byte(const struct PpuMemoryMap* vram
+                  , uint16_t vram_addr
+                  , struct BackgroundRenderingInternals* bkg_internals)
 {
-	p->nt_addr_tmp = 0x2000 | (p->vram_addr & 0x0FFF);
-	p->nt_byte = read_from_ppu_vram(&p->vram, p->nt_addr_tmp);
+	uint16_t nt_addr_tmp = 0x2000 | (vram_addr & 0x0FFF);
+	bkg_internals->nt_byte = read_from_ppu_vram(vram, nt_addr_tmp);
 }
 
 /* Get correct at byte from vram_addr
@@ -922,9 +923,14 @@ void fetch_nt_byte(Ppu2C02 *p)
  * So we increment the attribute address in either the x or y direction once
  * we've passed 4 tiles in those directions
  */
-void fetch_at_byte(Ppu2C02 *p)
+void fetch_at_byte(const struct PpuMemoryMap* vram
+                  , uint16_t vram_addr
+                  , struct BackgroundRenderingInternals* bkg_internals)
 {
-	p->at_latch = read_from_ppu_vram(&p->vram, 0x23C0 | (p->vram_addr & 0x0C00) | ((p->vram_addr >> 4) & 0x38) | ((p->vram_addr >> 2) & 0x07));
+	bkg_internals->at_latch = read_from_ppu_vram(vram, 0x23C0
+	                                                   | (vram_addr & 0x0C00)
+	                                                   | ((vram_addr >> 4) & 0x38)
+	                                                   | ((vram_addr >> 2) & 0x07));
 }
 
 /* nt_byte represents the tile index (the nametable byte reference)
@@ -935,20 +941,26 @@ void fetch_at_byte(Ppu2C02 *p)
  * where xx is the tile index (nt_byte << 4)
  * Y offset of tile is fine Y represented as a 3 bit value (0 to 7)
  */
-void fetch_pt_lo(Ppu2C02 *p)
+void fetch_pt_lo(const struct PpuMemoryMap* vram
+                , uint16_t vram_addr
+                , uint16_t base_pt_address
+                , struct BackgroundRenderingInternals* bkg_internals)
 {
-	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr & 0x7000) >> 12);
-	uint8_t latch = read_from_ppu_vram(&p->vram, ppu_base_pt_address(p) | pt_offset);
-	p->pt_lo_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
+	uint16_t pt_offset = (bkg_internals->nt_byte << 4) + ((vram_addr & 0x7000) >> 12);
+	uint8_t latch = read_from_ppu_vram(vram, base_pt_address | pt_offset);
+	bkg_internals->pt_lo_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
 }
 
 
 /* Lo & Hi determine which index of the colour palette we use (0 to 3) */
-void fetch_pt_hi(Ppu2C02 *p)
+void fetch_pt_hi(const struct PpuMemoryMap* vram
+                , uint16_t vram_addr
+                , uint16_t base_pt_address
+                , struct BackgroundRenderingInternals* bkg_internals)
 {
-	uint16_t pt_offset = (p->nt_byte << 4) + ((p->vram_addr & 0x7000) >> 12) + 8;
-	uint8_t latch = read_from_ppu_vram(&p->vram, ppu_base_pt_address(p) | pt_offset);
-	p->pt_hi_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
+	uint16_t pt_offset = (bkg_internals->nt_byte << 4) + ((vram_addr & 0x7000) >> 12) + 8;
+	uint8_t latch = read_from_ppu_vram(vram, base_pt_address | pt_offset);
+	bkg_internals->pt_hi_latch = reverse_bits[latch]; // 8th bit = 1st pixel to render
 }
 
 /* Figure out what quadrant the input address is in and set the correct bits
@@ -959,7 +971,8 @@ void fetch_pt_hi(Ppu2C02 *p)
  * nametable_addr byte layout: ???? ??YY YYYX XXXX
  * ?? are don't care bits
  */
-void fill_attribute_shift_reg(Ppu2C02 *p, uint16_t nametable_addr, uint8_t attribute_data)
+void fill_attribute_shift_reg(uint16_t nametable_addr, uint8_t attribute_data
+                             , struct BackgroundRenderingInternals* bkg_internals)
 {
 	unsigned attr_bits = 0;
 	// Right quadrants (CoarseX / 2): YYYX XXXX (select 0x02 bit)
@@ -979,15 +992,15 @@ void fill_attribute_shift_reg(Ppu2C02 *p, uint16_t nametable_addr, uint8_t attri
 	}
 
 	// Clear registers
-	p->at_hi_shift_reg = 0;
-	p->at_lo_shift_reg = 0;
+	bkg_internals->at_hi_shift_reg = 0;
+	bkg_internals->at_lo_shift_reg = 0;
 
 	// Separate 2 bit val into lo and hi shift registers
 	// Shift registers contain repeated bits of the lo/hi bit
 	// as the shift register represents one tile
 	for (unsigned i = 0; i < 8; i++) {
-		p->at_hi_shift_reg |= ((attr_bits & 0x02) >> 1) << i;
-		p->at_lo_shift_reg |= (attr_bits & 0x01) << i;
+		bkg_internals->at_hi_shift_reg |= ((attr_bits & 0x02) >> 1) << i;
+		bkg_internals->at_lo_shift_reg |= (attr_bits & 0x01) << i;
 	}
 }
 
@@ -1021,13 +1034,13 @@ static void render_pixel(Ppu2C02 *p)
 	// They are then reloaded evey 8 cycles after that
 	// (alternatively you can mux w/ fine_x as long as you don't shift
 	// out the attribute shift registers)
-	unsigned bg_palette_addr = (eight_to_one_mux(p->at_hi_shift_reg, 0) << 1)
-	                         |  eight_to_one_mux(p->at_lo_shift_reg, 0);
+	unsigned bg_palette_addr = (eight_to_one_mux(p->bkg_internals.at_hi_shift_reg, 0) << 1)
+	                         |  eight_to_one_mux(p->bkg_internals.at_lo_shift_reg, 0);
 	bg_palette_addr <<= 2;
 	bg_palette_addr += 0x3F00; // bg palette mem starts here
 
-	unsigned bg_colour_index = (eight_to_one_mux(p->pt_hi_shift_reg, p->fine_x) << 1)
-	                         |  eight_to_one_mux(p->pt_lo_shift_reg, p->fine_x);
+	unsigned bg_colour_index = (eight_to_one_mux(p->bkg_internals.pt_hi_shift_reg, p->fine_x) << 1)
+	                         |  eight_to_one_mux(p->bkg_internals.pt_lo_shift_reg, p->fine_x);
 	if (!bg_colour_index) {
 		bg_palette_addr = 0x3F00; // Take background colour (transparent)
 	}
@@ -1058,10 +1071,10 @@ static void render_pixel(Ppu2C02 *p)
 	if (ppu_show_greyscale(p)) { RGB &= 0x30; }
 
 	/* Shift out each cycle */
-	p->pt_hi_shift_reg >>= 1;
-	p->pt_lo_shift_reg >>= 1;
-	p->at_hi_shift_reg >>= 1;
-	p->at_lo_shift_reg >>= 1;
+	p->bkg_internals.pt_hi_shift_reg >>= 1;
+	p->bkg_internals.pt_lo_shift_reg >>= 1;
+	p->bkg_internals.at_hi_shift_reg >>= 1;
+	p->bkg_internals.at_lo_shift_reg >>= 1;
 
 	/* Sprite Stuff */
 	unsigned sprite_colour_index[8] = {0};
@@ -1209,8 +1222,8 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 					//     making the bg aligned to the sprite (non-scrolled)
 					//   fine_x to get the correct scrolled pixel of bg tile
 					//   mask iterates through 8 pixels to get our lookahead
-					p->bg_lo_reg = (p->pt_lo_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
-					p->bg_hi_reg = (p->pt_hi_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
+					p->bg_lo_reg = (p->bkg_internals.pt_lo_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
+					p->bg_hi_reg = (p->bkg_internals.pt_hi_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
 					unsigned tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + sp_v_offset);
 					unsigned tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + sp_v_offset + 8);
 					if (ppu_sprite_height(p) == 16) {
@@ -1433,30 +1446,34 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 				// then we reload the shift reg on cycle 1 w/ new attribute data
 				// for the next tile
 				if (!((p->cycle + p->fine_x) % 8)) {
-					fill_attribute_shift_reg(p, p->nt_addr_current, p->at_current);
+					fill_attribute_shift_reg(p->bkg_internals.nt_addr_current
+					                        , p->bkg_internals.at_current
+					                        , &p->bkg_internals);
 				}
 				// BG STUFF
 				switch ((p->cycle - 1) & 0x07) {
 				case 0: // Cycle 1, 2 (and + 8)
-					fetch_nt_byte(p);
+					fetch_nt_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 2: // Cycle 3, 4 (and + 8)
-					fetch_at_byte(p);
+					fetch_at_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 4: // Cycle 5, 6 (and + 8)
-					fetch_pt_lo(p);
+					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					           , &p->bkg_internals);
 					break;
 				case 6: // Cycle 7 (and + 8)
-					fetch_pt_hi(p);
+					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					           , &p->bkg_internals);
 					break;
 				case 7: // Cycle 8 (and +8)
 					// 8 Shifts should have occured by now, load new data
 					// Load latched values into upper byte of shift regs
-					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
-					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
+					p->bkg_internals.pt_lo_shift_reg |= (uint16_t) (p->bkg_internals.pt_lo_latch << 8);
+					p->bkg_internals.pt_hi_shift_reg |= (uint16_t) (p->bkg_internals.pt_hi_latch << 8);
 					// Used to fill at shift registers later
-					p->at_current = p->at_latch;
-					p->nt_addr_current = p->vram_addr;
+					p->bkg_internals.at_current = p->bkg_internals.at_latch;
+					p->bkg_internals.nt_addr_current = p->vram_addr;
 					break;
 				}
 			} else if (p->cycle == 257) {
@@ -1465,27 +1482,31 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 			} else if (p->cycle >= 321 && p->cycle <= 336) { // 1st 16 pixels of next scanline
 				switch ((p->cycle - 1) & 0x07) {
 				case 0: // Cycle 321 (and + 8)
-					fetch_nt_byte(p);
+					fetch_nt_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 1: // Cycle 322 (and +8)
-					fill_attribute_shift_reg(p, p->nt_addr_current, p->at_current);
+					fill_attribute_shift_reg(p->bkg_internals.nt_addr_current
+					                        , p->bkg_internals.at_current
+					                        , &p->bkg_internals);
 					break;
 				case 2: // Cycle 323, 324 (and +8)
-					fetch_at_byte(p);
+					fetch_at_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 4: // Cycle 325, 326 (and +8)
-					fetch_pt_lo(p);
+					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					           , &p->bkg_internals);
 					break;
 				case 6: // Cycle 327 (and +8)
-					fetch_pt_hi(p);
+					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					           , &p->bkg_internals);
 					// Load latched values into upper byte of shift regs
-					p->pt_hi_shift_reg >>= 8;
-					p->pt_lo_shift_reg >>= 8;
-					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
-					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
+					p->bkg_internals.pt_hi_shift_reg >>= 8;
+					p->bkg_internals.pt_lo_shift_reg >>= 8;
+					p->bkg_internals.pt_hi_shift_reg |= (uint16_t) (p->bkg_internals.pt_hi_latch << 8);
+					p->bkg_internals.pt_lo_shift_reg |= (uint16_t) (p->bkg_internals.pt_lo_latch << 8);
 					// Used to fill at shift registers later
-					p->at_current = p->at_latch;
-					p->nt_addr_current = p->vram_addr;
+					p->bkg_internals.at_current = p->bkg_internals.at_latch;
+					p->bkg_internals.nt_addr_current = p->vram_addr;
 					break;
 				case 7: // Cycle 328 (and +8)
 					break;
@@ -1496,16 +1517,18 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
 				switch ((p->cycle - 1) & 0x07) {
 				case 0: // Cycle 256, 257 (and +8)
-					fetch_nt_byte(p);
+					fetch_nt_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 2: // Cycle 258, 259 (and +8)
-					fetch_at_byte(p);
+					fetch_at_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 4: // Cycle 260, 261 (and +8)
-					fetch_pt_lo(p);
+					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					           , &p->bkg_internals);
 					break;
 				case 6: // Cycle 262 (and +8)
-					fetch_pt_hi(p);
+					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					           , &p->bkg_internals);
 					break;
 				case 7: // Cycle 263 (and +8)
 					// No need to fill shift registers as nothing is being rendered here
@@ -1520,27 +1543,31 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logg
 			} else if (p->cycle >= 321 && p->cycle <= 336) { // 1st 16 pixels of next scanline
 				switch ((p->cycle - 1) & 0x07) {
 				case 0: // Cycle 321 (and + 8)
-					fetch_nt_byte(p);
+					fetch_nt_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 1: // Cycle 322 (and +8)
-					fill_attribute_shift_reg(p, p->nt_addr_current, p->at_current);
+					fill_attribute_shift_reg(p->bkg_internals.nt_addr_current
+					                        , p->bkg_internals.at_current
+					                        , &p->bkg_internals);
 					break;
 				case 2: // Cycle 323, 324 (and +8)
-					fetch_at_byte(p);
+					fetch_at_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 4: // Cycle 325, 326 (and +8)
-					fetch_pt_lo(p);
+					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					           , &p->bkg_internals);
 					break;
 				case 6: // Cycle 327 (and +8)
-					fetch_pt_hi(p);
+					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					           , &p->bkg_internals);
 					// Load latched values into upper byte of shift regs
-					p->pt_hi_shift_reg >>= 8;
-					p->pt_lo_shift_reg >>= 8;
-					p->pt_hi_shift_reg |= (uint16_t) (p->pt_hi_latch << 8);
-					p->pt_lo_shift_reg |= (uint16_t) (p->pt_lo_latch << 8);
+					p->bkg_internals.pt_hi_shift_reg >>= 8;
+					p->bkg_internals.pt_lo_shift_reg >>= 8;
+					p->bkg_internals.pt_hi_shift_reg |= (uint16_t) (p->bkg_internals.pt_hi_latch << 8);
+					p->bkg_internals.pt_lo_shift_reg |= (uint16_t) (p->bkg_internals.pt_lo_latch << 8);
 					// Used to fill at shift registers later
-					p->at_current = p->at_latch;
-					p->nt_addr_current = p->vram_addr;
+					p->bkg_internals.at_current = p->bkg_internals.at_latch;
+					p->bkg_internals.nt_addr_current = p->vram_addr;
 					break;
 				case 7: // Cycle 328 (and +8)
 					break;
