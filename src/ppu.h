@@ -59,6 +59,9 @@ void fetch_pt_hi(const struct PpuMemoryMap* vram
 void fill_attribute_shift_reg(uint16_t nametable_addr
                              , uint8_t attribute_data
                              , struct BackgroundRenderingInternals* bkg_internals);
+void set_rgba_pixel_in_buffer(uint32_t* pixel_buffer, unsigned int max_width
+                             , unsigned int x_pos, unsigned int y_pos
+                             , unsigned int rgb, uint8_t alpha);
 
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logging);

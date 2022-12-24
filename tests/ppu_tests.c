@@ -5,6 +5,7 @@
 Ppu2C02* ppu;
 CpuPpuShare* cpu_ppu;
 struct PpuMemoryMap* vram;
+uint32_t pixel_buffer[256 * 240];
 
 static void setup(void)
 {
@@ -1919,6 +1920,74 @@ START_TEST (attribute_shift_reg_from_top_left_quadrant)
 	ck_assert_uint_eq(0xFF, ppu->bkg_internals.at_lo_shift_reg);
 }
 
+START_TEST (pixel_buffer_set_top_left_corner)
+{
+	const unsigned int max_width = 256;
+	unsigned int x_pos = 0;
+	unsigned int y_pos = 0;
+	uint32_t rgb = 0x0035313A;
+	uint8_t alpha = 0xFF;
+
+	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
+
+	ck_assert_uint_eq((alpha << 24) | rgb, pixel_buffer[0]);
+}
+
+START_TEST (pixel_buffer_set_top_right_corner)
+{
+	const unsigned int max_width = 256;
+	unsigned int x_pos = 255;
+	unsigned int y_pos = 0;
+	uint32_t rgb = 0x00FFC0CB;
+	uint8_t alpha = 0xFF;
+
+	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
+
+	ck_assert_uint_eq((alpha << 24) | rgb, pixel_buffer[x_pos]);
+}
+
+START_TEST (pixel_buffer_set_bottom_left_corner)
+{
+	const unsigned int max_width = 256;
+	unsigned int x_pos = 0;
+	unsigned int y_pos = 239;
+	uint32_t rgb = 0x0032CD32;
+	uint8_t alpha = 0xFF;
+
+	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
+
+	ck_assert_uint_eq((alpha << 24) | rgb, pixel_buffer[256 * y_pos]);
+}
+
+START_TEST (pixel_buffer_set_bottom_right_corner)
+{
+	const unsigned int max_width = 256;
+	unsigned int x_pos = max_width - 1;
+	unsigned int y_pos = 239;
+	uint32_t rgb = 0x006A5ACD;
+	uint8_t alpha = 0xFF;
+
+	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
+
+	ck_assert_uint_eq((alpha << 24) | rgb, pixel_buffer[x_pos + (256 * y_pos)]);
+}
+
+START_TEST (pixel_buffer_set_out_of_bounds_allowed)
+{
+	// Setting/accessing an array with an out of bounds subscript
+	// is undefined behaviour and allowed in the function as no bound
+	// checking is done
+	const unsigned int max_width = 256;
+	unsigned int x_pos = max_width;
+	unsigned int y_pos = 242;
+	uint32_t rgb = 0x00FFFF00;
+	uint8_t alpha = 0xFF;
+
+	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
+
+	ck_assert_uint_eq(1, 1); // don't rely on undefined behaviour for result
+}
+
 
 Suite* ppu_suite(void)
 {
@@ -2043,6 +2112,11 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_top_right_quadrant);
 	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_bottom_left_quadrant);
 	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_top_left_quadrant);
+	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_top_left_corner);
+	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_top_right_corner);
+	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_bottom_left_corner);
+	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_bottom_right_corner);
+	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_out_of_bounds_allowed);
 	suite_add_tcase(s, tc_ppu_rendering);
 	tc_cpu_ppu_registers = tcase_create("CPU/PPU Registers");
 	tcase_add_checked_fixture(tc_cpu_ppu_registers, vram_setup, vram_teardown);

@@ -1004,6 +1004,18 @@ void fill_attribute_shift_reg(uint16_t nametable_addr, uint8_t attribute_data
 	}
 }
 
+/* Max width is width of the pixel buffer (typically 256 pixels wide)
+ * x_pos and y_pos are zero indexed
+ * alpha is typically 0xFF
+ * rgb and alpha is concatenated to form a 32-bit RGBA value (technically ARGB)
+ */
+void set_rgba_pixel_in_buffer(uint32_t* pixel_buffer, unsigned max_width
+                             , unsigned int x_pos, unsigned int y_pos
+                             , unsigned int rgb, uint8_t alpha)
+{
+	pixel_buffer[x_pos + (max_width * y_pos)] = (alpha << 24) | rgb;
+}
+
 
 /* 3-bit number for select_lines, which selects input bits 0 through 7
  * Bit mask (1 << select lines) to get the correct input bit
