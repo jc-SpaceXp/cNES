@@ -1989,6 +1989,32 @@ START_TEST (pixel_buffer_set_out_of_bounds_allowed)
 }
 
 
+START_TEST (debug_all_nametables)
+{
+	uint16_t nametable_addr = 0x2000;
+	uint16_t base_nt_addr = 0x2000; // start from NT 0
+	for (int coarse_y = 0; coarse_y < 60; coarse_y++) {
+		if (coarse_y == 30) {
+			base_nt_addr = 0x2800; // start from NT 2 (bottom left)
+		}
+		nametable_addr = base_nt_addr + ((coarse_y % 30) << 5);
+		ck_assert_uint_eq(nametable_addr, base_nt_addr + ((coarse_y % 30) << 5));
+		for (int coarse_x = 0; coarse_x < 64; coarse_x++) {
+			if (coarse_x == 32) {
+				base_nt_addr |= 0x0400; // add 0x400 from NT0 or NT2
+				nametable_addr = base_nt_addr + ((coarse_y % 30) << 5);
+			}
+			ck_assert_uint_eq(nametable_addr, base_nt_addr + (coarse_x & 31) + ((coarse_y % 30) << 5));
+			// valid x increments/addresses are say 0x2000 to 0x201F
+			// so values past 31 need to be masked out
+			// valid y vals are 0-29 so use remainder to calculate the y offset
+			nametable_addr++;
+		}
+		base_nt_addr &= ~0x0400; // reset back to leftmost NT (after coarse_x resets to 0)
+	}
+}
+
+
 Suite* ppu_suite(void)
 {
 	Suite* s;
@@ -2075,6 +2101,7 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_other_bound_1);
 	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_other_bound_2);
 	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_upper_bound);
+	tcase_add_test(tc_ppu_vram_read_writes, debug_all_nametables);
 	suite_add_tcase(s, tc_ppu_vram_read_writes);
 	tc_ppu_rendering = tcase_create("PPU Rendering Related Tests");
 	tcase_add_checked_fixture(tc_ppu_rendering, vram_setup, vram_teardown);
