@@ -53,6 +53,7 @@ static const uint32_t palette[64] = {
 #endif
 
 uint32_t pixels[256 * 240];
+uint32_t nt_pixels[512 * 480];
 
 // Static prototype functions
 static void read_2002(Cpu6502* cpu);
@@ -68,6 +69,7 @@ static void write_4014(const uint8_t data, Cpu6502* cpu); // DMA_DATA
 static uint8_t ppu_vram_addr_inc(const Cpu6502* cpu);
 static void inc_vert_scroll(CpuPpuShare* cpu_ppu_io);
 static void inc_horz_scroll(CpuPpuShare* cpu_ppu_io);
+static unsigned eight_to_one_mux(uint16_t input, unsigned select_lines);
 
 
 Ppu2C02* ppu_init(CpuPpuShare* cp)
@@ -891,6 +893,76 @@ uint16_t nametable_y_offset_address(const unsigned coarse_y)
 	return (coarse_y % 30) << 5;
 }
 
+static uint16_t all_nametables_fill_pixel_buffer(Ppu2C02* ppu)
+{
+	uint16_t base_nametable_address = 0x2000;
+	uint16_t render_nametable_address = base_nametable_address;
+
+	// render related variables
+	struct BackgroundRenderingInternals bkg_internals;
+	for (int coarse_y = 0; coarse_y < 60; coarse_y++) {
+		if (coarse_y == 30) {
+			base_nametable_address = 0x2800; // bottom left nametable
+		}
+		render_nametable_address = base_nametable_address + nametable_y_offset_address(coarse_y);
+
+		for (int coarse_x = 0; coarse_x < 64; coarse_x++) {
+			if (coarse_x == 32) {
+				base_nametable_address |= 0x0400; // right nametables (0x2400 or 0x2C00)
+				render_nametable_address = base_nametable_address + nametable_x_offset_address(coarse_x) + nametable_y_offset_address(coarse_y);
+			}
+			// Fetch data
+			fetch_nt_byte(&ppu->vram, render_nametable_address, &bkg_internals);
+			// get_attribute data
+			fetch_at_byte(&ppu->vram, render_nametable_address, &bkg_internals);
+			fill_attribute_shift_reg(render_nametable_address
+			                        , bkg_internals.at_latch
+			                        , &bkg_internals);
+			// select y pixel inside 8x8 block
+			for (int fine_y = 0; fine_y < 8; fine_y++) {
+				fetch_pt_lo(&ppu->vram, (render_nametable_address & 0x0FFF) | (fine_y << 12)
+				           , ppu_base_pt_address(ppu), &bkg_internals);
+				fetch_pt_hi(&ppu->vram, (render_nametable_address & 0x0FFF) | (fine_y << 12)
+				           , ppu_base_pt_address(ppu), &bkg_internals);
+				bkg_internals.pt_hi_shift_reg = bkg_internals.pt_hi_latch;
+				bkg_internals.pt_lo_shift_reg = bkg_internals.pt_lo_latch;
+				fill_attribute_shift_reg(render_nametable_address
+				                        , bkg_internals.at_latch
+				                        , &bkg_internals);
+
+				// Copied from render_pixel() function, minus the sprite priority
+				for (int fine_x = 0; fine_x < 8; fine_x++) {
+					unsigned bg_palette_addr = (eight_to_one_mux(bkg_internals.at_hi_shift_reg, 0) << 1)
+					                         |  eight_to_one_mux(bkg_internals.at_lo_shift_reg, 0);
+					bg_palette_addr <<= 2;
+					bg_palette_addr += 0x3F00; // bg palette mem starts here
+
+					unsigned bg_colour_index = (eight_to_one_mux(bkg_internals.pt_hi_shift_reg, 0) << 1)
+					                         |  eight_to_one_mux(bkg_internals.pt_lo_shift_reg, 0);
+					if (!bg_colour_index) {
+						bg_palette_addr = 0x3F00; // Take background colour (transparent)
+					}
+
+					unsigned RGB = read_from_ppu_vram(&ppu->vram, bg_palette_addr + bg_colour_index); // Get RGB values
+					if (ppu_show_greyscale(ppu)) { RGB &= 0x30; }
+
+					/* Shift out each cycle */
+					bkg_internals.pt_hi_shift_reg >>= 1;
+					bkg_internals.pt_lo_shift_reg >>= 1;
+					bkg_internals.at_hi_shift_reg >>= 1;
+					bkg_internals.at_lo_shift_reg >>= 1;
+
+					set_rgba_pixel_in_buffer(nt_pixels, 512
+					                        , (coarse_x * 8) + fine_x
+					                        , (coarse_y * 8) + fine_y
+					                        , palette[RGB], 0xFF);
+				}
+			}
+			render_nametable_address++;
+		}
+		base_nametable_address &= ~0x0400; // reset to left nametables (0x2000 or 0x2800)
+	}
+}
 
 void fetch_nt_byte(const struct PpuMemoryMap* vram
                   , uint16_t vram_addr
