@@ -4,9 +4,6 @@
 #include <stdio.h>
 
 
-const unsigned SCREEN_HEIGHT = 240;
-const unsigned SCREEN_WIDTH = 256;
-
 Sdl2Display* sdl2_display_allocator(void)
 {
 	Sdl2Display* cnes_screen = malloc(sizeof(Sdl2Display));
@@ -17,7 +14,9 @@ Sdl2Display* sdl2_display_allocator(void)
 	return cnes_screen; // either valid or NULL
 }
 
-int screen_init(Sdl2Display* cnes_screen, const char* window_name, int scale_factor)
+int screen_init(Sdl2Display* cnes_screen, const char* window_name
+               , const unsigned int width, const unsigned int height
+               , int scale_factor)
 {
 	int error_code = 0;
 	cnes_screen->window = NULL;
@@ -31,8 +30,8 @@ int screen_init(Sdl2Display* cnes_screen, const char* window_name, int scale_fac
 
 	cnes_screen->window = SDL_CreateWindow(window_name
 	                                      , SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED
-	                                      , SCREEN_WIDTH * scale_factor
-	                                      , SCREEN_HEIGHT * scale_factor, SDL_WINDOW_SHOWN);
+	                                      , width * scale_factor
+	                                      , height * scale_factor, SDL_WINDOW_SHOWN);
 	if (cnes_screen->window == NULL) {
 		fprintf(stderr, "SDL failed to create window: %s\n", SDL_GetError());
 		error_code = 1;
@@ -48,7 +47,7 @@ int screen_init(Sdl2Display* cnes_screen, const char* window_name, int scale_fac
 
 	cnes_screen->framebuffer = SDL_CreateTexture(cnes_screen->renderer, SDL_PIXELFORMAT_ARGB8888
 	                                            , SDL_TEXTUREACCESS_STREAMING
-	                                            , SCREEN_WIDTH, SCREEN_HEIGHT);
+	                                            , width, height);
 	if (cnes_screen->framebuffer == NULL) {
 		fprintf(stderr, "SDL failed to create a texture for the window: %s\n", SDL_GetError());
 		error_code = 1;
@@ -61,7 +60,7 @@ int screen_init(Sdl2Display* cnes_screen, const char* window_name, int scale_fac
 	}
 
 	// preserve original aspect ratio
-	if (SDL_RenderSetLogicalSize(cnes_screen->renderer, SCREEN_WIDTH, SCREEN_HEIGHT)) {
+	if (SDL_RenderSetLogicalSize(cnes_screen->renderer, width, height)) {
 		fprintf(stderr, "SDL failed to set a new resolution for the renderer: %s\n", SDL_GetError());
 		error_code = 1;
 	}
@@ -81,9 +80,9 @@ void screen_clear(Sdl2Display* cnes_screen)
 	SDL_Quit();
 }
 
-void draw_pixels(uint32_t* pixels, Sdl2Display* cnes_screen)
+void draw_pixels(uint32_t* pixels, const unsigned int width, Sdl2Display* cnes_screen)
 {
-	SDL_UpdateTexture(cnes_screen->framebuffer, NULL, pixels, SCREEN_WIDTH * sizeof(uint32_t));
+	SDL_UpdateTexture(cnes_screen->framebuffer, NULL, pixels, width * sizeof(uint32_t));
 
 	SDL_RenderClear(cnes_screen->renderer);
 	SDL_RenderCopy(cnes_screen->renderer, cnes_screen->framebuffer, NULL, NULL);

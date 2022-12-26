@@ -1517,7 +1517,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2Display* cnes_screen, const bool no
 			render_pixel(p); // Render pixel every cycle
 		}
 	} else if (p->scanline == 240 && p->cycle == 0) {
-		draw_pixels(pixels, cnes_screen);  // Render frame
+		draw_pixels(pixels, DEFAULT_WIDTH, cnes_screen);  // Render frame
 	}
 
 	/* Process BG Scanlines */

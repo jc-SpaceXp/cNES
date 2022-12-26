@@ -197,7 +197,7 @@ int main(int argc, char** argv)
 		goto program_exit;
 	}
 
-	if (screen_init(cnes_main, "cNES", ui_scale_factor)) {
+	if (screen_init(cnes_main, "cNES", DEFAULT_WIDTH, DEFAULT_HEIGHT, ui_scale_factor)) {
 		fprintf(stderr, "Error when initialsing the SDL2 display\n");
 	}
 
