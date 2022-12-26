@@ -300,9 +300,9 @@ typedef struct {
 	SDL_Window* window;
 	SDL_Renderer* renderer;
 	SDL_Texture* framebuffer;
-} Display;
+} Sdl2Display;
 
-extern Display* nes_screen;
+extern Sdl2Display* cnes_main;
 
 // Initialised in emu.c
 extern Cpu6502* cpu;

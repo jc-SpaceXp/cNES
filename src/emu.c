@@ -19,7 +19,8 @@
 #define LEFT_BUTTON   0x40U
 #define RIGHT_BUTTON  0x80U
 
-void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Display* nes_screen, const bool no_logging)
+
+void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2Display* nes_screen, const bool no_logging)
 {
 	// 3 : 1 PPU to CPU ratio
 	clock_cpu(cpu, no_logging);
@@ -190,7 +191,7 @@ int main(int argc, char** argv)
 	CpuPpuShare* cpu_ppu = mmio_init();
 	Cpu6502* cpu = cpu_init(0xC000, cpu_ppu, cpu_mapper);
 	Ppu2C02* ppu = ppu_init(cpu_ppu);
-	Display* nes_screen = screen_init(ui_scale_factor);
+	Sdl2Display* nes_screen = screen_init(ui_scale_factor);
 
 	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu || !nes_screen) {
 		goto program_exit;

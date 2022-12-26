@@ -1381,7 +1381,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
  * RENDERING             *
  *************************/
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logging)
+void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2Display* nes_screen, const bool no_logging)
 {
 #ifdef __DEBUG__
 	if (!no_logging && p->cpu_ppu_io->write_debug) {

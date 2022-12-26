@@ -7,9 +7,9 @@
 const unsigned SCREEN_HEIGHT = 240;
 const unsigned SCREEN_WIDTH = 256;
 
-Display* screen_init(int scale_factor)
+Sdl2Display* screen_init(int scale_factor)
 {
-	Display* nes = malloc(sizeof(Display));
+	Sdl2Display* nes = malloc(sizeof(Sdl2Display));
 	if (!nes) {
 		fprintf(stderr, "Failed to allocate enough memory for Display\n");
 		return nes;
@@ -60,14 +60,14 @@ Display* screen_init(int scale_factor)
 	return nes;
 }
 
-void screen_clear(Display* nes)
+void screen_clear(Sdl2Display* nes)
 {
 	SDL_DestroyRenderer(nes->renderer);
 	SDL_DestroyWindow(nes->window);
 	SDL_Quit();
 }
 
-void draw_pixels(uint32_t* pixels, Display* nes)
+void draw_pixels(uint32_t* pixels, Sdl2Display* nes)
 {
 	SDL_UpdateTexture(nes->framebuffer, NULL, pixels, SCREEN_WIDTH * sizeof(uint32_t));
 

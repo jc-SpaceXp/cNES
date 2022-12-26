@@ -64,7 +64,7 @@ void set_rgba_pixel_in_buffer(uint32_t* pixel_buffer, unsigned int max_width
                              , unsigned int rgb, uint8_t alpha);
 
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Display* nes_screen, const bool no_logging);
+void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2Display* nes_screen, const bool no_logging);
 
 
 #endif /* __NES_PPU__ */
