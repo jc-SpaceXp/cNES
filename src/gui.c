@@ -74,18 +74,18 @@ int screen_init(Sdl2Display* cnes_screen, const char* window_name, int scale_fac
 	return error_code;
 }
 
-void screen_clear(Sdl2Display* nes)
+void screen_clear(Sdl2Display* cnes_screen)
 {
-	SDL_DestroyRenderer(nes->renderer);
-	SDL_DestroyWindow(nes->window);
+	SDL_DestroyRenderer(cnes_screen->renderer);
+	SDL_DestroyWindow(cnes_screen->window);
 	SDL_Quit();
 }
 
-void draw_pixels(uint32_t* pixels, Sdl2Display* nes)
+void draw_pixels(uint32_t* pixels, Sdl2Display* cnes_screen)
 {
-	SDL_UpdateTexture(nes->framebuffer, NULL, pixels, SCREEN_WIDTH * sizeof(uint32_t));
+	SDL_UpdateTexture(cnes_screen->framebuffer, NULL, pixels, SCREEN_WIDTH * sizeof(uint32_t));
 
-	SDL_RenderClear(nes->renderer);
-	SDL_RenderCopy(nes->renderer, nes->framebuffer, NULL, NULL);
-	SDL_RenderPresent(nes->renderer);
+	SDL_RenderClear(cnes_screen->renderer);
+	SDL_RenderCopy(cnes_screen->renderer, cnes_screen->framebuffer, NULL, NULL);
+	SDL_RenderPresent(cnes_screen->renderer);
 }

@@ -20,13 +20,13 @@
 #define RIGHT_BUTTON  0x80U
 
 
-void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2Display* nes_screen, const bool no_logging)
+void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2Display* cnes_screen, const bool no_logging)
 {
 	// 3 : 1 PPU to CPU ratio
 	clock_cpu(cpu, no_logging);
-	clock_ppu(ppu, cpu, nes_screen, no_logging);
-	clock_ppu(ppu, cpu, nes_screen, no_logging);
-	clock_ppu(ppu, cpu, nes_screen, no_logging);
+	clock_ppu(ppu, cpu, cnes_screen, no_logging);
+	clock_ppu(ppu, cpu, cnes_screen, no_logging);
+	clock_ppu(ppu, cpu, cnes_screen, no_logging);
 }
 
 void emu_usuage(const char* program_name)
