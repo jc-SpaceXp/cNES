@@ -193,7 +193,7 @@ int main(int argc, char** argv)
 	Ppu2C02* ppu = ppu_init(cpu_ppu);
 	Sdl2Display* cnes_main = sdl2_display_allocator();
 
-	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu | !cnes_main) {
+	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu || !cnes_main) {
 		goto program_exit;
 	}
 
