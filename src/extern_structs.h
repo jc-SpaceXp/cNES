@@ -302,8 +302,6 @@ typedef struct {
 	SDL_Texture* framebuffer;
 } Sdl2Display;
 
-extern Sdl2Display* cnes_main;
-
 // Initialised in emu.c
 extern Cpu6502* cpu;
 extern CpuPpuShare* cpu_ppu;
