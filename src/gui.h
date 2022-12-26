@@ -4,7 +4,8 @@
 #include "extern_structs.h" // includes SDL header
 #include <stdint.h>
 
-Sdl2Display* screen_init(int scale_factor);
+Sdl2Display* sdl2_display_allocator(void);
+int screen_init(Sdl2Display* cnes_screen, const char* window_name, int scale_factor);
 void screen_clear(Sdl2Display* nes);
 void draw_pixels(uint32_t* pixels, Sdl2Display* nes); // Draws frame to screen
 

@@ -191,10 +191,14 @@ int main(int argc, char** argv)
 	CpuPpuShare* cpu_ppu = mmio_init();
 	Cpu6502* cpu = cpu_init(0xC000, cpu_ppu, cpu_mapper);
 	Ppu2C02* ppu = ppu_init(cpu_ppu);
-	Sdl2Display* nes_screen = screen_init(ui_scale_factor);
+	Sdl2Display* cnes_main = sdl2_display_allocator();
 
-	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu || !nes_screen) {
+	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu | !cnes_main) {
 		goto program_exit;
+	}
+
+	if (screen_init(cnes_main, "cNES", ui_scale_factor)) {
+		fprintf(stderr, "Error when initialsing the SDL2 display\n");
 	}
 
 	if (parse_nes_cart_file(cart, filename, cpu, ppu)) {
@@ -211,7 +215,7 @@ int main(int argc, char** argv)
 	// run for a fixed number of cycles if specified by the user
 	if (max_cycles) {
 		while (cpu->cycle < max_cycles) {
-			clock_all_units(cpu, ppu, nes_screen, no_logging);
+			clock_all_units(cpu, ppu, cnes_main, no_logging);
 		}
 	} else {
 		/* SDL GAME LOOOOOOP */
@@ -226,12 +230,12 @@ int main(int argc, char** argv)
 					process_player_1_input(e, cpu);
 				}
 			}
-			clock_all_units(cpu, ppu, nes_screen, no_logging);
+			clock_all_units(cpu, ppu, cnes_main, no_logging);
 		}
 	}
 
-	screen_clear(nes_screen);
-	nes_screen = NULL;
+	screen_clear(cnes_main);
+	cnes_main = NULL;
 
 	//cpu_mem_hexdump_addr_range(cpu, 0x0000, 0x2000);
 	//ppu_mem_hexdump_addr_range(ppu, VRAM, 0x0000, 0x2000);
@@ -240,7 +244,7 @@ int main(int argc, char** argv)
 
 program_exit:
 	free(cart);
-	free(nes_screen);
+	free(cnes_main);
 	free(ppu);
 	free(cpu);
 	free(cpu_ppu);
