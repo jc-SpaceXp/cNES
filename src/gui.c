@@ -24,7 +24,6 @@ Display* screen_init(int scale_factor)
 	              SCREEN_WIDTH * scale_factor, SCREEN_HEIGHT * scale_factor, SDL_WINDOW_SHOWN);
 	nes->renderer = SDL_CreateRenderer(nes->window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	nes->framebuffer = SDL_CreateTexture(nes->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
-	nes->framebuffer = SDL_CreateTexture(nes->renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH, SCREEN_HEIGHT);
 
 	// Apply scaling factor
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
