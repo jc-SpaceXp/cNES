@@ -893,7 +893,7 @@ uint16_t nametable_y_offset_address(const unsigned coarse_y)
 	return (coarse_y % 30) << 5;
 }
 
-static uint16_t all_nametables_fill_pixel_buffer(Ppu2C02* ppu)
+static void all_nametables_fill_pixel_buffer(Ppu2C02* ppu)
 {
 	uint16_t base_nametable_address = 0x2000;
 	uint16_t render_nametable_address = base_nametable_address;
