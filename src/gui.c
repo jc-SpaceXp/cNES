@@ -23,11 +23,6 @@ int screen_init(Sdl2Display* cnes_screen, const char* window_name
 	cnes_screen->renderer = NULL;
 	cnes_screen->framebuffer = NULL;
 
-	if (SDL_Init(SDL_INIT_VIDEO)) {
-		fprintf(stderr, "Failed to initialise the SDL library: %s\n", SDL_GetError());
-		error_code = 1;
-	}
-
 	cnes_screen->window = SDL_CreateWindow(window_name
 	                                      , SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED
 	                                      , width * scale_factor

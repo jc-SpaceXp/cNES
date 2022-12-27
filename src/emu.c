@@ -217,6 +217,10 @@ int main(int argc, char** argv)
 		goto program_exit;
 	}
 
+	if (SDL_Init(SDL_INIT_VIDEO)) {
+		fprintf(stderr, "Failed to initialise the SDL library: %s\n", SDL_GetError());
+	}
+
 	if (screen_init(cnes_windows.cnes_main, "cNES"
 	               , DEFAULT_WIDTH, DEFAULT_HEIGHT, ui_scale_factor)) {
 		fprintf(stderr, "Error when initialsing the SDL2 display\n");
