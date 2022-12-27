@@ -1182,8 +1182,7 @@ static void render_pixel(Ppu2C02 *p)
 		}
 	}
 
-	// Send pixels to pixel buffer
-	pixels[(p->cycle + (256 * p->scanline) - 1)] = 0xFF000000 | palette[RGB]; // Place in palette array, alpha set to 0xFF
+	set_rgba_pixel_in_buffer(pixels, 256, p->cycle - 1, p->scanline, palette[RGB], 0xFF);
 }
 
 /* Intended for ppu cycles 257-320
