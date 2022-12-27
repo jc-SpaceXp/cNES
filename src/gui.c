@@ -70,11 +70,11 @@ int screen_init(Sdl2Display* cnes_screen, const char* window_name
 	return error_code;
 }
 
-void screen_clear(Sdl2Display* cnes_screen)
+void kill_screen(Sdl2Display* cnes_screen)
 {
 	SDL_DestroyRenderer(cnes_screen->renderer);
 	SDL_DestroyWindow(cnes_screen->window);
-	SDL_Quit();
+	cnes_screen->window = NULL;
 }
 
 void draw_pixels(uint32_t* pixels, const unsigned int width, Sdl2Display* cnes_screen)
