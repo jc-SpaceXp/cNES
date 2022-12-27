@@ -115,9 +115,7 @@ void process_window_events(SDL_Event e, Sdl2Display* cnes_screen)
 		case SDL_WINDOWEVENT:
 			switch (e.window.event) {
 			case SDL_WINDOWEVENT_CLOSE:
-				SDL_DestroyRenderer(cnes_screen->renderer);
-				SDL_DestroyWindow(cnes_screen->window);
-				cnes_screen->window = NULL;
+				kill_screen(cnes_screen);
 				break;
 			default:
 				break;
