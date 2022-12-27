@@ -246,31 +246,27 @@ int main(int argc, char** argv)
 		stdout = freopen("trace_log.txt", "w", stdout);
 	}
 
-	// run for a fixed number of cycles if specified by the user
-	if (max_cycles) {
-		while (cpu->cycle < max_cycles) {
-			clock_all_units(cpu, ppu, &cnes_windows, no_logging);
-		}
-	} else {
-		/* SDL GAME LOOOOOOP */
-		int quit = 0;
-		SDL_Event e;
-		while (!quit) {
-			if (ppu->cpu_ppu_io->ppu_status & 0x80) { // process input when ppu is idle
-				while (SDL_PollEvent(&e)) {
-					if (e.type == SDL_QUIT) {
-						quit = 1;
-					}
-					process_player_1_input(e, cpu);
+	/* SDL GAME LOOOOOOP */
+	int quit = 0;
+	SDL_Event e;
+	while (!quit) {
+		// run for a fixed number of cycles if specified by the user
+		if (max_cycles && (cpu->cycle > max_cycles)) { quit = 1; }
 
-					process_window_events(e, cnes_windows.cnes_main);
-#ifdef __DEBUG__
-					process_window_events(e, cnes_windows.cnes_nt_viewer);
-#endif/* __DEBUG__ */
+		if (ppu->cpu_ppu_io->ppu_status & 0x80) { // process input when ppu is idle
+			while (SDL_PollEvent(&e)) {
+				if (e.type == SDL_QUIT) {
+					quit = 1;
 				}
+				process_player_1_input(e, cpu);
+
+				process_window_events(e, cnes_windows.cnes_main);
+#ifdef __DEBUG__
+				process_window_events(e, cnes_windows.cnes_nt_viewer);
+#endif/* __DEBUG__ */
 			}
-			clock_all_units(cpu, ppu, &cnes_windows, no_logging);
 		}
+		clock_all_units(cpu, ppu, &cnes_windows, no_logging);
 	}
 
 	SDL_Quit();
