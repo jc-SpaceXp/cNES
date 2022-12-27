@@ -1381,7 +1381,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
  * RENDERING             *
  *************************/
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2Display* cnes_screen, const bool no_logging)
+void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const bool no_logging)
 {
 #ifdef __DEBUG__
 	if (!no_logging && p->cpu_ppu_io->write_debug) {
@@ -1517,7 +1517,15 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2Display* cnes_screen, const bool no
 			render_pixel(p); // Render pixel every cycle
 		}
 	} else if (p->scanline == 240 && p->cycle == 0) {
-		draw_pixels(pixels, DEFAULT_WIDTH, cnes_screen);  // Render frame
+		draw_pixels(pixels, DEFAULT_WIDTH, cnes_windows->cnes_main);  // Render frame
+
+#ifdef __DEBUG__
+		// The for loop is expensive don't execute if necessary
+		if (cnes_windows->cnes_nt_viewer->window) {
+			all_nametables_fill_pixel_buffer(p);
+		}
+		draw_pixels(nt_pixels, DEFAULT_WIDTH * 2, cnes_windows->cnes_nt_viewer);  // Render frame
+#endif /*__DEBUG__ */
 	}
 
 	/* Process BG Scanlines */

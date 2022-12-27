@@ -37,6 +37,8 @@ int screen_init(Sdl2Display* cnes_screen, const char* window_name
 		error_code = 1;
 	}
 
+	cnes_screen->window_id = SDL_GetWindowID(cnes_screen->window);
+
 	cnes_screen->renderer = SDL_CreateRenderer(cnes_screen->window, -1
 	                                          , SDL_RENDERER_ACCELERATED
 	                                            | SDL_RENDERER_PRESENTVSYNC);
@@ -82,9 +84,12 @@ void screen_clear(Sdl2Display* cnes_screen)
 
 void draw_pixels(uint32_t* pixels, const unsigned int width, Sdl2Display* cnes_screen)
 {
-	SDL_UpdateTexture(cnes_screen->framebuffer, NULL, pixels, width * sizeof(uint32_t));
+	// Only render if object exists
+	if (cnes_screen->window) {
+		SDL_UpdateTexture(cnes_screen->framebuffer, NULL, pixels, width * sizeof(uint32_t));
 
-	SDL_RenderClear(cnes_screen->renderer);
-	SDL_RenderCopy(cnes_screen->renderer, cnes_screen->framebuffer, NULL, NULL);
-	SDL_RenderPresent(cnes_screen->renderer);
+		SDL_RenderClear(cnes_screen->renderer);
+		SDL_RenderCopy(cnes_screen->renderer, cnes_screen->framebuffer, NULL, NULL);
+		SDL_RenderPresent(cnes_screen->renderer);
+	}
 }

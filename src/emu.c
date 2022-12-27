@@ -20,13 +20,13 @@
 #define RIGHT_BUTTON  0x80U
 
 
-void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2Display* cnes_screen, const bool no_logging)
+void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2DisplayOutputs* cnes_windows, const bool no_logging)
 {
 	// 3 : 1 PPU to CPU ratio
 	clock_cpu(cpu, no_logging);
-	clock_ppu(ppu, cpu, cnes_screen, no_logging);
-	clock_ppu(ppu, cpu, cnes_screen, no_logging);
-	clock_ppu(ppu, cpu, cnes_screen, no_logging);
+	clock_ppu(ppu, cpu, cnes_windows, no_logging);
+	clock_ppu(ppu, cpu, cnes_windows, no_logging);
+	clock_ppu(ppu, cpu, cnes_windows, no_logging);
 }
 
 void emu_usuage(const char* program_name)
@@ -105,6 +105,25 @@ void process_player_1_input(SDL_Event e, Cpu6502* cpu)
 			break;
 		}
 		break; // SDL_KEYUP
+	}
+}
+
+void process_window_events(SDL_Event e, Sdl2Display* cnes_screen)
+{
+	if ((cnes_screen) && (e.window.windowID == cnes_screen->window_id)) {
+		switch (e.type) {
+		case SDL_WINDOWEVENT:
+			switch (e.window.event) {
+			case SDL_WINDOWEVENT_CLOSE:
+				SDL_DestroyRenderer(cnes_screen->renderer);
+				SDL_DestroyWindow(cnes_screen->window);
+				cnes_screen->window = NULL;
+				break;
+			default:
+				break;
+			}
+			break; // SDL_WINDOWEVENT
+		}
 	}
 }
 
@@ -191,15 +210,28 @@ int main(int argc, char** argv)
 	CpuPpuShare* cpu_ppu = mmio_init();
 	Cpu6502* cpu = cpu_init(0xC000, cpu_ppu, cpu_mapper);
 	Ppu2C02* ppu = ppu_init(cpu_ppu);
-	Sdl2Display* cnes_main = sdl2_display_allocator();
+	Sdl2DisplayOutputs cnes_windows;
+	cnes_windows.cnes_main = sdl2_display_allocator();
 
-	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu || !cnes_main) {
+	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu || !cnes_windows.cnes_main) {
 		goto program_exit;
 	}
 
-	if (screen_init(cnes_main, "cNES", DEFAULT_WIDTH, DEFAULT_HEIGHT, ui_scale_factor)) {
+	if (screen_init(cnes_windows.cnes_main, "cNES"
+	               , DEFAULT_WIDTH, DEFAULT_HEIGHT, ui_scale_factor)) {
 		fprintf(stderr, "Error when initialsing the SDL2 display\n");
 	}
+
+#ifdef __DEBUG__
+	cnes_windows.cnes_nt_viewer = sdl2_display_allocator();
+	if (!cnes_windows.cnes_nt_viewer) {
+		goto program_exit;
+	}
+	if (screen_init(cnes_windows.cnes_nt_viewer, "cNES Nametable Viewer"
+	               , DEFAULT_WIDTH * 2, DEFAULT_HEIGHT * 2, ui_scale_factor)) {
+		fprintf(stderr, "Error when initialsing the SDL2 display\n");
+	}
+#endif /* __DEBUG__ */
 
 	if (parse_nes_cart_file(cart, filename, cpu, ppu)) {
 		goto program_exit;
@@ -215,7 +247,7 @@ int main(int argc, char** argv)
 	// run for a fixed number of cycles if specified by the user
 	if (max_cycles) {
 		while (cpu->cycle < max_cycles) {
-			clock_all_units(cpu, ppu, cnes_main, no_logging);
+			clock_all_units(cpu, ppu, &cnes_windows, no_logging);
 		}
 	} else {
 		/* SDL GAME LOOOOOOP */
@@ -228,14 +260,18 @@ int main(int argc, char** argv)
 						quit = 1;
 					}
 					process_player_1_input(e, cpu);
+
+					process_window_events(e, cnes_windows.cnes_main);
+#ifdef __DEBUG__
+					process_window_events(e, cnes_windows.cnes_nt_viewer);
+#endif/* __DEBUG__ */
 				}
 			}
-			clock_all_units(cpu, ppu, cnes_main, no_logging);
+			clock_all_units(cpu, ppu, &cnes_windows, no_logging);
 		}
 	}
 
-	screen_clear(cnes_main);
-	cnes_main = NULL;
+	SDL_Quit();
 
 	//cpu_mem_hexdump_addr_range(cpu, 0x0000, 0x2000);
 	//ppu_mem_hexdump_addr_range(ppu, VRAM, 0x0000, 0x2000);
@@ -244,7 +280,10 @@ int main(int argc, char** argv)
 
 program_exit:
 	free(cart);
-	free(cnes_main);
+	free(cnes_windows.cnes_main);
+#ifdef __DEBUG__
+	free(cnes_windows.cnes_nt_viewer);
+#endif /* __DEBUG__ */
 	free(ppu);
 	free(cpu);
 	free(cpu_ppu);
