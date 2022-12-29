@@ -186,6 +186,11 @@ typedef struct {
 	bool delay_nmi;  // only true when enabling NMI via $2000 during VBlank
 	bool cpu_ignore_fetch_on_nmi;
 
+	// Instruction trace logger
+	char instruction[18]; // complete instruction e.g. LDA $2000
+	char end[10]; // ending of the instruction e.g. #$2000
+	char append_int[20]; // conversion for int to char
+
 	// NES controller
 	unsigned controller_latch; // latch signal for controller shift register
 	uint8_t player_1_controller;
