@@ -182,7 +182,6 @@ typedef struct {
 	uint8_t opcode;
 	int8_t offset;  // used in branch and indexed addressing modes
 	unsigned instruction_cycles_remaining; // initial value = max number of cycles
-	void (*decoder)(int); // decoder function pointer, see .c file
 
 	bool delay_nmi;  // only true when enabling NMI via $2000 during VBlank
 	bool cpu_ignore_fetch_on_nmi;
