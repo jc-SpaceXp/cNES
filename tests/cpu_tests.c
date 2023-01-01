@@ -4726,6 +4726,178 @@ START_TEST (log_correct_instruction_mnemonic_tya)
 END_TEST
 
 
+START_TEST (abs_store_only_writes_on_last_cycle)
+{
+	char ins[3][4] = { "STA", "STX", "STY" };
+	uint8_t store_opcodes[3] = { reverse_opcode_lut(&ins[0], ABS)
+	                           , reverse_opcode_lut(&ins[1], ABS)
+	                           , reverse_opcode_lut(&ins[2], ABS)};
+	cpu->instruction_cycles_remaining = 1;
+	cpu->operand = 0xFF; // should remain unchanged
+	// target address is (addr_hi | addr_lo)
+	cpu->addr_hi = 0x58;
+	cpu->addr_lo = 0xC8;
+	cpu->A = 0x32;
+	cpu->X = 0x32;
+	cpu->Y = 0x32;
+
+	decode_opcode_lut[store_opcodes[_i]](cpu);
+	execute_opcode_lut[store_opcodes[_i]](cpu);
+
+	// verify a read didn't happen
+	ck_assert_uint_eq(0xFF, cpu->operand);
+	// verify a write occured
+	ck_assert_uint_eq(0x32, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+START_TEST (absy_store_only_writes_on_last_cycle)
+{
+	// STX/STY don't support this address mode
+	char ins[4] = "STA";
+	uint8_t sta_opcodes[3] = { reverse_opcode_lut(&ins, ABSY)
+	                         , reverse_opcode_lut(&ins, ABSY)
+	                         , reverse_opcode_lut(&ins, ABSY)};
+	cpu->instruction_cycles_remaining = 1;
+	cpu->operand = 0xFF; // should remain unchanged
+	// target address is (addr_hi | addr_lo)
+	cpu->addr_hi = 0x10;
+	cpu->addr_lo = 0x15;
+	cpu->A = 0xC7;
+	cpu->X = 0xC7;
+	cpu->Y = 0xC7;
+
+	decode_opcode_lut[sta_opcodes[_i]](cpu);
+	execute_opcode_lut[sta_opcodes[_i]](cpu);
+
+	// verify a read didn't happen
+	ck_assert_uint_eq(0xFF, cpu->operand);
+	// verify a write occured
+	ck_assert_uint_eq(0xC7, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+START_TEST (indx_store_only_writes_on_last_cycle)
+{
+	// STX/STY don't support this address mode
+	char ins[4] = "STA";
+	uint8_t sta_opcodes[3] = { reverse_opcode_lut(&ins, INDX)
+	                         , reverse_opcode_lut(&ins, INDX)
+	                         , reverse_opcode_lut(&ins, INDX)};
+	cpu->instruction_cycles_remaining = 1;
+	cpu->operand = 0xFF; // should remain unchanged
+	// target address is (addr_hi | addr_lo)
+	cpu->addr_hi = 0x00;
+	cpu->addr_lo = 0x08;
+	cpu->A = 0x62;
+	cpu->X = 0x62;
+	cpu->Y = 0x62;
+
+	decode_opcode_lut[sta_opcodes[_i]](cpu);
+	execute_opcode_lut[sta_opcodes[_i]](cpu);
+
+	// verify a read didn't happen
+	ck_assert_uint_eq(0xFF, cpu->operand);
+	// verify a write occured
+	ck_assert_uint_eq(0x62, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+START_TEST (indy_store_only_writes_on_last_cycle)
+{
+	// STX/STY don't support this address mode
+	char ins[4] = "STA";
+	uint8_t sta_opcodes[3] = { reverse_opcode_lut(&ins, INDY)
+	                         , reverse_opcode_lut(&ins, INDY)
+	                         , reverse_opcode_lut(&ins, INDY)};
+	cpu->instruction_cycles_remaining = 1;
+	cpu->operand = 0xFF; // should remain unchanged
+	// target address is (addr_hi | addr_lo)
+	cpu->addr_hi = 0x0B;
+	cpu->addr_lo = 0xC8;
+	cpu->A = 0x77;
+	cpu->X = 0x77;
+	cpu->Y = 0x77;
+
+	decode_opcode_lut[sta_opcodes[_i]](cpu);
+	execute_opcode_lut[sta_opcodes[_i]](cpu);
+
+	// verify a read didn't happen
+	ck_assert_uint_eq(0xFF, cpu->operand);
+	// verify a write occured
+	ck_assert_uint_eq(0x77, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+START_TEST (zp_store_only_writes_on_last_cycle)
+{
+	char ins[3][4] = { "STA", "STX", "STY" };
+	uint8_t store_opcodes[3] = { reverse_opcode_lut(&ins[0], ZP)
+	                           , reverse_opcode_lut(&ins[1], ZP)
+	                           , reverse_opcode_lut(&ins[2], ZP)};
+	cpu->instruction_cycles_remaining = 1;
+	cpu->operand = 0xFF; // should remain unchanged
+	// target address is (addr_lo)
+	cpu->addr_lo = 0xDC;
+	cpu->A = 0x14;
+	cpu->X = 0x14;
+	cpu->Y = 0x14;
+
+	decode_opcode_lut[store_opcodes[_i]](cpu);
+	execute_opcode_lut[store_opcodes[_i]](cpu);
+
+	// verify a read didn't happen
+	ck_assert_uint_eq(0xFF, cpu->operand);
+	// verify a write occured
+	ck_assert_uint_eq(0x14, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+START_TEST (zpx_store_only_writes_on_last_cycle)
+{
+	char ins[2][4] = { "STA", "STY" };
+	uint8_t store_opcodes[2] = { reverse_opcode_lut(&ins[0], ZPX)
+	                           , reverse_opcode_lut(&ins[1], ZPX)};
+	cpu->instruction_cycles_remaining = 1;
+	cpu->operand = 0xFF; // should remain unchanged
+	// target address is (addr_lo + X)
+	cpu->addr_lo = 0xA0;
+	cpu->A = 0x22;
+	cpu->X = 0x0A;
+	cpu->Y = 0x22;
+
+	decode_opcode_lut[store_opcodes[_i]](cpu);
+	execute_opcode_lut[store_opcodes[_i]](cpu);
+
+	// verify a read didn't happen
+	ck_assert_uint_eq(0xFF, cpu->operand);
+	// verify a write occured
+	ck_assert_uint_eq(0x22, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+START_TEST (zpy_store_only_writes_on_last_cycle)
+{
+	char ins[4] = "STX";
+	uint8_t stx_opcode = reverse_opcode_lut(&ins, ZPY);
+	cpu->instruction_cycles_remaining = 1;
+	cpu->operand = 0xFF; // should remain unchanged
+	// target address is (addr_lo + Y)
+	cpu->addr_lo = 0x41;
+	cpu->X = 0x83;
+	cpu->Y = 0x01;
+
+	decode_opcode_lut[stx_opcode](cpu);
+	execute_opcode_lut[stx_opcode](cpu);
+
+	// verify a read didn't happen
+	ck_assert_uint_eq(0xFF, cpu->operand);
+	// verify a write occured
+	ck_assert_uint_eq(0x83, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+
 Suite* cpu_suite(void)
 {
 	Suite* s;
@@ -4740,6 +4912,7 @@ Suite* cpu_suite(void)
 	TCase* tc_cpu_isa;
 	TCase* tc_cpu_hardware_interrupts;
 	TCase* tc_cpu_instruction_trace_logger;
+	TCase* tc_cpu_address_modes_rw_logic;
 
 	s = suite_create("Cpu Tests");
 	tc_test_helpers = tcase_create("Test Helpers");
@@ -5025,6 +5198,16 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_txs);
 	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_tya);
 	suite_add_tcase(s, tc_cpu_instruction_trace_logger);
+	tc_cpu_address_modes_rw_logic = tcase_create("Cpu Address Modes R/W Logic");
+	tcase_add_checked_fixture(tc_cpu_address_modes_rw_logic, setup, teardown);
+	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, abs_store_only_writes_on_last_cycle, 0, 3);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, absy_store_only_writes_on_last_cycle);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, indx_store_only_writes_on_last_cycle);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, indy_store_only_writes_on_last_cycle);
+	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, zp_store_only_writes_on_last_cycle, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, zpx_store_only_writes_on_last_cycle, 0, 2);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, zpy_store_only_writes_on_last_cycle);
+	suite_add_tcase(s, tc_cpu_address_modes_rw_logic);
 
 	return s;
 }
