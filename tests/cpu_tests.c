@@ -4751,6 +4751,32 @@ START_TEST (abs_store_only_writes_on_last_cycle)
 }
 END_TEST
 
+START_TEST (absx_store_only_writes_on_last_cycle)
+{
+	// STX/STY don't support this address mode
+	char ins[4] = "STA";
+	uint8_t sta_opcodes[3] = { reverse_opcode_lut(&ins, ABSX)
+	                         , reverse_opcode_lut(&ins, ABSX)
+	                         , reverse_opcode_lut(&ins, ABSX)};
+	cpu->instruction_cycles_remaining = 1;
+	cpu->operand = 0xFF; // should remain unchanged
+	// target address is (addr_hi | addr_lo)
+	cpu->addr_hi = 0x68;
+	cpu->addr_lo = 0x00;
+	cpu->A = 0x91;
+	cpu->X = 0x91;
+	cpu->Y = 0x91;
+
+	decode_opcode_lut[sta_opcodes[_i]](cpu);
+	execute_opcode_lut[sta_opcodes[_i]](cpu);
+
+	// verify a read didn't happen
+	ck_assert_uint_eq(0xFF, cpu->operand);
+	// verify a write occured
+	ck_assert_uint_eq(0x91, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
 START_TEST (absy_store_only_writes_on_last_cycle)
 {
 	// STX/STY don't support this address mode
@@ -5201,6 +5227,7 @@ Suite* cpu_suite(void)
 	tc_cpu_address_modes_rw_logic = tcase_create("Cpu Address Modes R/W Logic");
 	tcase_add_checked_fixture(tc_cpu_address_modes_rw_logic, setup, teardown);
 	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, abs_store_only_writes_on_last_cycle, 0, 3);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, absx_store_only_writes_on_last_cycle);
 	tcase_add_test(tc_cpu_address_modes_rw_logic, absy_store_only_writes_on_last_cycle);
 	tcase_add_test(tc_cpu_address_modes_rw_logic, indx_store_only_writes_on_last_cycle);
 	tcase_add_test(tc_cpu_address_modes_rw_logic, indy_store_only_writes_on_last_cycle);
