@@ -4924,6 +4924,688 @@ START_TEST (zpy_store_only_writes_on_last_cycle)
 END_TEST
 
 
+START_TEST (abs_read_store_t1)
+{
+	char ins[4] = "EOR";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->PC = 0x003B;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x81);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x81, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (abs_read_store_t2)
+{
+	char ins[4] = "EOR";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->PC = 0x003C;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x05);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
+
+	// addr_hi should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x05, cpu->addr_hi);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (abs_read_store_t3)
+{
+	char ins[4] = "EOR";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->addr_hi = 0x05;
+	cpu->addr_lo = 0x81;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	ck_assert_uint_eq(0x0581, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (abs_rmw_t1)
+{
+	char ins[4] = "DEC";
+	cpu->instruction_cycles_remaining = 5;
+	cpu->PC = 0x0035;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x51);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x51, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (abs_rmw_t2)
+{
+	char ins[4] = "DEC";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->PC = 0x0036;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x13);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
+
+	// addr_hi should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x13, cpu->addr_hi);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (absx_read_store_t1)
+{
+	char ins[4] = "LDA";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->PC = 0x004B;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x52);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x52, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (absx_read_store_t2)
+{
+	char ins[4] = "LDA";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->PC = 0x004C;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x11);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// addr_hi should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x11, cpu->addr_hi);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (absx_read_store_t3_no_page_cross)
+{
+	char ins[4] = "LDA";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->addr_hi = 0x11;
+	cpu->addr_lo = 0x52;
+	cpu->X = 0;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	ck_assert_uint_eq(0x1152, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (absx_read_store_t4)
+{
+	char ins[4] = "LDA";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->addr_hi = 0x11;
+	cpu->addr_lo = 0x52;
+	cpu->X = 0xFF;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	ck_assert_uint_eq(0x1152 + cpu->X, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (absx_rmw_t1)
+{
+	char ins[4] = "DEC";
+	cpu->instruction_cycles_remaining = 6;
+	cpu->PC = 0x0075;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x27);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x27, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (absx_rmw_t2)
+{
+	char ins[4] = "DEC";
+	cpu->instruction_cycles_remaining = 5;
+	cpu->PC = 0x0056;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x17);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// addr_hi should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x17, cpu->addr_hi);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (absx_rmw_t4_2nd_absx_read)
+{
+	char ins[4] = "DEC";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->addr_hi = 0x17;
+	cpu->addr_lo = 0x27;
+	// actual read from page-crossed address if needed
+	// otherwise the T3 read was in fact the correct read
+	cpu->X = 0x51;
+	write_to_cpu(cpu, 0x1727 + cpu->X, 0x20);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// target_addr is the absolute address plus the X register
+	// a read occurs at that address too
+	ck_assert_uint_eq(0x1727 + cpu->X, cpu->target_addr);
+	ck_assert_uint_eq(0x20, cpu->unmodified_data);
+}
+END_TEST
+
+START_TEST (absx_rmw_t5_dummy_write)
+{
+	char ins[4] = "DEC";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->target_addr = 0x1351;
+	cpu->unmodified_data = 0xF3;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// read from T4 is written back to target_addr here
+	ck_assert_uint_eq(0xF3, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+START_TEST (absy_read_store_t1)
+{
+	char ins[4] = "ORA";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->PC = 0x004B;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x05);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSY)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x05, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (absy_read_store_t2)
+{
+	char ins[4] = "ORA";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->PC = 0x004C;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x18);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSY)](cpu);
+
+	// addr_hi should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x18, cpu->addr_hi);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (absy_read_store_t3_no_page_cross)
+{
+	char ins[4] = "ORA";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->addr_hi = 0x18;
+	cpu->addr_lo = 0x05;
+	cpu->Y = 0;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSY)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	ck_assert_uint_eq(0x1805, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (absy_read_store_t4)
+{
+	char ins[4] = "ORA";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->addr_hi = 0x18;
+	cpu->addr_lo = 0x05;
+	cpu->Y = 0xFF;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSY)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	ck_assert_uint_eq(0x1805 + cpu->Y, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (indx_read_store_t1)
+{
+	char ins[4] = "CMP";
+	cpu->instruction_cycles_remaining = 5;
+	cpu->PC = 0x00B7;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x0C);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDX)](cpu);
+
+	// base_addr should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x0C, cpu->base_addr);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (indx_read_store_t2_dummy_read)
+{
+	char ins[4] = "CMP";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->base_addr = 0x0C;
+	write_to_cpu(cpu, cpu->base_addr, 0x46);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDX)](cpu);
+
+	// addr_lo should be set by reading from the base_addr
+	ck_assert_uint_eq(0x46, cpu->addr_lo);
+}
+END_TEST
+
+START_TEST (indx_read_store_t3)
+{
+	char ins[4] = "CMP";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->base_addr = 0x0C;
+	cpu->X = 0x02;
+	write_to_cpu(cpu, cpu->base_addr + cpu->X, 0x48);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDX)](cpu);
+
+	// addr_lo should be set by reading from the zero page address
+	// of base_addr + X register
+	ck_assert_uint_eq(0x48, cpu->addr_lo);
+}
+END_TEST
+
+START_TEST (indx_read_store_t4)
+{
+	char ins[4] = "CMP";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->base_addr = 0x0C;
+	cpu->X = 0x02;
+	write_to_cpu(cpu, cpu->base_addr + cpu->X + 1, 0x19);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDX)](cpu);
+
+	// addr_hi should be set by reading from the zero page address
+	// of base_addr + X register + 1
+	ck_assert_uint_eq(0x19, cpu->addr_hi);
+}
+END_TEST
+
+START_TEST (indx_read_store_t5)
+{
+	char ins[4] = "CMP";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->addr_hi = 0x19;
+	cpu->addr_lo = 0x48;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDX)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	ck_assert_uint_eq(0x1948, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (indy_read_store_t1)
+{
+	char ins[4] = "ADC";
+	cpu->instruction_cycles_remaining = 5;
+	cpu->PC = 0x0013;
+	write_to_cpu(cpu, cpu->PC, 0x20);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDY)](cpu);
+
+	// base_addr should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x20, cpu->base_addr);
+}
+END_TEST
+
+START_TEST (indy_read_store_t2)
+{
+	char ins[4] = "ADC";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->base_addr = 0x0020;
+	write_to_cpu(cpu, cpu->base_addr, 0xFE);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDY)](cpu);
+
+	// addr_lo should be set by reading from the zero page address
+	// of base_addr
+	ck_assert_uint_eq(0xFE, cpu->addr_lo);
+}
+END_TEST
+
+START_TEST (indy_read_store_t3)
+{
+	char ins[4] = "ADC";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->base_addr = 0x0020;
+	write_to_cpu(cpu, cpu->base_addr + 1, 0x03);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDY)](cpu);
+
+	// addr_hi should be set by reading from the zero page address
+	// of base_addr + 1
+	ck_assert_uint_eq(0x03, cpu->addr_hi);
+}
+END_TEST
+
+START_TEST (indy_read_store_t5)
+{
+	char ins[4] = "ADC";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->addr_hi = 0x03;
+	cpu->addr_lo = 0xFE;
+	cpu->Y = 1;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDY)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	// A carry is added to addr_hi here if needed
+	// (when addr_lo + Y crosses a page)
+	ck_assert_uint_eq(0x03FE + cpu->Y, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (zp_read_store_t1)
+{
+	char ins[4] = "BIT";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->PC = 0x06D1;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x90);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZP)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x90, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (zp_read_store_t2)
+{
+	char ins[4] = "BIT";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->addr_lo = 0x90;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZP)](cpu);
+
+	// target_addr is just the zero page address of addr_lo
+	ck_assert_uint_eq(0x90, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (zp_rmw_t1)
+{
+	char ins[4] = "ROR";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->PC = 0x0601;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x94);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZP)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x94, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (zp_rmw_t2)
+{
+	char ins[4] = "ROR";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->addr_lo = 0x94;
+	write_to_cpu(cpu, cpu->addr_lo, 0xA8);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZP)](cpu);
+
+	// target_addr is just the zero page address of addr_lo
+	// a read occurs at that address too
+	ck_assert_uint_eq(0x94, cpu->target_addr);
+	ck_assert_uint_eq(0xA8, cpu->unmodified_data);
+}
+END_TEST
+
+START_TEST (zp_rmw_t3_dummy_write)
+{
+	char ins[4] = "ROR";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->target_addr = 0x94;
+	cpu->unmodified_data = 0xA8;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZP)](cpu);
+
+	// read from T3 is written back to target_addr here
+	ck_assert_uint_eq(0xA8, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+START_TEST (zpx_read_store_t1)
+{
+	char ins[4] = "AND";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->PC = 0x0081;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0x83);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPX)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0x83, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (zpx_read_store_t3)
+{
+	char ins[4] = "AND";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->addr_lo = 0x83;
+	cpu->X = 0x21;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPX)](cpu);
+
+	// target_addr is just the zero page address of addr_lo + X register
+	ck_assert_uint_eq((uint8_t) (cpu->addr_lo + cpu->X), cpu->target_addr);
+}
+END_TEST
+
+START_TEST (zpx_rmw_t1)
+{
+	char ins[4] = "ROL";
+	cpu->instruction_cycles_remaining = 5;
+	cpu->PC = 0x0601;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0xB4);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPX)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0xB4, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (zpx_rmw_t2_dummy_read)
+{
+	char ins[4] = "ROL";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->addr_lo = 0xB4;
+	write_to_cpu(cpu, cpu->addr_lo, 0x09);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPX)](cpu);
+
+	// target_addr is just the zero page address of addr_lo
+	// a read occurs at that address too
+	ck_assert_uint_eq(0xB4, cpu->target_addr);
+	ck_assert_uint_eq(0x09, cpu->unmodified_data);
+}
+END_TEST
+
+START_TEST (zpx_rmw_t3)
+{
+	char ins[4] = "ROL";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->addr_lo = 0xB4;
+	cpu->X = 0x01;
+	write_to_cpu(cpu, (uint8_t) (cpu->addr_lo + cpu->X), 0x92);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPX)](cpu);
+
+	// target_addr is just the zero page address of addr_lo + X register
+	// a read occurs here too
+	ck_assert_uint_eq((uint8_t) (cpu->addr_lo + cpu->X), cpu->target_addr);
+	ck_assert_uint_eq(0x92, cpu->unmodified_data);
+}
+END_TEST
+
+START_TEST (zpx_rmw_t4_dummy_write)
+{
+	char ins[4] = "ROL";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->target_addr = 0x94;
+	cpu->unmodified_data = 0x92;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPX)](cpu);
+
+	// read from T3 is written back to target_addr here
+	ck_assert_uint_eq(0x92, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
+START_TEST (zpy_read_store_t1)
+{
+	char ins[4] = "LDX";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->PC = 0x00E1;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 0xE3);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPY)](cpu);
+
+	// addr_lo should be set by reading from the PC
+	// PC should then be incremented
+	ck_assert_uint_eq(0xE3, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (zpy_read_store_t3)
+{
+	char ins[4] = "LDX";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->addr_lo = 0xE3;
+	cpu->Y = 0x21;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPY)](cpu);
+
+	// target_addr is just the zero page address of addr_lo + Y register
+	ck_assert_uint_eq((uint8_t) (cpu->addr_lo + cpu->Y), cpu->target_addr);
+}
+END_TEST
+
+START_TEST (branch_ops_t1_branch_not_taken)
+{
+	char ins[4] = "BCS";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->P = ~FLAG_C;
+	cpu->PC = 0x0100;
+	uint16_t start_PC = cpu->PC;
+	write_to_cpu(cpu, cpu->PC, 8); // offset of +8
+	uint8_t opcode = reverse_opcode_lut(&ins, REL);
+	cpu->opcode = opcode; // needed for branch_not_taken() function
+
+	decode_opcode_lut[opcode](cpu);
+
+	ck_assert_uint_eq(start_PC + 1, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (branch_ops_t2_branch_taken_no_page_cross_pending)
+{
+	char ins[4] = "BCS";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->P = FLAG_C;
+	cpu->PC = 0x0100;
+	cpu->offset = 8;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, REL)](cpu);
+
+	ck_assert_uint_eq(cpu->PC + cpu->offset, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (branch_ops_t2_branch_taken_page_cross_pending)
+{
+	char ins[4] = "BCS";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->P = FLAG_C;
+	cpu->PC = 0x01FF;
+	cpu->offset = 8;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, REL)](cpu);
+
+	// minus the page cross, emulates [PCH | (uint8_t) (PCL + offset)]
+	ck_assert_uint_eq(cpu->PC + cpu->offset - 0x0100, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (branch_ops_t3_branch_taken_page_cross)
+{
+	char ins[4] = "BCS";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->P = FLAG_C;
+	cpu->PC = 0x01FF;
+	cpu->offset = 8;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, REL)](cpu);
+
+	// here the correct page cross address is used
+	ck_assert_uint_eq(cpu->PC + cpu->offset, cpu->target_addr);
+}
+END_TEST
+
+
 Suite* cpu_suite(void)
 {
 	Suite* s;
@@ -4939,6 +5621,7 @@ Suite* cpu_suite(void)
 	TCase* tc_cpu_hardware_interrupts;
 	TCase* tc_cpu_instruction_trace_logger;
 	TCase* tc_cpu_address_modes_rw_logic;
+	TCase* tc_cpu_address_modes_cycles;
 
 	s = suite_create("Cpu Tests");
 	tc_test_helpers = tcase_create("Test Helpers");
@@ -5235,6 +5918,53 @@ Suite* cpu_suite(void)
 	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, zpx_store_only_writes_on_last_cycle, 0, 2);
 	tcase_add_test(tc_cpu_address_modes_rw_logic, zpy_store_only_writes_on_last_cycle);
 	suite_add_tcase(s, tc_cpu_address_modes_rw_logic);
+	tc_cpu_address_modes_cycles = tcase_create("Cpu Address Modes Cycle-By-Cycle Verification");
+	tcase_add_checked_fixture(tc_cpu_address_modes_cycles, setup, teardown);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t3_no_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t4);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t4_2nd_absx_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t5_dummy_write);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_no_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t4);
+	// IMM is a single cycle and already has a unit test for it
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t2_dummy_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t4);
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t5);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t5);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t3_dummy_write);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t2_dummy_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t4_dummy_write);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t1_branch_not_taken);
+	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t2_branch_taken_no_page_cross_pending);
+	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t2_branch_taken_page_cross_pending);
+	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t3_branch_taken_page_cross);
+	suite_add_tcase(s, tc_cpu_address_modes_cycles);
 
 	return s;
 }
