@@ -5006,6 +5006,37 @@ START_TEST (abs_rmw_t2)
 }
 END_TEST
 
+START_TEST (abs_rmw_t3_dummy_read)
+{
+	char ins[4] = "DEC";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->addr_hi = 0x13;
+	cpu->addr_lo = 0x51;
+	write_to_cpu(cpu, 0x1351, 0x10);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
+
+	// target_addr is the absolute address (addr_hi | addr_lo)
+	// a read occurs at that address too (dummy read)
+	ck_assert_uint_eq(0x1351, cpu->target_addr);
+	ck_assert_uint_eq(0x10, cpu->unmodified_data);
+}
+END_TEST
+
+START_TEST (abs_rmw_t4_dummy_write)
+{
+	char ins[4] = "DEC";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->target_addr = 0x1351;
+	cpu->unmodified_data = 0xF3;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
+
+	// read from T3 is written back to target_addr here
+	ck_assert_uint_eq(0xF3, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
 START_TEST (absx_read_store_t1)
 {
 	char ins[4] = "LDA";
@@ -5925,6 +5956,8 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t3);
 	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t3_dummy_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t4_dummy_write);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t2);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t3_no_page_cross);

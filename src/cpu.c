@@ -713,11 +713,11 @@ static void decode_ABS_rmw(Cpu6502* cpu)
 		cpu->addr_hi = read_from_cpu(cpu, cpu->PC);
 		++cpu->PC;
 		break;
-	case 3: // T3 (dummy read?)
+	case 3: // T3 (dummy read)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo);
+		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 2: // T4 (dummy write)
-		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
 		write_to_cpu(cpu, cpu->target_addr, cpu->unmodified_data);
 		break;
 	case 1: // T5
