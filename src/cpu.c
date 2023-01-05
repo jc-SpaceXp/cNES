@@ -768,11 +768,12 @@ static void decode_ABSX_rmw(Cpu6502* cpu)
 		cpu->addr_hi = read_from_cpu(cpu, cpu->PC);
 		++cpu->PC;
 		break;
-	case 4: // T3 (dummy read) [not implemented]
+	case 4: // T3 (dummy read)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->X);
+		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 3: // T4
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X; // data is discarded
+		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X;
 		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 2: // T5 (dummy write)

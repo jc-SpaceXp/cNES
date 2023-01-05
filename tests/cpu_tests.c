@@ -5156,6 +5156,25 @@ START_TEST (absx_rmw_t2)
 }
 END_TEST
 
+START_TEST (absx_rmw_t3_1st_absx_read)
+{
+	char ins[4] = "DEC";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->addr_hi = 0x17;
+	cpu->addr_lo = 0x27;
+	cpu->X = 0x51;
+	write_to_cpu(cpu, 0x1727 + cpu->X, 0x08);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// target_addr is the absolute address plus the X register
+	// the address is non-paged crossed address, [addr_hi | (uint8_t) (addr_lo + X)]
+	// a read occurs at that address too (dummy read)
+	ck_assert_uint_eq(0x1727 + cpu->X, cpu->target_addr);
+	ck_assert_uint_eq(0x08, cpu->unmodified_data);
+}
+END_TEST
+
 START_TEST (absx_rmw_t4_2nd_absx_read)
 {
 	char ins[4] = "DEC";
@@ -6083,6 +6102,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t4);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t3_1st_absx_read);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t4_2nd_absx_read);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t5_dummy_write);
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t1);
