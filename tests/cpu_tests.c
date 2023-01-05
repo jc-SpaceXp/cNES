@@ -5086,6 +5086,24 @@ START_TEST (absx_read_store_t3_no_page_cross)
 }
 END_TEST
 
+START_TEST (absx_read_store_t3_page_cross)
+{
+	char ins[4] = "LDA";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->addr_hi = 0x11;
+	cpu->addr_lo = 0x52;
+	cpu->X = 0xFF;
+	write_to_cpu(cpu, 0x1152 + cpu->X - 0x0100, 0xB5); // minus the page cross
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	ck_assert_uint_eq(0x1152 + cpu->X - 0x0100, cpu->target_addr);
+	// page cross means a dummy read at the incorrect (non-paged crossed) address occurs here
+	ck_assert_uint_eq(cpu->operand, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
 START_TEST (absx_read_store_t4)
 {
 	char ins[4] = "LDA";
@@ -5215,6 +5233,24 @@ START_TEST (absy_read_store_t3_no_page_cross)
 
 	// target_addr should be a concat of addr_hi and addr_lo
 	ck_assert_uint_eq(0x1805, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (absy_read_store_t3_page_cross)
+{
+	char ins[4] = "ORA";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->addr_hi = 0x18;
+	cpu->addr_lo = 0x05;
+	cpu->Y = 0xFF;
+	write_to_cpu(cpu, 0x1805 + cpu->Y - 0x0100, 0x35); // minus the page cross
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ABSY)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	ck_assert_uint_eq(0x1805 + cpu->Y - 0x0100, cpu->target_addr);
+	// page cross means a dummy read at the incorrect (non-paged crossed) address occurs here
+	ck_assert_uint_eq(cpu->operand, read_from_cpu(cpu, cpu->target_addr));
 }
 END_TEST
 
@@ -5961,6 +5997,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t2);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t3_no_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t3_page_cross);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t4);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t2);
@@ -5969,6 +6006,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t2);
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_no_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_page_cross);
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t4);
 	// IMM is a single cycle and already has a unit test for it
 	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t1);

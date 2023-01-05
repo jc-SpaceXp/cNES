@@ -741,8 +741,12 @@ static void decode_ABSX_read_store(Cpu6502* cpu)
 		break;
 	case 2: // T3 (non-page cross address)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->X);
-		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->X)) { cpu->instruction_state = EXECUTE; }
-		// dummy read not implemented
+		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->X)) {
+			cpu->instruction_state = EXECUTE;
+			break;
+		}
+		// dummy read (only if T4 executes next)
+		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 1: // T4 (page cross address if T5 is skippable, otherwise same as T4)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X;
@@ -795,8 +799,12 @@ static void decode_ABSY_read_store(Cpu6502* cpu)
 		break;
 	case 2: // T3 (non-page cross address)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->Y);
-		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->Y)) { cpu->instruction_state = EXECUTE; }
-		// dummy read not implemented
+		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->Y)) {
+			cpu->instruction_state = EXECUTE;
+			break;
+		}
+		// dummy read (only if T4 executes next)
+		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 1: // T4 (page cross address if T5 is skippable, otherwise same as T4)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
