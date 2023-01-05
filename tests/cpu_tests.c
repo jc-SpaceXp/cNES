@@ -5294,6 +5294,50 @@ START_TEST (absy_read_store_t4)
 }
 END_TEST
 
+START_TEST (acc_t1_dummy_opcode_read)
+{
+	// note we cannot use cpu->opcode to store the dummy read
+	// as this is used to determine which instruction to execute.
+
+	// if changed from decode to execute, it will execute the next
+	// instruction using the previous opcodes decoder
+	char ins[4] = "ASL";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->PC = 0x0001; // value after T0
+	char next_ins[4] = "BIT";
+	uint8_t next_opcode = reverse_opcode_lut(&next_ins, ZP);
+	write_to_cpu(cpu, cpu->PC, next_opcode);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ACC)](cpu);
+
+	// T1 will fetch the next opcode but ignore it
+	// next T0 will re-fetch this opcode
+	ck_assert_uint_eq(next_opcode, cpu->operand);
+}
+END_TEST
+
+START_TEST (imm_t1_dummy_opcode_read)
+{
+	// note we cannot use cpu->opcode to store the dummy read
+	// as this is used to determine which instruction to execute.
+
+	// if changed from decode to execute, it will execute the next
+	// instruction using the previous opcodes decoder
+	char ins[4] = "TSX";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->PC = 0x0110; // value after T0
+	char next_ins[4] = "LDA";
+	uint8_t next_opcode = reverse_opcode_lut(&next_ins, ABS);
+	write_to_cpu(cpu, cpu->PC, next_opcode);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, IMM)](cpu);
+
+	// T1 will fetch the next opcode but ignore it
+	// next T0 will re-fetch this opcode
+	ck_assert_uint_eq(next_opcode, cpu->operand);
+}
+END_TEST
+
 START_TEST (indx_read_store_t1)
 {
 	char ins[4] = "CMP";
@@ -6110,7 +6154,8 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_no_page_cross);
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_page_cross);
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t4);
-	// IMM is a single cycle and already has a unit test for it
+	tcase_add_test(tc_cpu_address_modes_cycles, acc_t1_dummy_opcode_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, imm_t1_dummy_opcode_read);
 	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t2_dummy_read);
 	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t3);

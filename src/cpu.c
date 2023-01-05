@@ -816,7 +816,10 @@ static void decode_ABSY_read_store(Cpu6502* cpu)
 
 static void decode_ACC(Cpu6502* cpu)
 {
+	// opcode fetched: T0
 	cpu->address_mode = ACC;
+	// T1: fetch the next opcode (re-fetched on next T0 cycle)
+	cpu->operand = read_from_cpu(cpu, cpu->PC);
 	cpu->instruction_state = EXECUTE;
 }
 
@@ -835,8 +838,10 @@ static void decode_IMM_read_store(Cpu6502* cpu) // might only just be read
 
 static void decode_IMP(Cpu6502* cpu)
 {
-	cpu->address_mode = IMP;
 	// opcode fetched: T0
+	cpu->address_mode = IMP;
+	// T1: fetch the next opcode (re-fetched on next T0 cycle)
+	cpu->operand = read_from_cpu(cpu, cpu->PC);
 	cpu->instruction_state = EXECUTE;
 }
 
