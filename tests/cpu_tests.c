@@ -5391,6 +5391,47 @@ START_TEST (indy_read_store_t3)
 }
 END_TEST
 
+START_TEST (indy_read_store_t4_no_page_cross)
+{
+	// This is a dummy read if T5 is executed
+	char ins[4] = "ADC";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->addr_hi = 0x03;
+	cpu->addr_lo = 0xFE;
+	cpu->Y = 1;
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDY)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	// Add Y register offset to the traget_addr
+	// With this calc being the non-page cross address
+	// (adding Y to addr_lo w/o adding a potentital carry to addr_hi)
+	ck_assert_uint_eq(0x03FE + cpu->Y, cpu->target_addr);
+}
+END_TEST
+
+START_TEST (indy_read_store_t4_page_cross)
+{
+	// This is a dummy read if T5 is executed
+	char ins[4] = "ADC";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->addr_hi = 0x03;
+	cpu->addr_lo = 0xFE;
+	cpu->Y = 18;
+	write_to_cpu(cpu, 0x03FE + cpu->Y - 0x0100, 0xE5);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, INDY)](cpu);
+
+	// target_addr should be a concat of addr_hi and addr_lo
+	// Add Y register offset to the traget_addr
+	// With this calc being the non-page cross address
+	// (adding Y to addr_lo w/o adding a potentital carry to addr_hi)
+	ck_assert_uint_eq(0x03FE + cpu->Y - 0x0100, cpu->target_addr); // minus page cross
+	// page cross means a dummy read at the incorrect (non-paged crossed) address occurs here
+	ck_assert_uint_eq(cpu->operand, read_from_cpu(cpu, cpu->target_addr));
+}
+END_TEST
+
 START_TEST (indy_read_store_t5)
 {
 	char ins[4] = "ADC";
@@ -6017,6 +6058,8 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t2);
 	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t4_no_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t4_page_cross);
 	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t5);
 	tcase_add_test(tc_cpu_address_modes_cycles, zp_read_store_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, zp_read_store_t2);
