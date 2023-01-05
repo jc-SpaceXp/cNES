@@ -5078,11 +5078,14 @@ START_TEST (absx_read_store_t3_no_page_cross)
 	cpu->addr_hi = 0x11;
 	cpu->addr_lo = 0x52;
 	cpu->X = 0;
+	write_to_cpu(cpu, 0x1152 + cpu->X, 0xB0);
 
 	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
 
 	// target_addr should be a concat of addr_hi and addr_lo
 	ck_assert_uint_eq(0x1152, cpu->target_addr);
+	// no page cross, no dummy read
+	ck_assert_uint_ne(0xB0, cpu->operand);
 }
 END_TEST
 
@@ -5100,7 +5103,7 @@ START_TEST (absx_read_store_t3_page_cross)
 	// target_addr should be a concat of addr_hi and addr_lo
 	ck_assert_uint_eq(0x1152 + cpu->X - 0x0100, cpu->target_addr);
 	// page cross means a dummy read at the incorrect (non-paged crossed) address occurs here
-	ck_assert_uint_eq(cpu->operand, read_from_cpu(cpu, cpu->target_addr));
+	ck_assert_uint_eq(0xB5, cpu->operand);
 }
 END_TEST
 
@@ -5228,11 +5231,14 @@ START_TEST (absy_read_store_t3_no_page_cross)
 	cpu->addr_hi = 0x18;
 	cpu->addr_lo = 0x05;
 	cpu->Y = 0;
+	write_to_cpu(cpu, 0x1805 + cpu->Y, 0x30);
 
 	decode_opcode_lut[reverse_opcode_lut(&ins, ABSY)](cpu);
 
 	// target_addr should be a concat of addr_hi and addr_lo
 	ck_assert_uint_eq(0x1805, cpu->target_addr);
+	// no page cross, no dummy read
+	ck_assert_uint_ne(0x30, cpu->operand);
 }
 END_TEST
 
@@ -5250,7 +5256,7 @@ START_TEST (absy_read_store_t3_page_cross)
 	// target_addr should be a concat of addr_hi and addr_lo
 	ck_assert_uint_eq(0x1805 + cpu->Y - 0x0100, cpu->target_addr);
 	// page cross means a dummy read at the incorrect (non-paged crossed) address occurs here
-	ck_assert_uint_eq(cpu->operand, read_from_cpu(cpu, cpu->target_addr));
+	ck_assert_uint_eq(0x35, cpu->operand);
 }
 END_TEST
 
@@ -5399,6 +5405,7 @@ START_TEST (indy_read_store_t4_no_page_cross)
 	cpu->addr_hi = 0x03;
 	cpu->addr_lo = 0xFE;
 	cpu->Y = 1;
+	write_to_cpu(cpu, 0x03FE + cpu->Y, 0xE0);
 
 	decode_opcode_lut[reverse_opcode_lut(&ins, INDY)](cpu);
 
@@ -5407,6 +5414,8 @@ START_TEST (indy_read_store_t4_no_page_cross)
 	// With this calc being the non-page cross address
 	// (adding Y to addr_lo w/o adding a potentital carry to addr_hi)
 	ck_assert_uint_eq(0x03FE + cpu->Y, cpu->target_addr);
+	// no page cross, no dummy read
+	ck_assert_uint_ne(0xE5, cpu->operand);
 }
 END_TEST
 
@@ -5428,7 +5437,7 @@ START_TEST (indy_read_store_t4_page_cross)
 	// (adding Y to addr_lo w/o adding a potentital carry to addr_hi)
 	ck_assert_uint_eq(0x03FE + cpu->Y - 0x0100, cpu->target_addr); // minus page cross
 	// page cross means a dummy read at the incorrect (non-paged crossed) address occurs here
-	ck_assert_uint_eq(cpu->operand, read_from_cpu(cpu, cpu->target_addr));
+	ck_assert_uint_eq(0xE5, cpu->operand);
 }
 END_TEST
 
