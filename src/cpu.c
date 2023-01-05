@@ -853,10 +853,10 @@ static void decode_INDX_read_store(Cpu6502* cpu)
 		cpu->addr_lo = read_from_cpu(cpu, cpu->base_addr);  // DISCARD
 		break;
 	case 3: // T3
-		cpu->addr_lo = read_from_cpu(cpu, (cpu->base_addr + cpu->X) & 0xFF);
+		cpu->addr_lo = read_from_cpu(cpu, (uint8_t) (cpu->base_addr + cpu->X));
 		break;
 	case 2: // T4
-		cpu->addr_hi = read_from_cpu(cpu, (cpu->base_addr + cpu->X + 1) & 0xFF);
+		cpu->addr_hi = read_from_cpu(cpu, (uint8_t) (cpu->base_addr + cpu->X + 1));
 		break;
 	case 1: // T5
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo);
@@ -878,7 +878,7 @@ static void decode_INDY_read_store(Cpu6502* cpu)
 		cpu->addr_lo = read_from_cpu(cpu, cpu->base_addr); // ZP read
 		break;
 	case 3: // T3
-		cpu->addr_hi = read_from_cpu(cpu, (cpu->base_addr + 1) & 0xFF);
+		cpu->addr_hi = read_from_cpu(cpu, (uint8_t) (cpu->base_addr + 1));
 		break;
 	case 2: // T4 (non-page cross address)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->Y);
@@ -948,7 +948,7 @@ static void decode_ZPX_read_store(Cpu6502* cpu)
 		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 1: // T3
-		cpu->target_addr = (cpu->addr_lo + cpu->X) & 0xFF;
+		cpu->target_addr = (uint8_t) (cpu->addr_lo + cpu->X);
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -968,7 +968,7 @@ static void decode_ZPX_rmw(Cpu6502* cpu)
 		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr); // discard
 		break;
 	case 3: // T3 (dummy read)
-		cpu->target_addr = (cpu->addr_lo + cpu->X) & 0xFF;
+		cpu->target_addr = (uint8_t) (cpu->addr_lo + cpu->X);
 		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 2: // T4 (dummy write)
@@ -994,7 +994,7 @@ static void decode_ZPY_read_store(Cpu6502* cpu)
 		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 1: // T3
-		cpu->target_addr = (cpu->addr_lo + cpu->Y) & 0xFF;
+		cpu->target_addr = (uint8_t) (cpu->addr_lo + cpu->Y);
 		cpu->instruction_state = EXECUTE;
 		break;
 	default:
