@@ -5552,6 +5552,22 @@ START_TEST (zpx_read_store_t1)
 }
 END_TEST
 
+START_TEST (zpx_read_store_t2_dummy_read)
+{
+	char ins[4] = "AND";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->addr_lo = 0x83;
+	write_to_cpu(cpu, cpu->addr_lo, 0xDF);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPX)](cpu);
+
+	// target_addr is just the zero page address of addr_lo
+	// a read occurs at that address too
+	ck_assert_uint_eq(0x83, cpu->target_addr);
+	ck_assert_uint_eq(0xDF, cpu->operand);
+}
+END_TEST
+
 START_TEST (zpx_read_store_t3)
 {
 	char ins[4] = "AND";
@@ -5644,6 +5660,22 @@ START_TEST (zpy_read_store_t1)
 	// PC should then be incremented
 	ck_assert_uint_eq(0xE3, cpu->addr_lo);
 	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (zpy_read_store_t2_dummy_read)
+{
+	char ins[4] = "LDX";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->addr_lo = 0xE3;
+	write_to_cpu(cpu, cpu->addr_lo, 0x78);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, ZPY)](cpu);
+
+	// target_addr is just the zero page address of addr_lo
+	// a read occurs at that address too
+	ck_assert_uint_eq(0xE3, cpu->target_addr);
+	ck_assert_uint_eq(0x78, cpu->operand);
 }
 END_TEST
 
@@ -6076,12 +6108,14 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t2);
 	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t3_dummy_write);
 	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t2_dummy_read);
 	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t3);
 	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t2_dummy_read);
 	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t3);
 	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t4_dummy_write);
 	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t2_dummy_read);
 	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t3);
 	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t1_branch_not_taken);
 	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t2_branch_taken_no_page_cross_pending);

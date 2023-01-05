@@ -942,8 +942,9 @@ static void decode_ZPX_read_store(Cpu6502* cpu)
 		cpu->addr_lo = read_from_cpu(cpu, cpu->PC); // base address
 		++cpu->PC;
 		break;
-	case 2: // T2
-		cpu->target_addr = cpu->addr_lo; // discard read occurs
+	case 2: // T2 (dummy read)
+		cpu->target_addr = cpu->addr_lo;
+		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 1: // T3
 		cpu->target_addr = (cpu->addr_lo + cpu->X) & 0xFF;
@@ -989,6 +990,7 @@ static void decode_ZPY_read_store(Cpu6502* cpu)
 		break;
 	case 2: // T2 (dummy read)
 		cpu->target_addr = cpu->addr_lo;
+		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		break;
 	case 1: // T3
 		cpu->target_addr = (cpu->addr_lo + cpu->Y) & 0xFF;
