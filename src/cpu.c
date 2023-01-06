@@ -44,7 +44,7 @@ static void decode_ABSX_read_store(Cpu6502* cpu);
 static void decode_ABSX_rmw(Cpu6502* cpu);
 static void decode_ABSY_read_store(Cpu6502* cpu);
 static void decode_ACC(Cpu6502* cpu);
-static void decode_IMM_read_store(Cpu6502* cpu);
+static void decode_IMM_read(Cpu6502* cpu);
 static void decode_IMP(Cpu6502* cpu);
 static void decode_INDX_read_store(Cpu6502* cpu);
 static void decode_INDY_read_store(Cpu6502* cpu);
@@ -141,21 +141,21 @@ const uint8_t max_cycles_opcode_lut[256] = {
 };
 
 void (*decode_opcode_lut[256])(Cpu6502* cpu) = {
-	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PUSH, decode_IMM_read_store , decode_ACC,  bad_op_code, bad_op_code           , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
+	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PUSH, decode_IMM_read       , decode_ACC,  bad_op_code, bad_op_code           , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
-	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PULL, decode_IMM_read_store , decode_ACC , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
+	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PULL, decode_IMM_read       , decode_ACC , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
-	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PUSH, decode_IMM_read_store , decode_ACC , bad_op_code, decode_ABS_JMP        , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
+	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PUSH, decode_IMM_read       , decode_ACC , bad_op_code, decode_ABS_JMP        , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
-	decode_RTS            , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PULL, decode_IMM_read_store , decode_ACC , bad_op_code, decode_IND_JMP        , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
+	decode_RTS            , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PULL, decode_IMM_read       , decode_ACC , bad_op_code, decode_IND_JMP        , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
 	bad_op_code           , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_read_store , bad_op_code, decode_IMP , bad_op_code           , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_read_store , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, decode_ZPX_read_store, decode_ZPX_read_store, decode_ZPY_read_store, bad_op_code, decode_IMP , decode_ABSY_read_store, decode_IMP , bad_op_code, bad_op_code           , decode_ABSX_read_store, bad_op_code           , bad_op_code,
-	decode_IMM_read_store , decode_INDX_read_store, decode_IMM_read_store, bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_read_store , bad_op_code, decode_IMP , decode_IMM_read_store , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_read_store , bad_op_code,
+	decode_IMM_read       , decode_INDX_read_store, decode_IMM_read      , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_read_store , bad_op_code, decode_IMP , decode_IMM_read       , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_read_store , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, decode_ZPX_read_store, decode_ZPX_read_store, decode_ZPY_read_store, bad_op_code, decode_IMP , decode_ABSY_read_store, decode_IMP , bad_op_code, decode_ABSX_read_store, decode_ABSX_read_store, decode_ABSY_read_store, bad_op_code,
-	decode_IMM_read_store , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_IMP , decode_IMM_read_store , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
+	decode_IMM_read       , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_IMP , decode_IMM_read       , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
-	decode_IMM_read_store , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_IMP , decode_IMM_read_store , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
+	decode_IMM_read       , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_IMP , decode_IMM_read       , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
 	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code
 };
 
@@ -823,7 +823,7 @@ static void decode_ACC(Cpu6502* cpu)
 	cpu->instruction_state = EXECUTE;
 }
 
-static void decode_IMM_read_store(Cpu6502* cpu) // might only just be read
+static void decode_IMM_read(Cpu6502* cpu)
 {
 	cpu->address_mode = IMM;
 	// opcode fetched: T0
