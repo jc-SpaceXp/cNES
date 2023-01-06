@@ -854,8 +854,8 @@ static void decode_INDX_read_store(Cpu6502* cpu)
 		cpu->base_addr = read_from_cpu(cpu, cpu->PC);
 		++cpu->PC;
 		break;
-	case 4: // T2
-		cpu->addr_lo = read_from_cpu(cpu, cpu->base_addr);  // DISCARD
+	case 4: // T2 (dummy read)
+		cpu->addr_lo = read_from_cpu(cpu, cpu->base_addr);
 		break;
 	case 3: // T3
 		cpu->addr_lo = read_from_cpu(cpu, (uint8_t) (cpu->base_addr + cpu->X));
@@ -968,11 +968,11 @@ static void decode_ZPX_rmw(Cpu6502* cpu)
 		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
 		++cpu->PC;
 		break;
-	case 4: // T2
+	case 4: // T2 (dummy read)
 		cpu->target_addr = cpu->addr_lo;
-		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr); // discard
+		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
 		break;
-	case 3: // T3 (dummy read)
+	case 3: // T3
 		cpu->target_addr = (uint8_t) (cpu->addr_lo + cpu->X);
 		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
 		break;
@@ -1008,7 +1008,6 @@ static void decode_ZPY_read_store(Cpu6502* cpu)
 	}
 }
 
-// could have one common function and use a switch case for the opcode?
 static void decode_ABS_JMP(Cpu6502* cpu)
 {
 	cpu->address_mode = ABS;
