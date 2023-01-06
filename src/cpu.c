@@ -748,7 +748,7 @@ static void decode_ABSX_read_store(Cpu6502* cpu)
 		// dummy read (only if T4 executes next)
 		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		break;
-	case 1: // T4 (page cross address if T5 is skippable, otherwise same as T4)
+	case 1: // T4 (correct address, page crossed or not)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X;
 		cpu->instruction_state = EXECUTE;
 		break;
@@ -807,7 +807,7 @@ static void decode_ABSY_read_store(Cpu6502* cpu)
 		// dummy read (only if T4 executes next)
 		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		break;
-	case 1: // T4 (page cross address if T5 is skippable, otherwise same as T4)
+	case 1: // T4 (correct address, page crossed or not)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
 		cpu->instruction_state = EXECUTE;
 		break;
@@ -894,7 +894,7 @@ static void decode_INDY_read_store(Cpu6502* cpu)
 		// dummy read (only if T5 executes next)
 		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 		break;
-	case 1: // T5 (page cross address if T5 is skippable, otherwise same as T4)
+	case 1: // T5 (correct address, page crossed or not)
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
 		cpu->instruction_state = EXECUTE;
 		break;
