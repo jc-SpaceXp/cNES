@@ -6235,6 +6235,7 @@ START_TEST (nmi_t4)
 	// (P & ~0x30) onto stack, then sets I flag
 	ck_assert_uint_eq(FLAG_C, read_from_cpu(cpu, SP_START + start_stack));
 	ck_assert_uint_eq(0x30 | FLAG_C | FLAG_I, cpu->P);
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
 
 	free(cpu->cpu_ppu_io);
 }
