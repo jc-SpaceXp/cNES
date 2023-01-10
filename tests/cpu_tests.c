@@ -5908,6 +5908,68 @@ START_TEST (ind_jmp_t4_no_jmp_bug)
 }
 END_TEST
 
+START_TEST (jsr_t1)
+{
+	char ins[4] = "JSR";
+	cpu->instruction_cycles_remaining = 5;
+	cpu->PC = 0x00C6;
+	write_to_cpu(cpu, cpu->PC, 0x49);
+	uint16_t start_PC = cpu->PC;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	ck_assert_uint_eq(0x49, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+// skipped t2 for now requires a change to cpu.c
+
+START_TEST (jsr_t3)
+{
+	char ins[4] = "JSR";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->PC = 0x8004;
+	cpu->stack = 0xD0;
+	uint16_t start_stack = cpu->stack;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// PCH onto stack
+	ck_assert_uint_eq(0x80, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+}
+END_TEST
+
+START_TEST (jsr_t4)
+{
+	char ins[4] = "JSR";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->PC = 0x8004;
+	cpu->stack = 0xEF;
+	uint16_t start_stack = cpu->stack;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// PCL onto stack
+	ck_assert_uint_eq(0x04, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+}
+END_TEST
+
+START_TEST (jsr_t5)
+{
+	char ins[4] = "JSR";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->PC = 0x00C7;
+	write_to_cpu(cpu, cpu->PC, 0x18);
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	ck_assert_uint_eq(0x18, cpu->addr_hi);
+}
+END_TEST
+
 
 Suite* cpu_suite(void)
 {
@@ -6287,6 +6349,10 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t4_no_jmp_bug);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t5);
 	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
 
 	return s;
