@@ -6074,7 +6074,21 @@ START_TEST (brk_t6)
 }
 END_TEST
 
-// skip T1, requires a change to cpu.c
+START_TEST (irq_t1)
+{
+	cpu->instruction_cycles_remaining = 6;
+	cpu->PC = 0xC31E;
+	cpu->mem[cpu->PC] = 0x05; // can't use write function requries mapper write function
+	uint16_t start_PC = cpu->PC;
+	int IRQ_index = 1;
+
+	hardware_interrupts[IRQ_index](cpu);
+
+	// Dummy read
+	ck_assert_uint_eq(0x05, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
 
 START_TEST (irq_t2)
 {
@@ -6649,6 +6663,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t5);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t6);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t1);
 	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t4);

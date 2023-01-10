@@ -2014,9 +2014,8 @@ static void execute_IRQ(Cpu6502* cpu)
 	strcpy(cpu->instruction, "IRQ ");
 	// opcode fetched: T0
 	switch (cpu->instruction_cycles_remaining) {
-	case 6: // T1
-		read_from_cpu(cpu, cpu->PC); // dummy read
-		// (increment not on 64doc.txt)
+	case 6: // T1 (dummy read)
+		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
 		++cpu->PC; // added (had PC + 2 before and that passed nestest)
 		break;
 	case 5: // T2
