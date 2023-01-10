@@ -2016,7 +2016,6 @@ static void execute_IRQ(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 6: // T1 (dummy read)
 		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
-		++cpu->PC; // added (had PC + 2 before and that passed nestest)
 		break;
 	case 5: // T2
 		stack_push(cpu, (uint8_t) (cpu->PC >> 8)); // push PCH onto stack
