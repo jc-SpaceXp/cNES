@@ -5984,7 +5984,20 @@ START_TEST (jsr_t5)
 }
 END_TEST
 
-// skip T1 for now, requires a change to cpu.c
+START_TEST (brk_t1)
+{
+	char ins[4] = "BRK";
+	cpu->instruction_cycles_remaining = 6;
+	cpu->PC = 0x7B0B;
+	write_to_cpu(cpu, cpu->PC, 0x55);
+	uint16_t start_PC = cpu->PC;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	ck_assert_uint_eq(0x55, cpu->addr_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
 
 START_TEST (brk_t2)
 {
@@ -6445,6 +6458,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t1);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t4);
