@@ -6074,6 +6074,97 @@ START_TEST (brk_t6)
 }
 END_TEST
 
+// skipped T1 for now, requires a change to cpu.c
+
+START_TEST (nmi_t2)
+{
+	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io->nmi_cycles_left = 5;
+	cpu->PC = 0x900D;
+	cpu->stack = 0xCA;
+	uint16_t start_stack = cpu->stack;
+	int NMI_index = 2;
+
+	hardware_interrupts[NMI_index](cpu);
+
+	// PCH onto stack
+	ck_assert_uint_eq(0x90, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+
+	free(cpu->cpu_ppu_io);
+}
+END_TEST
+
+START_TEST (nmi_t3)
+{
+	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io->nmi_cycles_left = 4;
+	cpu->PC = 0x900D;
+	cpu->stack = 0xC9;
+	uint16_t start_stack = cpu->stack;
+	int NMI_index = 2;
+
+	hardware_interrupts[NMI_index](cpu);
+
+	// PCL onto stack
+	ck_assert_uint_eq(0x0D, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+
+	free(cpu->cpu_ppu_io);
+}
+END_TEST
+
+START_TEST (nmi_t4)
+{
+	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io->nmi_cycles_left = 3;
+	cpu->P = 0x30 | FLAG_C; // 0x30 shouldn't be set normally, testing purposes here
+	cpu->stack = 0xC8;
+	uint16_t start_stack = cpu->stack;
+	int NMI_index = 2;
+
+	hardware_interrupts[NMI_index](cpu);
+
+	// (P & ~0x30) onto stack, then sets I flag
+	ck_assert_uint_eq(FLAG_C, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(0x30 | FLAG_C | FLAG_I, cpu->P);
+
+	free(cpu->cpu_ppu_io);
+}
+END_TEST
+
+START_TEST (nmi_t5)
+{
+	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io->nmi_cycles_left = 2;
+	int NMI_index = 2;
+	// FFFA
+	cpu->mem[NMI_VECTOR] = 0xDE;  // write function requires a mapper write
+
+	hardware_interrupts[NMI_index](cpu);
+
+	ck_assert_uint_eq(0xDE, cpu->addr_lo);
+
+	free(cpu->cpu_ppu_io);
+}
+END_TEST
+
+START_TEST (nmi_t6)
+{
+	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io->nmi_cycles_left = 1;
+	int NMI_index = 2;
+	// FFFB
+	cpu->mem[NMI_VECTOR + 1] = 0x59;  // write function requires a mapper write
+
+	hardware_interrupts[NMI_index](cpu);
+
+	ck_assert_uint_eq(0x59, cpu->addr_hi);
+
+	free(cpu->cpu_ppu_io);
+}
+END_TEST
+
 
 Suite* cpu_suite(void)
 {
@@ -6464,6 +6555,11 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t5);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t6);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t6);
 	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
 
 	return s;
