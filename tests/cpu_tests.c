@@ -6074,6 +6074,83 @@ START_TEST (brk_t6)
 }
 END_TEST
 
+// skip T1, requires a change to cpu.c
+
+START_TEST (irq_t2)
+{
+	cpu->instruction_cycles_remaining = 5;
+	cpu->PC = 0xC31E;
+	cpu->stack = 0x47;
+	uint16_t start_stack = cpu->stack;
+	int IRQ_index = 1;
+
+	hardware_interrupts[IRQ_index](cpu);
+
+	// PCH onto stack
+	ck_assert_uint_eq(0xC3, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+}
+END_TEST
+
+START_TEST (irq_t3)
+{
+	cpu->instruction_cycles_remaining = 4;
+	cpu->PC = 0xC31E;
+	cpu->stack = 0x46;
+	uint16_t start_stack = cpu->stack;
+	int IRQ_index = 1;
+
+	hardware_interrupts[IRQ_index](cpu);
+
+	// PCL onto stack
+	ck_assert_uint_eq(0x1E, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+}
+END_TEST
+
+START_TEST (irq_t4)
+{
+	cpu->instruction_cycles_remaining = 3;
+	cpu->P = 0x30 | FLAG_V; // 0x30 shouldn't be set normally, testing purposes here
+	cpu->stack = 0x46;
+	uint16_t start_stack = cpu->stack;
+	int IRQ_index = 1;
+
+	hardware_interrupts[IRQ_index](cpu);
+
+	// Push (P | 0x30) onto stack, then set I flag
+	ck_assert_uint_eq(FLAG_V, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(FLAG_V | FLAG_I | 0x30, cpu->P);
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+}
+END_TEST
+
+START_TEST (irq_t5)
+{
+	cpu->instruction_cycles_remaining = 2;
+	int IRQ_index = 1;
+	// FFFE
+	cpu->mem[IRQ_VECTOR] = 0x1A;  // write function requires a mapper write
+
+	hardware_interrupts[IRQ_index](cpu);
+
+	ck_assert_uint_eq(0x1A, cpu->addr_lo);
+}
+END_TEST
+
+START_TEST (irq_t6)
+{
+	cpu->instruction_cycles_remaining = 1;
+	int IRQ_index = 1;
+	// FFFE
+	cpu->mem[IRQ_VECTOR + 1] = 0x94;  // write function requires a mapper write
+
+	hardware_interrupts[IRQ_index](cpu);
+
+	ck_assert_uint_eq(0x94, cpu->addr_hi);
+}
+END_TEST
+
 START_TEST (nmi_t1)
 {
 	cpu->cpu_ppu_io = mmio_init();
@@ -6572,6 +6649,11 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t5);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t6);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t6);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t1);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t3);
