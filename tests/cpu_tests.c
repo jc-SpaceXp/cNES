@@ -5984,6 +5984,83 @@ START_TEST (jsr_t5)
 }
 END_TEST
 
+// skip T1 for now, requires a change to cpu.c
+
+START_TEST (brk_t2)
+{
+	char ins[4] = "BRK";
+	cpu->instruction_cycles_remaining = 5;
+	cpu->PC = 0x7B0C;
+	cpu->stack = 0xFD;
+	uint16_t start_stack = cpu->stack;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// PCH onto stack
+	ck_assert_uint_eq(0x7B, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+}
+END_TEST
+
+START_TEST (brk_t3)
+{
+	char ins[4] = "BRK";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->PC = 0x7B0C;
+	cpu->stack = 0xFC;
+	uint16_t start_stack = cpu->stack;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// PCL onto stack
+	ck_assert_uint_eq(0x0C, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+}
+END_TEST
+
+START_TEST (brk_t4)
+{
+	char ins[4] = "BRK";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->stack = 0xFB;
+	uint16_t start_stack = cpu->stack;
+	cpu->P = FLAG_Z;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// (P | 0x30) onto stack, P has interrupt flag set after
+	ck_assert_uint_eq(FLAG_Z | 0x30, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(start_stack - 1, cpu->stack);
+	ck_assert_uint_eq(FLAG_Z | FLAG_I, cpu->P);
+}
+END_TEST
+
+START_TEST (brk_t5)
+{
+	char ins[4] = "BRK";
+	cpu->instruction_cycles_remaining = 2;
+	// 0xFFFE
+	cpu->mem[BRK_VECTOR] = 0x25;  // write function requires a mapper write
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	ck_assert_uint_eq(0x25, cpu->addr_lo);
+}
+END_TEST
+
+START_TEST (brk_t6)
+{
+	char ins[4] = "BRK";
+	cpu->instruction_cycles_remaining = 1;
+	// 0xFFFF
+	cpu->mem[BRK_VECTOR + 1] = 0x40;  // write function requires a mapper write
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	ck_assert_uint_eq(0x40, cpu->addr_hi);
+}
+END_TEST
+
 
 Suite* cpu_suite(void)
 {
@@ -6368,6 +6445,11 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t6);
 	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
 
 	return s;
