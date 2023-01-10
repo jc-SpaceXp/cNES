@@ -6074,7 +6074,24 @@ START_TEST (brk_t6)
 }
 END_TEST
 
-// skipped T1 for now, requires a change to cpu.c
+START_TEST (nmi_t1)
+{
+	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io->nmi_cycles_left = 6;
+	cpu->PC = 0x0008;
+	int NMI_index = 2;
+	write_to_cpu(cpu, cpu->PC, 0x95);
+
+	hardware_interrupts[NMI_index](cpu);
+
+	// Dummy read into addr_lo (gets overwritten later)
+	// PC remains unchanged
+	ck_assert_uint_eq(0x95, cpu->addr_lo);
+	ck_assert_uint_eq(0x0008, cpu->PC);
+
+	free(cpu->cpu_ppu_io);
+}
+END_TEST
 
 START_TEST (nmi_t2)
 {
@@ -6555,6 +6572,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t5);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t6);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t1);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t4);

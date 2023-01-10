@@ -2051,8 +2051,8 @@ static void execute_NMI(Cpu6502* cpu)
 	cpu->address_mode = SPECIAL;
 	// opcode fetched: T0
 	switch (cpu->cpu_ppu_io->nmi_cycles_left) {
-	case 6: // T1
-		read_from_cpu(cpu, cpu->PC); // dummy read
+	case 6: // T1 (dummy read)
+		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
 		break;
 	case 5: // T2
 		stack_push(cpu, (uint8_t) (cpu->PC >> 8)); // push PCH onto stack
