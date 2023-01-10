@@ -5923,7 +5923,21 @@ START_TEST (jsr_t1)
 }
 END_TEST
 
-// skipped t2 for now requires a change to cpu.c
+START_TEST (jsr_t2)
+{
+	char ins[4] = "JSR";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->stack = 0xD0;
+	write_to_cpu(cpu, SP_START + cpu->stack, 0x01);
+	uint16_t start_stack = cpu->stack;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// Dummy read, SP doesn't change
+	ck_assert_uint_eq(0x01, cpu->addr_hi); // gets overwritten later
+	ck_assert_uint_eq(start_stack, cpu->stack);
+}
+END_TEST
 
 START_TEST (jsr_t3)
 {
@@ -6350,6 +6364,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t4_no_jmp_bug);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t5);

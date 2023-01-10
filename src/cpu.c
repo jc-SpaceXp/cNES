@@ -1744,7 +1744,7 @@ static void execute_JSR(Cpu6502* cpu)
 		++cpu->PC;
 		break;
 	case 4: // T2 (dummy read on stack)
-		read_from_cpu(cpu, SP_START + cpu->stack); // dummy cpu stack read
+		cpu->addr_hi = read_from_cpu(cpu, SP_START + cpu->stack);
 		break;
 	case 3: // T3 (PC + 2 from read_op)
 		stack_push(cpu, (uint8_t) (cpu->PC >> 8)); // push PCH onto stack
