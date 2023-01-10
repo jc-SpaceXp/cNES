@@ -5818,6 +5818,97 @@ START_TEST (branch_ops_t3_branch_taken_page_cross)
 END_TEST
 
 
+START_TEST (abs_jmp_t1)
+{
+	char ins[4] = "JMP";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->address_mode = ABS;
+	cpu->PC = 0x0110;
+	write_to_cpu(cpu, cpu->PC, 0x02);
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
+
+	ck_assert_uint_eq(0x02, cpu->addr_lo);
+}
+END_TEST
+
+START_TEST (abs_jmp_t2)
+{
+	char ins[4] = "JMP";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->address_mode = ABS;
+	cpu->PC = 0x0111;
+	write_to_cpu(cpu, cpu->PC, 0xFF);
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
+
+	ck_assert_uint_eq(0xFF, cpu->addr_hi);
+}
+END_TEST
+
+START_TEST (ind_jmp_t1)
+{
+	char ins[4] = "JMP";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->address_mode = IND;
+	cpu->PC = 0x01AA;
+	write_to_cpu(cpu, cpu->PC, 0xF0);
+	uint16_t start_PC = cpu->PC;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IND)](cpu);
+
+	ck_assert_uint_eq(0xF0, cpu->index_lo);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (ind_jmp_t2)
+{
+	char ins[4] = "JMP";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->address_mode = IND;
+	cpu->PC = 0x01AB;
+	write_to_cpu(cpu, cpu->PC, 0x01);
+	uint16_t start_PC = cpu->PC;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IND)](cpu);
+
+	ck_assert_uint_eq(0x01, cpu->index_hi);
+	ck_assert_uint_eq(start_PC + 1, cpu->PC);
+}
+END_TEST
+
+START_TEST (ind_jmp_t3)
+{
+	char ins[4] = "JMP";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->address_mode = IND;
+	cpu->index_hi = 0x01;
+	cpu->index_lo = 0xF0;
+	write_to_cpu(cpu, 0x01F0, 0x0A);
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IND)](cpu);
+
+	ck_assert_uint_eq(0x0A, cpu->addr_lo);
+}
+END_TEST
+
+START_TEST (ind_jmp_t4_no_jmp_bug)
+{
+	char ins[4] = "JMP";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->address_mode = IND;
+	cpu->index_hi = 0x01;
+	cpu->index_lo = 0xF0;
+	write_to_cpu(cpu, 0x01F0 + 1, 0x70);
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IND)](cpu);
+
+	ck_assert_uint_eq(0x70, cpu->addr_hi);
+}
+END_TEST
+
+
 Suite* cpu_suite(void)
 {
 	Suite* s;
@@ -5834,6 +5925,7 @@ Suite* cpu_suite(void)
 	TCase* tc_cpu_instruction_trace_logger;
 	TCase* tc_cpu_address_modes_rw_logic;
 	TCase* tc_cpu_address_modes_cycles;
+	TCase* tc_cpu_special_decoders_cycles;
 
 	s = suite_create("Cpu Tests");
 	tc_test_helpers = tcase_create("Test Helpers");
@@ -6187,6 +6279,15 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t2_branch_taken_page_cross_pending);
 	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t3_branch_taken_page_cross);
 	suite_add_tcase(s, tc_cpu_address_modes_cycles);
+	tc_cpu_special_decoders_cycles = tcase_create("Cpu Special Instruction Decoders Cycle-By-Cycle Verification");
+	tcase_add_checked_fixture(tc_cpu_special_decoders_cycles, setup, teardown);
+	tcase_add_test(tc_cpu_special_decoders_cycles, abs_jmp_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, abs_jmp_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t4_no_jmp_bug);
+	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
 
 	return s;
 }
