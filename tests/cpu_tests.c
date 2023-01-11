@@ -6273,6 +6273,52 @@ START_TEST (nmi_t6)
 }
 END_TEST
 
+START_TEST (rts_t3)
+{
+	char ins[4] = "RTS";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->stack = 0x80;
+	uint16_t start_stack = cpu->stack;
+	write_to_cpu(cpu, SP_START + cpu->stack + 1, 0x29);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// Pull PCL from stack
+	ck_assert_uint_eq(0x29, cpu->addr_lo);
+	ck_assert_uint_eq(start_stack + 1, cpu->stack);
+}
+END_TEST
+
+START_TEST (rts_t4)
+{
+	char ins[4] = "RTS";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->stack = 0x81;
+	uint16_t start_stack = cpu->stack;
+	write_to_cpu(cpu, SP_START + cpu->stack + 1, 0xC1);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// Pull PCH from stack
+	ck_assert_uint_eq(0xC1, cpu->addr_hi);
+	ck_assert_uint_eq(start_stack + 1, cpu->stack);
+}
+END_TEST
+
+START_TEST (rts_t5)
+{
+	char ins[4] = "RTS";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->addr_hi = 0xC1;
+	cpu->addr_lo = 0x29;
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	ck_assert_uint_eq(0xC129, cpu->target_addr);
+	// dummy read check skipped for now
+}
+END_TEST
+
 
 Suite* cpu_suite(void)
 {
@@ -6675,6 +6721,9 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t5);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t6);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t5);
 	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
 
 	return s;
