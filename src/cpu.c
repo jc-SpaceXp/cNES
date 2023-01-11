@@ -1036,8 +1036,8 @@ static void decode_PUSH(Cpu6502* cpu)
 	cpu->address_mode = IMP; // used for debugger sets end = ""
 	// opcode fetched: T0
 	switch (cpu->instruction_cycles_remaining) {
-	case 2: // T1
-		read_from_cpu(cpu, cpu->PC); // dummy read (next opcode)
+	case 2: // T1 (dummy read)
+		cpu->operand = read_from_cpu(cpu, cpu->PC);
 		break;
 	case 1: // T2
 		cpu->instruction_state = EXECUTE;

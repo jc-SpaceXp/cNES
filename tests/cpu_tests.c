@@ -6428,12 +6428,12 @@ START_TEST (stack_push_t1)
 	char ins[4] = "PHA";
 	cpu->instruction_cycles_remaining = 2;
 	cpu->PC = 0xD481;
-	cpu->mem[cpu->PC] = 0x30; // can't use write function requires mapper write function
+	cpu->mem[cpu->PC] = 0xE6; // can't use write function requires mapper write function
 
 	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, PC unchanged
-	// dummy read not tested, not stored into anything for now
+	ck_assert_uint_eq(0xE6, cpu->operand);
 	ck_assert_uint_eq(0xD481, cpu->PC);
 }
 END_TEST
