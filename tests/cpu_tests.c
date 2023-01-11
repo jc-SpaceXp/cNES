@@ -6438,6 +6438,36 @@ START_TEST (stack_push_t1)
 }
 END_TEST
 
+START_TEST (stack_pull_t1)
+{
+	char ins[4] = "PLP";
+	cpu->instruction_cycles_remaining = 3;
+	cpu->PC = 0x9E54;
+	cpu->mem[cpu->PC] = 0x38; // can't use write function requires mapper write function
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// Dummy read, PC unchanged
+	//ck_assert_uint_eq(0x38, cpu->operand);
+	ck_assert_uint_eq(0x9E54, cpu->PC);
+}
+END_TEST
+
+START_TEST (stack_pull_t2)
+{
+	char ins[4] = "PLP";
+	cpu->instruction_cycles_remaining = 2;
+	cpu->stack = 0x54;
+	write_to_cpu(cpu, SP_START + cpu->stack, 0x2A);
+
+	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// Dummy read, stack pointer unchanged
+	//ck_assert_uint_eq(0x2A, cpu->operand);
+	ck_assert_uint_eq(0x54, cpu->stack);
+}
+END_TEST
+
 
 Suite* cpu_suite(void)
 {
@@ -6851,6 +6881,8 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t5);
 	tcase_add_test(tc_cpu_special_decoders_cycles, stack_push_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t2);
 	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
 
 	return s;
