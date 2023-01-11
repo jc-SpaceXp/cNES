@@ -6448,7 +6448,7 @@ START_TEST (stack_pull_t1)
 	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, PC unchanged
-	//ck_assert_uint_eq(0x38, cpu->operand);
+	ck_assert_uint_eq(0x38, cpu->operand);
 	ck_assert_uint_eq(0x9E54, cpu->PC);
 }
 END_TEST
@@ -6463,7 +6463,7 @@ START_TEST (stack_pull_t2)
 	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, stack pointer unchanged
-	//ck_assert_uint_eq(0x2A, cpu->operand);
+	ck_assert_uint_eq(0x2A, cpu->operand);
 	ck_assert_uint_eq(0x54, cpu->stack);
 }
 END_TEST

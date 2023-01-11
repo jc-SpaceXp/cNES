@@ -1053,11 +1053,11 @@ static void decode_PULL(Cpu6502* cpu)
 	cpu->address_mode = IMP; // used for debugger sets end = ""
 	// opcode fetched: T0
 	switch (cpu->instruction_cycles_remaining) {
-	case 3: // T1
-		read_from_cpu(cpu, cpu->PC); // dummy read (next opcode)
+	case 3: // T1 (dummy read)
+		cpu->operand = read_from_cpu(cpu, cpu->PC);
 		break;
-	case 2: // T2
-		read_from_cpu(cpu, SP_START + cpu->stack); // dummy read (stack pointer)
+	case 2: // T2 (dummy read on stack)
+		cpu->operand = read_from_cpu(cpu, SP_START + cpu->stack);
 		break;
 	case 1: // T2
 		cpu->instruction_state = EXECUTE;
