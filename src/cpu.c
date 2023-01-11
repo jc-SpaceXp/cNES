@@ -1099,11 +1099,11 @@ static void decode_RTS(Cpu6502* cpu)
 	cpu->address_mode = IMP;
 	// opcode fetched: T0
 	switch (cpu->instruction_cycles_remaining) {
-	case 5: // T1
-		read_from_cpu(cpu, cpu->PC); // dummy read
+	case 5: // T1 (dummy read)
+		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
 		break;
-	case 4: // T2
-		read_from_cpu(cpu, SP_START + cpu->stack); // dummy stack read
+	case 4: // T2 (dummy read on stack)
+		cpu->addr_lo = read_from_cpu(cpu, SP_START + cpu->stack);
 		break;
 	case 3: // T3
 		cpu->addr_lo = stack_pull(cpu);
@@ -1806,7 +1806,7 @@ static void execute_RTS(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "RTS");
 	cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo;
-	read_from_cpu(cpu, cpu->target_addr); // dummy read
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr); // dummy read
 	cpu->PC = cpu->target_addr + 1;
 }
 
