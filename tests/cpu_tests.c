@@ -6273,6 +6273,34 @@ START_TEST (nmi_t6)
 }
 END_TEST
 
+START_TEST (rti_t1)
+{
+	char ins[4] = "RTI";
+	cpu->instruction_cycles_remaining = 5;
+	cpu->PC = 0x0B51;
+	write_to_cpu(cpu, cpu->PC, 0xD1);
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// Dummy read, PC unchanged
+	ck_assert_uint_eq(0xD1, cpu->addr_lo);
+	ck_assert_uint_eq(0x0B51, cpu->PC);
+}
+
+START_TEST (rti_t2)
+{
+	char ins[4] = "RTI";
+	cpu->instruction_cycles_remaining = 4;
+	cpu->stack = 0x49;
+	write_to_cpu(cpu, SP_START + cpu->stack, 0x0C);
+
+	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
+
+	// Dummy read
+	ck_assert_uint_eq(0x0C, cpu->addr_lo);
+	ck_assert_uint_eq(0x49, cpu->stack);
+}
+
 START_TEST (rti_t3)
 {
 	char ins[4] = "RTI";
@@ -6797,6 +6825,8 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t5);
 	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t6);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t5);
