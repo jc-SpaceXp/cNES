@@ -6469,6 +6469,24 @@ START_TEST (stack_pull_t2)
 END_TEST
 
 
+START_TEST (set_address_bus_bytes_adh_adl)
+{
+	set_address_bus_bytes(cpu, 0xC1, 0x47);
+
+	ck_assert_uint_eq(0xC147, cpu->address_bus);
+}
+END_TEST
+
+START_TEST (set_address_bus_from_pc)
+{
+	cpu->PC = 0x8A03;
+	set_address_bus(cpu, cpu->PC);
+
+	ck_assert_uint_eq(0x8A03, cpu->address_bus);
+}
+END_TEST
+
+
 Suite* cpu_suite(void)
 {
 	Suite* s;
@@ -6486,6 +6504,7 @@ Suite* cpu_suite(void)
 	TCase* tc_cpu_address_modes_rw_logic;
 	TCase* tc_cpu_address_modes_cycles;
 	TCase* tc_cpu_special_decoders_cycles;
+	TCase* tc_cpu_basic_functions;
 
 	s = suite_create("Cpu Tests");
 	tc_test_helpers = tcase_create("Test Helpers");
@@ -6884,6 +6903,11 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t1);
 	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t2);
 	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
+	tc_cpu_basic_functions = tcase_create("Cpu Basic Tests");
+	tcase_add_checked_fixture(tc_cpu_basic_functions, setup, teardown);
+	tcase_add_test(tc_cpu_basic_functions, set_address_bus_bytes_adh_adl);
+	tcase_add_test(tc_cpu_basic_functions, set_address_bus_from_pc);
+	suite_add_tcase(s, tc_cpu_basic_functions);
 
 	return s;
 }

@@ -170,6 +170,9 @@ typedef struct {
 	/* Memory */
 	uint8_t mem[CPU_MEMORY_SIZE];
 
+	// Bus signals
+	uint16_t address_bus;
+
 	// Decoders
 	uint8_t addr_lo;
 	uint8_t addr_hi;

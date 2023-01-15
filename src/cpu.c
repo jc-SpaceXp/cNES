@@ -310,6 +310,16 @@ uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr)
 	return read;
 }
 
+void set_address_bus_bytes(Cpu6502* cpu, uint8_t adh, uint8_t adl)
+{
+	cpu->address_bus = (adh << 8) | adl;
+}
+
+void set_address_bus(Cpu6502* cpu, uint16_t target_address)
+{
+	cpu->address_bus = target_address;
+}
+
 /* Return 16 bit address in little endian format */
 static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr)
 {
