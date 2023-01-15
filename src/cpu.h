@@ -60,6 +60,8 @@ uint8_t cpu_generic_read(Cpu6502* cpu, enum CpuMemType mem_type
                         , uint16_t read_address, const uint8_t* internal_reg);
 uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr);  // Read byte from CPU mempry
 void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val);
+void set_address_bus_bytes(Cpu6502* cpu, uint8_t adh, uint8_t adl);
+void set_address_bus(Cpu6502* cpu, uint16_t target_address);
 void stack_push(Cpu6502* cpu, uint8_t val);
 uint8_t stack_pull(Cpu6502* cpu);
 void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_t end_addr);
