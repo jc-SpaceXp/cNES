@@ -6486,6 +6486,104 @@ START_TEST (set_address_bus_from_pc)
 }
 END_TEST
 
+START_TEST (set_data_bus_from_address_bus_read)
+{
+	cpu->PC = 0x1A03;
+	set_address_bus(cpu, cpu->PC);
+	write_to_cpu(cpu, cpu->address_bus, 0xD6);
+
+	set_data_bus_via_read(cpu, cpu->address_bus, DATA);
+
+	ck_assert_uint_eq(0xD6, cpu->data_bus);
+}
+END_TEST
+
+START_TEST (set_data_bus_and_adl)
+{
+	cpu->PC = 0x1A72;
+	set_address_bus(cpu, cpu->PC);
+	write_to_cpu(cpu, cpu->address_bus, 0x35);
+
+	set_data_bus_via_read(cpu, cpu->address_bus, ADL);
+
+	ck_assert_uint_eq(0x35, cpu->data_bus);
+	ck_assert_uint_eq(0x35, cpu->addr_lo);
+}
+END_TEST
+
+START_TEST (set_data_bus_and_adh)
+{
+	cpu->PC = 0x1A72;
+	set_address_bus(cpu, cpu->PC);
+	write_to_cpu(cpu, cpu->address_bus, 0x78);
+
+	set_data_bus_via_read(cpu, cpu->address_bus, ADH);
+
+	ck_assert_uint_eq(0x78, cpu->data_bus);
+	ck_assert_uint_eq(0x78, cpu->addr_hi);
+}
+END_TEST
+
+START_TEST (set_data_bus_and_bal)
+{
+	cpu->PC = 0x1A72;
+	set_address_bus(cpu, cpu->PC);
+	write_to_cpu(cpu, cpu->address_bus, 0x03);
+
+	set_data_bus_via_read(cpu, cpu->address_bus, BAL);
+
+	ck_assert_uint_eq(0x03, cpu->data_bus);
+	ck_assert_uint_eq(0x03, cpu->base_addr);
+}
+END_TEST
+
+START_TEST (set_data_bus_and_inl)
+{
+	cpu->PC = 0x1A72;
+	set_address_bus(cpu, cpu->PC);
+	write_to_cpu(cpu, cpu->address_bus, 0xB2);
+
+	set_data_bus_via_read(cpu, cpu->address_bus, INL);
+
+	ck_assert_uint_eq(0xB2, cpu->data_bus);
+	ck_assert_uint_eq(0xB2, cpu->index_lo);
+}
+END_TEST
+
+START_TEST (set_data_bus_and_inh)
+{
+	cpu->PC = 0x1A72;
+	set_address_bus(cpu, cpu->PC);
+	write_to_cpu(cpu, cpu->address_bus, 0xC2);
+
+	set_data_bus_via_read(cpu, cpu->address_bus, INH);
+
+	ck_assert_uint_eq(0xC2, cpu->data_bus);
+	ck_assert_uint_eq(0xC2, cpu->index_hi);
+}
+END_TEST
+
+START_TEST (set_data_bus_and_branch_offset)
+{
+	cpu->PC = 0x1A72;
+	set_address_bus(cpu, cpu->PC);
+	write_to_cpu(cpu, cpu->address_bus, 0x63);
+
+	set_data_bus_via_read(cpu, cpu->address_bus, BRANCH);
+
+	ck_assert_uint_eq(0x63, cpu->data_bus);
+	ck_assert_uint_eq(0x63, cpu->offset);
+}
+END_TEST
+
+START_TEST (set_data_bus_for_writes)
+{
+	set_data_bus_via_write(cpu, 0xE9);
+
+	ck_assert_uint_eq(0xE9, cpu->data_bus);
+}
+END_TEST
+
 
 Suite* cpu_suite(void)
 {
@@ -6907,6 +7005,14 @@ Suite* cpu_suite(void)
 	tcase_add_checked_fixture(tc_cpu_basic_functions, setup, teardown);
 	tcase_add_test(tc_cpu_basic_functions, set_address_bus_bytes_adh_adl);
 	tcase_add_test(tc_cpu_basic_functions, set_address_bus_from_pc);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_from_address_bus_read);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_adl);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_adh);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_bal);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_inl);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_inh);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_branch_offset);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_for_writes);
 	suite_add_tcase(s, tc_cpu_basic_functions);
 
 	return s;

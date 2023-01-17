@@ -320,6 +320,32 @@ void set_address_bus(Cpu6502* cpu, uint16_t target_address)
 	cpu->address_bus = target_address;
 }
 
+void set_data_bus_via_read(Cpu6502* cpu, uint16_t target_address, enum DataBusType data_type)
+{
+	uint8_t data = read_from_cpu(cpu, target_address);
+	cpu->data_bus = data;
+
+	// Set internal signals too
+	if (data_type == ADL) {
+		cpu->addr_lo = data;
+	} else if (data_type == ADH) {
+		cpu->addr_hi = data;
+	} else if (data_type == BAL) {
+		cpu->base_addr = data;
+	} else if (data_type == INL) {
+		cpu->index_lo = data;
+	} else if (data_type == INH) {
+		cpu->index_hi = data;
+	} else if (data_type == BRANCH) {
+		cpu->offset = data;
+	}
+}
+
+void set_data_bus_via_write(Cpu6502* cpu, uint8_t data)
+{
+	cpu->data_bus = data;
+}
+
 /* Return 16 bit address in little endian format */
 static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr)
 {

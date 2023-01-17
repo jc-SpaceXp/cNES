@@ -44,6 +44,8 @@ enum HardwareInterruptsArrayIndexes {
 	NMI_INDEX = 2,
 };
 
+enum DataBusType {DATA, ADL, ADH, BAL, INL, INH, BRANCH};
+
 CpuMapperShare* cpu_mapper_init(Cartridge* cart);
 CpuPpuShare* mmio_init(void);
 Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm); /* initialise CPU struct */
@@ -62,6 +64,8 @@ uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr);  // Read byte from CPU mempr
 void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val);
 void set_address_bus_bytes(Cpu6502* cpu, uint8_t adh, uint8_t adl);
 void set_address_bus(Cpu6502* cpu, uint16_t target_address);
+void set_data_bus_via_read(Cpu6502* cpu, uint16_t target_address, enum DataBusType data_type);
+void set_data_bus_via_write(Cpu6502* cpu, uint8_t data);
 void stack_push(Cpu6502* cpu, uint8_t val);
 uint8_t stack_pull(Cpu6502* cpu);
 void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_t end_addr);

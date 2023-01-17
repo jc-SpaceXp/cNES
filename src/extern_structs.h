@@ -172,6 +172,7 @@ typedef struct {
 
 	// Bus signals
 	uint16_t address_bus;
+	uint16_t data_bus;
 
 	// Decoders
 	uint8_t addr_lo;
