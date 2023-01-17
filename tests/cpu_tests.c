@@ -5085,7 +5085,7 @@ START_TEST (absx_read_store_t3_no_page_cross)
 	// target_addr should be a concat of addr_hi and addr_lo
 	ck_assert_uint_eq(0x1152, cpu->target_addr);
 	// no page cross, no dummy read
-	ck_assert_uint_ne(0xB0, cpu->operand);
+	ck_assert_uint_ne(0xB0, cpu->data_bus);
 }
 END_TEST
 
@@ -5103,7 +5103,7 @@ START_TEST (absx_read_store_t3_page_cross)
 	// target_addr should be a concat of addr_hi and addr_lo
 	ck_assert_uint_eq(0x1152 + cpu->X - 0x0100, cpu->target_addr);
 	// page cross means a dummy read at the incorrect (non-paged crossed) address occurs here
-	ck_assert_uint_eq(0xB5, cpu->operand);
+	ck_assert_uint_eq(0xB5, cpu->data_bus);
 }
 END_TEST
 
@@ -5257,7 +5257,7 @@ START_TEST (absy_read_store_t3_no_page_cross)
 	// target_addr should be a concat of addr_hi and addr_lo
 	ck_assert_uint_eq(0x1805, cpu->target_addr);
 	// no page cross, no dummy read
-	ck_assert_uint_ne(0x30, cpu->operand);
+	ck_assert_uint_ne(0x30, cpu->data_bus);
 }
 END_TEST
 
@@ -5275,7 +5275,7 @@ START_TEST (absy_read_store_t3_page_cross)
 	// target_addr should be a concat of addr_hi and addr_lo
 	ck_assert_uint_eq(0x1805 + cpu->Y - 0x0100, cpu->target_addr);
 	// page cross means a dummy read at the incorrect (non-paged crossed) address occurs here
-	ck_assert_uint_eq(0x35, cpu->operand);
+	ck_assert_uint_eq(0x35, cpu->data_bus);
 }
 END_TEST
 
@@ -5312,11 +5312,11 @@ START_TEST (acc_t1_dummy_opcode_read)
 
 	// T1 will fetch the next opcode but ignore it
 	// next T0 will re-fetch this opcode
-	ck_assert_uint_eq(next_opcode, cpu->operand);
+	ck_assert_uint_eq(next_opcode, cpu->data_bus);
 }
 END_TEST
 
-START_TEST (imm_t1_dummy_opcode_read)
+START_TEST (imp_t1_dummy_opcode_read)
 {
 	// note we cannot use cpu->opcode to store the dummy read
 	// as this is used to determine which instruction to execute.
@@ -5330,11 +5330,11 @@ START_TEST (imm_t1_dummy_opcode_read)
 	uint8_t next_opcode = reverse_opcode_lut(&next_ins, ABS);
 	write_to_cpu(cpu, cpu->PC, next_opcode);
 
-	decode_opcode_lut[reverse_opcode_lut(&ins, IMM)](cpu);
+	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// T1 will fetch the next opcode but ignore it
 	// next T0 will re-fetch this opcode
-	ck_assert_uint_eq(next_opcode, cpu->operand);
+	ck_assert_uint_eq(next_opcode, cpu->data_bus);
 }
 END_TEST
 
@@ -5364,8 +5364,7 @@ START_TEST (indx_read_store_t2_dummy_read)
 
 	decode_opcode_lut[reverse_opcode_lut(&ins, INDX)](cpu);
 
-	// addr_lo should be set by reading from the base_addr
-	ck_assert_uint_eq(0x46, cpu->addr_lo);
+	ck_assert_uint_eq(0x46, cpu->data_bus);
 }
 END_TEST
 
@@ -5478,7 +5477,7 @@ START_TEST (indy_read_store_t4_no_page_cross)
 	// (adding Y to addr_lo w/o adding a potentital carry to addr_hi)
 	ck_assert_uint_eq(0x03FE + cpu->Y, cpu->target_addr);
 	// no page cross, no dummy read
-	ck_assert_uint_ne(0xE5, cpu->operand);
+	ck_assert_uint_ne(0xE5, cpu->data_bus);
 }
 END_TEST
 
@@ -5500,7 +5499,7 @@ START_TEST (indy_read_store_t4_page_cross)
 	// (adding Y to addr_lo w/o adding a potentital carry to addr_hi)
 	ck_assert_uint_eq(0x03FE + cpu->Y - 0x0100, cpu->target_addr); // minus page cross
 	// page cross means a dummy read at the incorrect (non-paged crossed) address occurs here
-	ck_assert_uint_eq(0xE5, cpu->operand);
+	ck_assert_uint_eq(0xE5, cpu->data_bus);
 }
 END_TEST
 
@@ -5627,7 +5626,7 @@ START_TEST (zpx_read_store_t2_dummy_read)
 	// target_addr is just the zero page address of addr_lo
 	// a read occurs at that address too
 	ck_assert_uint_eq(0x83, cpu->target_addr);
-	ck_assert_uint_eq(0xDF, cpu->operand);
+	ck_assert_uint_eq(0xDF, cpu->data_bus);
 }
 END_TEST
 
@@ -5738,7 +5737,7 @@ START_TEST (zpy_read_store_t2_dummy_read)
 	// target_addr is just the zero page address of addr_lo
 	// a read occurs at that address too
 	ck_assert_uint_eq(0xE3, cpu->target_addr);
-	ck_assert_uint_eq(0x78, cpu->operand);
+	ck_assert_uint_eq(0x78, cpu->data_bus);
 }
 END_TEST
 
@@ -5934,7 +5933,7 @@ START_TEST (jsr_t2)
 	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, SP doesn't change
-	ck_assert_uint_eq(0x01, cpu->addr_hi); // gets overwritten later
+	ck_assert_uint_eq(0x01, cpu->data_bus);
 	ck_assert_uint_eq(start_stack, cpu->stack);
 }
 END_TEST
@@ -5994,7 +5993,8 @@ START_TEST (brk_t1)
 
 	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
-	ck_assert_uint_eq(0x55, cpu->addr_lo);
+	// Dummy read
+	ck_assert_uint_eq(0x55, cpu->data_bus);
 	ck_assert_uint_eq(start_PC + 1, cpu->PC);
 }
 END_TEST
@@ -6084,7 +6084,7 @@ START_TEST (irq_t1)
 	hardware_interrupts[IRQ_index](cpu);
 
 	// Dummy read, PC is unchanged
-	ck_assert_uint_eq(0x05, cpu->addr_lo);
+	ck_assert_uint_eq(0x05, cpu->data_bus);
 	ck_assert_uint_eq(0xC31E, cpu->PC);
 }
 END_TEST
@@ -6174,9 +6174,8 @@ START_TEST (nmi_t1)
 
 	hardware_interrupts[NMI_index](cpu);
 
-	// Dummy read into addr_lo (gets overwritten later)
-	// PC remains unchanged
-	ck_assert_uint_eq(0x95, cpu->addr_lo);
+	// Dummy read, PC remains unchanged
+	ck_assert_uint_eq(0x95, cpu->data_bus);
 	ck_assert_uint_eq(0x0008, cpu->PC);
 
 	free(cpu->cpu_ppu_io);
@@ -6283,7 +6282,7 @@ START_TEST (rti_t1)
 	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, PC unchanged
-	ck_assert_uint_eq(0xD1, cpu->addr_lo);
+	ck_assert_uint_eq(0xD1, cpu->data_bus);
 	ck_assert_uint_eq(0x0B51, cpu->PC);
 }
 
@@ -6297,7 +6296,7 @@ START_TEST (rti_t2)
 	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read
-	ck_assert_uint_eq(0x0C, cpu->addr_lo);
+	ck_assert_uint_eq(0x0C, cpu->data_bus);
 	ck_assert_uint_eq(0x49, cpu->stack);
 }
 
@@ -6356,7 +6355,7 @@ START_TEST (rts_t1)
 	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, PC unchanged
-	ck_assert_uint_eq(0xB3, cpu->addr_lo); // overwritten on next cycle
+	ck_assert_uint_eq(0xB3, cpu->data_bus);
 	ck_assert_uint_eq(0x1775, cpu->PC);
 }
 END_TEST
@@ -6371,7 +6370,7 @@ START_TEST (rts_t2)
 	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, stack pointer unchanged
-	ck_assert_uint_eq(0xFF, cpu->addr_lo); // overwritten on next cycle
+	ck_assert_uint_eq(0xFF, cpu->data_bus);
 	ck_assert_uint_eq(0x80, cpu->stack);
 }
 END_TEST
@@ -6419,7 +6418,7 @@ START_TEST (rts_t5)
 	execute_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	ck_assert_uint_eq(0xC129, cpu->target_addr);
-	ck_assert_uint_eq(0x30, cpu->operand); // dummy read
+	ck_assert_uint_eq(0x30, cpu->data_bus); // dummy read
 }
 END_TEST
 
@@ -6433,7 +6432,7 @@ START_TEST (stack_push_t1)
 	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, PC unchanged
-	ck_assert_uint_eq(0xE6, cpu->operand);
+	ck_assert_uint_eq(0xE6, cpu->data_bus);
 	ck_assert_uint_eq(0xD481, cpu->PC);
 }
 END_TEST
@@ -6448,7 +6447,7 @@ START_TEST (stack_pull_t1)
 	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, PC unchanged
-	ck_assert_uint_eq(0x38, cpu->operand);
+	ck_assert_uint_eq(0x38, cpu->data_bus);
 	ck_assert_uint_eq(0x9E54, cpu->PC);
 }
 END_TEST
@@ -6463,7 +6462,7 @@ START_TEST (stack_pull_t2)
 	decode_opcode_lut[reverse_opcode_lut(&ins, IMP)](cpu);
 
 	// Dummy read, stack pointer unchanged
-	ck_assert_uint_eq(0x2A, cpu->operand);
+	ck_assert_uint_eq(0x2A, cpu->data_bus);
 	ck_assert_uint_eq(0x54, cpu->stack);
 }
 END_TEST
@@ -6924,7 +6923,7 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_page_cross);
 	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t4);
 	tcase_add_test(tc_cpu_address_modes_cycles, acc_t1_dummy_opcode_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, imm_t1_dummy_opcode_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, imp_t1_dummy_opcode_read);
 	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t1);
 	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t2_dummy_read);
 	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t3);

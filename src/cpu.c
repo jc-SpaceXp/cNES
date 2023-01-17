@@ -791,7 +791,7 @@ static void decode_ABSX_read_store(Cpu6502* cpu)
 			break;
 		}
 		// dummy read (only if T4 executes next)
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 1: // T4 (correct address, page crossed or not)
 		set_address_bus(cpu, concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X);
@@ -858,7 +858,7 @@ static void decode_ABSY_read_store(Cpu6502* cpu)
 			break;
 		}
 		// dummy read (only if T4 executes next)
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 1: // T4 (correct address, page crossed or not)
 		set_address_bus(cpu, concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y);
@@ -874,7 +874,7 @@ static void decode_ACC(Cpu6502* cpu)
 	cpu->address_mode = ACC;
 	// T1: fetch the next opcode (re-fetched on next T0 cycle)
 	set_address_bus(cpu, cpu->PC);
-	cpu->operand = read_from_cpu(cpu, cpu->PC);
+	set_data_bus_via_read(cpu, cpu->PC, DATA);
 	cpu->instruction_state = EXECUTE;
 }
 
@@ -898,7 +898,7 @@ static void decode_IMP(Cpu6502* cpu)
 	cpu->address_mode = IMP;
 	// T1: fetch the next opcode (re-fetched on next T0 cycle)
 	set_address_bus(cpu, cpu->PC);
-	cpu->operand = read_from_cpu(cpu, cpu->PC);
+	set_data_bus_via_read(cpu, cpu->PC, DATA);
 	cpu->instruction_state = EXECUTE;
 }
 
@@ -914,7 +914,7 @@ static void decode_INDX_read_store(Cpu6502* cpu)
 		break;
 	case 4: // T2 (dummy read)
 		set_address_bus_bytes(cpu, 0x00, cpu->base_addr);
-		set_data_bus_via_read(cpu, cpu->base_addr, ADL);
+		set_data_bus_via_read(cpu, cpu->base_addr, DATA);
 		break;
 	case 3: // T3
 		set_address_bus_bytes(cpu, 0x00, cpu->base_addr + cpu->X);
@@ -958,7 +958,7 @@ static void decode_INDY_read_store(Cpu6502* cpu)
 			break;
 		}
 		// dummy read (only if T5 executes next)
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 1: // T5 (correct address, page crossed or not)
 		set_address_bus(cpu, concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y);
@@ -1023,7 +1023,7 @@ static void decode_ZPX_read_store(Cpu6502* cpu)
 	case 2: // T2 (dummy read)
 		set_address_bus_bytes(cpu, 0x00, cpu->addr_lo);
 		cpu->target_addr = cpu->addr_lo;
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 1: // T3
 		set_address_bus_bytes(cpu, 0x00, cpu->addr_lo + cpu->X);
@@ -1075,7 +1075,7 @@ static void decode_ZPY_read_store(Cpu6502* cpu)
 	case 2: // T2 (dummy read)
 		set_address_bus_bytes(cpu, 0x00, cpu->addr_lo);
 		cpu->target_addr = cpu->addr_lo;
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 1: // T3
 		set_address_bus_bytes(cpu, 0x00, cpu->addr_lo + cpu->Y);
@@ -1118,7 +1118,7 @@ static void decode_PUSH(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 2: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		cpu->operand = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, DATA);
 		break;
 	case 1: // T2
 		cpu->instruction_state = EXECUTE;
@@ -1136,11 +1136,11 @@ static void decode_PULL(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 3: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		cpu->operand = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, DATA);
 		break;
 	case 2: // T2 (dummy read on stack)
 		set_address_bus(cpu, SP_START + cpu->stack);
-		cpu->operand = read_from_cpu(cpu, SP_START + cpu->stack);
+		set_data_bus_via_read(cpu, SP_START + cpu->stack, DATA);
 		break;
 	case 1: // T2
 		cpu->instruction_state = EXECUTE;
@@ -1187,11 +1187,11 @@ static void decode_RTS(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		set_data_bus_via_read(cpu, cpu->PC, ADL);
+		set_data_bus_via_read(cpu, cpu->PC, DATA);
 		break;
 	case 4: // T2 (dummy read on stack)
 		set_address_bus(cpu, SP_START + cpu->stack);
-		cpu->addr_lo = read_from_cpu(cpu, SP_START + cpu->stack);
+		set_data_bus_via_read(cpu, SP_START + cpu->stack, DATA);
 		break;
 	case 3: // T3
 		set_address_bus(cpu, SP_START + cpu->stack + 1); // pull increments SP to non-empty slot
@@ -1843,7 +1843,7 @@ static void execute_JSR(Cpu6502* cpu)
 		break;
 	case 4: // T2 (dummy read on stack)
 		set_address_bus(cpu, SP_START + cpu->stack);
-		cpu->addr_hi = read_from_cpu(cpu, SP_START + cpu->stack);
+		set_data_bus_via_read(cpu, SP_START + cpu->stack, DATA);
 		break;
 	case 3: // T3 (PC + 2 from read_op)
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
@@ -1880,11 +1880,11 @@ static void execute_RTI(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		set_data_bus_via_read(cpu, cpu->PC, ADL);
+		set_data_bus_via_read(cpu, cpu->PC, DATA);
 		break;
 	case 4: // T2 (dummy read on stack)
 		set_address_bus(cpu, SP_START + cpu->stack);
-		cpu->addr_lo = read_from_cpu(cpu, SP_START + cpu->stack);
+		set_data_bus_via_read(cpu, SP_START + cpu->stack, DATA);
 		break;
 	case 3: // T3
 		set_address_bus(cpu, SP_START + cpu->stack + 1); // pull increments SP to non-empty slot
@@ -1913,7 +1913,7 @@ static void execute_RTS(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "RTS");
 	cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo;
-	cpu->operand = read_from_cpu(cpu, cpu->target_addr); // dummy read
+	set_data_bus_via_read(cpu, cpu->target_addr, DATA); // dummy read
 	cpu->PC = cpu->target_addr + 1;
 }
 
@@ -2078,7 +2078,7 @@ static void execute_BRK(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 6: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		set_data_bus_via_read(cpu, cpu->PC, ADL);
+		set_data_bus_via_read(cpu, cpu->PC, DATA);
 		++cpu->PC;
 		break;
 	case 5: // T2
@@ -2129,7 +2129,7 @@ static void execute_IRQ(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 6: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		set_data_bus_via_read(cpu, cpu->PC, ADL);
+		set_data_bus_via_read(cpu, cpu->PC, DATA);
 		break;
 	case 5: // T2
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
@@ -2170,7 +2170,7 @@ static void execute_NMI(Cpu6502* cpu)
 	switch (cpu->cpu_ppu_io->nmi_cycles_left) {
 	case 6: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		set_data_bus_via_read(cpu, cpu->PC, ADL);
+		set_data_bus_via_read(cpu, cpu->PC, DATA);
 		break;
 	case 5: // T2
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
