@@ -757,10 +757,10 @@ static void decode_ABS_rmw(Cpu6502* cpu)
 	case 3: // T3 (dummy read)
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo);
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo);
-		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 2: // T4 (dummy write)
-		write_to_cpu(cpu, cpu->target_addr, cpu->unmodified_data);
+		write_to_cpu(cpu, cpu->target_addr, cpu->data_bus);
 		break;
 	case 1: // T5
 		cpu->instruction_state = EXECUTE;
@@ -819,15 +819,15 @@ static void decode_ABSX_rmw(Cpu6502* cpu)
 	case 4: // T3 (dummy read)
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo + cpu->X);
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->X);
-		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 3: // T4
 		set_address_bus(cpu, concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X);
 		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X;
-		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 2: // T5 (dummy write)
-		write_to_cpu(cpu, cpu->target_addr, cpu->unmodified_data);
+		write_to_cpu(cpu, cpu->target_addr, cpu->data_bus);
 		break;
 	case 1: // T6
 		cpu->instruction_state = EXECUTE;
@@ -999,10 +999,10 @@ static void decode_ZP_rmw(Cpu6502* cpu)
 	case 3: // T2
 		set_address_bus_bytes(cpu, 0x00, cpu->addr_lo);
 		cpu->target_addr = cpu->addr_lo;
-		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 2: // T3
-		write_to_cpu(cpu, cpu->target_addr, cpu->unmodified_data);
+		write_to_cpu(cpu, cpu->target_addr, cpu->data_bus);
 		break;
 	case 1: // T4
 		cpu->instruction_state = EXECUTE;
@@ -1046,15 +1046,15 @@ static void decode_ZPX_rmw(Cpu6502* cpu)
 	case 4: // T2 (dummy read)
 		set_address_bus_bytes(cpu, 0x00, cpu->addr_lo);
 		cpu->target_addr = cpu->addr_lo;
-		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 3: // T3
 		set_address_bus_bytes(cpu, 0x00, cpu->addr_lo + cpu->X);
 		cpu->target_addr = (uint8_t) (cpu->addr_lo + cpu->X);
-		cpu->unmodified_data = read_from_cpu(cpu, cpu->target_addr);
+		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 2: // T4 (dummy write)
-		write_to_cpu(cpu, cpu->target_addr, cpu->unmodified_data);
+		write_to_cpu(cpu, cpu->target_addr, cpu->data_bus);
 		break;
 	case 1: // T5
 		cpu->instruction_state = EXECUTE;

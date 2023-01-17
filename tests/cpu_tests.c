@@ -5019,7 +5019,7 @@ START_TEST (abs_rmw_t3_dummy_read)
 	// target_addr is the absolute address (addr_hi | addr_lo)
 	// a read occurs at that address too (dummy read)
 	ck_assert_uint_eq(0x1351, cpu->target_addr);
-	ck_assert_uint_eq(0x10, cpu->unmodified_data);
+	ck_assert_uint_eq(0x10, cpu->data_bus);
 }
 END_TEST
 
@@ -5028,7 +5028,7 @@ START_TEST (abs_rmw_t4_dummy_write)
 	char ins[4] = "DEC";
 	cpu->instruction_cycles_remaining = 2;
 	cpu->target_addr = 0x1351;
-	cpu->unmodified_data = 0xF3;
+	cpu->data_bus = 0xF3;
 
 	decode_opcode_lut[reverse_opcode_lut(&ins, ABS)](cpu);
 
@@ -5171,7 +5171,7 @@ START_TEST (absx_rmw_t3_1st_absx_read)
 	// the address is non-paged crossed address, [addr_hi | (uint8_t) (addr_lo + X)]
 	// a read occurs at that address too (dummy read)
 	ck_assert_uint_eq(0x1727 + cpu->X, cpu->target_addr);
-	ck_assert_uint_eq(0x08, cpu->unmodified_data);
+	ck_assert_uint_eq(0x08, cpu->data_bus);
 }
 END_TEST
 
@@ -5191,7 +5191,7 @@ START_TEST (absx_rmw_t4_2nd_absx_read)
 	// target_addr is the absolute address plus the X register
 	// a read occurs at that address too
 	ck_assert_uint_eq(0x1727 + cpu->X, cpu->target_addr);
-	ck_assert_uint_eq(0x20, cpu->unmodified_data);
+	ck_assert_uint_eq(0x20, cpu->data_bus);
 }
 END_TEST
 
@@ -5200,7 +5200,7 @@ START_TEST (absx_rmw_t5_dummy_write)
 	char ins[4] = "DEC";
 	cpu->instruction_cycles_remaining = 2;
 	cpu->target_addr = 0x1351;
-	cpu->unmodified_data = 0xF3;
+	cpu->data_bus = 0xF3;
 
 	decode_opcode_lut[reverse_opcode_lut(&ins, ABSX)](cpu);
 
@@ -5580,7 +5580,7 @@ START_TEST (zp_rmw_t2)
 	// target_addr is just the zero page address of addr_lo
 	// a read occurs at that address too
 	ck_assert_uint_eq(0x94, cpu->target_addr);
-	ck_assert_uint_eq(0xA8, cpu->unmodified_data);
+	ck_assert_uint_eq(0xA8, cpu->data_bus);
 }
 END_TEST
 
@@ -5589,7 +5589,7 @@ START_TEST (zp_rmw_t3_dummy_write)
 	char ins[4] = "ROR";
 	cpu->instruction_cycles_remaining = 2;
 	cpu->target_addr = 0x94;
-	cpu->unmodified_data = 0xA8;
+	cpu->data_bus = 0xA8;
 
 	decode_opcode_lut[reverse_opcode_lut(&ins, ZP)](cpu);
 
@@ -5674,7 +5674,7 @@ START_TEST (zpx_rmw_t2_dummy_read)
 	// target_addr is just the zero page address of addr_lo
 	// a read occurs at that address too
 	ck_assert_uint_eq(0xB4, cpu->target_addr);
-	ck_assert_uint_eq(0x09, cpu->unmodified_data);
+	ck_assert_uint_eq(0x09, cpu->data_bus);
 }
 END_TEST
 
@@ -5691,7 +5691,7 @@ START_TEST (zpx_rmw_t3)
 	// target_addr is just the zero page address of addr_lo + X register
 	// a read occurs here too
 	ck_assert_uint_eq((uint8_t) (cpu->addr_lo + cpu->X), cpu->target_addr);
-	ck_assert_uint_eq(0x92, cpu->unmodified_data);
+	ck_assert_uint_eq(0x92, cpu->data_bus);
 }
 END_TEST
 
@@ -5700,7 +5700,7 @@ START_TEST (zpx_rmw_t4_dummy_write)
 	char ins[4] = "ROL";
 	cpu->instruction_cycles_remaining = 2;
 	cpu->target_addr = 0x94;
-	cpu->unmodified_data = 0x92;
+	cpu->data_bus = 0x92;
 
 	decode_opcode_lut[reverse_opcode_lut(&ins, ZPX)](cpu);
 

@@ -179,7 +179,6 @@ typedef struct {
 	uint8_t addr_hi;
 	uint8_t index_lo;
 	uint8_t index_hi;
-	uint8_t unmodified_data;
 	uint8_t base_addr;
 	uint16_t target_addr;
 	uint8_t operand;
