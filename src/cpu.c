@@ -1166,7 +1166,7 @@ static void decode_Bxx(Cpu6502* cpu) // branch instructions
 		break;
 	case 2: // T2
 		// w/o carry --> (PCH | (PC + offset) & 0xFF)
-		set_address_bus_bytes(cpu, cpu->PC & 0xFF00, (cpu->PC & 0x00FF) + cpu->offset);
+		set_address_bus_bytes(cpu, cpu->PC >> 8, (cpu->PC & 0x00FF) + cpu->offset);
 		cpu->target_addr = (cpu->PC & 0xFF00) | ((cpu->PC + cpu->offset) & 0x00FF);
 		if (!page_cross_occurs(cpu->PC & 0xFF, cpu->offset)) {
 			cpu->instruction_state = EXECUTE;
