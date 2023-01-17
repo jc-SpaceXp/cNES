@@ -723,12 +723,12 @@ static void decode_ABS_read_store(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 3: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 2: // T2
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_hi = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADH);
 		++cpu->PC;
 		break;
 	case 1: //T3
@@ -746,12 +746,12 @@ static void decode_ABS_rmw(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 4: // T2
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_hi = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADH);
 		++cpu->PC;
 		break;
 	case 3: // T3 (dummy read)
@@ -775,12 +775,12 @@ static void decode_ABSX_read_store(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 4: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 3: // T2
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_hi = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADH);
 		++cpu->PC;
 		break;
 	case 2: // T3 (non-page cross address)
@@ -808,12 +808,12 @@ static void decode_ABSX_rmw(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 6: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 5: // T2
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_hi = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADH);
 		++cpu->PC;
 		break;
 	case 4: // T3 (dummy read)
@@ -842,12 +842,12 @@ static void decode_ABSY_read_store(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 4: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 3: // T2
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_hi = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADH);
 		++cpu->PC;
 		break;
 	case 2: // T3 (non-page cross address)
@@ -909,20 +909,20 @@ static void decode_INDX_read_store(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->base_addr = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, BAL);
 		++cpu->PC;
 		break;
 	case 4: // T2 (dummy read)
 		set_address_bus_bytes(cpu, 0x00, cpu->base_addr);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->base_addr);
+		set_data_bus_via_read(cpu, cpu->base_addr, ADL);
 		break;
 	case 3: // T3
 		set_address_bus_bytes(cpu, 0x00, cpu->base_addr + cpu->X);
-		cpu->addr_lo = read_from_cpu(cpu, (uint8_t) (cpu->base_addr + cpu->X));
+		set_data_bus_via_read(cpu, (uint8_t) (cpu->base_addr + cpu->X), ADL);
 		break;
 	case 2: // T4
 		set_address_bus_bytes(cpu, 0x00, cpu->base_addr + cpu->X + 1);
-		cpu->addr_hi = read_from_cpu(cpu, (uint8_t) (cpu->base_addr + cpu->X + 1));
+		set_data_bus_via_read(cpu, (uint8_t) (cpu->base_addr + cpu->X + 1), ADH);
 		break;
 	case 1: // T5
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo);
@@ -939,16 +939,16 @@ static void decode_INDY_read_store(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->base_addr = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, BAL);
 		++cpu->PC;
 		break;
 	case 4: // T2
 		set_address_bus_bytes(cpu, 0x00, cpu->base_addr);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->base_addr); // ZP read
+		set_data_bus_via_read(cpu, cpu->base_addr, ADL); // ZP read
 		break;
 	case 3: // T3
 		set_address_bus_bytes(cpu, 0x00, cpu->base_addr + 1);
-		cpu->addr_hi = read_from_cpu(cpu, (uint8_t) (cpu->base_addr + 1));
+		set_data_bus_via_read(cpu, (uint8_t) (cpu->base_addr + 1), ADH); // ZP read
 		break;
 	case 2: // T4 (non-page cross address)
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo + cpu->Y);
@@ -975,7 +975,7 @@ static void decode_ZP_read_store(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 2: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 1: // T2
@@ -993,7 +993,7 @@ static void decode_ZP_rmw(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 4: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 3: // T2
@@ -1017,7 +1017,7 @@ static void decode_ZPX_read_store(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 3: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC); // base address
+		set_data_bus_via_read(cpu, cpu->PC, ADL); // base address
 		++cpu->PC;
 		break;
 	case 2: // T2 (dummy read)
@@ -1040,7 +1040,7 @@ static void decode_ZPX_rmw(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 4: // T2 (dummy read)
@@ -1069,7 +1069,7 @@ static void decode_ZPY_read_store(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 3: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC); // base address
+		set_data_bus_via_read(cpu, cpu->PC, ADL); // base address
 		++cpu->PC;
 		break;
 	case 2: // T2 (dummy read)
@@ -1156,7 +1156,7 @@ static void decode_Bxx(Cpu6502* cpu) // branch instructions
 	switch (cpu->instruction_cycles_remaining) {
 	case 3: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->offset = read_from_cpu(cpu, cpu->PC); // -128 + 127 offset
+		set_data_bus_via_read(cpu, cpu->PC, BRANCH); // -128 to +127 offset
 		++cpu->PC;
 
 		if (branch_not_taken(cpu)) {
@@ -1187,7 +1187,7 @@ static void decode_RTS(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		break;
 	case 4: // T2 (dummy read on stack)
 		set_address_bus(cpu, SP_START + cpu->stack);
@@ -1784,12 +1784,12 @@ static void execute_JMP(Cpu6502* cpu)
 		switch (cpu->instruction_cycles_remaining) {
 		case 2: // T1
 			set_address_bus(cpu, cpu->PC);
-			cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+			set_data_bus_via_read(cpu, cpu->PC, ADL);
 			++cpu->PC;
 			break;
 		case 1: // T2
 			set_address_bus(cpu, cpu->PC);
-			cpu->addr_hi = read_from_cpu(cpu, cpu->PC);
+			set_data_bus_via_read(cpu, cpu->PC, ADH);
 			cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo; // END T2
 			cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo; // for debugger function
 			break;
@@ -1798,24 +1798,24 @@ static void execute_JMP(Cpu6502* cpu)
 		switch (cpu->instruction_cycles_remaining) {
 		case 4: // T1
 			set_address_bus(cpu, cpu->PC);
-			cpu->index_lo = read_from_cpu(cpu, cpu->PC);
+			set_data_bus_via_read(cpu, cpu->PC, INL);
 			++cpu->PC;
 			break;
 		case 3: // T2
 			set_address_bus(cpu, cpu->PC);
-			cpu->index_hi = read_from_cpu(cpu, cpu->PC);
+			set_data_bus_via_read(cpu, cpu->PC, INH);
 			++cpu->PC;
 			break;
 		case 2: // T3
 			set_address_bus_bytes(cpu, cpu->index_hi, cpu->index_lo);
-			cpu->addr_lo = read_from_cpu(cpu, (cpu->index_hi << 8) | cpu->index_lo);
+			set_data_bus_via_read(cpu, (cpu->index_hi << 8) | cpu->index_lo, ADL);
 			break;
 		case 1: // T4
 			set_address_bus(cpu, concat_address_bus_bytes(cpu->index_hi, cpu->index_lo) + 1);
-			cpu->addr_hi = read_from_cpu(cpu, ((cpu->index_hi << 8) | cpu->index_lo) + 1);
+			set_data_bus_via_read(cpu, ((cpu->index_hi << 8) | cpu->index_lo) + 1, ADH);
 			if (cpu->index_lo == 0xFF) { // JMP bug
 				set_address_bus_bytes(cpu, cpu->index_hi, 0x00);
-				cpu->addr_hi = read_from_cpu(cpu, cpu->index_hi << 8);
+				set_data_bus_via_read(cpu, cpu->index_hi << 8, ADH);
 			}
 
 			cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo; // END T4
@@ -1838,7 +1838,7 @@ static void execute_JSR(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 4: // T2 (dummy read on stack)
@@ -1855,7 +1855,7 @@ static void execute_JSR(Cpu6502* cpu)
 		break;
 	case 1: // T5
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_hi = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADH);
 		cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo;
 		cpu->PC = cpu->target_addr;
 
@@ -1880,7 +1880,7 @@ static void execute_RTI(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		break;
 	case 4: // T2 (dummy read on stack)
 		set_address_bus(cpu, SP_START + cpu->stack);
@@ -2078,7 +2078,7 @@ static void execute_BRK(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 6: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		++cpu->PC;
 		break;
 	case 5: // T2
@@ -2097,11 +2097,11 @@ static void execute_BRK(Cpu6502* cpu)
 		break;
 	case 2: // T5
 		set_address_bus(cpu, BRK_VECTOR);
-		cpu->addr_lo = read_from_cpu(cpu, BRK_VECTOR);
+		set_data_bus_via_read(cpu, BRK_VECTOR, ADL);
 		break;
 	case 1: // T6
 		set_address_bus(cpu, BRK_VECTOR + 1);
-		cpu->addr_hi = read_from_cpu(cpu, BRK_VECTOR + 1);
+		set_data_bus_via_read(cpu, BRK_VECTOR + 1, ADH);
 		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
 		break;
 	}
@@ -2129,7 +2129,7 @@ static void execute_IRQ(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 6: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		break;
 	case 5: // T2
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
@@ -2147,11 +2147,11 @@ static void execute_IRQ(Cpu6502* cpu)
 		break;
 	case 2: // T5
 		set_address_bus(cpu, IRQ_VECTOR);
-		cpu->addr_lo = read_from_cpu(cpu, IRQ_VECTOR);
+		set_data_bus_via_read(cpu, IRQ_VECTOR, ADL);
 		break;
 	case 1: // T6
 		set_address_bus(cpu, IRQ_VECTOR + 1);
-		cpu->addr_hi = read_from_cpu(cpu, IRQ_VECTOR + 1);
+		set_data_bus_via_read(cpu, IRQ_VECTOR + 1, ADH);
 		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
 		break;
 	}
@@ -2170,7 +2170,7 @@ static void execute_NMI(Cpu6502* cpu)
 	switch (cpu->cpu_ppu_io->nmi_cycles_left) {
 	case 6: // T1 (dummy read)
 		set_address_bus(cpu, cpu->PC);
-		cpu->addr_lo = read_from_cpu(cpu, cpu->PC);
+		set_data_bus_via_read(cpu, cpu->PC, ADL);
 		break;
 	case 5: // T2
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
@@ -2188,11 +2188,11 @@ static void execute_NMI(Cpu6502* cpu)
 		break;
 	case 2: // T5
 		set_address_bus(cpu, NMI_VECTOR);
-		cpu->addr_lo = read_from_cpu(cpu, NMI_VECTOR);
+		set_data_bus_via_read(cpu, NMI_VECTOR, ADL);
 		break;
 	case 1: // T6
 		set_address_bus(cpu, NMI_VECTOR + 1);
-		cpu->addr_hi = read_from_cpu(cpu, NMI_VECTOR + 1);
+		set_data_bus_via_read(cpu, NMI_VECTOR + 1, ADH);
 		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
 		cpu->cpu_ppu_io->nmi_pending = false;
 		cpu->process_interrupt = false;
