@@ -5950,6 +5950,7 @@ START_TEST (jsr_t3)
 
 	// PCH onto stack
 	ck_assert_uint_eq(0x80, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(0x80, cpu->data_bus);
 	ck_assert_uint_eq(start_stack - 1, cpu->stack);
 }
 END_TEST
@@ -5966,6 +5967,7 @@ START_TEST (jsr_t4)
 
 	// PCL onto stack
 	ck_assert_uint_eq(0x04, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(0x04, cpu->data_bus);
 	ck_assert_uint_eq(start_stack - 1, cpu->stack);
 }
 END_TEST
@@ -6011,6 +6013,7 @@ START_TEST (brk_t2)
 
 	// PCH onto stack
 	ck_assert_uint_eq(0x7B, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(0x7B, cpu->data_bus);
 	ck_assert_uint_eq(start_stack - 1, cpu->stack);
 }
 END_TEST
@@ -6027,6 +6030,7 @@ START_TEST (brk_t3)
 
 	// PCL onto stack
 	ck_assert_uint_eq(0x0C, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(0x0C, cpu->data_bus);
 	ck_assert_uint_eq(start_stack - 1, cpu->stack);
 }
 END_TEST
@@ -6043,6 +6047,7 @@ START_TEST (brk_t4)
 
 	// (P | 0x30) onto stack, P has interrupt flag set after
 	ck_assert_uint_eq(FLAG_Z | 0x30, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(FLAG_Z | 0x30, cpu->data_bus);
 	ck_assert_uint_eq(start_stack - 1, cpu->stack);
 	ck_assert_uint_eq(FLAG_Z | FLAG_I, cpu->P);
 }
@@ -6101,6 +6106,7 @@ START_TEST (irq_t2)
 
 	// PCH onto stack
 	ck_assert_uint_eq(0xC3, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(0xC3, cpu->data_bus);
 	ck_assert_uint_eq(start_stack - 1, cpu->stack);
 }
 END_TEST
@@ -6117,6 +6123,7 @@ START_TEST (irq_t3)
 
 	// PCL onto stack
 	ck_assert_uint_eq(0x1E, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(0x1E, cpu->data_bus);
 	ck_assert_uint_eq(start_stack - 1, cpu->stack);
 }
 END_TEST
