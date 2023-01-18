@@ -10,7 +10,7 @@
 #define KiB (1024U)
 #endif /* KiB */
 
-#define CPU_MEMORY_SIZE  65536U // Total memory available to the CPU
+#define CPU_MEMORY_SIZE  64 * KiB // Total memory available to the CPU
 
 typedef enum {
 	HEADERLESS,
