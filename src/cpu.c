@@ -684,6 +684,7 @@ uint8_t stack_pull(Cpu6502* cpu)
 static void fetch_opcode(Cpu6502* cpu)
 {
 	cpu->opcode = read_from_cpu(cpu, cpu->PC);
+	set_data_bus_via_write(cpu, cpu->opcode);
 	++cpu->PC;
 
 	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
