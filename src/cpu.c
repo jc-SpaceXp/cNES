@@ -886,7 +886,7 @@ static void decode_IMM_read(Cpu6502* cpu)
 	switch (cpu->instruction_cycles_remaining) {
 	case 1: // T1
 		set_address_bus(cpu, cpu->PC);
-		cpu->operand = read_from_cpu(cpu, cpu->PC);
+		cpu->target_addr = cpu->address_bus;
 		++cpu->PC;
 		cpu->instruction_state = EXECUTE;
 		break;
@@ -1274,11 +1274,7 @@ static void update_flag_c(Cpu6502* cpu, const int carry_out)
 static void execute_LDA(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "LDA ");
-	if (cpu->address_mode == IMM) {
-		cpu->A = cpu->operand;
-	} else {
-		cpu->A = read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->A = read_from_cpu(cpu, cpu->target_addr);
 	update_flag_n(cpu, cpu->A);
 	update_flag_z(cpu, cpu->A);
 }
@@ -1289,11 +1285,7 @@ static void execute_LDA(Cpu6502* cpu)
 static void execute_LDX(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "LDX ");
-	if (cpu->address_mode == IMM) {
-		cpu->X = cpu->operand;
-	} else {
-		cpu->X = read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->X = read_from_cpu(cpu, cpu->target_addr);
 	update_flag_n(cpu, cpu->X);
 	update_flag_z(cpu, cpu->X);
 }
@@ -1304,11 +1296,7 @@ static void execute_LDX(Cpu6502* cpu)
 static void execute_LDY(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "LDY ");
-	if (cpu->address_mode == IMM) {
-		cpu->Y = cpu->operand;
-	} else {
-		cpu->Y = read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->Y = read_from_cpu(cpu, cpu->target_addr);
 	update_flag_n(cpu, cpu->Y);
 	update_flag_z(cpu, cpu->Y);
 }
@@ -1413,9 +1401,7 @@ static void execute_TYA(Cpu6502* cpu)
 static void execute_ADC(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "ADC ");
-	if (cpu->address_mode != IMM) {
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 
 	int result = cpu->A + cpu->operand + (cpu->P & FLAG_C);
 	bool overflow = ((cpu->A >> 7) == (cpu->operand >> 7))  // Overflow can only occur if MSBs are equal
@@ -1505,9 +1491,7 @@ static void execute_SBC(Cpu6502* cpu)
 
 {
 	strcpy(cpu->instruction, "SBC ");
-	if (cpu->address_mode != IMM) {
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 
 	int result = cpu->A - cpu->operand - !(cpu->P & FLAG_C);
 	bool overflow = ((cpu->A >> 7) != (cpu->operand >> 7))  // Overflow can occur if MSBs are different
@@ -1528,11 +1512,7 @@ static void execute_SBC(Cpu6502* cpu)
 static void execute_AND(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "AND ");
-	if (cpu->address_mode == IMM) {
-		cpu->A &= cpu->operand;
-	} else {
-		cpu->A &= read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->A &= read_from_cpu(cpu, cpu->target_addr);
 	update_flag_n(cpu, cpu->A);
 	update_flag_z(cpu, cpu->A);
 }
@@ -1583,11 +1563,7 @@ static void execute_BIT(Cpu6502* cpu)
 static void execute_EOR(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "EOR ");
-	if (cpu->address_mode == IMM) {
-		cpu->A ^= cpu->operand;
-	} else {
-		cpu->A ^= read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->A ^= read_from_cpu(cpu, cpu->target_addr);
 	update_flag_n(cpu, cpu->A);
 	update_flag_z(cpu, cpu->A);
 }
@@ -1621,11 +1597,7 @@ static void execute_LSR(Cpu6502* cpu)
 static void execute_ORA(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "ORA ");
-	if (cpu->address_mode == IMM) {
-		cpu->A |= cpu->operand;
-	} else {
-		cpu->A |= read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->A |= read_from_cpu(cpu, cpu->target_addr);
 	update_flag_n(cpu, cpu->A);
 	update_flag_z(cpu, cpu->A);
 }
@@ -1972,9 +1944,7 @@ static void execute_CMP(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "CMP ");
 	/* CMP - same as SBC except result isn't stored and V flag isn't changed */
-	if (cpu->address_mode != IMM) {
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 
 	int result = cpu->A - cpu->operand;
 	update_flag_n(cpu, result);
@@ -1988,9 +1958,7 @@ static void execute_CMP(Cpu6502* cpu)
 static void execute_CPX(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "CPX ");
-	if (cpu->address_mode != IMM) {
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 	int result = cpu->X - cpu->operand;
 	update_flag_n(cpu, result);
 	update_flag_z(cpu, result);
@@ -2003,9 +1971,7 @@ static void execute_CPX(Cpu6502* cpu)
 static void execute_CPY(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "CPY ");
-	if (cpu->address_mode != IMM) {
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
-	}
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 
 	int result = cpu->Y - cpu->operand;
 	update_flag_n(cpu, result);
