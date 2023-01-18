@@ -6312,6 +6312,9 @@ START_TEST (rti_t3)
 
 	// Pull P from stack
 	ck_assert_uint_eq(FLAG_C | 0x20, cpu->P);
+	// bit 0x20 might be set via PHP, make test more generic
+	// can't always test against FLAG_C
+	ck_assert_uint_eq(read_from_cpu(cpu, cpu->address_bus), cpu->data_bus);
 	ck_assert_uint_eq(start_stack + 1, cpu->stack);
 }
 
@@ -6327,6 +6330,7 @@ START_TEST (rti_t4)
 
 	// Pull PCL from stack
 	ck_assert_uint_eq(0x92, cpu->addr_lo);
+	ck_assert_uint_eq(0x92, cpu->data_bus);
 	ck_assert_uint_eq(start_stack + 1, cpu->stack);
 }
 
@@ -6342,6 +6346,7 @@ START_TEST (rti_t5)
 
 	// Pull PCH from stack
 	ck_assert_uint_eq(0xD8, cpu->addr_hi);
+	ck_assert_uint_eq(0xD8, cpu->data_bus);
 	ck_assert_uint_eq(start_stack + 1, cpu->stack);
 }
 
@@ -6387,6 +6392,7 @@ START_TEST (rts_t3)
 
 	// Pull PCL from stack
 	ck_assert_uint_eq(0x29, cpu->addr_lo);
+	ck_assert_uint_eq(0x29, cpu->data_bus);
 	ck_assert_uint_eq(start_stack + 1, cpu->stack);
 }
 END_TEST
@@ -6403,6 +6409,7 @@ START_TEST (rts_t4)
 
 	// Pull PCH from stack
 	ck_assert_uint_eq(0xC1, cpu->addr_hi);
+	ck_assert_uint_eq(0xC1, cpu->data_bus);
 	ck_assert_uint_eq(start_stack + 1, cpu->stack);
 }
 END_TEST

@@ -1196,10 +1196,12 @@ static void decode_RTS(Cpu6502* cpu)
 	case 3: // T3
 		set_address_bus(cpu, SP_START + cpu->stack + 1); // pull increments SP to non-empty slot
 		cpu->addr_lo = stack_pull(cpu);
+		set_data_bus_via_write(cpu, cpu->addr_lo);
 		break;
 	case 2: // T4
 		set_address_bus(cpu, SP_START + cpu->stack + 1); // pull increments SP to non-empty slot
 		cpu->addr_hi = stack_pull(cpu);
+		set_data_bus_via_write(cpu, cpu->addr_hi);
 		break;
 	case 1: // T5
 		cpu->instruction_state = EXECUTE;
@@ -1889,14 +1891,17 @@ static void execute_RTI(Cpu6502* cpu)
 	case 3: // T3
 		set_address_bus(cpu, SP_START + cpu->stack + 1); // pull increments SP to non-empty slot
 		cpu->P = stack_pull(cpu) | 0x20;
+		set_data_bus_via_read(cpu, SP_START + cpu->stack, DATA);
 		break;
 	case 2: // T4
 		set_address_bus(cpu, SP_START + cpu->stack + 1); // pull increments SP to non-empty slot
 		cpu->addr_lo = stack_pull(cpu);
+		set_data_bus_via_write(cpu, cpu->addr_lo);
 		break;
 	case 1: // T5
 		set_address_bus(cpu, SP_START + cpu->stack + 1); // pull increments SP to non-empty slot
 		cpu->addr_hi = stack_pull(cpu);
+		set_data_bus_via_write(cpu, cpu->addr_hi);
 		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
 		break;
 	}
@@ -2053,6 +2058,7 @@ static void execute_PLA(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "PLA ");
 	cpu->A = stack_pull(cpu);
+	set_data_bus_via_write(cpu, cpu->A);
 	update_flag_n(cpu, cpu->A);
 	update_flag_z(cpu, cpu->A);
 }
@@ -2063,6 +2069,7 @@ static void execute_PLP(Cpu6502* cpu)
 	strcpy(cpu->instruction, "PLP ");
 	cpu->P = stack_pull(cpu) & ~ 0x10; // B flag may exist on stack but not P so it is cleared
 	cpu->P |= 0x20; // bit 5 always set
+	set_data_bus_via_read(cpu, SP_START + cpu->stack, DATA);
 }
 
 /***************************
