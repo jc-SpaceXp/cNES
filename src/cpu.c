@@ -1567,21 +1567,18 @@ static void execute_AND(Cpu6502* cpu)
 static void execute_ASL(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "ASL ");
-	unsigned high_bit = 0;
-	if (cpu->address_mode == ACC) {
-		high_bit = cpu->A & 0x80; /* Mask 7th bit */
-		cpu->A = cpu->A << 1;
-		update_flag_n(cpu, cpu->A);
-		update_flag_z(cpu, cpu->A);
-	} else {
-		/* Shift value @ address 1 bit to the left */
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
-		high_bit = cpu->operand & 0x80; /* Mask 7th bit */
-		write_to_cpu(cpu, cpu->target_addr, cpu->operand << 1);
-		update_flag_n(cpu, cpu->operand << 1);
-		update_flag_z(cpu, cpu->operand << 1);
-	}
-	/* Update Carry */
+	// read from memory or accumulator
+	uint8_t operand = cpu_generic_read(cpu, ADDRESS_MODE_DEP
+	                                  , cpu->address_mode
+	                                  , cpu->target_addr
+	                                  , NULL);
+	unsigned high_bit = operand & 0x80; // Mask 7th bit
+	uint8_t asl_result = operand << 1;
+	cpu_generic_write(cpu, ADDRESS_MODE_DEP, cpu->address_mode
+	                 , cpu->target_addr, NULL, asl_result);
+
+	update_flag_n(cpu, asl_result);
+	update_flag_z(cpu, asl_result);
 	update_flag_c(cpu, high_bit >> 7);
 }
 
@@ -1617,20 +1614,18 @@ static void execute_EOR(Cpu6502* cpu)
 static void execute_LSR(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "LSR ");
-	unsigned low_bit = 0;
-	if (cpu->address_mode == ACC) {
-		low_bit = cpu->A & 0x01; /* Mask 0th bit */
-		cpu->A = cpu->A >> 1;
-		update_flag_n(cpu, cpu->A); /* Should always clear N flag */
-		update_flag_z(cpu, cpu->A);
-	} else {
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
-		low_bit = cpu->operand & 0x01; /* Mask 0th bit */
-		write_to_cpu(cpu, cpu->target_addr, cpu->operand >> 1);
-		update_flag_n(cpu, cpu->operand >> 1); /* Should always clear N flag */
-		update_flag_z(cpu, cpu->operand >> 1);
-	}
-	/* Update Carry */
+	// read from memory or accumulator
+	uint8_t operand = cpu_generic_read(cpu, ADDRESS_MODE_DEP
+	                                  , cpu->address_mode
+	                                  , cpu->target_addr
+	                                  , NULL);
+	unsigned low_bit = operand & 0x01; // Mask 0th bit
+	uint8_t lsr_result = operand >> 1;
+	cpu_generic_write(cpu, ADDRESS_MODE_DEP, cpu->address_mode
+	                 , cpu->target_addr, NULL, lsr_result);
+
+	update_flag_n(cpu, lsr_result);
+	update_flag_z(cpu, lsr_result);
 	update_flag_c(cpu, low_bit);
 }
 
@@ -1652,29 +1647,21 @@ static void execute_ORA(Cpu6502* cpu)
 static void execute_ROL(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "ROL ");
-	unsigned high_bit = 0;
-	if (cpu->address_mode == ACC) {
-		high_bit = cpu->A & 0x80; /* Mask 7th bit */
-		cpu->A = cpu->A << 1;
-		/* Testing if Status Reg has a 1 in Carry Flag */
-		if (cpu->P & FLAG_C) {
-			cpu->A |= (cpu->P & FLAG_C);
-		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
-		update_flag_n(cpu, cpu->A);
-		update_flag_z(cpu, cpu->A);
-	} else {
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
-		high_bit = cpu->operand & 0x80; /* Mask 7th bit */
-		unsigned result = cpu->operand << 1;
-		write_to_cpu(cpu, cpu->target_addr, result);
-		if (cpu->P & FLAG_C) {
-			result |= 0x01;
-			write_to_cpu(cpu, cpu->target_addr, result);
-		}
-		update_flag_n(cpu, result);
-		update_flag_z(cpu, result);
-	}
-	/* Update Flag */
+	// read from memory or accumulator
+	uint8_t operand = cpu_generic_read(cpu, ADDRESS_MODE_DEP
+	                                  , cpu->address_mode
+	                                  , cpu->target_addr
+	                                  , NULL);
+	unsigned high_bit = operand & 0x80; // Mask 7th bit
+	uint8_t rol_result = operand << 1;
+	if (cpu->P & FLAG_C) {
+		rol_result |= FLAG_C; // Copy carry into LSB (bit 0)
+	} // if carry = 0 do nothing as that still leaves a zero in the 0th bit
+	cpu_generic_write(cpu, ADDRESS_MODE_DEP, cpu->address_mode
+	                 , cpu->target_addr, NULL, rol_result);
+
+	update_flag_n(cpu, rol_result);
+	update_flag_z(cpu, rol_result);
 	update_flag_c(cpu, high_bit >> 7);
 }
 
@@ -1685,29 +1672,21 @@ static void execute_ROL(Cpu6502* cpu)
 static void execute_ROR(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "ROR ");
-	unsigned low_bit = 0;
-	if (cpu->address_mode == ACC) {
-		low_bit = cpu->A & 0x01; /* Mask 0th bit */
-		cpu->A = cpu->A >> 1; /* Shift right */
-		if (cpu->P & FLAG_C) {
-			cpu->A |= 0x80; /* Set 7th bit to 1 - if carry = 1 */
-		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
-		update_flag_n(cpu, cpu->A);
-		update_flag_z(cpu, cpu->A);
-	} else {
-		cpu->operand = read_from_cpu(cpu, cpu->target_addr);
-		low_bit = cpu->operand & 0x01;
-		unsigned result = cpu->operand >> 1;
-		write_to_cpu(cpu, cpu->target_addr, result);
-		if (cpu->P & FLAG_C) {
-			/* Set 7th bit to 1 - if carry = 1 */
-			result |= 0x80;
-			write_to_cpu(cpu, cpu->target_addr, result);
-		} /* if carry = 0 then do nothing as that still leaves a zero in the 0th bit */
-		update_flag_n(cpu, result);
-		update_flag_z(cpu, result);
-	}
-	/* Update Carry */
+	// read from memory or accumulator
+	uint8_t operand = cpu_generic_read(cpu, ADDRESS_MODE_DEP
+	                                  , cpu->address_mode
+	                                  , cpu->target_addr
+	                                  , NULL);
+	unsigned low_bit = operand & 0x01; // Mask 0th bit
+	uint8_t ror_result = operand >> 1;
+	if (cpu->P & FLAG_C) {
+		ror_result |= 0x80; // Copy carry into MSB (bit 7)
+	} // if carry = 0 do nothing as that still leaves a zero in the 7th bit
+	cpu_generic_write(cpu, ADDRESS_MODE_DEP, cpu->address_mode
+	                 , cpu->target_addr, NULL, ror_result);
+
+	update_flag_n(cpu, ror_result);
+	update_flag_z(cpu, ror_result);
 	update_flag_c(cpu, low_bit);
 }
 

@@ -2693,7 +2693,7 @@ START_TEST (isa_and_set_z_clear_n_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
-START_TEST (isa_asl_acc_clear_nzc_flags)
+START_TEST (isa_asl_clear_nzc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
 	cpu->address_mode = ACC;
@@ -2712,26 +2712,7 @@ START_TEST (isa_asl_acc_clear_nzc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_asl_acc_set_n_clear_zc_flags)
-{
-	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
-	cpu->address_mode = ACC;
-	cpu->A = 0x7F;
-	cpu->P = FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
-
-	execute_opcode_lut[cpu->opcode](cpu);
-
-	ck_assert_uint_eq(0xFE, cpu->A);
-	// Flag checks
-	ck_assert((cpu->P & FLAG_N) == FLAG_N);
-	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
-	ck_assert((cpu->P & FLAG_C) != FLAG_C);
-	// Flags that should be unaffected
-	ck_assert((cpu->P & FLAG_V) == FLAG_V);
-	ck_assert((cpu->P & FLAG_I) == FLAG_I);
-}
-
-START_TEST (isa_asl_non_acc_mode_set_n_clear_zc_flags)
+START_TEST (isa_asl_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ZPX);
 	cpu->address_mode = ZPX;
@@ -2751,7 +2732,7 @@ START_TEST (isa_asl_non_acc_mode_set_n_clear_zc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_asl_acc_set_z_clear_nc_flags)
+START_TEST (isa_asl_set_z_clear_nc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
 	cpu->address_mode = ACC;
@@ -2770,7 +2751,7 @@ START_TEST (isa_asl_acc_set_z_clear_nc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_asl_acc_set_c_clear_nz_flags)
+START_TEST (isa_asl_set_c_clear_nz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
 	cpu->address_mode = ACC;
@@ -2789,7 +2770,7 @@ START_TEST (isa_asl_acc_set_c_clear_nz_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_asl_acc_set_zc_clear_n_flags)
+START_TEST (isa_asl_set_zc_clear_n_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
 	cpu->address_mode = ACC;
@@ -2808,7 +2789,7 @@ START_TEST (isa_asl_acc_set_zc_clear_n_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_asl_acc_set_nc_clear_z_flags)
+START_TEST (isa_asl_set_nc_clear_z_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ASL", ACC);
 	cpu->address_mode = ACC;
@@ -3018,7 +2999,7 @@ START_TEST (isa_eor_set_z_clear_n_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
-START_TEST (isa_lsr_acc_clear_nzc_flags)
+START_TEST (isa_lsr_clear_nzc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ACC);
 	cpu->address_mode = ACC;
@@ -3037,27 +3018,7 @@ START_TEST (isa_lsr_acc_clear_nzc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_lsr_non_acc_mode_clear_nzc_flags)
-{
-	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZPX);
-	cpu->address_mode = ZPX;
-	cpu->target_addr = 0x00A0;
-	write_to_cpu(cpu, cpu->target_addr, 0x1E);
-	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z | FLAG_C;
-
-	execute_opcode_lut[cpu->opcode](cpu);
-
-	ck_assert_uint_eq(0x0F, read_from_cpu(cpu, cpu->target_addr));
-	// Flag checks
-	ck_assert((cpu->P & FLAG_N) != FLAG_N); // should always be cleared 8th bit is shifted down
-	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
-	ck_assert((cpu->P & FLAG_C) != FLAG_C);
-	// Flags that should be unaffected
-	ck_assert((cpu->P & FLAG_V) == FLAG_V);
-	ck_assert((cpu->P & FLAG_I) == FLAG_I);
-}
-
-START_TEST (isa_lsr_non_acc_mode_set_z_clear_nc_flags)
+START_TEST (isa_lsr_set_z_clear_nc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZPX);
 	cpu->address_mode = ZPX;
@@ -3077,7 +3038,7 @@ START_TEST (isa_lsr_non_acc_mode_set_z_clear_nc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_lsr_non_acc_mode_set_c_clear_nz_flags)
+START_TEST (isa_lsr_set_c_clear_nz_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZPX);
 	cpu->address_mode = ZPX;
@@ -3097,7 +3058,7 @@ START_TEST (isa_lsr_non_acc_mode_set_c_clear_nz_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_lsr_non_acc_mode_set_zc_clear_n_flags)
+START_TEST (isa_lsr_set_zc_clear_n_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "LSR", ZPX);
 	cpu->address_mode = ZPX;
@@ -3180,7 +3141,7 @@ START_TEST (isa_ora_set_z_clear_n_flags)
 	ck_assert((cpu->P & FLAG_C) == FLAG_C);
 }
 
-START_TEST (isa_rol_acc_no_carry_in_clear_nzc_flags)
+START_TEST (isa_rol_no_carry_in_clear_nzc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
 	cpu->address_mode = ACC;
@@ -3199,7 +3160,7 @@ START_TEST (isa_rol_acc_no_carry_in_clear_nzc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_rol_acc_no_carry_in_set_n_clear_zc_flags)
+START_TEST (isa_rol_no_carry_in_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
 	cpu->address_mode = ACC;
@@ -3218,27 +3179,7 @@ START_TEST (isa_rol_acc_no_carry_in_set_n_clear_zc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_rol_non_acc_mode_no_carry_in_set_n_clear_zc_flags)
-{
-	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
-	cpu->address_mode = ZPX;
-	cpu->target_addr = 0x00A0;
-	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z; // can't set carry, used for result
-
-	write_to_cpu(cpu, cpu->target_addr, 0x7F);
-	execute_opcode_lut[cpu->opcode](cpu);
-
-	ck_assert_uint_eq(0xFE, read_from_cpu(cpu, cpu->target_addr));
-	// Flag checks
-	ck_assert((cpu->P & FLAG_N) == FLAG_N);
-	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
-	ck_assert((cpu->P & FLAG_C) != FLAG_C);
-	// Flags that should be unaffected
-	ck_assert((cpu->P & FLAG_V) == FLAG_V);
-	ck_assert((cpu->P & FLAG_I) == FLAG_I);
-}
-
-START_TEST (isa_rol_non_acc_mode_no_carry_in_set_zc_clear_n_flags)
+START_TEST (isa_rol_no_carry_in_set_zc_clear_n_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
 	cpu->address_mode = ZPX;
@@ -3258,7 +3199,7 @@ START_TEST (isa_rol_non_acc_mode_no_carry_in_set_zc_clear_n_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_rol_non_acc_mode_carry_in_set_nc_clear_z_flags)
+START_TEST (isa_rol_carry_in_set_nc_clear_z_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
 	cpu->address_mode = ZPX;
@@ -3278,7 +3219,7 @@ START_TEST (isa_rol_non_acc_mode_carry_in_set_nc_clear_z_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_rol_acc_carry_in_set_n_clear_zc_flags)
+START_TEST (isa_rol_carry_in_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ACC);
 	cpu->address_mode = ACC;
@@ -3297,7 +3238,7 @@ START_TEST (isa_rol_acc_carry_in_set_n_clear_zc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_rol_non_acc_mode_no_carry_in_set_z_clear_nc_flags)
+START_TEST (isa_rol_no_carry_in_set_z_clear_nc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROL", ZPX);
 	cpu->address_mode = ZPX;
@@ -3317,7 +3258,7 @@ START_TEST (isa_rol_non_acc_mode_no_carry_in_set_z_clear_nc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_ror_acc_no_carry_in_clear_nzc_flags)
+START_TEST (isa_ror_no_carry_in_clear_nzc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ACC);
 	cpu->address_mode = ACC;
@@ -3336,27 +3277,7 @@ START_TEST (isa_ror_acc_no_carry_in_clear_nzc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_ror_acc_mode_no_carry_in_clear_nzc_flags)
-{
-	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ZPX);
-	cpu->address_mode = ZPX;
-	cpu->target_addr = 0x00A0;
-	write_to_cpu(cpu, cpu->target_addr, 0xFE);
-	cpu->P = FLAG_N | FLAG_V | FLAG_I | FLAG_Z; // can't set carry, used for result
-
-	execute_opcode_lut[cpu->opcode](cpu);
-
-	ck_assert_uint_eq(0x7F, read_from_cpu(cpu, cpu->target_addr));
-	// Flag checks
-	ck_assert((cpu->P & FLAG_N) != FLAG_N);
-	ck_assert((cpu->P & FLAG_Z) != FLAG_Z);
-	ck_assert((cpu->P & FLAG_C) != FLAG_C);
-	// Flags that should be unaffected
-	ck_assert((cpu->P & FLAG_V) == FLAG_V);
-	ck_assert((cpu->P & FLAG_I) == FLAG_I);
-}
-
-START_TEST (isa_ror_acc_mode_no_carry_in_set_z_clear_nc_flags)
+START_TEST (isa_ror_no_carry_in_set_z_clear_nc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ZPX);
 	cpu->address_mode = ZPX;
@@ -3376,7 +3297,7 @@ START_TEST (isa_ror_acc_mode_no_carry_in_set_z_clear_nc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_ror_acc_mode_no_carry_in_set_zc_clear_n_flags)
+START_TEST (isa_ror_no_carry_in_set_zc_clear_n_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ZPX);
 	cpu->address_mode = ZPX;
@@ -3396,7 +3317,7 @@ START_TEST (isa_ror_acc_mode_no_carry_in_set_zc_clear_n_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_ror_acc_carry_in_set_n_clear_zc_flags)
+START_TEST (isa_ror_carry_in_set_n_clear_zc_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ACC);
 	cpu->address_mode = ACC;
@@ -3415,7 +3336,7 @@ START_TEST (isa_ror_acc_carry_in_set_n_clear_zc_flags)
 	ck_assert((cpu->P & FLAG_I) == FLAG_I);
 }
 
-START_TEST (isa_ror_acc_carry_in_set_nc_clear_z_flags)
+START_TEST (isa_ror_carry_in_set_nc_clear_z_flags)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "ROR", ACC);
 	cpu->address_mode = ACC;
@@ -6735,13 +6656,12 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, isa_and_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_and_set_n_clear_z_flags);
 	tcase_add_test(tc_cpu_isa, isa_and_set_z_clear_n_flags);
-	tcase_add_test(tc_cpu_isa, isa_asl_acc_clear_nzc_flags);
-	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_n_clear_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_asl_non_acc_mode_set_n_clear_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_z_clear_nc_flags);
-	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_c_clear_nz_flags);
-	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_zc_clear_n_flags);
-	tcase_add_test(tc_cpu_isa, isa_asl_acc_set_nc_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_clear_nzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_set_z_clear_nc_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_set_c_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_set_zc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_asl_set_nc_clear_z_flags);
 	tcase_add_test(tc_cpu_isa, isa_bit_clear_nvz_flags);
 	tcase_add_test(tc_cpu_isa, isa_bit_set_nvz_flags);
 	tcase_add_test(tc_cpu_isa, isa_bit_set_vn_clear_nz_flags);
@@ -6751,27 +6671,24 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, isa_eor_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_eor_set_n_clear_z_flags);
 	tcase_add_test(tc_cpu_isa, isa_eor_set_z_clear_n_flags);
-	tcase_add_test(tc_cpu_isa, isa_lsr_acc_clear_nzc_flags);
-	tcase_add_test(tc_cpu_isa, isa_lsr_non_acc_mode_clear_nzc_flags);
-	tcase_add_test(tc_cpu_isa, isa_lsr_non_acc_mode_set_z_clear_nc_flags);
-	tcase_add_test(tc_cpu_isa, isa_lsr_non_acc_mode_set_c_clear_nz_flags);
-	tcase_add_test(tc_cpu_isa, isa_lsr_non_acc_mode_set_zc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_lsr_clear_nzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_lsr_set_z_clear_nc_flags);
+	tcase_add_test(tc_cpu_isa, isa_lsr_set_c_clear_nz_flags);
+	tcase_add_test(tc_cpu_isa, isa_lsr_set_zc_clear_n_flags);
 	tcase_add_test(tc_cpu_isa, isa_ora_clear_nz_flags);
 	tcase_add_test(tc_cpu_isa, isa_ora_set_n_clear_z_flags);
 	tcase_add_test(tc_cpu_isa, isa_ora_set_z_clear_n_flags);
-	tcase_add_test(tc_cpu_isa, isa_rol_acc_no_carry_in_clear_nzc_flags);
-	tcase_add_test(tc_cpu_isa, isa_rol_acc_no_carry_in_set_n_clear_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_rol_non_acc_mode_no_carry_in_set_n_clear_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_rol_non_acc_mode_no_carry_in_set_z_clear_nc_flags);
-	tcase_add_test(tc_cpu_isa, isa_rol_non_acc_mode_no_carry_in_set_zc_clear_n_flags);
-	tcase_add_test(tc_cpu_isa, isa_rol_non_acc_mode_carry_in_set_nc_clear_z_flags);
-	tcase_add_test(tc_cpu_isa, isa_rol_acc_carry_in_set_n_clear_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_ror_acc_no_carry_in_clear_nzc_flags);
-	tcase_add_test(tc_cpu_isa, isa_ror_acc_mode_no_carry_in_clear_nzc_flags);
-	tcase_add_test(tc_cpu_isa, isa_ror_acc_mode_no_carry_in_set_z_clear_nc_flags);
-	tcase_add_test(tc_cpu_isa, isa_ror_acc_mode_no_carry_in_set_zc_clear_n_flags);
-	tcase_add_test(tc_cpu_isa, isa_ror_acc_carry_in_set_n_clear_zc_flags);
-	tcase_add_test(tc_cpu_isa, isa_ror_acc_carry_in_set_nc_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_no_carry_in_clear_nzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_no_carry_in_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_no_carry_in_set_z_clear_nc_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_no_carry_in_set_zc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_carry_in_set_nc_clear_z_flags);
+	tcase_add_test(tc_cpu_isa, isa_rol_carry_in_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_ror_no_carry_in_clear_nzc_flags);
+	tcase_add_test(tc_cpu_isa, isa_ror_no_carry_in_set_z_clear_nc_flags);
+	tcase_add_test(tc_cpu_isa, isa_ror_no_carry_in_set_zc_clear_n_flags);
+	tcase_add_test(tc_cpu_isa, isa_ror_carry_in_set_n_clear_zc_flags);
+	tcase_add_test(tc_cpu_isa, isa_ror_carry_in_set_nc_clear_z_flags);
 	tcase_add_test(tc_cpu_isa, isa_jsr_result_only);
 	tcase_add_test(tc_cpu_isa, isa_rti_result_only);
 	tcase_add_test(tc_cpu_isa, isa_rts_result_only);
