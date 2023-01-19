@@ -9,7 +9,7 @@ uint32_t pixel_buffer[256 * 240];
 
 static void setup(void)
 {
-	CpuPpuShare* cpu_ppu = mmio_init();
+	cpu_ppu = mmio_init();
 	ppu = ppu_init(cpu_ppu);
 	if (!cpu_ppu | !ppu) {
 		// malloc fails
