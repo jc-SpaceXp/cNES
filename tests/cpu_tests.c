@@ -1320,6 +1320,7 @@ START_TEST (generic_read_default_val_if_null_pointer_for_reg_arg_and_mode)
 	ck_assert_uint_eq(0x00, cpu_generic_read(cpu, INTERNAL_REG, ACC, 0x141F, NULL));
 }
 
+
 START_TEST (ram_write_non_mirrored_check_all_reads)
 {
 	write_to_cpu(cpu, 0x0248, 0x20);
@@ -1355,6 +1356,73 @@ START_TEST (ram_write_mirrored_bank_3_check_all_reads)
 	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248 + 0x0800));
 	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248 + 0x1000));
 	ck_assert_uint_eq(0x23, read_from_cpu(cpu, 0x0248 + 0x1800));
+}
+
+START_TEST (generic_write_x_reg)
+{
+	cpu_generic_write(cpu, INTERNAL_REG, ZPX, 0x0000, &cpu->X, 0xC4);
+
+	ck_assert_uint_eq(0xC4, cpu->X);
+}
+
+START_TEST (generic_write_y_reg)
+{
+	cpu_generic_write(cpu, INTERNAL_REG, ABS, 0x00FF, &cpu->Y, 0xF9);
+	ck_assert_uint_eq(0xF9, cpu->Y);
+}
+
+START_TEST (generic_write_a_reg)
+{
+	cpu_generic_write(cpu, INTERNAL_REG, INDY, 0x4112, &cpu->A, 0xA3);
+	ck_assert_uint_eq(0xA3, cpu->A);
+}
+
+START_TEST (generic_write_mem_for_non_accumulator_address_mode_and_null_pointer)
+{
+	cpu->A = 0xA3;
+	cpu_generic_write(cpu, INTERNAL_MEM, ABS, 0x101F, NULL, 0x33);
+
+	ck_assert_uint_eq(0x33, read_from_cpu(cpu, 0x101F));
+}
+
+START_TEST (generic_write_mem_for_non_accumulator_address_mode_and_a_pointer)
+{
+	cpu->A = 0xA3;
+	cpu_generic_write(cpu, INTERNAL_MEM, ABS, 0x141F, &cpu->A, 0x81);
+
+	ck_assert_uint_eq(0x81, read_from_cpu(cpu, 0x141F));
+}
+
+START_TEST (generic_write_accumulator_for_mem_and_pointer_args)
+{
+	// Simulating instructions which need to either write to memory
+	// or the accumulator before performing their operation e.g. ASL
+
+	// Accumulator has the highest priority in this case so should be
+	// selected (over a write to memory)
+	cpu->X = 0xA3;
+	cpu_generic_write(cpu, INTERNAL_MEM, ACC, 0x141F, &cpu->X, 0x99);
+
+	ck_assert_uint_eq(0x99, cpu->A);
+}
+
+START_TEST (generic_write_internal_mem_for_accumulator_address_mode)
+{
+	// INTERNAL_REG has the highest priority in this case so should be
+	// selected (over a write to the accumulator)
+	cpu->A = 0x99;
+	cpu_generic_write(cpu, INTERNAL_REG, ACC, 0x141F, &cpu->X, 0xA3);
+
+	ck_assert_uint_eq(0xA3, cpu->X);
+}
+
+START_TEST (generic_write_no_effect_if_null_pointer_for_reg_arg_and_mode)
+{
+	cpu->A = 0xB3;
+	cpu_generic_write(cpu, INTERNAL_REG, ACC, 0x141F, NULL, 0x81);
+
+	ck_assert_uint_ne(0x81, read_from_cpu(cpu, 0x141F));
+	ck_assert_uint_ne(0x81, cpu->A);
 }
 
 START_TEST (stack_push_no_overflow)
@@ -6609,6 +6677,14 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_writes, ram_write_mirrored_bank_1_check_all_reads);
 	tcase_add_test(tc_cpu_writes, ram_write_mirrored_bank_2_check_all_reads);
 	tcase_add_test(tc_cpu_writes, ram_write_mirrored_bank_3_check_all_reads);
+	tcase_add_test(tc_cpu_writes, generic_write_x_reg);
+	tcase_add_test(tc_cpu_writes, generic_write_y_reg);
+	tcase_add_test(tc_cpu_writes, generic_write_a_reg);
+	tcase_add_test(tc_cpu_writes, generic_write_mem_for_non_accumulator_address_mode_and_null_pointer);
+	tcase_add_test(tc_cpu_writes, generic_write_mem_for_non_accumulator_address_mode_and_a_pointer);
+	tcase_add_test(tc_cpu_writes, generic_write_accumulator_for_mem_and_pointer_args);
+	tcase_add_test(tc_cpu_writes, generic_write_internal_mem_for_accumulator_address_mode);
+	tcase_add_test(tc_cpu_writes, generic_write_no_effect_if_null_pointer_for_reg_arg_and_mode);
 	suite_add_tcase(s, tc_cpu_writes);
 	tc_cpu_stack_op = tcase_create("Cpu Stack Operations");
 	tcase_add_checked_fixture(tc_cpu_stack_op, setup, teardown);

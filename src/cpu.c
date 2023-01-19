@@ -372,6 +372,23 @@ static uint16_t concat_address_bus_bytes(uint8_t adh, uint8_t adl)
 	return ((adh << 8) | adl);
 }
 
+void cpu_generic_write(Cpu6502* cpu, enum CpuMemType mem_type
+                      , AddressMode address_mode
+                      , uint16_t write_address, uint8_t* internal_reg
+                      , uint8_t data)
+{
+	// avoid any side effects by only writing to memory if necessary
+	if ((mem_type == INTERNAL_MEM) && (address_mode != ACC)) {
+		write_to_cpu(cpu, write_address, data);
+	} else if ((mem_type == INTERNAL_MEM) && (address_mode == ACC)) {
+		cpu->A = data; // write to A for instructions using accumulator
+	}
+
+	if ((mem_type == INTERNAL_REG) && (internal_reg != NULL)) {
+		*internal_reg = data; // should point to X, Y or A registers
+	}
+}
+
 void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 {
 	if (addr < (ADDR_RAM_END + 1)) { // write to RAM (non-mirrored)
