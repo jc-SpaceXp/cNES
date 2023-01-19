@@ -1271,53 +1271,41 @@ START_TEST (generic_read_a_reg)
 	ck_assert_uint_eq(0xA3, cpu_generic_read(cpu, INTERNAL_REG, INDY, 0x4112, &cpu->A));
 }
 
-START_TEST (generic_read_mem_for_non_accumulator_address_mode_and_null_pointer)
+START_TEST (generic_read_mem_ignoring_address_mode_abs)
 {
-	cpu->A = 0xA3;
 	write_to_cpu(cpu, 0x101F, 0x33);
 
 	ck_assert_uint_eq(0x33, cpu_generic_read(cpu, INTERNAL_MEM, ABS, 0x101F, NULL));
 }
 
-START_TEST (generic_read_mem_for_non_accumulator_address_mode_and_a_pointer)
+START_TEST (generic_read_mem_ignoring_address_mode_acc)
 {
 	cpu->A = 0xA3;
-	write_to_cpu(cpu, 0x141F, 0x81);
+	write_to_cpu(cpu, 0x141F, 0xC8);
 
-	ck_assert_uint_eq(0x81, cpu_generic_read(cpu, INTERNAL_MEM, ABS, 0x141F, &cpu->A));
+	ck_assert_uint_eq(0xC8, cpu_generic_read(cpu, INTERNAL_MEM, ACC, 0x141F, NULL));
 }
 
-START_TEST (generic_read_accumulator_for_mem_and_pointer_args)
+START_TEST (generic_read_mem_not_ignoring_address_mode_abs)
 {
-	// Simulating instructions which need to either read from memory
-	// or the accumulator before performing their operation e.g. ASL
+	write_to_cpu(cpu, 0x191F, 0x2D);
 
-	// Accumulator has the highest priority in this case so should be
-	// selected (over a read from memory)
-	cpu->A = 0x99;
-	cpu->X = 0xA3;
-	write_to_cpu(cpu, 0x141F, 0x81);
-
-	ck_assert_uint_eq(0x99, cpu_generic_read(cpu, INTERNAL_MEM, ACC, 0x141F, &cpu->X));
+	ck_assert_uint_eq(0x2D, cpu_generic_read(cpu, ADDRESS_MODE_DEP, ABS, 0x191F, NULL));
 }
 
-START_TEST (generic_read_internal_mem_for_accumulator_address_mode)
+START_TEST (generic_read_mem_not_ignoring_address_mode_acc)
 {
-	// INTERNAL_REG has the highest priority in this case so should be
-	// selected (over a read from the accumulator)
-	cpu->A = 0x99;
-	cpu->X = 0xA3;
-	write_to_cpu(cpu, 0x141F, 0x81);
+	cpu->A = 0xA3;
+	write_to_cpu(cpu, 0x191F, 0xC8);
 
-	ck_assert_uint_eq(0xA3, cpu_generic_read(cpu, INTERNAL_REG, ACC, 0x141F, &cpu->X));
+	ck_assert_uint_eq(0xA3, cpu_generic_read(cpu, ADDRESS_MODE_DEP, ACC, 0x191F, NULL));
 }
 
-START_TEST (generic_read_default_val_if_null_pointer_for_reg_arg_and_mode)
+START_TEST (generic_read_default_val_for_reg_and_null_pointer_args)
 {
-	cpu->A = 0xB3;
-	write_to_cpu(cpu, 0x141F, 0x81);
+	write_to_cpu(cpu, 0x1111, 0xC8);
 
-	ck_assert_uint_eq(0x00, cpu_generic_read(cpu, INTERNAL_REG, ACC, 0x141F, NULL));
+	ck_assert_uint_eq(0x00, cpu_generic_read(cpu, INTERNAL_REG, ZPX, 0x1111, NULL));
 }
 
 
@@ -1377,43 +1365,35 @@ START_TEST (generic_write_a_reg)
 	ck_assert_uint_eq(0xA3, cpu->A);
 }
 
-START_TEST (generic_write_mem_for_non_accumulator_address_mode_and_null_pointer)
+START_TEST (generic_write_mem_ignoring_address_mode_abs)
 {
-	cpu->A = 0xA3;
 	cpu_generic_write(cpu, INTERNAL_MEM, ABS, 0x101F, NULL, 0x33);
 
 	ck_assert_uint_eq(0x33, read_from_cpu(cpu, 0x101F));
 }
 
-START_TEST (generic_write_mem_for_non_accumulator_address_mode_and_a_pointer)
+START_TEST (generic_write_mem_ignoring_address_mode_acc)
 {
 	cpu->A = 0xA3;
-	cpu_generic_write(cpu, INTERNAL_MEM, ABS, 0x141F, &cpu->A, 0x81);
+	cpu_generic_write(cpu, INTERNAL_MEM, ACC, 0x141F, NULL, 0xC8);
 
-	ck_assert_uint_eq(0x81, read_from_cpu(cpu, 0x141F));
+	ck_assert_uint_eq(0xC8, read_from_cpu(cpu, 0x141F));
+	ck_assert_uint_ne(0xC8, cpu->A);
 }
 
-START_TEST (generic_write_accumulator_for_mem_and_pointer_args)
+START_TEST (generic_write_mem_not_ignoring_address_mode_abs)
 {
-	// Simulating instructions which need to either write to memory
-	// or the accumulator before performing their operation e.g. ASL
+	cpu_generic_write(cpu, ADDRESS_MODE_DEP, ABS, 0x191F, NULL, 0x2D);
 
-	// Accumulator has the highest priority in this case so should be
-	// selected (over a write to memory)
-	cpu->X = 0xA3;
-	cpu_generic_write(cpu, INTERNAL_MEM, ACC, 0x141F, &cpu->X, 0x99);
-
-	ck_assert_uint_eq(0x99, cpu->A);
+	ck_assert_uint_eq(0x2D, read_from_cpu(cpu, 0x191F));
 }
 
-START_TEST (generic_write_internal_mem_for_accumulator_address_mode)
+START_TEST (generic_write_mem_not_ignoring_address_mode_acc)
 {
-	// INTERNAL_REG has the highest priority in this case so should be
-	// selected (over a write to the accumulator)
-	cpu->A = 0x99;
-	cpu_generic_write(cpu, INTERNAL_REG, ACC, 0x141F, &cpu->X, 0xA3);
+	cpu_generic_write(cpu, ADDRESS_MODE_DEP, ACC, 0x191F, NULL, 0xA3);
 
-	ck_assert_uint_eq(0xA3, cpu->X);
+	ck_assert_uint_eq(0xA3, cpu->A);
+	ck_assert_uint_ne(0xA3, read_from_cpu(cpu, 0x191F));
 }
 
 START_TEST (generic_write_no_effect_if_null_pointer_for_reg_arg_and_mode)
@@ -6665,11 +6645,11 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_reads, generic_read_x_reg);
 	tcase_add_test(tc_cpu_reads, generic_read_y_reg);
 	tcase_add_test(tc_cpu_reads, generic_read_a_reg);
-	tcase_add_test(tc_cpu_reads, generic_read_mem_for_non_accumulator_address_mode_and_null_pointer);
-	tcase_add_test(tc_cpu_reads, generic_read_mem_for_non_accumulator_address_mode_and_a_pointer);
-	tcase_add_test(tc_cpu_reads, generic_read_accumulator_for_mem_and_pointer_args);
-	tcase_add_test(tc_cpu_reads, generic_read_internal_mem_for_accumulator_address_mode);
-	tcase_add_test(tc_cpu_reads, generic_read_default_val_if_null_pointer_for_reg_arg_and_mode);
+	tcase_add_test(tc_cpu_reads, generic_read_mem_ignoring_address_mode_abs);
+	tcase_add_test(tc_cpu_reads, generic_read_mem_ignoring_address_mode_acc);
+	tcase_add_test(tc_cpu_reads, generic_read_mem_not_ignoring_address_mode_abs);
+	tcase_add_test(tc_cpu_reads, generic_read_mem_not_ignoring_address_mode_acc);
+	tcase_add_test(tc_cpu_reads, generic_read_default_val_for_reg_and_null_pointer_args);
 	suite_add_tcase(s, tc_cpu_reads);
 	tc_cpu_writes = tcase_create("Cpu Memory Mapped Writes");
 	tcase_add_checked_fixture(tc_cpu_writes, setup, teardown);
@@ -6680,10 +6660,10 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_writes, generic_write_x_reg);
 	tcase_add_test(tc_cpu_writes, generic_write_y_reg);
 	tcase_add_test(tc_cpu_writes, generic_write_a_reg);
-	tcase_add_test(tc_cpu_writes, generic_write_mem_for_non_accumulator_address_mode_and_null_pointer);
-	tcase_add_test(tc_cpu_writes, generic_write_mem_for_non_accumulator_address_mode_and_a_pointer);
-	tcase_add_test(tc_cpu_writes, generic_write_accumulator_for_mem_and_pointer_args);
-	tcase_add_test(tc_cpu_writes, generic_write_internal_mem_for_accumulator_address_mode);
+	tcase_add_test(tc_cpu_writes, generic_write_mem_ignoring_address_mode_abs);
+	tcase_add_test(tc_cpu_writes, generic_write_mem_ignoring_address_mode_acc);
+	tcase_add_test(tc_cpu_writes, generic_write_mem_not_ignoring_address_mode_abs);
+	tcase_add_test(tc_cpu_writes, generic_write_mem_not_ignoring_address_mode_acc);
 	tcase_add_test(tc_cpu_writes, generic_write_no_effect_if_null_pointer_for_reg_arg_and_mode);
 	suite_add_tcase(s, tc_cpu_writes);
 	tc_cpu_stack_op = tcase_create("Cpu Stack Operations");

@@ -281,23 +281,28 @@ void init_pc(Cpu6502* cpu)
 
 /* Read from memory or indexed registers and accumulator (X/Y/A)
  *
- * Valid read combinations are:
- * INTERNAL_MEM and address mode
- *   if not accumulator (address mode) we read from read_address
- * INTERNAL_REG and pointer to a register
- *   if a NULL pointer we return the default value of 0
+ * mem_type determines where we read from
+ *   INTERNAL_MEM, read from memory address regardless of address mode
+ *   ADDRESS_MODE_DEP, read from memory or accumulator depending on address mode
+ *   INTERNAL_REG, read from indexed registers or accumulator (X/Y/A)
  */
 uint8_t cpu_generic_read(Cpu6502* cpu, enum CpuMemType mem_type
                         , AddressMode address_mode
                         , uint16_t read_address, const uint8_t* internal_reg)
 {
-	uint8_t read_val = 0; // default value, if reg w/ a NULL AND not mem
+	uint8_t read_val = 0; // default value, if reg w/ a NULL
+
+	if (mem_type == ADDRESS_MODE_DEP) {
+		mem_type = INTERNAL_MEM;
+		if (address_mode == ACC) {
+			mem_type = INTERNAL_REG;
+			internal_reg = &cpu->A;
+		}
+	}
 
 	// avoid any side effects by only reading from memory if necessary
-	if ((mem_type == INTERNAL_MEM) && (address_mode != ACC)) {
+	if (mem_type == INTERNAL_MEM) {
 		read_val = read_from_cpu(cpu, read_address);
-	} else if ((mem_type == INTERNAL_MEM) && (address_mode == ACC)) {
-		read_val = cpu->A; // return A for instructions using accumulator
 	}
 
 	if ((mem_type == INTERNAL_REG) && (internal_reg != NULL)) {
@@ -377,11 +382,17 @@ void cpu_generic_write(Cpu6502* cpu, enum CpuMemType mem_type
                       , uint16_t write_address, uint8_t* internal_reg
                       , uint8_t data)
 {
+	if (mem_type == ADDRESS_MODE_DEP) {
+		mem_type = INTERNAL_MEM;
+		if (address_mode == ACC) {
+			mem_type = INTERNAL_REG;
+			internal_reg = &cpu->A;
+		}
+	}
+
 	// avoid any side effects by only writing to memory if necessary
-	if ((mem_type == INTERNAL_MEM) && (address_mode != ACC)) {
+	if (mem_type == INTERNAL_MEM) {
 		write_to_cpu(cpu, write_address, data);
-	} else if ((mem_type == INTERNAL_MEM) && (address_mode == ACC)) {
-		cpu->A = data; // write to A for instructions using accumulator
 	}
 
 	if ((mem_type == INTERNAL_REG) && (internal_reg != NULL)) {
