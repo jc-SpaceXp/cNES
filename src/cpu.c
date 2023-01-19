@@ -279,11 +279,26 @@ void init_pc(Cpu6502* cpu)
 	cpu->PC = return_little_endian(cpu, RST_VECTOR);
 }
 
+/* Read from memory or indexed registers and accumulator (X/Y/A)
+ *
+ * Valid read combinations are:
+ * INTERNAL_MEM and address mode
+ *   if not accumulator (address mode) we read from read_address
+ * INTERNAL_REG and pointer to a register
+ *   if a NULL pointer we return the default value of 0
+ */
 uint8_t cpu_generic_read(Cpu6502* cpu, enum CpuMemType mem_type
                         , AddressMode address_mode
                         , uint16_t read_address, const uint8_t* internal_reg)
 {
-	uint8_t read_val = read_from_cpu(cpu, read_address); // default val
+	uint8_t read_val = 0; // default value, if reg w/ a NULL AND not mem
+
+	// avoid any side effects by only reading from memory if necessary
+	if ((mem_type == INTERNAL_MEM) && (address_mode != ACC)) {
+		read_val = read_from_cpu(cpu, read_address);
+	} else if ((mem_type == INTERNAL_MEM) && (address_mode == ACC)) {
+		read_val = cpu->A; // return A for instructions using accumulator
+	}
 
 	if ((mem_type == INTERNAL_REG) && (internal_reg != NULL)) {
 		read_val = *internal_reg; // should point to X, Y or A registers
