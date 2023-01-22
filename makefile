@@ -42,7 +42,8 @@ TST_DEPS := $(TSTS:%.c=$(DEPDIR)/%.d)
 TST_TMP_OBJS := $(OBJDIR)/$(SRCDIR)/cpu.o \
                 $(OBJDIR)/$(SRCDIR)/mappers.o \
                 $(OBJDIR)/$(SRCDIR)/ppu.o \
-                $(OBJDIR)/$(SRCDIR)/gui.o
+                $(OBJDIR)/$(SRCDIR)/gui.o \
+                $(OBJDIR)/$(SRCDIR)/cart.o
 
 .PHONY: all
 all: $(BINDIR)/cnes $(BINDIR)/test_all
