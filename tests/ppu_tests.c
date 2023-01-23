@@ -2144,6 +2144,25 @@ START_TEST (write_ppu_data_2007_during_rendering)
 	ck_assert_uint_eq(0x6B, read_from_ppu_vram(&ppu->vram, 0x2001));
 }
 
+START_TEST (ppu_ctrl_vram_addr_inc_value)
+{
+	uint8_t reg_val[3] = {0x00, 0x04, 0xFF & ~0x04};  // clear bit (+1), set bit (+32)
+	unsigned increment[3] = {1, 32, 1};
+	ppu->cpu_ppu_io->ppu_ctrl = reg_val[_i];
+
+	ck_assert_uint_eq(increment[_i], ppu_vram_addr_inc(cpu_2));
+}
+
+START_TEST (ppu_ctrl_base_nt_address)
+{
+	// testing a previously unused function
+	uint8_t reg_val[5] = {0x00, 0x01, 0x02, 0x03, 0xF8};
+	unsigned nt_address[5] = {0x2000, 0x2400, 0x2800, 0x2C00, 0x2000};
+	ppu->cpu_ppu_io->ppu_ctrl = reg_val[_i];
+
+	ck_assert_uint_eq(nt_address[_i], ppu_base_nt_address(ppu));
+}
+
 START_TEST (ppu_ctrl_base_pt_address_bit_clear_others_clear)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = 0 << 4;
@@ -2171,6 +2190,78 @@ START_TEST (ppu_ctrl_base_pt_address_bit_set_others_set)
 	ppu->cpu_ppu_io->ppu_ctrl = 0xFF;
 
 	ck_assert_uint_eq(0x1000, ppu_base_pt_address(ppu));
+}
+
+START_TEST (ppu_ctrl_base_sprite_pattern_table_address)
+{
+	uint8_t reg_val[3] = {0x00, 0x08, 0xFF & ~0x08};
+	unsigned base_address[3] = {0x0000, 0x1000, 0x0000};
+	ppu->cpu_ppu_io->ppu_ctrl = reg_val[_i];
+
+	ck_assert_uint_eq(base_address[_i], ppu_sprite_pattern_table_addr(ppu));
+}
+
+START_TEST (ppu_ctrl_sprite_height)
+{
+	uint8_t reg_val[3] = {0x00, 0x20, 0xFF & ~0x20};
+	unsigned height[3] = {8, 16, 8};
+	ppu->cpu_ppu_io->ppu_ctrl = reg_val[_i];
+
+	ck_assert_uint_eq(height[_i], ppu_sprite_height(ppu));
+}
+
+START_TEST (ppu_mask_show_background)
+{
+	uint8_t reg_val[3] = {0x00, 0x08, 0xAF & ~0x08};
+	bool result[3] = {false, true, false};
+	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
+
+	ck_assert(result[_i] == ppu_show_bg(ppu));
+}
+
+START_TEST (ppu_mask_show_sprite)
+{
+	uint8_t reg_val[3] = {0x00, 0x10, 0xBF & ~0x10};
+	bool result[3] = {false, true, false};
+	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
+
+	ck_assert(result[_i] == ppu_show_sprite(ppu));
+}
+
+START_TEST (ppu_mask_hide_leftmost_8_pixels_background)
+{
+	uint8_t reg_val[3] = {0x00, 0x02, 0xEF & ~0x02};
+	bool result[3] = {true, false, true};
+	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
+
+	ck_assert(result[_i] == ppu_mask_left_8px_bg(ppu));
+}
+
+START_TEST (ppu_mask_hide_leftmost_8_pixels_sprite)
+{
+	uint8_t reg_val[3] = {0x00, 0x04, 0x0F & ~0x04};
+	bool result[3] = {true, false, true};
+	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
+
+	ck_assert(result[_i] == ppu_mask_left_8px_sprite(ppu));
+}
+
+START_TEST (ppu_mask_enable_greyscale)
+{
+	uint8_t reg_val[3] = {0x00, 0x01, 0xFF & ~0x01};
+	bool result[3] = {false, true, false};
+	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
+
+	ck_assert(result[_i] == ppu_show_greyscale(ppu));
+}
+
+START_TEST (ppu_status_sprite_overflow)
+{
+	uint8_t reg_val[3] = {0x00, 0x20, 0xFF & ~0x20};
+	bool result[3] = {false, true, false};
+	ppu->cpu_ppu_io->ppu_status = reg_val[_i];
+
+	ck_assert(result[_i] == sprite_overflow_occured(ppu));
 }
 
 START_TEST (fetch_pattern_table_lo_no_fine_y_offset)
@@ -2576,10 +2667,20 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_cpu_ppu_registers, write_ppu_addr_2006_scrolling_2nd_write_updates);
 	tcase_add_loop_test(tc_cpu_ppu_registers, write_ppu_data_2007_outside_of_rendering, 0, 2);
 	tcase_add_test(tc_cpu_ppu_registers, write_ppu_data_2007_during_rendering);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_ctrl_vram_addr_inc_value, 0, 3);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_ctrl_base_nt_address, 0, 5);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_ctrl_sprite_height, 0, 3);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_show_background, 0, 3);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_show_sprite, 0, 3);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_hide_leftmost_8_pixels_background, 0, 3);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_hide_leftmost_8_pixels_sprite, 0, 3);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_enable_greyscale, 0, 3);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_status_sprite_overflow, 0, 3);
 	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_clear_others_clear);
 	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_clear_others_set);
 	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_set_others_clear);
 	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_set_others_set);
+	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_ctrl_base_sprite_pattern_table_address, 0, 3);
 	suite_add_tcase(s, tc_cpu_ppu_registers);
 	tc_ppu_unit_test_helpers = tcase_create("PPU Unit Test Helper Functions");
 	tcase_add_checked_fixture(tc_ppu_unit_test_helpers, setup, teardown);

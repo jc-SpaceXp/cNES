@@ -66,7 +66,6 @@ static void write_2005(const uint8_t data, Cpu6502* cpu); // PPU_SCROLL
 static void write_2006(const uint8_t data, Cpu6502* cpu); // PPU_ADDR
 static void write_2007(const uint8_t data, Cpu6502* cpu); // PPU_DATA
 static void write_4014(const uint8_t data, Cpu6502* cpu); // DMA_DATA
-static uint8_t ppu_vram_addr_inc(const Cpu6502* cpu);
 static void inc_vert_scroll(CpuPpuShare* cpu_ppu_io);
 static void inc_horz_scroll(CpuPpuShare* cpu_ppu_io);
 static unsigned eight_to_one_mux(uint16_t input, unsigned select_lines);
@@ -690,7 +689,7 @@ void write_4014(const uint8_t data, Cpu6502* cpu)
  * PPU_CTRL
  */
 // use CPU to access shared CPU/PPU space as this is needed in CPU writes
-static uint8_t ppu_vram_addr_inc(const Cpu6502* cpu)
+uint8_t ppu_vram_addr_inc(const Cpu6502* cpu)
 {
 	if (!(cpu->cpu_ppu_io->ppu_ctrl & 0x04)) {
 		return 1;
@@ -699,7 +698,7 @@ static uint8_t ppu_vram_addr_inc(const Cpu6502* cpu)
 	}
 }
 
-static uint16_t ppu_base_nt_address(const Ppu2C02* p)
+uint16_t ppu_base_nt_address(const Ppu2C02* p)
 {
 	switch(p->cpu_ppu_io->ppu_ctrl & 0x03) {
 	case 0:
@@ -725,7 +724,7 @@ uint16_t ppu_base_pt_address(const Ppu2C02* p)
 	}
 }
 
-static uint16_t ppu_sprite_pattern_table_addr(const Ppu2C02* p)
+uint16_t ppu_sprite_pattern_table_addr(const Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 3) & 0x01) {
 		return 0x1000;
@@ -734,7 +733,7 @@ static uint16_t ppu_sprite_pattern_table_addr(const Ppu2C02* p)
 	}
 }
 
-static uint8_t ppu_sprite_height(const Ppu2C02* p)
+uint8_t ppu_sprite_height(const Ppu2C02* p)
 {
 	if ((p->cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
 		return 16; // 8 x 16 sprites
@@ -747,7 +746,7 @@ static uint8_t ppu_sprite_height(const Ppu2C02* p)
  * PPU_MASK
  */
 
-static bool ppu_show_bg(const Ppu2C02* p)
+bool ppu_show_bg(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x08) {
 		return true;
@@ -757,7 +756,7 @@ static bool ppu_show_bg(const Ppu2C02* p)
 }
 
 
-static bool ppu_show_sprite(const Ppu2C02* p)
+bool ppu_show_sprite(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x10) {
 		return true;
@@ -766,7 +765,7 @@ static bool ppu_show_sprite(const Ppu2C02* p)
 	}
 }
 
-static bool ppu_mask_left_8px_bg(const Ppu2C02* p)
+bool ppu_mask_left_8px_bg(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x02) {
 		return false;
@@ -775,7 +774,7 @@ static bool ppu_mask_left_8px_bg(const Ppu2C02* p)
 	}
 }
 
-static bool ppu_mask_left_8px_sprite(const Ppu2C02* p)
+bool ppu_mask_left_8px_sprite(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x04) {
 		return false;
@@ -784,7 +783,7 @@ static bool ppu_mask_left_8px_sprite(const Ppu2C02* p)
 	}
 }
 
-static bool ppu_show_greyscale(const Ppu2C02* p)
+bool ppu_show_greyscale(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_mask & 0x01) {
 		return true;
@@ -797,7 +796,7 @@ static bool ppu_show_greyscale(const Ppu2C02* p)
  * PPU_STATUS
  */
 
-static bool sprite_overflow_occured(const Ppu2C02* p)
+bool sprite_overflow_occured(const Ppu2C02* p)
 {
 	if (p->cpu_ppu_io->ppu_status & 0x20) {
 		return true;
