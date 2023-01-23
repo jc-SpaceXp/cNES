@@ -549,7 +549,7 @@ static void read_2007(Cpu6502* cpu)
 		inc_vert_scroll(cpu->cpu_ppu_io);
 		inc_horz_scroll(cpu->cpu_ppu_io);
 	} else {
-		*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
+		*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu->cpu_ppu_io);
 	}
 }
 
@@ -672,7 +672,7 @@ static void write_2007(const uint8_t data, Cpu6502* cpu)
 		inc_vert_scroll(cpu->cpu_ppu_io);
 		inc_horz_scroll(cpu->cpu_ppu_io);
 	} else {
-		*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu);
+		*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu->cpu_ppu_io);
 	}
 }
 
@@ -689,18 +689,18 @@ void write_4014(const uint8_t data, Cpu6502* cpu)
  * PPU_CTRL
  */
 // use CPU to access shared CPU/PPU space as this is needed in CPU writes
-uint8_t ppu_vram_addr_inc(const Cpu6502* cpu)
+uint8_t ppu_vram_addr_inc(const CpuPpuShare* cpu_ppu_io)
 {
-	if (!(cpu->cpu_ppu_io->ppu_ctrl & 0x04)) {
+	if (!(cpu_ppu_io->ppu_ctrl & 0x04)) {
 		return 1;
 	} else {
 		return 32;
 	}
 }
 
-uint16_t ppu_base_nt_address(const Ppu2C02* p)
+uint16_t ppu_base_nt_address(const CpuPpuShare* cpu_ppu_io)
 {
-	switch(p->cpu_ppu_io->ppu_ctrl & 0x03) {
+	switch(cpu_ppu_io->ppu_ctrl & 0x03) {
 	case 0:
 		return 0x2000;
 	case 1:
@@ -715,27 +715,27 @@ uint16_t ppu_base_nt_address(const Ppu2C02* p)
 }
 
 
-uint16_t ppu_base_pt_address(const Ppu2C02* p)
+uint16_t ppu_base_pt_address(const CpuPpuShare* cpu_ppu_io)
 {
-	if ((p->cpu_ppu_io->ppu_ctrl >> 4) & 0x01) {
+	if ((cpu_ppu_io->ppu_ctrl >> 4) & 0x01) {
 		return 0x1000;
 	} else {
 		return 0x0000;
 	}
 }
 
-uint16_t ppu_sprite_pattern_table_addr(const Ppu2C02* p)
+uint16_t ppu_sprite_pattern_table_addr(const CpuPpuShare* cpu_ppu_io)
 {
-	if ((p->cpu_ppu_io->ppu_ctrl >> 3) & 0x01) {
+	if ((cpu_ppu_io->ppu_ctrl >> 3) & 0x01) {
 		return 0x1000;
 	} else {
 		return 0x0000;
 	}
 }
 
-uint8_t ppu_sprite_height(const Ppu2C02* p)
+uint8_t ppu_sprite_height(const CpuPpuShare* cpu_ppu_io)
 {
-	if ((p->cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
+	if ((cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
 		return 16; // 8 x 16 sprites
 	} else {
 		return 8; // 8 x 8 sprites
@@ -746,9 +746,9 @@ uint8_t ppu_sprite_height(const Ppu2C02* p)
  * PPU_MASK
  */
 
-bool ppu_show_bg(const Ppu2C02* p)
+bool ppu_show_bg(const CpuPpuShare* cpu_ppu_io)
 {
-	if (p->cpu_ppu_io->ppu_mask & 0x08) {
+	if (cpu_ppu_io->ppu_mask & 0x08) {
 		return true;
 	} else {
 		return false;
@@ -756,36 +756,36 @@ bool ppu_show_bg(const Ppu2C02* p)
 }
 
 
-bool ppu_show_sprite(const Ppu2C02* p)
+bool ppu_show_sprite(const CpuPpuShare* cpu_ppu_io)
 {
-	if (p->cpu_ppu_io->ppu_mask & 0x10) {
+	if (cpu_ppu_io->ppu_mask & 0x10) {
 		return true;
 	} else {
 		return false;
 	}
 }
 
-bool ppu_mask_left_8px_bg(const Ppu2C02* p)
+bool ppu_mask_left_8px_bg(const CpuPpuShare* cpu_ppu_io)
 {
-	if (p->cpu_ppu_io->ppu_mask & 0x02) {
+	if (cpu_ppu_io->ppu_mask & 0x02) {
 		return false;
 	} else {
 		return true;
 	}
 }
 
-bool ppu_mask_left_8px_sprite(const Ppu2C02* p)
+bool ppu_mask_left_8px_sprite(const CpuPpuShare* cpu_ppu_io)
 {
-	if (p->cpu_ppu_io->ppu_mask & 0x04) {
+	if (cpu_ppu_io->ppu_mask & 0x04) {
 		return false;
 	} else {
 		return true;
 	}
 }
 
-bool ppu_show_greyscale(const Ppu2C02* p)
+bool ppu_show_greyscale(const CpuPpuShare* cpu_ppu_io)
 {
-	if (p->cpu_ppu_io->ppu_mask & 0x01) {
+	if (cpu_ppu_io->ppu_mask & 0x01) {
 		return true;
 	} else {
 		return false;
@@ -796,9 +796,9 @@ bool ppu_show_greyscale(const Ppu2C02* p)
  * PPU_STATUS
  */
 
-bool sprite_overflow_occured(const Ppu2C02* p)
+bool sprite_overflow_occured(const CpuPpuShare* cpu_ppu_io)
 {
-	if (p->cpu_ppu_io->ppu_status & 0x20) {
+	if (cpu_ppu_io->ppu_status & 0x20) {
 		return true;
 	} else {
 		return false;
@@ -920,9 +920,9 @@ static void all_nametables_fill_pixel_buffer(Ppu2C02* ppu)
 			// select y pixel inside 8x8 block
 			for (int fine_y = 0; fine_y < 8; fine_y++) {
 				fetch_pt_lo(&ppu->vram, (render_nametable_address & 0x0FFF) | (fine_y << 12)
-				           , ppu_base_pt_address(ppu), &bkg_internals);
+				           , ppu_base_pt_address(ppu->cpu_ppu_io), &bkg_internals);
 				fetch_pt_hi(&ppu->vram, (render_nametable_address & 0x0FFF) | (fine_y << 12)
-				           , ppu_base_pt_address(ppu), &bkg_internals);
+				           , ppu_base_pt_address(ppu->cpu_ppu_io), &bkg_internals);
 				bkg_internals.pt_hi_shift_reg = bkg_internals.pt_hi_latch;
 				bkg_internals.pt_lo_shift_reg = bkg_internals.pt_lo_latch;
 				fill_attribute_shift_reg(render_nametable_address
@@ -943,7 +943,7 @@ static void all_nametables_fill_pixel_buffer(Ppu2C02* ppu)
 					}
 
 					unsigned RGB = read_from_ppu_vram(&ppu->vram, bg_palette_addr + bg_colour_index); // Get RGB values
-					if (ppu_show_greyscale(ppu)) { RGB &= 0x30; }
+					if (ppu_show_greyscale(ppu->cpu_ppu_io)) { RGB &= 0x30; }
 
 					/* Shift out each cycle */
 					bkg_internals.pt_hi_shift_reg >>= 1;
@@ -1128,7 +1128,7 @@ static void render_pixel(Ppu2C02 *p)
 		bg_palette_addr = 0x3F00; // Take background colour (transparent)
 	}
 
-	if ((ppu_mask_left_8px_bg(p) && p->cycle < 8) || !ppu_show_bg(p)) {
+	if ((ppu_mask_left_8px_bg(p->cpu_ppu_io) && p->cycle < 8) || !ppu_show_bg(p->cpu_ppu_io)) {
 		bg_palette_addr = 0x3F00;
 		bg_colour_index = 0;
 	}
@@ -1151,7 +1151,7 @@ static void render_pixel(Ppu2C02 *p)
 	 * cases for sprite output are true
 	 */
 	unsigned RGB = read_from_ppu_vram(&p->vram, bg_palette_addr + bg_colour_index); // Get RGB values
-	if (ppu_show_greyscale(p)) { RGB &= 0x30; }
+	if (ppu_show_greyscale(p->cpu_ppu_io)) { RGB &= 0x30; }
 
 	/* Shift out each cycle */
 	p->bkg_internals.pt_hi_shift_reg >>= 1;
@@ -1174,7 +1174,7 @@ static void render_pixel(Ppu2C02 *p)
 			sprite_palette_addr += 0x3F10;
 			if ((sprite_is_front_priority(p, i) || !bg_colour_index) && sprite_colour_index[i]) {
 				RGB = read_from_ppu_vram(&p->vram, sprite_palette_addr + sprite_colour_index[i]); // Output sprite
-				if (ppu_show_greyscale(p)) { RGB &= 0x30; }
+				if (ppu_show_greyscale(p->cpu_ppu_io)) { RGB &= 0x30; }
 			}
 			p->sprite_pt_lo_shift_reg[i] >>= 1;
 			p->sprite_pt_hi_shift_reg[i] >>= 1;
@@ -1246,7 +1246,7 @@ static void sprite_evaluation(Ppu2C02* p)
 	case 0: //Even cycles
 		y_offset = p->scanline - p->oam_read_buffer;
 		if ((y_offset >= 0)
-		   && (y_offset < ppu_sprite_height(p))
+		   && (y_offset < ppu_sprite_height(p->cpu_ppu_io))
 		   && (p->sprites_found <= 8)
 		   && !p->stop_early) {
 			ppu_transfer_oam(p, p->sprite_index); // sprite found load into secondary oam
@@ -1264,7 +1264,7 @@ static void sprite_evaluation(Ppu2C02* p)
 			p->stop_early = true;
 		}
 
-		if ((p->sprites_found == 9) && (y_offset >= 0) && (y_offset < ppu_sprite_height(p))) {
+		if ((p->sprites_found == 9) && (y_offset >= 0) && (y_offset < ppu_sprite_height(p->cpu_ppu_io))) {
 			// Trigger sprite overflow flag
 			p->cpu_ppu_io->ppu_status |= 0x20;
 		}
@@ -1279,7 +1279,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 {
 	// Check if sprite is in Y range
 	// -1 as Y pos of sprite is delayed until the next scanline
-	if ((p->scanline - p->oam[0] - 1) < ppu_sprite_height(p)
+	if ((p->scanline - p->oam[0] - 1) < ppu_sprite_height(p->cpu_ppu_io)
 		&& (p->scanline > 0)
 		&& (p->scanline < 240)) {
 		// should be looking @ px 9-16 (1 index) @ cyc 8
@@ -1306,9 +1306,9 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 					//   mask iterates through 8 pixels to get our lookahead
 					p->bg_lo_reg = (p->bkg_internals.pt_lo_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
 					p->bg_hi_reg = (p->bkg_internals.pt_hi_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
-					unsigned tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + sp_v_offset);
-					unsigned tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + sp_v_offset + 8);
-					if (ppu_sprite_height(p) == 16) {
+					unsigned tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p->cpu_ppu_io) | p->oam[1] << 4) + sp_v_offset);
+					unsigned tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p->cpu_ppu_io) | p->oam[1] << 4) + sp_v_offset + 8);
+					if (ppu_sprite_height(p->cpu_ppu_io) == 16) {
 						if (sp_v_offset >= 8) { sp_v_offset += 8; } // avoid overlap w/ hi address space i.e. 0x0008 to 0x000F
 						tmp_pt_lo = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + sp_v_offset));
 						tmp_pt_hi = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + sp_v_offset + 8));
@@ -1326,10 +1326,10 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 					}
 					// flip sprites vertically
 					if (p->oam[2] & 0x80) {
-						tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 7 - sp_v_offset);
-						tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p) | p->oam[1] << 4) + 15 - sp_v_offset);
+						tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p->cpu_ppu_io) | p->oam[1] << 4) + 7 - sp_v_offset);
+						tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p->cpu_ppu_io) | p->oam[1] << 4) + 15 - sp_v_offset);
 						// flip the 8x16 sprites
-						if (ppu_sprite_height(p) == 16) {
+						if (ppu_sprite_height(p->cpu_ppu_io) == 16) {
 							tmp_pt_lo = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 23 - sp_v_offset));
 							tmp_pt_hi = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 31 - sp_v_offset));
 						}
@@ -1361,7 +1361,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 							continue;
 						}
 						// ignore sprite hits if sprite or bg are masked (leftmost 8 pixels)
-						if ((ppu_mask_left_8px_bg(p) || ppu_mask_left_8px_sprite(p))
+						if ((ppu_mask_left_8px_bg(p->cpu_ppu_io) || ppu_mask_left_8px_sprite(p->cpu_ppu_io))
 							&& (p->l_cl < 9)) {
 							p->l_sl = 10000;
 							p->l_cl = 10000;
@@ -1500,7 +1500,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 	p->cpu_ppu_io->suppress_nmi_flag = false;
 
 
-	if (ppu_show_bg(p) || ppu_show_sprite(p)) {
+	if (ppu_show_bg(p->cpu_ppu_io) || ppu_show_sprite(p->cpu_ppu_io)) {
 		// Sprites are evaluated for either BG or sprite rendering
 		if (p->scanline <= 239) { // Visible scanlines
 			if (p->cycle > 64 && p->cycle <= 256) {
@@ -1527,7 +1527,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 	}
 
 	/* Process BG Scanlines */
-	if (ppu_show_bg(p)) {
+	if (ppu_show_bg(p->cpu_ppu_io)) {
 		if (p->scanline <= 239) { // Visible scanlines
 			if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
 				// reload at shift registers when we move onto a new tile
@@ -1549,11 +1549,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 					fetch_at_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 4: // Cycle 5, 6 (and + 8)
-					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p->cpu_ppu_io)
 					           , &p->bkg_internals);
 					break;
 				case 6: // Cycle 7 (and + 8)
-					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p->cpu_ppu_io)
 					           , &p->bkg_internals);
 					break;
 				case 7: // Cycle 8 (and +8)
@@ -1583,11 +1583,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 					fetch_at_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 4: // Cycle 325, 326 (and +8)
-					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p->cpu_ppu_io)
 					           , &p->bkg_internals);
 					break;
 				case 6: // Cycle 327 (and +8)
-					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p->cpu_ppu_io)
 					           , &p->bkg_internals);
 					// Load latched values into upper byte of shift regs
 					p->bkg_internals.pt_hi_shift_reg >>= 8;
@@ -1613,11 +1613,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 					fetch_at_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 4: // Cycle 260, 261 (and +8)
-					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p->cpu_ppu_io)
 					           , &p->bkg_internals);
 					break;
 				case 6: // Cycle 262 (and +8)
-					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p->cpu_ppu_io)
 					           , &p->bkg_internals);
 					break;
 				case 7: // Cycle 263 (and +8)
@@ -1644,11 +1644,11 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 					fetch_at_byte(&p->vram, p->vram_addr, &p->bkg_internals);
 					break;
 				case 4: // Cycle 325, 326 (and +8)
-					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					fetch_pt_lo(&p->vram, p->vram_addr, ppu_base_pt_address(p->cpu_ppu_io)
 					           , &p->bkg_internals);
 					break;
 				case 6: // Cycle 327 (and +8)
-					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p)
+					fetch_pt_hi(&p->vram, p->vram_addr, ppu_base_pt_address(p->cpu_ppu_io)
 					           , &p->bkg_internals);
 					// Load latched values into upper byte of shift regs
 					p->bkg_internals.pt_hi_shift_reg >>= 8;
@@ -1667,7 +1667,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 	}
 
 	/* Process Sprites */
-	if (ppu_show_sprite(p)) {
+	if (ppu_show_sprite(p->cpu_ppu_io)) {
 		if (p->scanline <= 239) { // Visible scanlines
 			if (p->cycle <= 64 && (p->cycle != 0)) {
 				reset_secondary_oam(p);
@@ -1681,10 +1681,10 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 					break;
 				case 1:
 					// When not in range the sprite is filled w/ FF
-					p->sprite_addr = ppu_sprite_pattern_table_addr(p)
+					p->sprite_addr = ppu_sprite_pattern_table_addr(p->cpu_ppu_io)
 					               | (uint16_t) secondary_oam_tile_number(p, count) << 4;
 					// 8x16 sprites don't use ppu_ctrl to determine base pt address
-					if (ppu_sprite_height(p) == 16) {
+					if (ppu_sprite_height(p->cpu_ppu_io) == 16) {
 						// Bit 0 determines base pt address, 0x1000 or 0x000
 						p->sprite_addr = (0x1000 * (secondary_oam_tile_number(p, count) & 0x01))
 					                   | (uint16_t) (secondary_oam_tile_number(p, count) & 0xFE) << 4;
@@ -1695,7 +1695,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 					}
 
 					// addr for rows 9-16 of 8x16 sprites
-					if (ppu_sprite_height(p) == 16) {
+					if (ppu_sprite_height(p->cpu_ppu_io) == 16) {
 						if (sprite_y_offset >= 8) { sprite_y_offset += 8; }
 					}
 					p->sprite_addr += sprite_y_offset;
@@ -1709,8 +1709,8 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 						// undo y_offset, then go from y_offset_max down to 0
 						// e.g. 0-7 is now flipped to 7-0 (for sprites 8px high)
 						p->sprite_addr = p->sprite_addr - sprite_y_offset
-						                 + (ppu_sprite_height(p) - 1)
-						                 - (sprite_y_offset % ppu_sprite_height(p));
+						                 + (ppu_sprite_height(p->cpu_ppu_io) - 1)
+						                 - (sprite_y_offset % ppu_sprite_height(p->cpu_ppu_io));
 					}
 					break;
 				case 3:
@@ -1754,7 +1754,8 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 	}
 
 
-	if ((ppu_show_bg(p) && ppu_show_sprite(p)) && !sprite_overflow_occured(p)) {
+	if ((ppu_show_bg(p->cpu_ppu_io) && ppu_show_sprite(p->cpu_ppu_io))
+	     && !sprite_overflow_occured(p->cpu_ppu_io)) {
 		sprite_hit_lookahead(p);
 	}
 

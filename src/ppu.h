@@ -39,17 +39,17 @@ void write_to_ppu_vram(struct PpuMemoryMap* mem, unsigned addr, uint8_t data);
 uint8_t read_from_ppu_vram(const struct PpuMemoryMap* mem, unsigned addr);
 
 // Cpu/ppu Registers
-uint8_t ppu_vram_addr_inc(const Cpu6502* cpu);
-uint16_t ppu_base_nt_address(const Ppu2C02* p);
-uint16_t ppu_base_pt_address(const Ppu2C02* p);
-uint16_t ppu_sprite_pattern_table_addr(const Ppu2C02* p);
-uint8_t ppu_sprite_height(const Ppu2C02* p);
-bool ppu_show_bg(const Ppu2C02* p);
-bool ppu_show_sprite(const Ppu2C02* p);
-bool ppu_mask_left_8px_bg(const Ppu2C02* p);
-bool ppu_mask_left_8px_sprite(const Ppu2C02* p);
-bool ppu_show_greyscale(const Ppu2C02* p);
-bool sprite_overflow_occured(const Ppu2C02* p);
+uint8_t ppu_vram_addr_inc(const CpuPpuShare* cpu_ppu_io);
+uint16_t ppu_base_nt_address(const CpuPpuShare* cpu_ppu_io);
+uint16_t ppu_base_pt_address(const CpuPpuShare* cpu_ppu_io);
+uint16_t ppu_sprite_pattern_table_addr(const CpuPpuShare* cpu_ppu_io);
+uint8_t ppu_sprite_height(const CpuPpuShare* cpu_ppu_io);
+bool ppu_show_bg(const CpuPpuShare* cpu_ppu_io);
+bool ppu_show_sprite(const CpuPpuShare* cpu_ppu_io);
+bool ppu_mask_left_8px_bg(const CpuPpuShare* cpu_ppu_io);
+bool ppu_mask_left_8px_sprite(const CpuPpuShare* cpu_ppu_io);
+bool ppu_show_greyscale(const CpuPpuShare* cpu_ppu_io);
+bool sprite_overflow_occured(const CpuPpuShare* cpu_ppu_io);
 
 // Rendering functions
 void fetch_nt_byte(const struct PpuMemoryMap* vram

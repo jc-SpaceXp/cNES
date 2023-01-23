@@ -2150,7 +2150,7 @@ START_TEST (ppu_ctrl_vram_addr_inc_value)
 	unsigned increment[3] = {1, 32, 1};
 	ppu->cpu_ppu_io->ppu_ctrl = reg_val[_i];
 
-	ck_assert_uint_eq(increment[_i], ppu_vram_addr_inc(cpu_2));
+	ck_assert_uint_eq(increment[_i], ppu_vram_addr_inc(cpu_ppu));
 }
 
 START_TEST (ppu_ctrl_base_nt_address)
@@ -2160,14 +2160,14 @@ START_TEST (ppu_ctrl_base_nt_address)
 	unsigned nt_address[5] = {0x2000, 0x2400, 0x2800, 0x2C00, 0x2000};
 	ppu->cpu_ppu_io->ppu_ctrl = reg_val[_i];
 
-	ck_assert_uint_eq(nt_address[_i], ppu_base_nt_address(ppu));
+	ck_assert_uint_eq(nt_address[_i], ppu_base_nt_address(cpu_ppu));
 }
 
 START_TEST (ppu_ctrl_base_pt_address_bit_clear_others_clear)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = 0 << 4;
 
-	ck_assert_uint_eq(0x0000, ppu_base_pt_address(ppu));
+	ck_assert_uint_eq(0x0000, ppu_base_pt_address(cpu_ppu));
 }
 
 START_TEST (ppu_ctrl_base_pt_address_bit_clear_others_set)
@@ -2175,21 +2175,21 @@ START_TEST (ppu_ctrl_base_pt_address_bit_clear_others_set)
 	ppu->cpu_ppu_io->ppu_ctrl = 0xFF;
 	ppu->cpu_ppu_io->ppu_ctrl &= ~0x10;
 
-	ck_assert_uint_eq(0x0000, ppu_base_pt_address(ppu));
+	ck_assert_uint_eq(0x0000, ppu_base_pt_address(cpu_ppu));
 }
 
 START_TEST (ppu_ctrl_base_pt_address_bit_set_others_clear)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = 1 << 4;
 
-	ck_assert_uint_eq(0x1000, ppu_base_pt_address(ppu));
+	ck_assert_uint_eq(0x1000, ppu_base_pt_address(cpu_ppu));
 }
 
 START_TEST (ppu_ctrl_base_pt_address_bit_set_others_set)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = 0xFF;
 
-	ck_assert_uint_eq(0x1000, ppu_base_pt_address(ppu));
+	ck_assert_uint_eq(0x1000, ppu_base_pt_address(cpu_ppu));
 }
 
 START_TEST (ppu_ctrl_base_sprite_pattern_table_address)
@@ -2198,7 +2198,7 @@ START_TEST (ppu_ctrl_base_sprite_pattern_table_address)
 	unsigned base_address[3] = {0x0000, 0x1000, 0x0000};
 	ppu->cpu_ppu_io->ppu_ctrl = reg_val[_i];
 
-	ck_assert_uint_eq(base_address[_i], ppu_sprite_pattern_table_addr(ppu));
+	ck_assert_uint_eq(base_address[_i], ppu_sprite_pattern_table_addr(ppu->cpu_ppu_io));
 }
 
 START_TEST (ppu_ctrl_sprite_height)
@@ -2207,7 +2207,7 @@ START_TEST (ppu_ctrl_sprite_height)
 	unsigned height[3] = {8, 16, 8};
 	ppu->cpu_ppu_io->ppu_ctrl = reg_val[_i];
 
-	ck_assert_uint_eq(height[_i], ppu_sprite_height(ppu));
+	ck_assert_uint_eq(height[_i], ppu_sprite_height(ppu->cpu_ppu_io));
 }
 
 START_TEST (ppu_mask_show_background)
@@ -2216,7 +2216,7 @@ START_TEST (ppu_mask_show_background)
 	bool result[3] = {false, true, false};
 	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
 
-	ck_assert(result[_i] == ppu_show_bg(ppu));
+	ck_assert(result[_i] == ppu_show_bg(ppu->cpu_ppu_io));
 }
 
 START_TEST (ppu_mask_show_sprite)
@@ -2225,7 +2225,7 @@ START_TEST (ppu_mask_show_sprite)
 	bool result[3] = {false, true, false};
 	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
 
-	ck_assert(result[_i] == ppu_show_sprite(ppu));
+	ck_assert(result[_i] == ppu_show_sprite(ppu->cpu_ppu_io));
 }
 
 START_TEST (ppu_mask_hide_leftmost_8_pixels_background)
@@ -2234,7 +2234,7 @@ START_TEST (ppu_mask_hide_leftmost_8_pixels_background)
 	bool result[3] = {true, false, true};
 	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
 
-	ck_assert(result[_i] == ppu_mask_left_8px_bg(ppu));
+	ck_assert(result[_i] == ppu_mask_left_8px_bg(ppu->cpu_ppu_io));
 }
 
 START_TEST (ppu_mask_hide_leftmost_8_pixels_sprite)
@@ -2243,7 +2243,7 @@ START_TEST (ppu_mask_hide_leftmost_8_pixels_sprite)
 	bool result[3] = {true, false, true};
 	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
 
-	ck_assert(result[_i] == ppu_mask_left_8px_sprite(ppu));
+	ck_assert(result[_i] == ppu_mask_left_8px_sprite(ppu->cpu_ppu_io));
 }
 
 START_TEST (ppu_mask_enable_greyscale)
@@ -2252,7 +2252,7 @@ START_TEST (ppu_mask_enable_greyscale)
 	bool result[3] = {false, true, false};
 	ppu->cpu_ppu_io->ppu_mask = reg_val[_i];
 
-	ck_assert(result[_i] == ppu_show_greyscale(ppu));
+	ck_assert(result[_i] == ppu_show_greyscale(ppu->cpu_ppu_io));
 }
 
 START_TEST (ppu_status_sprite_overflow)
@@ -2261,7 +2261,7 @@ START_TEST (ppu_status_sprite_overflow)
 	bool result[3] = {false, true, false};
 	ppu->cpu_ppu_io->ppu_status = reg_val[_i];
 
-	ck_assert(result[_i] == sprite_overflow_occured(ppu));
+	ck_assert(result[_i] == sprite_overflow_occured(ppu->cpu_ppu_io));
 }
 
 START_TEST (fetch_pattern_table_lo_no_fine_y_offset)
@@ -2275,10 +2275,13 @@ START_TEST (fetch_pattern_table_lo_no_fine_y_offset)
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
 	                                                           , coarse_x, coarse_y);
 	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y;
-	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
+	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu->cpu_ppu_io)
+	                              | pattern_table_address
+	                              , pt_byte);
 
 	// fine y is taken from vram_address
-	fetch_pt_lo(&ppu->vram, ppu->vram_addr, ppu_base_pt_address(ppu), &ppu->bkg_internals);
+	fetch_pt_lo(&ppu->vram, ppu->vram_addr
+	           , ppu_base_pt_address(ppu->cpu_ppu_io), &ppu->bkg_internals);
 
 	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_lo_latch);
 }
@@ -2294,10 +2297,13 @@ START_TEST (fetch_pattern_table_lo_fine_y_offset)
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2401, fine_y
 	                                                           , coarse_x, coarse_y);
 	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y;
-	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
+	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu->cpu_ppu_io)
+	                              | pattern_table_address
+	                              , pt_byte);
 
 	// fine y is taken from vram_address
-	fetch_pt_lo(&ppu->vram, ppu->vram_addr, ppu_base_pt_address(ppu), &ppu->bkg_internals);
+	fetch_pt_lo(&ppu->vram, ppu->vram_addr
+	           , ppu_base_pt_address(ppu->cpu_ppu_io), &ppu->bkg_internals);
 
 	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_lo_latch);
 }
@@ -2313,10 +2319,13 @@ START_TEST (fetch_pattern_table_hi_no_fine_y_offset)
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
 	                                                           , coarse_x, coarse_y);
 	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y + 8;
-	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
+	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu->cpu_ppu_io)
+	                              | pattern_table_address
+	                              , pt_byte);
 
 	// fine y is taken from vram_address
-	fetch_pt_hi(&ppu->vram, ppu->vram_addr, ppu_base_pt_address(ppu), &ppu->bkg_internals);
+	fetch_pt_hi(&ppu->vram, ppu->vram_addr
+	           , ppu_base_pt_address(ppu->cpu_ppu_io), &ppu->bkg_internals);
 
 	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_hi_latch);
 }
@@ -2332,10 +2341,13 @@ START_TEST (fetch_pattern_table_hi_fine_y_offset)
 	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2008, fine_y
 	                                                           , coarse_x, coarse_y);
 	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y + 8;
-	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu) | pattern_table_address, pt_byte);
+	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu->cpu_ppu_io)
+	                              | pattern_table_address
+	                              , pt_byte);
 
 	// fine y is taken from vram_address
-	fetch_pt_hi(&ppu->vram, ppu->vram_addr, ppu_base_pt_address(ppu), &ppu->bkg_internals);
+	fetch_pt_hi(&ppu->vram, ppu->vram_addr
+	           , ppu_base_pt_address(ppu->cpu_ppu_io), &ppu->bkg_internals);
 
 	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_hi_latch);
 }
