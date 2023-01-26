@@ -809,11 +809,11 @@ void clock_cpu(Cpu6502* cpu, const bool no_logging)
 			fetch_opcode(cpu);
 			cpu->delay_nmi = false; // reset after returning from NMI
 		}  else if (cpu->instruction_state == DECODE) {
-			decode_opcode_lut[cpu->opcode](cpu);
+			isa_info[cpu->opcode].decode_opcode(cpu);
 		}
 		if (cpu->instruction_state == EXECUTE) {
 			cpu->instruction_state = FETCH;
-			execute_opcode_lut[cpu->opcode](cpu); // can change the PC which the early fetch made!
+			isa_info[cpu->opcode].execute_opcode(cpu); // can change the PC which the early fetch made!
 
 			if (cpu->cpu_ppu_io->nmi_pending) {
 				cpu->process_interrupt = true;
@@ -1004,7 +1004,7 @@ static void fetch_opcode(Cpu6502* cpu)
 	set_data_bus_via_write(cpu, cpu->opcode);
 	++cpu->PC;
 
-	cpu->instruction_cycles_remaining = max_cycles_opcode_lut[cpu->opcode];
+	cpu->instruction_cycles_remaining = isa_info[cpu->opcode].max_cycles;
 	cpu->instruction_state = DECODE;
 }
 
