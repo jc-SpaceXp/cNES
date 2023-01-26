@@ -120,64 +120,6 @@ static void execute_IRQ(Cpu6502* cpu);  // warning unused function, needed later
 static void execute_NMI(Cpu6502* cpu);
 static void execute_DMA(Cpu6502* cpu, const bool no_logging);
 
-// 0 denotes illegal op codes
-const uint8_t max_cycles_opcode_lut[256] = {
-	0x0007, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0003, 0x0002, 0x0002,      0,      0, 0x0004, 0x0006,      0,
-	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
-	0x0006, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0004, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
-	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
-	0x0006, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0003, 0x0002, 0x0002,      0, 0x0003, 0x0004, 0x0006,      0,
-	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
-	0x0006, 0x0006,      0,      0,      0, 0x0003, 0x0005,      0, 0x0004, 0x0002, 0x0002,      0, 0x0005, 0x0004, 0x0006,      0,
-	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
-	     0, 0x0006,      0,      0, 0x0003, 0x0003, 0x0003,      0, 0x0002,      0, 0x0002,      0, 0x0004, 0x0004, 0x0004,      0,
-	0x0004, 0x0006,      0,      0, 0x0004, 0x0004, 0x0004,      0, 0x0002, 0x0005, 0x0002,      0,      0, 0x0005,      0,      0,
-	0x0002, 0x0006, 0x0002,      0, 0x0003, 0x0003, 0x0003,      0, 0x0002, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0004,      0,
-	0x0004, 0x0006,      0,      0, 0x0004, 0x0004, 0x0004,      0, 0x0002, 0x0005, 0x0002,      0, 0x0005, 0x0005, 0x0005,      0,
-	0x0002, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0002, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
-	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0,
-	0x0002, 0x0006,      0,      0, 0x0003, 0x0003, 0x0005,      0, 0x0002, 0x0002, 0x0002,      0, 0x0004, 0x0004, 0x0006,      0,
-	0x0004, 0x0006,      0,      0,      0, 0x0004, 0x0006,      0, 0x0002, 0x0005,      0,      0,      0, 0x0005, 0x0007,      0
-};
-
-void (*decode_opcode_lut[256])(Cpu6502* cpu) = {
-	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PUSH, decode_IMM_read       , decode_ACC,  bad_op_code, bad_op_code           , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
-	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
-	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PULL, decode_IMM_read       , decode_ACC , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
-	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
-	decode_SPECIAL        , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PUSH, decode_IMM_read       , decode_ACC , bad_op_code, decode_ABS_JMP        , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
-	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
-	decode_RTS            , decode_INDX_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_PULL, decode_IMM_read       , decode_ACC , bad_op_code, decode_IND_JMP        , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
-	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
-	bad_op_code           , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_read_store , bad_op_code, decode_IMP , bad_op_code           , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_read_store , bad_op_code,
-	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, decode_ZPX_read_store, decode_ZPX_read_store, decode_ZPY_read_store, bad_op_code, decode_IMP , decode_ABSY_read_store, decode_IMP , bad_op_code, bad_op_code           , decode_ABSX_read_store, bad_op_code           , bad_op_code,
-	decode_IMM_read       , decode_INDX_read_store, decode_IMM_read      , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_read_store , bad_op_code, decode_IMP , decode_IMM_read       , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_read_store , bad_op_code,
-	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, decode_ZPX_read_store, decode_ZPX_read_store, decode_ZPY_read_store, bad_op_code, decode_IMP , decode_ABSY_read_store, decode_IMP , bad_op_code, decode_ABSX_read_store, decode_ABSX_read_store, decode_ABSY_read_store, bad_op_code,
-	decode_IMM_read       , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_IMP , decode_IMM_read       , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
-	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code,
-	decode_IMM_read       , decode_INDX_read_store, bad_op_code          , bad_op_code, decode_ZP_read_store , decode_ZP_read_store , decode_ZP_rmw        , bad_op_code, decode_IMP , decode_IMM_read       , decode_IMP , bad_op_code, decode_ABS_read_store , decode_ABS_read_store , decode_ABS_rmw        , bad_op_code,
-	decode_Bxx            , decode_INDY_read_store, bad_op_code          , bad_op_code, bad_op_code          , decode_ZPX_read_store, decode_ZPX_rmw       , bad_op_code, decode_IMP , decode_ABSY_read_store, bad_op_code, bad_op_code, bad_op_code           , decode_ABSX_read_store, decode_ABSX_rmw       , bad_op_code
-};
-
-void (*execute_opcode_lut[256])(Cpu6502* cpu) = {
-	execute_BRK, execute_ORA, bad_op_code, bad_op_code, bad_op_code, execute_ORA, execute_ASL, bad_op_code, execute_PHP, execute_ORA, execute_ASL, bad_op_code, bad_op_code, execute_ORA, execute_ASL, bad_op_code,
-	execute_BPL, execute_ORA, bad_op_code, bad_op_code, bad_op_code, execute_ORA, execute_ASL, bad_op_code, execute_CLC, execute_ORA, bad_op_code, bad_op_code, bad_op_code, execute_ORA, execute_ASL, bad_op_code,
-	execute_JSR, execute_AND, bad_op_code, bad_op_code, execute_BIT, execute_AND, execute_ROL, bad_op_code, execute_PLP, execute_AND, execute_ROL, bad_op_code, execute_BIT, execute_AND, execute_ROL, bad_op_code,
-	execute_BMI, execute_AND, bad_op_code, bad_op_code, bad_op_code, execute_AND, execute_ROL, bad_op_code, execute_SEC, execute_AND, bad_op_code, bad_op_code, bad_op_code, execute_AND, execute_ROL, bad_op_code,
-	execute_RTI, execute_EOR, bad_op_code, bad_op_code, bad_op_code, execute_EOR, execute_LSR, bad_op_code, execute_PHA, execute_EOR, execute_LSR, bad_op_code, execute_JMP, execute_EOR, execute_LSR, bad_op_code,
-	execute_BVC, execute_EOR, bad_op_code, bad_op_code, bad_op_code, execute_EOR, execute_LSR, bad_op_code, execute_CLI, execute_EOR, bad_op_code, bad_op_code, bad_op_code, execute_EOR, execute_LSR, bad_op_code,
-	execute_RTS, execute_ADC, bad_op_code, bad_op_code, bad_op_code, execute_ADC, execute_ROR, bad_op_code, execute_PLA, execute_ADC, execute_ROR, bad_op_code, execute_JMP, execute_ADC, execute_ROR, bad_op_code,
-	execute_BVS, execute_ADC, bad_op_code, bad_op_code, bad_op_code, execute_ADC, execute_ROR, bad_op_code, execute_SEI, execute_ADC, bad_op_code, bad_op_code, bad_op_code, execute_ADC, execute_ROR, bad_op_code,
-	bad_op_code, execute_STA, bad_op_code, bad_op_code, execute_STY, execute_STA, execute_STX, bad_op_code, execute_DEY, bad_op_code, execute_TXA, bad_op_code, execute_STY, execute_STA, execute_STX, bad_op_code,
-	execute_BCC, execute_STA, bad_op_code, bad_op_code, execute_STY, execute_STA, execute_STX, bad_op_code, execute_TYA, execute_STA, execute_TXS, bad_op_code, bad_op_code, execute_STA, bad_op_code, bad_op_code,
-	execute_LDY, execute_LDA, execute_LDX, bad_op_code, execute_LDY, execute_LDA, execute_LDX, bad_op_code, execute_TAY, execute_LDA, execute_TAX, bad_op_code, execute_LDY, execute_LDA, execute_LDX, bad_op_code,
-	execute_BCS, execute_LDA, bad_op_code, bad_op_code, execute_LDY, execute_LDA, execute_LDX, bad_op_code, execute_CLV, execute_LDA, execute_TSX, bad_op_code, execute_LDY, execute_LDA, execute_LDX, bad_op_code,
-	execute_CPY, execute_CMP, bad_op_code, bad_op_code, execute_CPY, execute_CMP, execute_DEC, bad_op_code, execute_INY, execute_CMP, execute_DEX, bad_op_code, execute_CPY, execute_CMP, execute_DEC, bad_op_code,
-	execute_BNE, execute_CMP, bad_op_code, bad_op_code, bad_op_code, execute_CMP, execute_DEC, bad_op_code, execute_CLD, execute_CMP, bad_op_code, bad_op_code, bad_op_code, execute_CMP, execute_DEC, bad_op_code,
-	execute_CPX, execute_SBC, bad_op_code, bad_op_code, execute_CPX, execute_SBC, execute_INC, bad_op_code, execute_INX, execute_SBC, execute_NOP, bad_op_code, execute_CPX, execute_SBC, execute_INC, bad_op_code,
-	execute_BEQ, execute_SBC, bad_op_code, bad_op_code, bad_op_code, execute_SBC, execute_INC, bad_op_code, execute_SED, execute_SBC, bad_op_code, bad_op_code, bad_op_code, execute_SBC, execute_INC, bad_op_code
-};
-
 struct InstructionDetails isa_info[256] = {
 	/* 0x00 */ {"BRK", decode_SPECIAL,         execute_BRK, 7 },
 	/* 0x01 */ {"ORA", decode_INDX_read_store, execute_ORA, 6 },
