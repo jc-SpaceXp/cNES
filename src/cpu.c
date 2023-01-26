@@ -380,7 +380,7 @@ struct InstructionDetails isa_info[256] = {
 	/* 0xBB */ {"",    bad_op_code,            bad_op_code, 0 },
 	/* 0xBC */ {"LDY", decode_ABSX_read_store, execute_LDY, 5 },
 	/* 0xBD */ {"LDA", decode_ABSX_read_store, execute_LDA, 5 },
-	/* 0xBE */ {"LDX", decode_ABSX_read_store, execute_LDX, 5 },
+	/* 0xBE */ {"LDX", decode_ABSY_read_store, execute_LDX, 5 },
 	/* 0xBF */ {"",    bad_op_code,            bad_op_code, 0 },
 
 	/* 0xC0 */ {"CPY", decode_IMM_read,        execute_CPY, 2 },
