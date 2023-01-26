@@ -52,6 +52,7 @@ struct InstructionDetails {
 	void (*execute_opcode)(Cpu6502* cpu);
 	const uint8_t max_cycles;
 };
+extern struct InstructionDetails isa_info[256];
 
 CpuMapperShare* cpu_mapper_init(Cartridge* cart);
 CpuPpuShare* mmio_init(void);
