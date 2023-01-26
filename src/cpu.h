@@ -46,6 +46,13 @@ enum HardwareInterruptsArrayIndexes {
 
 enum DataBusType {DATA, ADL, ADH, BAL, INL, INH, BRANCH};
 
+struct InstructionDetails {
+	const char mnemonic[5];
+	void (*decode_opcode)(Cpu6502* cpu);
+	void (*execute_opcode)(Cpu6502* cpu);
+	const uint8_t max_cycles;
+};
+
 CpuMapperShare* cpu_mapper_init(Cartridge* cart);
 CpuPpuShare* mmio_init(void);
 Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm); /* initialise CPU struct */
