@@ -56,9 +56,9 @@ uint32_t pixels[256 * 240];
 uint32_t nt_pixels[512 * 480];
 
 // Static prototype functions
-static void read_2002(Cpu6502* cpu);
-static void read_2004(Cpu6502* cpu);
-static void read_2007(Cpu6502* cpu);
+static void read_2002(CpuPpuShare* cpu_ppu_io);
+static void read_2004(CpuPpuShare* cpu_ppu_io);
+static void read_2007(CpuPpuShare* cpu_ppu_io);
 static void write_2000(const uint8_t data, Cpu6502* cpu); // OAM_ADDR
 static void write_2003(const uint8_t data, Cpu6502* cpu); // OAM_ADDR
 static void write_2004(const uint8_t data, Cpu6502* cpu); // OAM_DATA
@@ -378,17 +378,17 @@ uint8_t read_ppu_reg(const uint16_t addr, Cpu6502* cpu)
 	switch (addr) {
 	case (0x2002):
 		/* PPU STATUS */
-		read_2002(cpu);
+		read_2002(cpu->cpu_ppu_io);
 		ret = cpu->cpu_ppu_io->return_value;
 		break;
 	case (0x2004):
 		/* OAM Data (read & write) */
-		read_2004(cpu);
+		read_2004(cpu->cpu_ppu_io);
 		ret = cpu->cpu_ppu_io->return_value;
 		break;
 	case (0x2007):
 		/* PPU DATA */
-		read_2007(cpu);
+		read_2007(cpu->cpu_ppu_io);
 		ret = cpu->cpu_ppu_io->return_value;
 		break;
 	}
@@ -490,33 +490,33 @@ static void cpu_writes_to_vram(uint8_t data, Cpu6502* cpu)
  * It will also clear VBLANK flag bit (bit 7)
  * The value read-back may have the VBLANK flag set or not (when close to NMI)
  */
-static void read_2002(Cpu6502* cpu)
+static void read_2002(CpuPpuShare* cpu_ppu_io)
 {
-	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->ppu_status;
-	clear_ppu_status_vblank_bit(cpu->cpu_ppu_io);
-	cpu->cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
-	cpu->cpu_ppu_io->suppress_nmi_flag = true;
+	cpu_ppu_io->return_value = cpu_ppu_io->ppu_status;
+	clear_ppu_status_vblank_bit(cpu_ppu_io);
+	cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
+	cpu_ppu_io->suppress_nmi_flag = true;
 
-	if (cpu->cpu_ppu_io->clear_status) {
-		cpu->cpu_ppu_io->return_value &= ~0x80;
-		cpu->cpu_ppu_io->clear_status = false;
+	if (cpu_ppu_io->clear_status) {
+		cpu_ppu_io->return_value &= ~0x80;
+		cpu_ppu_io->clear_status = false;
 	}
 }
 
-static void read_2004(Cpu6502* cpu)
+static void read_2004(CpuPpuShare* cpu_ppu_io)
 {
-	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr];
-	if ((cpu->cpu_ppu_io->oam_addr & 0x03) == 0x02) {
+	cpu_ppu_io->return_value = cpu_ppu_io->oam[cpu_ppu_io->oam_addr];
+	if ((cpu_ppu_io->oam_addr & 0x03) == 0x02) {
 		// if reading back attribute bytes, return 0 for unused bitss
-		cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] & 0xE3;
+		cpu_ppu_io->return_value = cpu_ppu_io->oam[cpu_ppu_io->oam_addr] & 0xE3;
 	}
 
-	if (!cpu->cpu_ppu_io->ppu_rendering_period
-	   || !ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)) {
+	if (!cpu_ppu_io->ppu_rendering_period
+	   || !ppu_mask_bg_or_sprite_enabled(cpu_ppu_io)) {
 		// don't increment oam_addr outside of ppu rendering or if bg and sprite rendering is disabled
 		return;
 	}
-	++cpu->cpu_ppu_io->oam_addr;
+	++cpu_ppu_io->oam_addr;
 }
 
 /* Vram read data register:
@@ -531,25 +531,25 @@ static void read_2004(Cpu6502* cpu)
  * Reads while rendering cause the vram address is incremented in an odd way by
  * simultaneously updating horizontal (coarse X) and vertical (Y) scrolling
  */
-static void read_2007(Cpu6502* cpu)
+static void read_2007(CpuPpuShare* cpu_ppu_io)
 {
-	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
+	uint16_t addr = *(cpu_ppu_io->vram_addr) & 0x3FFF;
 
-	cpu->cpu_ppu_io->return_value = cpu->cpu_ppu_io->buffer_2007;
-	cpu->cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr);
+	cpu_ppu_io->return_value = cpu_ppu_io->buffer_2007;
+	cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu_ppu_io->vram, addr);
 
 	if (addr >= 0x3F00) {
-		cpu->cpu_ppu_io->return_value = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr);
+		cpu_ppu_io->return_value = read_from_ppu_vram(cpu_ppu_io->vram, addr);
 		// buffer data would be if the nametable mirroring kept going
 		// use minus 0x1000 to get out of palette addresses and read from nametable mirrors
-		cpu->cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu->cpu_ppu_io->vram, addr - 0x1000);
+		cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu_ppu_io->vram, addr - 0x1000);
 	}
 
-	if (cpu->cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)) {
-		inc_vert_scroll(cpu->cpu_ppu_io);
-		inc_horz_scroll(cpu->cpu_ppu_io);
+	if (cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu_ppu_io)) {
+		inc_vert_scroll(cpu_ppu_io);
+		inc_horz_scroll(cpu_ppu_io);
 	} else {
-		*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu->cpu_ppu_io);
+		*(cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu_ppu_io);
 	}
 }
 
