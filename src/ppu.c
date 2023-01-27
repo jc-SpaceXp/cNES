@@ -59,11 +59,11 @@ uint32_t nt_pixels[512 * 480];
 static void read_2002(CpuPpuShare* cpu_ppu_io);
 static void read_2004(CpuPpuShare* cpu_ppu_io);
 static void read_2007(CpuPpuShare* cpu_ppu_io);
-static void write_2000(const uint8_t data, Cpu6502* cpu); // OAM_ADDR
-static void write_2003(const uint8_t data, Cpu6502* cpu); // OAM_ADDR
-static void write_2004(const uint8_t data, Cpu6502* cpu); // OAM_DATA
-static void write_2005(const uint8_t data, Cpu6502* cpu); // PPU_SCROLL
-static void write_2006(const uint8_t data, Cpu6502* cpu); // PPU_ADDR
+static void write_2000(const uint8_t data, CpuPpuShare* cpu_ppu_io); // PPU_CTRL
+static void write_2003(const uint8_t data, CpuPpuShare* cpu_ppu_io); // OAM_ADDR
+static void write_2004(const uint8_t data, CpuPpuShare* cpu_ppu_io); // OAM_DATA
+static void write_2005(const uint8_t data, CpuPpuShare* cpu_ppu_io); // PPU_SCROLL
+static void write_2006(const uint8_t data, CpuPpuShare* cpu_ppu_io); // PPU_ADDR
 static void write_2007(const uint8_t data, Cpu6502* cpu); // PPU_DATA
 static void write_4014(const uint8_t data, Cpu6502* cpu); // DMA_DATA
 static void inc_vert_scroll(CpuPpuShare* cpu_ppu_io);
@@ -424,7 +424,7 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 		}
 
 		cpu->cpu_ppu_io->ppu_ctrl = data;
-		write_2000(data, cpu);
+		write_2000(data, cpu->cpu_ppu_io);
 		break;
 	case (0x2001):
 		/* PPU MASK */
@@ -432,20 +432,20 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 		break;
 	case (0x2003):
 		/* OAM ADDR */
-		write_2003(data, cpu);
+		write_2003(data, cpu->cpu_ppu_io);
 		break;
 	case (0x2004):
 		/* OAM Data (read & write) */
 		cpu->cpu_ppu_io->oam_data = data;
-		write_2004(data, cpu);
+		write_2004(data, cpu->cpu_ppu_io);
 		break;
 	case (0x2005):
 		/* PPU SCROLL (write * 2) */
-		write_2005(data, cpu);
+		write_2005(data, cpu->cpu_ppu_io);
 		break;
 	case (0x2006):
 		/* PPU ADDR (write * 2) */
-		write_2006(data, cpu);
+		write_2006(data, cpu->cpu_ppu_io);
 		break;
 	case (0x2007):
 		/* PPU DATA */
@@ -563,35 +563,35 @@ static void read_2007(CpuPpuShare* cpu_ppu_io)
  * For scrolling clear NN bits and later set them
  * Same NN bits get written to PPUCTLR's first two bits earlier
  */
-static void write_2000(const uint8_t data, Cpu6502* cpu)
+static void write_2000(const uint8_t data, CpuPpuShare* cpu_ppu_io)
 {
-	*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x0C00;
-	*(cpu->cpu_ppu_io->vram_tmp_addr) |= (data & 0x03) << 10;
+	*(cpu_ppu_io->vram_tmp_addr) &= ~0x0C00;
+	*(cpu_ppu_io->vram_tmp_addr) |= (data & 0x03) << 10;
 }
 
 /* Set OAMADDR: The value of OAMADDR when sprite_evaluation() is first called
  * determines the first sprite to be checked (this is the sprite 0)
  */
-static inline void write_2003(const uint8_t data, Cpu6502* cpu)
+static inline void write_2003(const uint8_t data, CpuPpuShare* cpu_ppu_io)
 {
-	cpu->cpu_ppu_io->oam_addr = data;
+	cpu_ppu_io->oam_addr = data;
 }
 
 /* Write OAMDATA to previously set OAMADDR (through a $2003 write)
  * OAMADDR is incremented after the write
  */
-static void write_2004(const uint8_t data, Cpu6502* cpu)
+static void write_2004(const uint8_t data, CpuPpuShare* cpu_ppu_io)
 {
 	// If rendering is enabled (either bg or sprite) during
 	// scanlines 0-239 and pre-render scanline
 	// OAM writes are disabled, but glitchy OAM increment occurs
-	if (ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)
-	    && cpu->cpu_ppu_io->ppu_rendering_period) {
-		cpu->cpu_ppu_io->oam_addr += 4;  // only increment high 6 bits (same as +4)
+	if (ppu_mask_bg_or_sprite_enabled(cpu_ppu_io)
+	    && cpu_ppu_io->ppu_rendering_period) {
+		cpu_ppu_io->oam_addr += 4;  // only increment high 6 bits (same as +4)
 		return;
 	}
-	cpu->cpu_ppu_io->oam[cpu->cpu_ppu_io->oam_addr] = data;
-	++cpu->cpu_ppu_io->oam_addr;
+	cpu_ppu_io->oam[cpu_ppu_io->oam_addr] = data;
+	++cpu_ppu_io->oam_addr;
 }
 
 /* Update PPUSCROLL value (scroll position), needs two writes for a complete update
@@ -609,21 +609,21 @@ static void write_2004(const uint8_t data, Cpu6502* cpu)
  * First and second writes are kept track of via a write toggle flag, each write will
  * toggle the flag
  */
-static void write_2005(const uint8_t data, Cpu6502* cpu)
+static void write_2005(const uint8_t data, CpuPpuShare* cpu_ppu_io)
 {
 	// Valid address = 0x0000 to 0x3FFF
-	if (!cpu->cpu_ppu_io->write_toggle) {
+	if (!cpu_ppu_io->write_toggle) {
 		// First Write
-		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x001F;
-		*(cpu->cpu_ppu_io->vram_tmp_addr) |= (data >> 3);
-		*(cpu->cpu_ppu_io->fine_x) = data & 0x07;
+		*(cpu_ppu_io->vram_tmp_addr) &= ~0x001F;
+		*(cpu_ppu_io->vram_tmp_addr) |= (data >> 3);
+		*(cpu_ppu_io->fine_x) = data & 0x07;
 	} else {
 		// Second Write
-		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x73E0;
-		*(cpu->cpu_ppu_io->vram_tmp_addr) |= ((data & 0xF8) << 2) | ((data & 0x07) << 12);
-		cpu->cpu_ppu_io->ppu_scroll = *(cpu->cpu_ppu_io->vram_tmp_addr);
+		*(cpu_ppu_io->vram_tmp_addr) &= ~0x73E0;
+		*(cpu_ppu_io->vram_tmp_addr) |= ((data & 0xF8) << 2) | ((data & 0x07) << 12);
+		cpu_ppu_io->ppu_scroll = *(cpu_ppu_io->vram_tmp_addr);
 	}
-	cpu->cpu_ppu_io->write_toggle = !cpu->cpu_ppu_io->write_toggle;
+	cpu_ppu_io->write_toggle = !cpu_ppu_io->write_toggle;
 }
 
 
@@ -641,19 +641,19 @@ static void write_2005(const uint8_t data, Cpu6502* cpu)
  * First and second writes are kept track of via a write toggle flag, each write will
  * toggle the flag
  */
-static void write_2006(const uint8_t data, Cpu6502* cpu)
+static void write_2006(const uint8_t data, CpuPpuShare* cpu_ppu_io)
 {
 	// Valid address = 0x0000 to 0x3FFF
-	if (!cpu->cpu_ppu_io->write_toggle) {
-		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x7F00;
-		*(cpu->cpu_ppu_io->vram_tmp_addr) |= (uint16_t) ((data & 0x3F) << 8);
+	if (!cpu_ppu_io->write_toggle) {
+		*(cpu_ppu_io->vram_tmp_addr) &= ~0x7F00;
+		*(cpu_ppu_io->vram_tmp_addr) |= (uint16_t) ((data & 0x3F) << 8);
 	} else {
-		*(cpu->cpu_ppu_io->vram_tmp_addr) &= ~0x00FF;
-		*(cpu->cpu_ppu_io->vram_tmp_addr) |= data;
-		*(cpu->cpu_ppu_io->vram_addr) = *(cpu->cpu_ppu_io->vram_tmp_addr);
-		cpu->cpu_ppu_io->ppu_addr = *(cpu->cpu_ppu_io->vram_tmp_addr);
+		*(cpu_ppu_io->vram_tmp_addr) &= ~0x00FF;
+		*(cpu_ppu_io->vram_tmp_addr) |= data;
+		*(cpu_ppu_io->vram_addr) = *(cpu_ppu_io->vram_tmp_addr);
+		cpu_ppu_io->ppu_addr = *(cpu_ppu_io->vram_tmp_addr);
 	}
-	cpu->cpu_ppu_io->write_toggle = !cpu->cpu_ppu_io->write_toggle;
+	cpu_ppu_io->write_toggle = !cpu_ppu_io->write_toggle;
 }
 
 
