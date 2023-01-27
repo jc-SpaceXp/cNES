@@ -64,7 +64,7 @@ static void write_2003(const uint8_t data, CpuPpuShare* cpu_ppu_io); // OAM_ADDR
 static void write_2004(const uint8_t data, CpuPpuShare* cpu_ppu_io); // OAM_DATA
 static void write_2005(const uint8_t data, CpuPpuShare* cpu_ppu_io); // PPU_SCROLL
 static void write_2006(const uint8_t data, CpuPpuShare* cpu_ppu_io); // PPU_ADDR
-static void write_2007(const uint8_t data, unsigned chr_ram_size, Cpu6502* cpu); // PPU_DATA
+static void write_2007(const uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io); // PPU_DATA
 static void write_4014(const uint8_t data, Cpu6502* cpu); // DMA_DATA
 static void inc_vert_scroll(CpuPpuShare* cpu_ppu_io);
 static void inc_horz_scroll(CpuPpuShare* cpu_ppu_io);
@@ -450,7 +450,7 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 	case (0x2007):
 		/* PPU DATA */
 		cpu->cpu_ppu_io->ppu_data = data;
-		write_2007(data, cpu->cpu_mapper_io->chr->ram_size, cpu);
+		write_2007(data, cpu->cpu_mapper_io->chr->ram_size, cpu->cpu_ppu_io);
 		break;
 	case (0x4014):
 		write_4014(data, cpu);
@@ -459,26 +459,26 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 }
 
 // Called from CPU
-static void cpu_writes_to_vram(uint8_t data, unsigned chr_ram_size, Cpu6502* cpu)
+static void cpu_writes_to_vram(uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io)
 {
 	// keep address in valid range
-	uint16_t addr = *(cpu->cpu_ppu_io->vram_addr) & 0x3FFF;
+	uint16_t addr = *(cpu_ppu_io->vram_addr) & 0x3FFF;
 
 	// Write to pattern tables (if using CHR RAM), otherwise we are using CHR ROM
 	if ((chr_ram_size) && (addr <= 0x1FFF)) {
-		write_to_ppu_vram(cpu->cpu_ppu_io->vram, addr, data);
+		write_to_ppu_vram(cpu_ppu_io->vram, addr, data);
 	}
 
 	// Handle nametable and palette writes
 	if (addr >= 0x2000) {
-		write_to_ppu_vram(cpu->cpu_ppu_io->vram, addr, data);
+		write_to_ppu_vram(cpu_ppu_io->vram, addr, data);
 		if (addr >= 0x3F00) {
 			if ((addr & 0x0F) == 0) {
 				// If bg palette #0, colour #0 mirror up to sprite's 0th palette and colour
-				write_to_ppu_vram(cpu->cpu_ppu_io->vram, addr + 0x10, data);
+				write_to_ppu_vram(cpu_ppu_io->vram, addr + 0x10, data);
 			} else if ((addr & 0x1F) == 0x10) {
 				// If sprite palette #0, colour #0 mirror down to bg's 0th palette and colour
-				write_to_ppu_vram(cpu->cpu_ppu_io->vram, addr - 0x10, data);
+				write_to_ppu_vram(cpu_ppu_io->vram, addr - 0x10, data);
 			}
 		}
 	}
@@ -664,15 +664,15 @@ static void write_2006(const uint8_t data, CpuPpuShare* cpu_ppu_io)
  * Writing while rendering causes the vram address is incremented in an odd way
  * by simultaneously updating horizontal (coarse X) and vertical (Y) scrolling
  */
-static void write_2007(const uint8_t data, unsigned chr_ram_size, Cpu6502* cpu)
+static void write_2007(const uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io)
 {
-	cpu_writes_to_vram(data, chr_ram_size, cpu);
+	cpu_writes_to_vram(data, chr_ram_size, cpu_ppu_io);
 
-	if (cpu->cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)) {
-		inc_vert_scroll(cpu->cpu_ppu_io);
-		inc_horz_scroll(cpu->cpu_ppu_io);
+	if (cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu_ppu_io)) {
+		inc_vert_scroll(cpu_ppu_io);
+		inc_horz_scroll(cpu_ppu_io);
 	} else {
-		*(cpu->cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu->cpu_ppu_io);
+		*(cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu_ppu_io);
 	}
 }
 
