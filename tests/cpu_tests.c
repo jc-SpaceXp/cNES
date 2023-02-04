@@ -6,6 +6,7 @@
 #include "cpu.h"
 #include "ppu.h"  // needed for cpu/ppu read/write functions
 #include "gui.h"  // needed for cpu/ppu read/write functions (due to ppu.h)
+#include "cpu_ppu_interface.h" // needed for NMI
 
 
 /* Get opcode from instruction and addressing mode
@@ -269,7 +270,7 @@ Cpu6502* cpu;
 
 void setup(void)
 {
-	cpu = cpu_init(0xFFFCU, NULL, NULL); // allocate memory
+	cpu = cpu_allocator();
 
 	if (!cpu) {
 		// fail, lack of memory
@@ -6049,7 +6050,7 @@ END_TEST
 
 START_TEST (nmi_t1)
 {
-	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
 	cpu->cpu_ppu_io->nmi_cycles_left = 6;
 	cpu->PC = 0x0008;
 	int NMI_index = 2;
@@ -6067,7 +6068,7 @@ END_TEST
 
 START_TEST (nmi_t2)
 {
-	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
 	cpu->cpu_ppu_io->nmi_cycles_left = 5;
 	cpu->PC = 0x900D;
 	cpu->stack = 0xCA;
@@ -6086,7 +6087,7 @@ END_TEST
 
 START_TEST (nmi_t3)
 {
-	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
 	cpu->cpu_ppu_io->nmi_cycles_left = 4;
 	cpu->PC = 0x900D;
 	cpu->stack = 0xC9;
@@ -6105,7 +6106,7 @@ END_TEST
 
 START_TEST (nmi_t4)
 {
-	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
 	cpu->cpu_ppu_io->nmi_cycles_left = 3;
 	cpu->P = 0x30 | FLAG_C; // 0x30 shouldn't be set normally, testing purposes here
 	cpu->stack = 0xC8;
@@ -6125,7 +6126,7 @@ END_TEST
 
 START_TEST (nmi_t5)
 {
-	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
 	cpu->cpu_ppu_io->nmi_cycles_left = 2;
 	int NMI_index = 2;
 	// FFFA
@@ -6141,7 +6142,7 @@ END_TEST
 
 START_TEST (nmi_t6)
 {
-	cpu->cpu_ppu_io = mmio_init();
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
 	cpu->cpu_ppu_io->nmi_cycles_left = 1;
 	int NMI_index = 2;
 	// FFFB

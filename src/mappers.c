@@ -1,5 +1,10 @@
 #include "mappers.h"
 #include "cart.h"
+#include "cpu.h"
+#include "ppu.h"
+#include "cpu_ppu_interface.h"
+#include "cpu_mapper_interface.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

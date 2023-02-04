@@ -1,11 +1,26 @@
 #ifndef __NES_GUI__
 #define __NES_GUI__
 
-#include "extern_structs.h" // includes SDL header
+#include "SDL2/SDL.h"
+#include "gui_fwd.h"
+
 #include <stdint.h>
 
 #define DEFAULT_HEIGHT 240U
 #define DEFAULT_WIDTH  256U
+
+struct Sdl2Display {
+	SDL_Window* window;
+	SDL_Renderer* renderer;
+	SDL_Texture* framebuffer;
+
+	uint32_t window_id;
+};
+
+struct Sdl2DisplayOutputs {
+	Sdl2Display* cnes_main;
+	Sdl2Display* cnes_nt_viewer;
+};
 
 Sdl2Display* sdl2_display_allocator(void);
 int screen_init(Sdl2Display* cnes_screen, const char* window_name

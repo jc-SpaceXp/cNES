@@ -5,6 +5,8 @@
 #include "cpu.h"
 #include "ppu.h"
 #include "gui.h"
+#include "cpu_ppu_interface.h"
+#include "cpu_mapper_interface.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -203,16 +205,37 @@ int main(int argc, char** argv)
 
 #define __RESET__
 
-	Cartridge* cart = cart_init();
-	CpuMapperShare* cpu_mapper = cpu_mapper_init(cart);
-	CpuPpuShare* cpu_ppu = mmio_init();
-	Cpu6502* cpu = cpu_init(0xC000, cpu_ppu, cpu_mapper);
-	Ppu2C02* ppu = ppu_init(cpu_ppu);
+	Cartridge* cart = cart_allocator();
+	CpuMapperShare* cpu_mapper = cpu_mapper_allocator();
+	CpuPpuShare* cpu_ppu = cpu_ppu_io_allocator();
+	Cpu6502* cpu = cpu_allocator();
+	Ppu2C02* ppu = ppu_allocator();
 	Sdl2DisplayOutputs cnes_windows;
 	cnes_windows.cnes_main = sdl2_display_allocator();
 
 	if (!cart || !cpu_mapper || !cpu_ppu || !cpu || !ppu || !cnes_windows.cnes_main) {
 		goto program_exit;
+	}
+
+	if (cart_init(cart)) {
+		fprintf(stderr, "Failed to initialise the Cart struct members\n");
+	}
+
+	if (cpu_mapper_init(cpu_mapper, cart)) {
+		fprintf(stderr, "Failed to initialise the Cpu/Mapper struct members\n");
+	}
+
+	if (cpu_ppu_io_init(cpu_ppu)) {
+		fprintf(stderr, "Failed to initialise the Cpu/Ppu struct members\n");
+	}
+	map_ppu_data_to_cpu_ppu_io(cpu_ppu, ppu);
+
+	if (cpu_init(cpu, 0xC000, cpu_ppu, cpu_mapper)) {
+		fprintf(stderr, "Failed to initialise the Cpu struct members\n");
+	}
+
+	if (ppu_init(ppu, cpu_ppu)) {
+		fprintf(stderr, "Failed to initialise the Ppu struct members\n");
 	}
 
 	if (SDL_Init(SDL_INIT_VIDEO)) {

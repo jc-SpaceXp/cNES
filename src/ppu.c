@@ -1,5 +1,7 @@
 #include "ppu.h"
+#include "cpu.h"
 #include "gui.h"
+#include "cpu_ppu_interface.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -56,41 +58,24 @@ uint32_t pixels[256 * 240];
 uint32_t nt_pixels[512 * 480];
 
 // Static prototype functions
-static void read_2002(CpuPpuShare* cpu_ppu_io);
-static void read_2004(CpuPpuShare* cpu_ppu_io);
-static void read_2007(CpuPpuShare* cpu_ppu_io);
-static void write_2000(const uint8_t data, CpuPpuShare* cpu_ppu_io); // PPU_CTRL
-static void write_2003(const uint8_t data, CpuPpuShare* cpu_ppu_io); // OAM_ADDR
-static void write_2004(const uint8_t data, CpuPpuShare* cpu_ppu_io); // OAM_DATA
-static void write_2005(const uint8_t data, CpuPpuShare* cpu_ppu_io); // PPU_SCROLL
-static void write_2006(const uint8_t data, CpuPpuShare* cpu_ppu_io); // PPU_ADDR
-static void write_2007(const uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io); // PPU_DATA
-static void write_4014(const uint8_t data, Cpu6502* cpu); // DMA_DATA
-static void inc_vert_scroll(CpuPpuShare* cpu_ppu_io);
-static void inc_horz_scroll(CpuPpuShare* cpu_ppu_io);
 static unsigned eight_to_one_mux(uint16_t input, unsigned select_lines);
 
 
-Ppu2C02* ppu_init(CpuPpuShare* cp)
+Ppu2C02* ppu_allocator(void)
 {
 	Ppu2C02* ppu = malloc(sizeof(Ppu2C02));
 	if (!ppu) {
-		fprintf(stderr, "Failed to allocate enough memory for PPU\n");
-		return ppu;
+		fprintf(stderr, "Failed to allocate enough memory for the PPU\n");
 	}
+
+	return ppu; // either returns a valid or NULL pointer
+}
+
+int ppu_init(Ppu2C02* ppu, CpuPpuShare* cp)
+{
+	int return_code = -1;
+
 	ppu->cpu_ppu_io = cp;
-	ppu->cpu_ppu_io->vram = &ppu->vram; // used so CPU can access PPU VRAM w/o needing the PPU struct
-	ppu->cpu_ppu_io->oam = &(ppu->oam[0]); // used so CPU can access PPU VRAM w/o needing the PPU struct
-	ppu->cpu_ppu_io->buffer_2007 = 0;
-	ppu->cpu_ppu_io->vram_addr = &ppu->vram_addr;
-	ppu->cpu_ppu_io->vram_tmp_addr = &ppu->vram_tmp_addr;
-	ppu->cpu_ppu_io->nametable_mirroring = &ppu->nametable_mirroring;
-	ppu->cpu_ppu_io->fine_x = &ppu->fine_x;
-	ppu->cpu_ppu_io->write_debug = false;
-	ppu->cpu_ppu_io->clear_status = false;
-	ppu->cpu_ppu_io->bg_early_disable_mask = false;
-	ppu->cpu_ppu_io->bg_early_enable_mask = false;
-	ppu->cpu_ppu_io->ppu_rendering_period = false;
 
 	ppu->cycle = 27;
 	ppu->scanline = 0;
@@ -138,38 +123,12 @@ Ppu2C02* ppu_init(CpuPpuShare* cp)
 
 	/* NTSC */
 	ppu->nmi_start = 241;
-	return ppu;
+
+	return_code = 0;
+
+	return return_code;
 }
 
-/* common masks, bit set and clear operations for ppu registers
- *
- * For ppu calling functions: arg 1 == p->cpu_ppu_io
- * For cpu calling functions: arg 1 == cpu->cpu_ppu_io
- */
-static inline bool ppu_status_vblank_bit_set(const CpuPpuShare* cpu_ppu_io)
-{
-	return ((cpu_ppu_io->ppu_status & 0x80) ? 1 : 0);
-}
-
-static inline bool ppu_ctrl_gen_nmi_bit_set(const CpuPpuShare* cpu_ppu_io)
-{
-	return ((cpu_ppu_io->ppu_ctrl & 0x80) ? 1 : 0);
-}
-
-static inline void clear_ppu_status_vblank_bit(CpuPpuShare* cpu_ppu_io)
-{
-	cpu_ppu_io->ppu_status &= ~0x80;
-}
-
-static inline void set_ppu_status_vblank_bit(CpuPpuShare* cpu_ppu_io)
-{
-	cpu_ppu_io->ppu_status |= 0x80;
-}
-
-static inline bool ppu_mask_bg_or_sprite_enabled(const CpuPpuShare* cpu_ppu_io)
-{
-	return ((cpu_ppu_io->ppu_mask & 0x18) ? 1 : 0);
-}
 
 // Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
 static void ppu_vblank_warmup_seq(Ppu2C02* p, const Cpu6502* cpu)
@@ -372,438 +331,6 @@ void ppu_mem_hexdump_addr_range(const Ppu2C02* ppu, const enum PpuMemoryTypes pp
 	}
 }
 
-uint8_t read_ppu_reg(const uint16_t addr, Cpu6502* cpu)
-{
-	uint8_t ret;
-	switch (addr) {
-	case (0x2002):
-		/* PPU STATUS */
-		read_2002(cpu->cpu_ppu_io);
-		ret = cpu->cpu_ppu_io->return_value;
-		break;
-	case (0x2004):
-		/* OAM Data (read & write) */
-		read_2004(cpu->cpu_ppu_io);
-		ret = cpu->cpu_ppu_io->return_value;
-		break;
-	case (0x2007):
-		/* PPU DATA */
-		read_2007(cpu->cpu_ppu_io);
-		ret = cpu->cpu_ppu_io->return_value;
-		break;
-	}
-	return ret;
-}
-
-/* CPU uses this function */
-void delay_write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
-{
-	cpu->cpu_ppu_io->buffer_write = true;
-	cpu->cpu_ppu_io->buffer_counter = 2;
-	if (addr == 0x2001) {
-		cpu->cpu_ppu_io->buffer_counter += 3; // 3 dot delay for background/sprite rendering
-	}
-	cpu->cpu_ppu_io->buffer_address = addr;
-	cpu->cpu_ppu_io->buffer_value = data;
-
-
-	cpu->cpu_ppu_io->ppu_status &= ~0x1F;
-	cpu->cpu_ppu_io->ppu_status |= (data & 0x1F);
-}
-
-void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
-{
-	switch (addr) {
-	case (0x2000):
-		/* PPU CTRL */
-		if (ppu_status_vblank_bit_set(cpu->cpu_ppu_io)
-			&& !ppu_ctrl_gen_nmi_bit_set(cpu->cpu_ppu_io)
-			&& (data & 0x80)) {
-			cpu->cpu_ppu_io->nmi_pending = true;
-			cpu->delay_nmi = true;
-		}
-
-		cpu->cpu_ppu_io->ppu_ctrl = data;
-		write_2000(data, cpu->cpu_ppu_io);
-		break;
-	case (0x2001):
-		/* PPU MASK */
-		cpu->cpu_ppu_io->ppu_mask = data;
-		break;
-	case (0x2003):
-		/* OAM ADDR */
-		write_2003(data, cpu->cpu_ppu_io);
-		break;
-	case (0x2004):
-		/* OAM Data (read & write) */
-		cpu->cpu_ppu_io->oam_data = data;
-		write_2004(data, cpu->cpu_ppu_io);
-		break;
-	case (0x2005):
-		/* PPU SCROLL (write * 2) */
-		write_2005(data, cpu->cpu_ppu_io);
-		break;
-	case (0x2006):
-		/* PPU ADDR (write * 2) */
-		write_2006(data, cpu->cpu_ppu_io);
-		break;
-	case (0x2007):
-		/* PPU DATA */
-		cpu->cpu_ppu_io->ppu_data = data;
-		write_2007(data, cpu->cpu_mapper_io->chr->ram_size, cpu->cpu_ppu_io);
-		break;
-	case (0x4014):
-		write_4014(data, cpu);
-		break;
-	}
-}
-
-// Called from CPU
-static void cpu_writes_to_vram(uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io)
-{
-	// keep address in valid range
-	uint16_t addr = *(cpu_ppu_io->vram_addr) & 0x3FFF;
-
-	// Write to pattern tables (if using CHR RAM), otherwise we are using CHR ROM
-	if ((chr_ram_size) && (addr <= 0x1FFF)) {
-		write_to_ppu_vram(cpu_ppu_io->vram, addr, data);
-	}
-
-	// Handle nametable and palette writes
-	if (addr >= 0x2000) {
-		write_to_ppu_vram(cpu_ppu_io->vram, addr, data);
-		if (addr >= 0x3F00) {
-			if ((addr & 0x0F) == 0) {
-				// If bg palette #0, colour #0 mirror up to sprite's 0th palette and colour
-				write_to_ppu_vram(cpu_ppu_io->vram, addr + 0x10, data);
-			} else if ((addr & 0x1F) == 0x10) {
-				// If sprite palette #0, colour #0 mirror down to bg's 0th palette and colour
-				write_to_ppu_vram(cpu_ppu_io->vram, addr - 0x10, data);
-			}
-		}
-	}
-}
-
-/* Read Functions */
-
-/* Reading $2002 will always clear the write toggle
- * It will also clear VBLANK flag bit (bit 7)
- * The value read-back may have the VBLANK flag set or not (when close to NMI)
- */
-static void read_2002(CpuPpuShare* cpu_ppu_io)
-{
-	cpu_ppu_io->return_value = cpu_ppu_io->ppu_status;
-	clear_ppu_status_vblank_bit(cpu_ppu_io);
-	cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
-	cpu_ppu_io->suppress_nmi_flag = true;
-
-	if (cpu_ppu_io->clear_status) {
-		cpu_ppu_io->return_value &= ~0x80;
-		cpu_ppu_io->clear_status = false;
-	}
-}
-
-static void read_2004(CpuPpuShare* cpu_ppu_io)
-{
-	cpu_ppu_io->return_value = cpu_ppu_io->oam[cpu_ppu_io->oam_addr];
-	if ((cpu_ppu_io->oam_addr & 0x03) == 0x02) {
-		// if reading back attribute bytes, return 0 for unused bitss
-		cpu_ppu_io->return_value = cpu_ppu_io->oam[cpu_ppu_io->oam_addr] & 0xE3;
-	}
-
-	if (!cpu_ppu_io->ppu_rendering_period
-	   || !ppu_mask_bg_or_sprite_enabled(cpu_ppu_io)) {
-		// don't increment oam_addr outside of ppu rendering or if bg and sprite rendering is disabled
-		return;
-	}
-	++cpu_ppu_io->oam_addr;
-}
-
-/* Vram read data register:
- *
- * Reads to non-palette data return an internal read buffer
- * This buffer is only updated when reading $2007
- * Palette data isn't buffered however
- * It will update the internal buffer in an unusual way (see below)
- *
- * Accessing this register will cause the vram address to increment outside of rendering
- * via the PPUCTRL register
- * Reads while rendering cause the vram address is incremented in an odd way by
- * simultaneously updating horizontal (coarse X) and vertical (Y) scrolling
- */
-static void read_2007(CpuPpuShare* cpu_ppu_io)
-{
-	uint16_t addr = *(cpu_ppu_io->vram_addr) & 0x3FFF;
-
-	cpu_ppu_io->return_value = cpu_ppu_io->buffer_2007;
-	cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu_ppu_io->vram, addr);
-
-	if (addr >= 0x3F00) {
-		cpu_ppu_io->return_value = read_from_ppu_vram(cpu_ppu_io->vram, addr);
-		// buffer data would be if the nametable mirroring kept going
-		// use minus 0x1000 to get out of palette addresses and read from nametable mirrors
-		cpu_ppu_io->buffer_2007 = read_from_ppu_vram(cpu_ppu_io->vram, addr - 0x1000);
-	}
-
-	if (cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu_ppu_io)) {
-		inc_vert_scroll(cpu_ppu_io);
-		inc_horz_scroll(cpu_ppu_io);
-	} else {
-		*(cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu_ppu_io);
-	}
-}
-
-/* Write Functions */
-
-/* PPUCTRL writes (for scrolling), previous function that calls this
- * updates the PPUCTRL bits/flags
- *
- * vram_addr byte layout: 0yyy NNYY YYYX XXXX (and vram_tmp_addr byte layout)
- *
- * For scrolling clear NN bits and later set them
- * Same NN bits get written to PPUCTLR's first two bits earlier
- */
-static void write_2000(const uint8_t data, CpuPpuShare* cpu_ppu_io)
-{
-	*(cpu_ppu_io->vram_tmp_addr) &= ~0x0C00;
-	*(cpu_ppu_io->vram_tmp_addr) |= (data & 0x03) << 10;
-}
-
-/* Set OAMADDR: The value of OAMADDR when sprite_evaluation() is first called
- * determines the first sprite to be checked (this is the sprite 0)
- */
-static inline void write_2003(const uint8_t data, CpuPpuShare* cpu_ppu_io)
-{
-	cpu_ppu_io->oam_addr = data;
-}
-
-/* Write OAMDATA to previously set OAMADDR (through a $2003 write)
- * OAMADDR is incremented after the write
- */
-static void write_2004(const uint8_t data, CpuPpuShare* cpu_ppu_io)
-{
-	// If rendering is enabled (either bg or sprite) during
-	// scanlines 0-239 and pre-render scanline
-	// OAM writes are disabled, but glitchy OAM increment occurs
-	if (ppu_mask_bg_or_sprite_enabled(cpu_ppu_io)
-	    && cpu_ppu_io->ppu_rendering_period) {
-		cpu_ppu_io->oam_addr += 4;  // only increment high 6 bits (same as +4)
-		return;
-	}
-	cpu_ppu_io->oam[cpu_ppu_io->oam_addr] = data;
-	++cpu_ppu_io->oam_addr;
-}
-
-/* Update PPUSCROLL value (scroll position), needs two writes for a complete update
- * The scroll position being CoarseX, fine_x, CoarseY and fine_y
- *
- * vram_addr byte layout: 0yyy NNYY YYYX XXXX (and vram_tmp_addr byte layout)
- * Notice first write clears CoarseX (XX bits from vram_tmp)
- * Whilst setting fine_x and CoarseX (by shifting out fine_x from the write value)
- *
- * The second write clears fine_y and CoarseY bits (yy and YYY bits)
- * Incoming data is: YYYY Yyyy
- * So we bit mask w/ 0x07 to get fine_y and we mask w/ 0xF8 to get CoarseY
- * We then move those bits to the correct positions through bit shifts
- *
- * First and second writes are kept track of via a write toggle flag, each write will
- * toggle the flag
- */
-static void write_2005(const uint8_t data, CpuPpuShare* cpu_ppu_io)
-{
-	// Valid address = 0x0000 to 0x3FFF
-	if (!cpu_ppu_io->write_toggle) {
-		// First Write
-		*(cpu_ppu_io->vram_tmp_addr) &= ~0x001F;
-		*(cpu_ppu_io->vram_tmp_addr) |= (data >> 3);
-		*(cpu_ppu_io->fine_x) = data & 0x07;
-	} else {
-		// Second Write
-		*(cpu_ppu_io->vram_tmp_addr) &= ~0x73E0;
-		*(cpu_ppu_io->vram_tmp_addr) |= ((data & 0xF8) << 2) | ((data & 0x07) << 12);
-		cpu_ppu_io->ppu_scroll = *(cpu_ppu_io->vram_tmp_addr);
-	}
-	cpu_ppu_io->write_toggle = !cpu_ppu_io->write_toggle;
-}
-
-
-/* Update PPUADDR value, needs two writes for a complete update
- *
- * vram_addr byte layout: 0yyy NNYY YYYX XXXX (and vram_tmp_addr byte layout)
- * Notice first write clears the higher byte
- * Mask incoming data w/ 0x3F to discard the upper y bit (as this keeps the
- * address within 0x0000 to 0x3FFF, and the msb bit is always 0, vram_addr is
- * 15 bits wide)
- *
- * The second write clears the lower byte and later sets it too
- * Vram_addr is updated from vram_tmp_addr
- *
- * First and second writes are kept track of via a write toggle flag, each write will
- * toggle the flag
- */
-static void write_2006(const uint8_t data, CpuPpuShare* cpu_ppu_io)
-{
-	// Valid address = 0x0000 to 0x3FFF
-	if (!cpu_ppu_io->write_toggle) {
-		*(cpu_ppu_io->vram_tmp_addr) &= ~0x7F00;
-		*(cpu_ppu_io->vram_tmp_addr) |= (uint16_t) ((data & 0x3F) << 8);
-	} else {
-		*(cpu_ppu_io->vram_tmp_addr) &= ~0x00FF;
-		*(cpu_ppu_io->vram_tmp_addr) |= data;
-		*(cpu_ppu_io->vram_addr) = *(cpu_ppu_io->vram_tmp_addr);
-		cpu_ppu_io->ppu_addr = *(cpu_ppu_io->vram_tmp_addr);
-	}
-	cpu_ppu_io->write_toggle = !cpu_ppu_io->write_toggle;
-}
-
-
-/* Write to PPU VRAM through PPUDATA register
- *
- * Writing to this register will cause the vram address to increment outside of rendering
- * via the PPUCTRL register
- * Writing while rendering causes the vram address is incremented in an odd way
- * by simultaneously updating horizontal (coarse X) and vertical (Y) scrolling
- */
-static void write_2007(const uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io)
-{
-	cpu_writes_to_vram(data, chr_ram_size, cpu_ppu_io);
-
-	if (cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu_ppu_io)) {
-		inc_vert_scroll(cpu_ppu_io);
-		inc_horz_scroll(cpu_ppu_io);
-	} else {
-		*(cpu_ppu_io->vram_addr) += ppu_vram_addr_inc(cpu_ppu_io);
-	}
-}
-
-
-/* Set DMA flag so that when the CPU is clocked it is triggered
- */
-void write_4014(const uint8_t data, Cpu6502* cpu)
-{
-	cpu->cpu_ppu_io->dma_pending = true;
-	cpu->base_addr = data;
-}
-
-/**
- * PPU_CTRL
- */
-// use CPU to access shared CPU/PPU space as this is needed in CPU writes
-uint8_t ppu_vram_addr_inc(const CpuPpuShare* cpu_ppu_io)
-{
-	if (!(cpu_ppu_io->ppu_ctrl & 0x04)) {
-		return 1;
-	} else {
-		return 32;
-	}
-}
-
-uint16_t ppu_base_nt_address(const CpuPpuShare* cpu_ppu_io)
-{
-	switch(cpu_ppu_io->ppu_ctrl & 0x03) {
-	case 0:
-		return 0x2000;
-	case 1:
-		return 0x2400;
-	case 2:
-		return 0x2800;
-	case 3:
-		return 0x2C00;
-	default:
-		return 0x2000;
-	}
-}
-
-
-uint16_t ppu_base_pt_address(const CpuPpuShare* cpu_ppu_io)
-{
-	if ((cpu_ppu_io->ppu_ctrl >> 4) & 0x01) {
-		return 0x1000;
-	} else {
-		return 0x0000;
-	}
-}
-
-uint16_t ppu_sprite_pattern_table_addr(const CpuPpuShare* cpu_ppu_io)
-{
-	if ((cpu_ppu_io->ppu_ctrl >> 3) & 0x01) {
-		return 0x1000;
-	} else {
-		return 0x0000;
-	}
-}
-
-uint8_t ppu_sprite_height(const CpuPpuShare* cpu_ppu_io)
-{
-	if ((cpu_ppu_io->ppu_ctrl >> 5) & 0x01) {
-		return 16; // 8 x 16 sprites
-	} else {
-		return 8; // 8 x 8 sprites
-	}
-}
-
-/**
- * PPU_MASK
- */
-
-bool ppu_show_bg(const CpuPpuShare* cpu_ppu_io)
-{
-	if (cpu_ppu_io->ppu_mask & 0x08) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-
-bool ppu_show_sprite(const CpuPpuShare* cpu_ppu_io)
-{
-	if (cpu_ppu_io->ppu_mask & 0x10) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-bool ppu_mask_left_8px_bg(const CpuPpuShare* cpu_ppu_io)
-{
-	if (cpu_ppu_io->ppu_mask & 0x02) {
-		return false;
-	} else {
-		return true;
-	}
-}
-
-bool ppu_mask_left_8px_sprite(const CpuPpuShare* cpu_ppu_io)
-{
-	if (cpu_ppu_io->ppu_mask & 0x04) {
-		return false;
-	} else {
-		return true;
-	}
-}
-
-bool ppu_show_greyscale(const CpuPpuShare* cpu_ppu_io)
-{
-	if (cpu_ppu_io->ppu_mask & 0x01) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-/**
- * PPU_STATUS
- */
-
-bool sprite_overflow_occured(const CpuPpuShare* cpu_ppu_io)
-{
-	if (cpu_ppu_io->ppu_status & 0x20) {
-		return true;
-	} else {
-		return false;
-	}
-}
 
 /* 
  * Helper Functions
@@ -832,7 +359,7 @@ bool sprite_overflow_occured(const CpuPpuShare* cpu_ppu_io)
  * When trying to increment from coarse Y from 31, coarse Y is reset but the nametable
  * remains unchanged
  */
-static void inc_vert_scroll(CpuPpuShare* cpu_ppu_io)
+void inc_vert_scroll(CpuPpuShare* cpu_ppu_io)
 {
 	uint16_t addr = *(cpu_ppu_io->vram_addr);
 	if ((addr & 0x7000) != 0x7000) { // If fine_y < 7
@@ -866,7 +393,7 @@ static void inc_vert_scroll(CpuPpuShare* cpu_ppu_io)
  *
  * fine_x handles the horizontal pixel offset and isn't adjusted here
  */
-static void inc_horz_scroll(CpuPpuShare* cpu_ppu_io)
+void inc_horz_scroll(CpuPpuShare* cpu_ppu_io)
 {
 	if ((*(cpu_ppu_io->vram_addr) & 0x001F) == 31) {
 		*(cpu_ppu_io->vram_addr) &= ~0x001F;

@@ -1,10 +1,12 @@
 /*
  * Contains CPU architechture and functions
  */
-#include "extern_structs.h"
 #include "cpu.h"
 #include "ppu.h"  // needed for read/write functions
+#include "cart.h"
+#include "cpu_mapper_interface.h"
 #include "mappers.h"
+#include "cpu_ppu_interface.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -398,95 +400,48 @@ void (*hardware_interrupts[3])(Cpu6502* cpu) = {
 	execute_DMA, execute_IRQ, execute_NMI,
 };
 
-CpuMapperShare* cpu_mapper_init(Cartridge* cart)
+
+Cpu6502* cpu_allocator(void)
 {
-	CpuMapperShare* i = malloc(sizeof(CpuMapperShare));
-	if (!i) {
-		fprintf(stderr, "Failed to allocate enough memory for CpuMapperShare\n");
-		return i;
-	}
-
-	// assign mirrors
-	i->prg_rom = &cart->prg_rom;
-	i->prg_ram = &cart->prg_ram;
-	i->chr = &cart->chr;
-
-	i->mapper_number = 0;
-	i->prg_rom_bank_size = 0;
-	i->chr_bank_size = 0;
-
-	i->prg_low_bank_fixed = false;
-	i->prg_high_bank_fixed = false;
-	i->enable_prg_ram = false;
-
-	return i;
-}
-
-CpuPpuShare* mmio_init(void)
-{
-	CpuPpuShare* i = malloc(sizeof(CpuPpuShare));
-	if (!i) {
-		fprintf(stderr, "Failed to allocate enough memory for PPU I/O\n");
-		return i;
-	}
-
-	i->ppu_ctrl = 0;
-	i->ppu_mask = 0;
-	i->ppu_status = 0;
-	i->oam_addr = 0;
-	i->oam_data = 0;
-	i->ppu_scroll = 0;
-	i->ppu_addr = 0;
-	i->ppu_data = 0;
-	i->oam_dma = 0;
-
-	i->nmi_pending = false;
-	i->dma_pending = false;
-	i->suppress_nmi_flag = false;
-	i->ignore_nmi = false;
-	i->nmi_lookahead = false;
-
-	i->nmi_cycles_left = 7;
-
-	i->buffer_write = false;
-	i->buffer_address = 0;
-	i->buffer_counter = 0;
-	i->buffer_value = 0;
-
-	return i;
-}
-
-Cpu6502* cpu_init(uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm)
-{
-	Cpu6502* i = malloc(sizeof(Cpu6502));
-	if (!i) {
+	Cpu6502* cpu = malloc(sizeof(Cpu6502));
+	if (!cpu) {
 		fprintf(stderr, "Failed to allocate enough memory for CPU\n");
-		return i;
 	}
+	return cpu; // either returns a valid or NULL pointer
+}
 
-	i->cpu_ppu_io = cp;
-	i->cpu_mapper_io = cm;
-	i->PC = pc_init;
-	i->stack = 0xFD; // After startup stack pointer is FD
-	i->cycle = 0;
-	i->P = 0x24;
-	i->A = 0;
-	i->X = 0;
-	i->Y = 0;
-	i->old_cycle = 0;
-	i->instruction_state = FETCH;
-	i->instruction_cycles_remaining = 51; // initial value doesn't matter as LUT will set it after first instruction is read
+int cpu_init(Cpu6502* cpu, uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm)
+{
+	int return_code = -1;
 
-	i->delay_nmi = false;
-	i->cpu_ignore_fetch_on_nmi = false;
-	i->process_interrupt = false;
+	cpu->cpu_ppu_io = cp;
+	cpu->cpu_mapper_io = cm;
 
-	i->controller_latch = 0;
-	i->player_1_controller = 0;
-	i->player_2_controller = 0;
+	cpu->PC = pc_init;
 
-	memset(i->mem, 0, CPU_MEMORY_SIZE); // Zero out memory
-	return i;
+	cpu->stack = 0xFD; // After startup stack pointer is FD
+	cpu->cycle = 0;
+	cpu->P = 0x24;
+	cpu->A = 0;
+	cpu->X = 0;
+	cpu->Y = 0;
+	cpu->old_cycle = 0;
+	cpu->instruction_state = FETCH;
+	cpu->instruction_cycles_remaining = 51; // initial value doesn't matter as LUT will set it after first instruction is read
+
+	cpu->delay_nmi = false;
+	cpu->cpu_ignore_fetch_on_nmi = false;
+	cpu->process_interrupt = false;
+
+	cpu->controller_latch = 0;
+	cpu->player_1_controller = 0;
+	cpu->player_2_controller = 0;
+
+	memset(cpu->mem, 0, CPU_MEMORY_SIZE); // Zero out memory
+
+	return_code = 0;
+
+	return return_code;
 }
 
 
@@ -545,6 +500,30 @@ uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr)
 
 	return read;
 }
+
+uint8_t read_ppu_reg(const uint16_t addr, Cpu6502* cpu)
+{
+	uint8_t data = 0;
+	switch (addr) {
+	case 0x2002:
+		// PPU_STATUS
+		read_2002(cpu->cpu_ppu_io);
+		data = cpu->cpu_ppu_io->return_value;
+		break;
+	case 0x2004:
+		// OAM_DATA
+		read_2004(cpu->cpu_ppu_io);
+		data = cpu->cpu_ppu_io->return_value;
+		break;
+	case 0x2007:
+		// PPU_DATA
+		read_2007(cpu->cpu_ppu_io);
+		data = cpu->cpu_ppu_io->return_value;
+		break;
+	}
+	return data;
+}
+
 
 void set_address_bus_bytes(Cpu6502* cpu, uint8_t adh, uint8_t adl)
 {
@@ -632,6 +611,68 @@ void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 	} else {
 		cpu->mem[addr] = val;
 	}
+}
+
+void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
+{
+	switch (addr) {
+	case 0x2000:
+		// PPU_CTRL
+		if (ppu_status_vblank_bit_set(cpu->cpu_ppu_io)
+		    && !ppu_ctrl_gen_nmi_bit_set(cpu->cpu_ppu_io)
+		    && (data & 0x80)) {
+			cpu->cpu_ppu_io->nmi_pending = true;
+			cpu->delay_nmi = true;
+		}
+
+		cpu->cpu_ppu_io->ppu_ctrl = data;
+		write_2000(data, cpu->cpu_ppu_io);
+		break;
+	case 0x2001:
+		// PPU_MASK
+		cpu->cpu_ppu_io->ppu_mask = data;
+		break;
+	case 0x2003:
+		// OAM_ADDR
+		write_2003(data, cpu->cpu_ppu_io);
+		break;
+	case 0x2004:
+		// OAM_DATA
+		cpu->cpu_ppu_io->oam_data = data;
+		write_2004(data, cpu->cpu_ppu_io);
+		break;
+	case 0x2005:
+		// PPU_SCROLL (write * 2)
+		write_2005(data, cpu->cpu_ppu_io);
+		break;
+	case 0x2006:
+		// PPU_ADDR (write * 2)
+		write_2006(data, cpu->cpu_ppu_io);
+		break;
+	case 0x2007:
+		// OAM_DATA
+		cpu->cpu_ppu_io->ppu_data = data;
+		write_2007(data, cpu->cpu_mapper_io->chr->ram_size, cpu->cpu_ppu_io);
+		break;
+	case 0x4014:
+		// DMA
+		write_4014(data, cpu);
+		break;
+	}
+}
+
+void delay_write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
+{
+	cpu->cpu_ppu_io->buffer_write = true;
+	cpu->cpu_ppu_io->buffer_counter = 2;
+	if (addr == 0x2001) {
+		cpu->cpu_ppu_io->buffer_counter += 3; // 3 dot delay for background/sprite rendering
+	}
+	cpu->cpu_ppu_io->buffer_address = addr;
+	cpu->cpu_ppu_io->buffer_value = data;
+
+	cpu->cpu_ppu_io->ppu_status &= ~0x1F;
+	cpu->cpu_ppu_io->ppu_status |= (data & 0x1F);
 }
 
 static void write_4016(uint8_t data, Cpu6502* cpu)

@@ -1,4 +1,8 @@
 #include "cart.h"
+#include "cpu.h"
+#include "ppu.h"
+#include "cpu_mapper_interface.h"
+
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,19 +31,26 @@
 #define NES2_PAL_REGION            0x01U
 #define VOLATILE_RAM_SHIFT_MASK    0x0FU   // represents non-volatile shift counts for CHR and PRG RAM
 
-Cartridge* cart_init(void)
+Cartridge* cart_allocator(void)
 {
 	Cartridge* cart = malloc(sizeof(Cartridge));
 	if (!cart) {
 		fprintf(stderr, "Failed to allocate memory for Cartridge\n");
-		return cart; // NULL pointer
 	}
+	return cart; // either returns a valid or NULL pointer
+}
+
+int cart_init(Cartridge* cart)
+{
+	int return_code = -1;
 
 	cart->header = HEADERLESS;
 	cart->trainer.size = 0;
 	cart->non_volatile_mem = false;  // used for "battery-backed" ROMS e.g. Legend of Zelda
 
-	return cart;
+	return_code = 0;
+
+	return return_code;
 }
 
 static uint16_t concat_lsb_and_msb_to_16_bit_val(const uint8_t lsb, const uint8_t msb);

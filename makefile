@@ -30,7 +30,9 @@ SRCS := $(SRCDIR)/cart.c \
         $(SRCDIR)/emu.c \
         $(SRCDIR)/gui.c \
         $(SRCDIR)/mappers.c \
-        $(SRCDIR)/ppu.c
+        $(SRCDIR)/ppu.c \
+        $(SRCDIR)/cpu_ppu_interface.c \
+        $(SRCDIR)/cpu_mapper_interface.c
 
 SRC_OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 SRC_DEPS := $(SRCS:%.c=$(DEPDIR)/%.d)
@@ -43,7 +45,9 @@ TST_TMP_OBJS := $(OBJDIR)/$(SRCDIR)/cpu.o \
                 $(OBJDIR)/$(SRCDIR)/mappers.o \
                 $(OBJDIR)/$(SRCDIR)/ppu.o \
                 $(OBJDIR)/$(SRCDIR)/gui.o \
-                $(OBJDIR)/$(SRCDIR)/cart.o
+                $(OBJDIR)/$(SRCDIR)/cart.o \
+                $(OBJDIR)/$(SRCDIR)/cpu_ppu_interface.o \
+                $(OBJDIR)/$(SRCDIR)/cpu_mapper_interface.o
 
 .PHONY: all
 all: $(BINDIR)/cnes $(BINDIR)/test_all

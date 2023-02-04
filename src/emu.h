@@ -1,7 +1,12 @@
 #ifndef __NES_EMU__
 #define __NES_EMU__
 
-#include "extern_structs.h"
+#include "SDL2/SDL_events.h"
+#include "cpu_fwd.h"
+#include "ppu_fwd.h"
+#include "gui_fwd.h"
+
+#include <stdbool.h>
 
 void ppu_cpu_ratio(Cpu6502* cpu, Ppu2C02* ppu, Sdl2DisplayOutputs* cnes_windows, const bool no_logging);
 void emu_usuage(const char* program_name);
