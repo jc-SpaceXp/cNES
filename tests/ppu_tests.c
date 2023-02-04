@@ -1919,10 +1919,11 @@ START_TEST (pixel_buffer_set_top_left_corner)
 	unsigned int y_pos = 0;
 	uint32_t rgb = 0x0035313A;
 	uint8_t alpha = 0xFF;
+	rgb |= (uint32_t) alpha << 24;
 
 	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
 
-	ck_assert_uint_eq((alpha << 24) | rgb, pixel_buffer[0]);
+	ck_assert_uint_eq(rgb, pixel_buffer[0]);
 }
 
 START_TEST (pixel_buffer_set_top_right_corner)
@@ -1932,10 +1933,11 @@ START_TEST (pixel_buffer_set_top_right_corner)
 	unsigned int y_pos = 0;
 	uint32_t rgb = 0x00FFC0CB;
 	uint8_t alpha = 0xFF;
+	rgb |= (uint32_t) alpha << 24;
 
 	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
 
-	ck_assert_uint_eq((alpha << 24) | rgb, pixel_buffer[x_pos]);
+	ck_assert_uint_eq(rgb, pixel_buffer[x_pos]);
 }
 
 START_TEST (pixel_buffer_set_bottom_left_corner)
@@ -1945,10 +1947,11 @@ START_TEST (pixel_buffer_set_bottom_left_corner)
 	unsigned int y_pos = 239;
 	uint32_t rgb = 0x0032CD32;
 	uint8_t alpha = 0xFF;
+	rgb |= (uint32_t) alpha << 24;
 
 	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
 
-	ck_assert_uint_eq((alpha << 24) | rgb, pixel_buffer[256 * y_pos]);
+	ck_assert_uint_eq(rgb, pixel_buffer[256 * y_pos]);
 }
 
 START_TEST (pixel_buffer_set_bottom_right_corner)
@@ -1958,10 +1961,11 @@ START_TEST (pixel_buffer_set_bottom_right_corner)
 	unsigned int y_pos = 239;
 	uint32_t rgb = 0x006A5ACD;
 	uint8_t alpha = 0xFF;
+	rgb |= (uint32_t) alpha << 24;
 
 	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
 
-	ck_assert_uint_eq((alpha << 24) | rgb, pixel_buffer[x_pos + (256 * y_pos)]);
+	ck_assert_uint_eq(rgb, pixel_buffer[x_pos + (256 * y_pos)]);
 }
 
 START_TEST (pixel_buffer_set_out_of_bounds_allowed)
@@ -1974,6 +1978,7 @@ START_TEST (pixel_buffer_set_out_of_bounds_allowed)
 	unsigned int y_pos = 242;
 	uint32_t rgb = 0x00FFFF00;
 	uint8_t alpha = 0xFF;
+	rgb |= (uint32_t) alpha << 24;
 
 	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
 
