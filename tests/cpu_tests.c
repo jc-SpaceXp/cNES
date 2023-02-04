@@ -227,6 +227,8 @@ START_TEST (test_strcmp_reverse_opcode_lut)
 	ck_assert_int_eq(0xE1, reverse_opcode_lut(ins, INDX));
 	strncpy((char*) ins, "INC", 4);
 	ck_assert_int_eq(0xFE, reverse_opcode_lut(ins, ABSX));
+
+	free(ins);
 }
 END_TEST
 
