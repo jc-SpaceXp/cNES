@@ -611,7 +611,7 @@ void set_rgba_pixel_in_buffer(uint32_t* pixel_buffer, unsigned max_width
                              , unsigned int x_pos, unsigned int y_pos
                              , unsigned int rgb, uint8_t alpha)
 {
-	pixel_buffer[x_pos + (max_width * y_pos)] = (alpha << 24) | rgb;
+	pixel_buffer[x_pos + (max_width * y_pos)] = ((uint32_t) alpha << 24) | rgb;
 }
 
 
