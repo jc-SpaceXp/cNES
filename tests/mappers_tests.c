@@ -176,6 +176,151 @@ START_TEST (mapper_000_chr_rom_banks)
 	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_1[0x0000], &chr_array_2[0], 4 * KiB);
 }
 
+START_TEST (mapper_001_last_write_selects_reg)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->prg_rom_bank_size = 32; // changing this through MMC1 reg
+	cpu_mapper_tester->chr_bank_size = 4; // changing this through MMC1 reg
+	mp_cpu->cycle = 13;
+	uint16_t ctrl_reg = 0x9000; // $8000 to $9FFF
+	uint16_t chr0_reg = 0xB015; // $A000 to $BFFF
+	uint16_t chr1_reg = 0x9000; // $C000 to $DFFF
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, chr0_reg, 0x00); // 1 (buffer: xxxx0)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr0_reg, 0x00); // 2 (buffer: xxx00)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, 0x00); // 3 (buffer: xx000)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, 0x01); // 4 (buffer: x1000)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 5 (buffer: 01000)
+	mp_cpu->cycle += 5;
+
+	ck_assert_uint_eq(cpu_mapper_tester->prg_rom_bank_size, 16);
+	ck_assert_uint_eq(cpu_mapper_tester->chr_bank_size, 8);
+}
+
+START_TEST (mapper_001_five_writes_selects_reg)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->prg_rom_bank_size = 16; // changing this through MMC1 reg
+	cpu_mapper_tester->chr_bank_size = 4; // changing this through MMC1 reg
+	mp_cpu->cycle = 13;
+	uint16_t ctrl_reg = 0x9000; // $8000 to $9FFF
+	// value should only change on 5th write
+	uint8_t prg_rom_bank_size[5] = {16, 16, 16, 16, 32};
+	uint8_t chr_bank_size[5] = {4, 4, 4, 4, 8};
+
+	// 1st write is LSB and last is MSB
+	for (int i = 0; i <= _i; ++i) {
+		mapper_write(mp_cpu, ctrl_reg + i, 0x00); // 5 writes (buffer: 00000)
+		mp_cpu->cycle += 5;
+	}
+
+	ck_assert_uint_eq(cpu_mapper_tester->prg_rom_bank_size, prg_rom_bank_size[_i]);
+	ck_assert_uint_eq(cpu_mapper_tester->chr_bank_size, chr_bank_size[_i]);
+}
+
+START_TEST (mapper_001_reg0_mm_bits)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	mp_ppu->nametable_mirroring = HORIZONTAL;
+	mp_cpu->cycle = 13;
+	uint16_t ctrl_reg = 0x9000; // $8000 to $9FFF
+	// [bit0][bit1] so 10 is 01 for the buffers lowest 2 bits
+	uint8_t buffer_bits[4][2] = {{0x00, 0x00}, {0x01, 0x00}, {0x00, 0x01}, {0x01, 0x01}};
+	PpuNametableMirroringType mirror_mode[4] = { SINGLE_SCREEN_A
+	                                           , SINGLE_SCREEN_B
+	                                           , VERTICAL
+	                                           , HORIZONTAL};
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, ctrl_reg, buffer_bits[_i][0]); // 1 (buffer: xxxx?)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, buffer_bits[_i][1]); // 2 (buffer: xxx??)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 3 (buffer: xx0??)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x01); // 4 (buffer: x10??)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 5 (buffer: 010??)
+	mp_cpu->cycle += 5;
+
+	ck_assert_uint_eq(mp_ppu->nametable_mirroring, mirror_mode[_i]);
+}
+
+START_TEST (mapper_001_reg0_h_bit)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->prg_low_bank_fixed = false;
+	cpu_mapper_tester->prg_high_bank_fixed = false;
+	mp_cpu->cycle = 13;
+	uint16_t ctrl_reg = 0x9000; // $8000 to $9FFF
+	bool expected_fixed_low_bank[2] = {true, false};
+	bool expected_fixed_high_bank[2] = {false, true};
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 1 (buffer: xxxx0)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 2 (buffer: xxx00)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, _i); // 3 (buffer: xxi00) (H bit)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x01); // 4 (buffer: x1i00)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 5 (buffer: 01i00)
+	mp_cpu->cycle += 5;
+
+	ck_assert_uint_eq(cpu_mapper_tester->prg_low_bank_fixed, expected_fixed_low_bank[_i]);
+	ck_assert_uint_eq(cpu_mapper_tester->prg_high_bank_fixed, expected_fixed_high_bank[_i]);
+}
+
+START_TEST (mapper_001_reg0_f_bit)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	mp_cpu->cycle = 13;
+	uint16_t ctrl_reg = 0x9000; // $8000 to $9FFF
+	uint8_t prg_rom_bank_size[2] = {32, 16}; // KiB size
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 1 (buffer: xxxx0)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 2 (buffer: xxx00)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 3 (buffer: xx000)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, _i); // 4 (buffer: xi000) (F bit)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 5 (buffer: 0i000)
+	mp_cpu->cycle += 5;
+
+	ck_assert_uint_eq(cpu_mapper_tester->prg_rom_bank_size, prg_rom_bank_size[_i]);
+}
+
+START_TEST (mapper_001_reg0_c_bit)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	mp_cpu->cycle = 13;
+	uint16_t ctrl_reg = 0x9000; // $8000 to $9FFF
+	uint8_t chr_bank_size[2] = {8, 4}; // KiB size
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 1 (buffer: xxxx0)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 2 (buffer: xxx00)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 3 (buffer: xx000)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, 0x00); // 4 (buffer: x0000)
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, ctrl_reg, _i); // 5 (buffer: i0000)
+	mp_cpu->cycle += 5;
+
+	ck_assert_uint_eq(cpu_mapper_tester->chr_bank_size, chr_bank_size[_i]);
+}
+
 
 Suite* mapper_000_suite(void)
 {
@@ -188,6 +333,29 @@ Suite* mapper_000_suite(void)
 	tcase_add_loop_test(tc_prg_and_chr_banks, mapper_000_prg_rom_banks, 0, 2);
 	tcase_add_loop_test(tc_prg_and_chr_banks, mapper_000_chr_rom_banks, 0, 2);
 	suite_add_tcase(s, tc_prg_and_chr_banks);
+
+	return s;
+}
+
+Suite* mapper_001_suite(void)
+{
+	Suite* s;
+	TCase* tc_mmc1_registers;
+	TCase* tc_mmc1_reg0_bits; // ctrl register
+
+	s = suite_create("Mapper 001 Tests");
+	tc_mmc1_registers = tcase_create("MMC1 Registers Tests");
+	tcase_add_checked_fixture(tc_mmc1_registers, setup, teardown);
+	tcase_add_test(tc_mmc1_registers, mapper_001_last_write_selects_reg);
+	tcase_add_loop_test(tc_mmc1_registers, mapper_001_five_writes_selects_reg, 0, 5);
+	suite_add_tcase(s, tc_mmc1_registers);
+	tc_mmc1_reg0_bits = tcase_create("MMC1 Reg0/Ctrl Register Tests");
+	tcase_add_checked_fixture(tc_mmc1_reg0_bits, setup, teardown);
+	tcase_add_loop_test(tc_mmc1_reg0_bits, mapper_001_reg0_mm_bits, 0, 4);
+	tcase_add_loop_test(tc_mmc1_reg0_bits, mapper_001_reg0_h_bit, 0, 2);
+	tcase_add_loop_test(tc_mmc1_reg0_bits, mapper_001_reg0_f_bit, 0, 2);
+	tcase_add_loop_test(tc_mmc1_reg0_bits, mapper_001_reg0_c_bit, 0, 2);
+	suite_add_tcase(s, tc_mmc1_reg0_bits);
 
 	return s;
 }
