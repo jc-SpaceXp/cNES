@@ -3,6 +3,7 @@
 #include "cpu_tests.h"
 #include "ppu_tests.h"
 #include "cpu_ppu_interface_tests.h"
+#include "mappers_tests.h"
 
 int main(void)
 {
@@ -27,6 +28,14 @@ int main(void)
 
 	// cpu ppu tests
 	s = cpu_ppu_suite();
+	sr = srunner_create(s);
+
+	srunner_run_all(sr, CK_NORMAL);
+	number_failed += srunner_ntests_failed(sr);
+	srunner_free(sr);
+
+	// mapper tests
+	s = mapper_000_suite();
 	sr = srunner_create(s);
 
 	srunner_run_all(sr, CK_NORMAL);
