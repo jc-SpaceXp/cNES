@@ -122,6 +122,12 @@ static void set_prg_bank(uint8_t* prg_data, uint8_t block_pattern, size_t total_
 	memset(prg_data, block_pattern, total_bytes);
 }
 
+// 0 indexed bit pos
+static uint8_t get_nth_bit(unsigned int input, unsigned int bit_pos)
+{
+	return (input & (1 << bit_pos)) >> bit_pos;
+}
+
 
 START_TEST (mapper_000_prg_rom_banks)
 {
@@ -321,6 +327,149 @@ START_TEST (mapper_001_reg0_c_bit)
 	ck_assert_uint_eq(cpu_mapper_tester->chr_bank_size, chr_bank_size[_i]);
 }
 
+START_TEST (mapper_001_reg1_chr0_bank_select_4k)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	mp_cpu->cycle = 13;
+	uint16_t chr0_reg = 0xA49B; // $A000 to $BFFF
+	cpu_mapper_tester->chr_bank_size = 4; // KiB size, 32 possible banks in 128K chr
+	unsigned int bank_select = _i; // 0-31 banks
+	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
+	mp_cart->chr.data = chr_window;
+	for (int bank = 0; bank < 32; ++bank) {
+		set_prg_bank(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+	}
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 0)); // 1
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 1)); // 2
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 2)); // 3
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 3)); // 4
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 4)); // 5
+	mp_cpu->cycle += 5;
+
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0[0x0000]
+	                , chr_window + bank_select * 4 * KiB
+	                , 4 * KiB);
+	free(chr_window);
+}
+
+START_TEST (mapper_001_reg1_chr0_bank_select_8k)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	mp_cpu->cycle = 13;
+	uint16_t chr0_reg = 0xB49B; // $A000 to $BFFF
+	cpu_mapper_tester->chr_bank_size = 8; // KiB size, 16 possible 8K banks in 128K chr
+	unsigned int bank_select = _i; // 0-31 banks
+	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
+	mp_cart->chr.data = chr_window;
+	for (int bank = 0; bank < 16; ++bank) {
+		set_prg_bank(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
+	}
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 0)); // 1
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 1)); // 2
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 2)); // 3
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 3)); // 4
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 4)); // 5
+	mp_cpu->cycle += 5;
+
+	// split up into 2 4K banks due to ppu memory layout
+	// since lowest bit is ignored we get this pattern for even banks
+	// (pattern_table_0): 0 0 2 2 4 4 6 6 8 8 etc. for increasing
+	// even 4K banks (0, 2, 4 etc.) (via (_i >> 1) * 2)
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0[0x0000]
+	                , chr_window + ((bank_select >> 1) * 2) * 4 * KiB
+	                , 4 * KiB);
+	// odd 4K banks (1, 3, 5 etc.) (via even banks calc + 1)
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_1[0x0000]
+	                , chr_window + (((bank_select >> 1) * 2) + 1) * 4 * KiB
+	                , 4 * KiB);
+	free(chr_window);
+}
+
+START_TEST (mapper_001_reg2_chr1_bank_select_4k)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	mp_cpu->cycle = 13;
+	uint16_t chr1_reg = 0xCF1C; // $C000 to $DFFF
+	cpu_mapper_tester->chr_bank_size = 4; // KiB size, 32 possible banks in 128K chr
+	unsigned int bank_select = _i; // 0-31 banks
+	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
+	mp_cart->chr.data = chr_window;
+	for (int bank = 0; bank < 32; ++bank) {
+		set_prg_bank(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+	}
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 0)); // 1
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 1)); // 2
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 2)); // 3
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 3)); // 4
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 4)); // 5
+	mp_cpu->cycle += 5;
+
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_1[0x0000]
+	                , chr_window + bank_select * 4 * KiB
+	                , 4 * KiB);
+	free(chr_window);
+}
+
+START_TEST (mapper_001_reg2_chr1_bank_select_8k_ignored)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	mp_cpu->cycle = 13;
+	uint16_t chr1_reg = 0xCF1C; // $C000 to $DFFF
+	cpu_mapper_tester->chr_bank_size = 8; // KiB size, 16 possible 8K banks in 128K chr
+	unsigned int bank_select = _i; // 0-31 banks
+	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
+	mp_cart->chr.data = chr_window;
+	for (int bank = 0; bank < 16; ++bank) {
+		set_prg_bank(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
+	}
+	// Set chr data to all 1's
+	memset(&mp_ppu->vram.pattern_table_0[0x0000], 0xFF, 4 * KiB);
+	memset(&mp_ppu->vram.pattern_table_1[0x0000], 0xFF, 4 * KiB);
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 0)); // 1
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 1)); // 2
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 2)); // 3
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 3)); // 4
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 4)); // 5
+	mp_cpu->cycle += 5;
+
+	// split up into 2 4K banks due to ppu memory layout
+	// since lowest bit is ignored we get this pattern for even banks
+	// (pattern_table_0): 0 0 2 2 4 4 6 6 8 8 etc. for increasing
+	// even 4K banks (0, 2, 4 etc.) (via (_i >> 1) * 2)
+	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_1[0x0000]
+	                , chr_window + ((bank_select >> 1) * 2) * 4 * KiB
+	                , 4 * KiB);
+	// odd 4K banks (1, 3, 5 etc.) (via even banks calc + 1)
+	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_1[0x0000]
+	                , chr_window + (((bank_select >> 1) * 2) + 1) * 4 * KiB
+	                , 4 * KiB);
+	free(chr_window);
+}
+
 
 Suite* mapper_000_suite(void)
 {
@@ -342,6 +491,8 @@ Suite* mapper_001_suite(void)
 	Suite* s;
 	TCase* tc_mmc1_registers;
 	TCase* tc_mmc1_reg0_bits; // ctrl register
+	TCase* tc_mmc1_reg1_bank_select; // chr0 register
+	TCase* tc_mmc1_reg2_bank_select; // chr1 register
 
 	s = suite_create("Mapper 001 Tests");
 	tc_mmc1_registers = tcase_create("MMC1 Registers Tests");
@@ -356,6 +507,16 @@ Suite* mapper_001_suite(void)
 	tcase_add_loop_test(tc_mmc1_reg0_bits, mapper_001_reg0_f_bit, 0, 2);
 	tcase_add_loop_test(tc_mmc1_reg0_bits, mapper_001_reg0_c_bit, 0, 2);
 	suite_add_tcase(s, tc_mmc1_reg0_bits);
+	tc_mmc1_reg1_bank_select = tcase_create("MMC1 Reg1/Chr0 Register Tests");
+	tcase_add_checked_fixture(tc_mmc1_reg1_bank_select, setup, teardown);
+	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_4k, 0, 32);
+	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_8k, 0, 32);
+	suite_add_tcase(s, tc_mmc1_reg1_bank_select);
+	tc_mmc1_reg2_bank_select = tcase_create("MMC1 Reg2/Chr1 Register Tests");
+	tcase_add_checked_fixture(tc_mmc1_reg2_bank_select, setup, teardown);
+	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_4k, 0, 32);
+	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_8k_ignored, 0, 32);
+	suite_add_tcase(s, tc_mmc1_reg2_bank_select);
 
 	return s;
 }
