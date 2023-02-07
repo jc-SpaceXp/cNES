@@ -470,6 +470,123 @@ START_TEST (mapper_001_reg2_chr1_bank_select_8k_ignored)
 	free(chr_window);
 }
 
+START_TEST (mapper_001_reg3_prg_bank_select_32k)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->prg_rom_bank_size = 32;
+	mp_cpu->cycle = 13;
+	uint16_t prg_reg = 0xFF5E; // $E000 to $FFFF
+	unsigned int bank_select = _i; // 0-31 banks
+	uint8_t* prg_window = calloc(256 * KiB, sizeof(uint8_t));
+	mp_cart->prg_rom.data = prg_window;
+	mp_cart->prg_rom.size = 256 * KiB;
+	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
+	for (int bank = 0; bank < 8; ++bank) {
+		set_prg_bank(mp_cart->prg_rom.data + bank * 32 * KiB, bank, 32 * KiB);
+	}
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 0)); // 1
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 1)); // 2
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 2)); // 3
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 3)); // 4
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, 0x00); // 5 (only 4 bits are needed for prg banks)
+	mp_cpu->cycle += 5;
+
+	ck_assert_mem_eq(&mp_cpu->mem[0x8000]
+	                , prg_window + (bank_select >> 1) * 32 * KiB
+	                , 32 * KiB);
+	free(prg_window);
+}
+
+START_TEST (mapper_001_reg3_prg_lo_bank_select_16k)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->prg_rom_bank_size = 16;
+	// Lo/Hi bank mirror each other, one must be true and one must be false
+	cpu_mapper_tester->prg_low_bank_fixed = false;
+	cpu_mapper_tester->prg_high_bank_fixed = true;
+	mp_cpu->cycle = 13;
+	uint16_t prg_reg = 0xFF5E; // $E000 to $FFFF
+	unsigned int bank_select = _i; // 0-31 banks
+	uint8_t* prg_window = calloc(256 * KiB, sizeof(uint8_t));
+	mp_cart->prg_rom.data = prg_window;
+	mp_cart->prg_rom.size = 256 * KiB;
+	unsigned int total_banks = mp_cart->prg_rom.size / (16 * KiB);
+	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
+	for (int bank = 0; bank < 16; ++bank) {
+		set_prg_bank(mp_cart->prg_rom.data + bank * 16 * KiB, bank, 16 * KiB);
+	}
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 0)); // 1
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 1)); // 2
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 2)); // 3
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 3)); // 4
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, 0x00); // 5 (only 4 bits are needed for prg banks)
+	mp_cpu->cycle += 5;
+
+	// First prg rom bank is swappable
+	ck_assert_mem_eq(&mp_cpu->mem[0x8000]
+	                , prg_window + bank_select * 16 * KiB
+	                , 16 * KiB);
+	// Last prg rom bank is fixed to the last 16K prg bank
+	ck_assert_mem_eq(&mp_cpu->mem[0xC000]
+	                , prg_window + (total_banks - 1) * 16 * KiB
+	                , 16 * KiB);
+	free(prg_window);
+}
+
+START_TEST (mapper_001_reg3_prg_hi_bank_select_16k)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->prg_rom_bank_size = 16;
+	// Lo/Hi bank mirror each other, one must be true and one must be false
+	cpu_mapper_tester->prg_low_bank_fixed = true;
+	cpu_mapper_tester->prg_high_bank_fixed = false;
+	mp_cpu->cycle = 13;
+	uint16_t prg_reg = 0xFF5E; // $E000 to $FFFF
+	unsigned int bank_select = _i; // 0-31 banks
+	uint8_t* prg_window = calloc(256 * KiB, sizeof(uint8_t));
+	mp_cart->prg_rom.data = prg_window;
+	mp_cart->prg_rom.size = 256 * KiB;
+	unsigned int total_banks = mp_cart->prg_rom.size / (16 * KiB);
+	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
+	for (int bank = 0; bank < 16; ++bank) {
+		set_prg_bank(mp_cart->prg_rom.data + bank * 16 * KiB, bank, 16 * KiB);
+	}
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 0)); // 1
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 1)); // 2
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 2)); // 3
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, get_nth_bit(_i, 3)); // 4
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, 0x00); // 5 (only 4 bits are needed for prg banks)
+	mp_cpu->cycle += 5;
+
+	// First prg rom bank is fixed to the first 16K bank
+	ck_assert_mem_eq(&mp_cpu->mem[0x8000]
+	                , prg_window
+	                , 16 * KiB);
+	// Last prg rom bank is swappable
+	ck_assert_mem_eq(&mp_cpu->mem[0xC000]
+	                , prg_window + bank_select * 16 * KiB
+	                , 16 * KiB);
+	free(prg_window);
+}
+
 
 Suite* mapper_000_suite(void)
 {
@@ -493,6 +610,7 @@ Suite* mapper_001_suite(void)
 	TCase* tc_mmc1_reg0_bits; // ctrl register
 	TCase* tc_mmc1_reg1_bank_select; // chr0 register
 	TCase* tc_mmc1_reg2_bank_select; // chr1 register
+	TCase* tc_mmc1_reg3_bank_select; // prg register
 
 	s = suite_create("Mapper 001 Tests");
 	tc_mmc1_registers = tcase_create("MMC1 Registers Tests");
@@ -517,6 +635,12 @@ Suite* mapper_001_suite(void)
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_4k, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_8k_ignored, 0, 32);
 	suite_add_tcase(s, tc_mmc1_reg2_bank_select);
+	tc_mmc1_reg3_bank_select = tcase_create("MMC1 Reg3/Prg Register Tests");
+	tcase_add_checked_fixture(tc_mmc1_reg3_bank_select, setup, teardown);
+	tcase_add_loop_test(tc_mmc1_reg3_bank_select, mapper_001_reg3_prg_bank_select_32k, 0, 16);
+	tcase_add_loop_test(tc_mmc1_reg3_bank_select, mapper_001_reg3_prg_lo_bank_select_16k, 0, 16);
+	tcase_add_loop_test(tc_mmc1_reg3_bank_select, mapper_001_reg3_prg_hi_bank_select_16k, 0, 16);
+	suite_add_tcase(s, tc_mmc1_reg3_bank_select);
 
 	return s;
 }
