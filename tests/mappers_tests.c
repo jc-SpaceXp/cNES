@@ -14,7 +14,6 @@ CpuMapperShare* cpu_mapper_tester;
 Cpu6502* mp_cpu;
 Ppu2C02* mp_ppu;
 CpuPpuShare* mp_cpu_ppu_io;
-//PpuNametableMirroringType mp_ppu_mirroring;
 
 static void cart_setup(void)
 {
