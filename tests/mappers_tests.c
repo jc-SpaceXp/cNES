@@ -116,11 +116,6 @@ static void teardown(void)
 	cpu_ppu_teardown();
 }
 
-static void set_prg_bank(uint8_t* prg_data, uint8_t block_pattern, size_t total_bytes)
-{
-	memset(prg_data, block_pattern, total_bytes);
-}
-
 // 0 indexed bit pos
 static uint8_t get_nth_bit(unsigned int input, unsigned int bit_pos)
 {
@@ -137,8 +132,8 @@ START_TEST (mapper_000_prg_rom_banks)
 	uint8_t prg_banks[2][2] = {{0xA0, 0xA0}, {0xA0, 0x08}};
 	mp_cart->prg_rom.size = prg_rom_sizes[_i];
 	mp_cart->prg_rom.data = prg_window;
-	set_prg_bank(mp_cart->prg_rom.data,            prg_banks[_i][0], 16 * KiB);
-	set_prg_bank(mp_cart->prg_rom.data + 16 * KiB, prg_banks[_i][1], 16 * KiB);
+	memset(mp_cart->prg_rom.data,            prg_banks[_i][0], 16 * KiB);
+	memset(mp_cart->prg_rom.data + 16 * KiB, prg_banks[_i][1], 16 * KiB);
 	// Mirror prg_banks into arrays so we can check the result
 	// as the prg_rom.data is free'd by the mapper_000() function
 	uint8_t prg_array_1[16 * KiB] = {0};
@@ -160,8 +155,8 @@ START_TEST (mapper_000_chr_rom_banks)
 	// Split chr 8K into 2 4K regions
 	uint8_t chr_banks[2][2] = {{0xA0, 0xA0}, {0xA0, 0x08}};
 	mp_cart->chr.data = chr_window;
-	set_prg_bank(mp_cart->chr.data,           chr_banks[_i][0], 4 * KiB);
-	set_prg_bank(mp_cart->chr.data + 4 * KiB, chr_banks[_i][1], 4 * KiB);
+	memset(mp_cart->chr.data,           chr_banks[_i][0], 4 * KiB);
+	memset(mp_cart->chr.data + 4 * KiB, chr_banks[_i][1], 4 * KiB);
 	// Mirror prg_banks into arrays so we can check the result
 	// as the prg_rom.data is free'd by the mapper_000() function
 	uint8_t chr_array_1[4 * KiB] = {0};
@@ -336,7 +331,7 @@ START_TEST (mapper_001_reg1_chr0_bank_select_4k)
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
 	mp_cart->chr.data = chr_window;
 	for (int bank = 0; bank < 32; ++bank) {
-		set_prg_bank(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+		memset(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -367,7 +362,7 @@ START_TEST (mapper_001_reg1_chr0_bank_select_8k)
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
 	mp_cart->chr.data = chr_window;
 	for (int bank = 0; bank < 16; ++bank) {
-		set_prg_bank(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
+		memset(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -406,7 +401,7 @@ START_TEST (mapper_001_reg2_chr1_bank_select_4k)
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
 	mp_cart->chr.data = chr_window;
 	for (int bank = 0; bank < 32; ++bank) {
-		set_prg_bank(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+		memset(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -437,7 +432,7 @@ START_TEST (mapper_001_reg2_chr1_bank_select_8k_ignored)
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
 	mp_cart->chr.data = chr_window;
 	for (int bank = 0; bank < 16; ++bank) {
-		set_prg_bank(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
+		memset(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
 	}
 	// Set chr data to all 1's
 	memset(&mp_ppu->vram.pattern_table_0[0x0000], 0xFF, 4 * KiB);
@@ -481,7 +476,7 @@ START_TEST (mapper_001_reg3_prg_bank_select_32k)
 	mp_cart->prg_rom.size = 256 * KiB;
 	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
 	for (int bank = 0; bank < 8; ++bank) {
-		set_prg_bank(mp_cart->prg_rom.data + bank * 32 * KiB, bank, 32 * KiB);
+		memset(mp_cart->prg_rom.data + bank * 32 * KiB, bank, 32 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -518,7 +513,7 @@ START_TEST (mapper_001_reg3_prg_lo_bank_select_16k)
 	unsigned int total_banks = mp_cart->prg_rom.size / (16 * KiB);
 	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
 	for (int bank = 0; bank < 16; ++bank) {
-		set_prg_bank(mp_cart->prg_rom.data + bank * 16 * KiB, bank, 16 * KiB);
+		memset(mp_cart->prg_rom.data + bank * 16 * KiB, bank, 16 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -560,7 +555,7 @@ START_TEST (mapper_001_reg3_prg_hi_bank_select_16k)
 	unsigned int total_banks = mp_cart->prg_rom.size / (16 * KiB);
 	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
 	for (int bank = 0; bank < 16; ++bank) {
-		set_prg_bank(mp_cart->prg_rom.data + bank * 16 * KiB, bank, 16 * KiB);
+		memset(mp_cart->prg_rom.data + bank * 16 * KiB, bank, 16 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
