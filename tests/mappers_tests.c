@@ -229,17 +229,15 @@ START_TEST (mapper_001_reg0_mm_bits)
 	mp_ppu->nametable_mirroring = HORIZONTAL;
 	mp_cpu->cycle = 13;
 	uint16_t ctrl_reg = 0x9000; // $8000 to $9FFF
-	// [bit0][bit1] so 10 is 01 for the buffers lowest 2 bits
-	uint8_t buffer_bits[4][2] = {{0x00, 0x00}, {0x01, 0x00}, {0x00, 0x01}, {0x01, 0x01}};
 	PpuNametableMirroringType mirror_mode[4] = { SINGLE_SCREEN_A
 	                                           , SINGLE_SCREEN_B
 	                                           , VERTICAL
 	                                           , HORIZONTAL};
 
 	// 1st write is LSB and last is MSB
-	mapper_write(mp_cpu, ctrl_reg, buffer_bits[_i][0]); // 1 (buffer: xxxx?)
+	mapper_write(mp_cpu, ctrl_reg, get_nth_bit(_i, 0)); // 1 (buffer: xxxx?)
 	mp_cpu->cycle += 5;
-	mapper_write(mp_cpu, ctrl_reg, buffer_bits[_i][1]); // 2 (buffer: xxx??)
+	mapper_write(mp_cpu, ctrl_reg, get_nth_bit(_i, 1)); // 2 (buffer: xxx??)
 	mp_cpu->cycle += 5;
 	mapper_write(mp_cpu, ctrl_reg, 0x00); // 3 (buffer: xx0??)
 	mp_cpu->cycle += 5;
