@@ -552,7 +552,6 @@ START_TEST (mapper_001_reg3_prg_hi_bank_select_16k)
 	uint8_t* prg_window = calloc(256 * KiB, sizeof(uint8_t));
 	mp_cart->prg_rom.data = prg_window;
 	mp_cart->prg_rom.size = 256 * KiB;
-	unsigned int total_banks = mp_cart->prg_rom.size / (16 * KiB);
 	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
 	for (int bank = 0; bank < 16; ++bank) {
 		memset(mp_cart->prg_rom.data + bank * 16 * KiB, bank, 16 * KiB);
