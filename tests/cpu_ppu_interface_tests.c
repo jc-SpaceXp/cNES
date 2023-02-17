@@ -89,6 +89,8 @@ static void setup(void)
 	cpu_mapper_setup();
 	vram_setup();
 
+	cpu_ppu_io_init(cpu_ppu_tester);
+
 	cpu_ppu_tester->oam = &cpio_oam[0];
 	cpu_ppu_tester->vram_addr = &cpio_vram_addr;
 	cpu_ppu_tester->vram_tmp_addr = &cpio_vram_tmp_addr;
