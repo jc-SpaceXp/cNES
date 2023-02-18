@@ -589,6 +589,17 @@ START_TEST (mapper_001_prg_ram_enabled_writes)
 	ck_assert_uint_eq(mp_cpu->mem[prg_ram_addr], 0xC3);
 }
 
+START_TEST (mapper_001_prg_ram_disabled_writes)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->enable_prg_ram = false;
+	uint16_t prg_ram_addr = 0x6000; // PRG RAM window is $6000 to $7FFF
+
+	mapper_write(mp_cpu, prg_ram_addr, 0x0F);
+
+	ck_assert_uint_ne(mp_cpu->mem[prg_ram_addr], 0x0F);
+}
+
 
 Suite* mapper_000_suite(void)
 {
@@ -647,6 +658,7 @@ Suite* mapper_001_suite(void)
 	tc_mmc1_prg_ram = tcase_create("MMC1 PRG RAM Tests");
 	tcase_add_checked_fixture(tc_mmc1_prg_ram, setup, teardown);
 	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_enabled_writes);
+	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_disabled_writes);
 	suite_add_tcase(s, tc_mmc1_prg_ram);
 
 	return s;
