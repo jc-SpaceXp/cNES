@@ -584,9 +584,9 @@ START_TEST (mapper_001_prg_ram_enabled_writes)
 	cpu_mapper_tester->enable_prg_ram = true;
 	uint16_t prg_ram_addr = 0x6000; // PRG RAM window is $6000 to $7FFF
 
-	mapper_write(mp_cpu, prg_ram_addr, 0x03); // trigger PRG RAM write
+	mapper_write(mp_cpu, prg_ram_addr, 0xC3); // trigger PRG RAM write
 
-	ck_assert_uint_eq(mp_cpu->mem[prg_ram_addr], 0x03);
+	ck_assert_uint_eq(mp_cpu->mem[prg_ram_addr], 0xC3);
 }
 
 

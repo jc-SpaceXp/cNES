@@ -43,11 +43,24 @@ static inline void set_chr_bank_2(Cpu6502* cpu, const unsigned chr_bank_offset)
 		  , 4 * KiB);
 }
 
+// allow writes to PRG RAM / WRAM (CPU: 0x6000 to 0x7FFF) if enabled
+// calling function handles the address space
+static void prg_ram_writes(bool enable_prg_ram, Cpu6502* cpu, uint16_t addr, uint8_t val)
+{
+	if (enable_prg_ram) {
+		cpu->mem[addr] = val;
+	}
+}
+
 void mapper_write(Cpu6502* cpu, uint16_t addr, uint8_t val)
 {
 	switch (cpu->cpu_mapper_io->mapper_number) {
 	case 1:
-		mmc1_reg_write(cpu, addr, val);
+		if (addr >= 0x8000) {
+			mmc1_reg_write(cpu, addr, val);
+		} else if (addr >= 0x6000) {
+			prg_ram_writes(cpu->cpu_mapper_io->enable_prg_ram, cpu, addr, val);
+		}
 		break;
 	default:
 		// ignore writes if the mapper doesn't use cpu registers to write to i.e. mapper 0
@@ -258,11 +271,5 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 		}
 		write_count = 0;
 		buffer = 0;
-	}
-
-	// allow writes to PRG RAM / WRAM (CPU: 0x6000 to 0x7FFF) if enabled through reg 3 previously
-	// if disabled you can't read/write to this space (reads will return open bus behaviour)
-	if (cpu->cpu_mapper_io->enable_prg_ram && (addr >= 0x6000) && (addr < 0x8000)) {
-		cpu->mem[addr] = val;
 	}
 }
