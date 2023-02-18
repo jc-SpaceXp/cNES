@@ -4614,7 +4614,7 @@ START_TEST (abs_store_only_writes_on_last_cycle)
 	cpu->instruction_cycles_remaining = 1;
 	cpu->operand = 0xFF; // should remain unchanged
 	// target address is (addr_hi | addr_lo)
-	cpu->addr_hi = 0x58;
+	cpu->addr_hi = 0x18;
 	cpu->addr_lo = 0xC8;
 	cpu->A = 0x32;
 	cpu->X = 0x32;
@@ -4640,7 +4640,7 @@ START_TEST (absx_store_only_writes_on_last_cycle)
 	cpu->instruction_cycles_remaining = 1;
 	cpu->operand = 0xFF; // should remain unchanged
 	// target address is (addr_hi | addr_lo)
-	cpu->addr_hi = 0x68;
+	cpu->addr_hi = 0x19;
 	cpu->addr_lo = 0x00;
 	cpu->A = 0x91;
 	cpu->X = 0x91;
@@ -5868,7 +5868,7 @@ START_TEST (brk_t1)
 {
 	char ins[4] = "BRK";
 	cpu->instruction_cycles_remaining = 6;
-	cpu->PC = 0x7B0B;
+	cpu->PC = 0x1B0B;
 	write_to_cpu(cpu, cpu->PC, 0x55);
 	uint16_t start_PC = cpu->PC;
 
@@ -5884,15 +5884,15 @@ START_TEST (brk_t2)
 {
 	char ins[4] = "BRK";
 	cpu->instruction_cycles_remaining = 5;
-	cpu->PC = 0x7B0C;
+	cpu->PC = 0x1B0C;
 	cpu->stack = 0xFD;
 	uint16_t start_stack = cpu->stack;
 
 	isa_info[reverse_opcode_lut(&ins, IMP)].execute_opcode(cpu);
 
 	// PCH onto stack
-	ck_assert_uint_eq(0x7B, read_from_cpu(cpu, SP_START + start_stack));
-	ck_assert_uint_eq(0x7B, cpu->data_bus);
+	ck_assert_uint_eq(0x1B, read_from_cpu(cpu, SP_START + start_stack));
+	ck_assert_uint_eq(0x1B, cpu->data_bus);
 	ck_assert_uint_eq(start_stack - 1, cpu->stack);
 }
 END_TEST
@@ -5901,7 +5901,7 @@ START_TEST (brk_t3)
 {
 	char ins[4] = "BRK";
 	cpu->instruction_cycles_remaining = 4;
-	cpu->PC = 0x7B0C;
+	cpu->PC = 0x1B0C;
 	cpu->stack = 0xFC;
 	uint16_t start_stack = cpu->stack;
 

@@ -606,7 +606,7 @@ void write_to_cpu(Cpu6502* cpu, uint16_t addr, uint8_t val)
 		write_ppu_reg(addr, val, cpu);
 	} else if (addr == ADDR_JOY1) {
 		write_4016(val, cpu);
-	} else if (addr >= 0x8000) { // currently hard-coded for mappers 0 and 1
+	} else if (addr >= 0x4020) { // Mapper space/region
 		mapper_write(cpu, addr, val);
 	} else {
 		cpu->mem[addr] = val;
