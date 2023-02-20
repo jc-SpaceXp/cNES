@@ -314,6 +314,13 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 				}
 			}
 			cpu->cpu_mapper_io->enable_prg_ram = !((buffer & 0x10) >> 4);
+
+			// Disable PRG RAM if there is actually no PRG RAM present
+			// only valid for NES2.0 headers as iNES headers always have at least
+			// 8K PRG RAM when no PRG RAM is specified
+			if (!cpu->cpu_mapper_io->prg_ram->size) {
+				cpu->cpu_mapper_io->enable_prg_ram = false;
+			}
 		}
 		write_count = 0;
 		buffer = 0;

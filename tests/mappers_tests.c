@@ -101,6 +101,8 @@ static void setup(void)
 	mp_cpu->cpu_mapper_io = cpu_mapper_tester;
 	mp_cpu->cpu_mapper_io->chr = &mp_cart->chr;
 	mp_cpu->cpu_mapper_io->chr->ram_size = 1; // allow writes to CHR-RAM
+	mp_cpu->cpu_mapper_io->prg_ram = &mp_cart->prg_ram;
+	mp_cpu->cpu_mapper_io->prg_ram->size = 0; // disable writes to PRG-RAM
 
 	map_ppu_data_to_cpu_ppu_io(mp_cpu_ppu_io, mp_ppu);
 	mp_cpu->cpu_ppu_io = mp_cpu_ppu_io;
