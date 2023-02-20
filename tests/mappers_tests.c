@@ -768,50 +768,33 @@ START_TEST (mapper_001_reg3_prg_hi_bank_select_16k)
 	free(prg_window);
 }
 
-START_TEST (mapper_001_prg_ram_enabled_writes)
+START_TEST (mapper_001_prg_ram_writes)
 {
 	cpu_mapper_tester->mapper_number = 1;
-	cpu_mapper_tester->enable_prg_ram = true;
-	uint16_t prg_ram_addr = 0x6000; // PRG RAM window is $6000 to $7FFF
+	cpu_mapper_tester->prg_ram->size = 8 * KiB;
+	bool enable_prg_ram[2] = {true, false};
+	cpu_mapper_tester->enable_prg_ram = enable_prg_ram[_i];;
+	uint16_t prg_ram_addr[2] = {0x6000, 0x7045}; // PRG RAM window is $6000 to $7FFF
 
-	mapper_write(mp_cpu, prg_ram_addr, 0xC3); // trigger PRG RAM write
+	mapper_write(mp_cpu, prg_ram_addr[_i], 0xC3); // trigger PRG RAM write
+	uint8_t expected_val[2] = {0xC3, 0x00}; // 0x00 as no value is written
 
-	ck_assert_uint_eq(mp_cpu->mem[prg_ram_addr], 0xC3);
+	ck_assert_uint_eq(mp_cpu->mem[prg_ram_addr[_i]], expected_val[_i]);
 }
 
-START_TEST (mapper_001_prg_ram_disabled_writes)
+START_TEST (mapper_001_prg_ram_reads)
 {
 	cpu_mapper_tester->mapper_number = 1;
-	cpu_mapper_tester->enable_prg_ram = false;
-	uint16_t prg_ram_addr = 0x6000; // PRG RAM window is $6000 to $7FFF
+	cpu_mapper_tester->prg_ram->size = 8 * KiB;
+	bool enable_prg_ram[2] = {true, false};
+	cpu_mapper_tester->enable_prg_ram = enable_prg_ram[_i];;
+	uint16_t prg_ram_addr[2] = {0x6FFF, 0x7A01}; // PRG RAM window is $6000 to $7FFF
 
-	mapper_write(mp_cpu, prg_ram_addr, 0x0F);
+	mapper_write(mp_cpu, prg_ram_addr[_i], 0x4A); // trigger PRG RAM write
+	mp_cpu->data_bus = 0xED;
+	uint8_t expected_val[2] = {0x4A, 0xED};
 
-	ck_assert_uint_ne(mp_cpu->mem[prg_ram_addr], 0x0F);
-}
-
-START_TEST (mapper_001_prg_ram_enabled_reads)
-{
-	cpu_mapper_tester->mapper_number = 1;
-	cpu_mapper_tester->enable_prg_ram = true;
-	uint16_t prg_ram_addr = 0x6000; // PRG RAM window is $6000 to $7FFF
-
-	mp_cpu->mem[prg_ram_addr] = 0xC3;
-	mp_cpu->data_bus = 0x5E;
-
-	ck_assert_uint_eq(mapper_read(mp_cpu, prg_ram_addr), 0xC3);
-}
-
-START_TEST (mapper_001_prg_ram_disabled_reads)
-{
-	cpu_mapper_tester->mapper_number = 1;
-	cpu_mapper_tester->enable_prg_ram = false;
-	uint16_t prg_ram_addr = 0x7B00; // PRG RAM window is $6000 to $7FFF
-
-	mp_cpu->mem[prg_ram_addr] = 0x0D;
-	mp_cpu->data_bus = 0x5E;
-
-	ck_assert_uint_eq(mapper_read(mp_cpu, prg_ram_addr), mp_cpu->data_bus);
+	ck_assert_uint_eq(mapper_read(mp_cpu, prg_ram_addr[_i]), expected_val[_i]);
 }
 
 START_TEST (mapper_001_unmapped_open_bus_reads)
@@ -912,10 +895,8 @@ Suite* mapper_001_suite(void)
 	suite_add_tcase(s, tc_mmc1_reg3_bank_select);
 	tc_mmc1_prg_ram = tcase_create("MMC1 PRG RAM Tests");
 	tcase_add_checked_fixture(tc_mmc1_prg_ram, setup, teardown);
-	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_enabled_writes);
-	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_disabled_writes);
-	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_enabled_reads);
-	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_disabled_reads);
+	tcase_add_loop_test(tc_mmc1_prg_ram, mapper_001_prg_ram_writes, 0, 2);
+	tcase_add_loop_test(tc_mmc1_prg_ram, mapper_001_prg_ram_reads, 0, 2);
 	suite_add_tcase(s, tc_mmc1_prg_ram);
 	tc_mmc1_other = tcase_create("MMC1 Misc. Tests");
 	tcase_add_checked_fixture(tc_mmc1_other, setup, teardown);
