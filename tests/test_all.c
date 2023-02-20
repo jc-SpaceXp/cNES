@@ -35,15 +35,9 @@ int main(void)
 	srunner_free(sr);
 
 	// mapper tests
-	s = mapper_000_suite();
-	sr = srunner_create(s);
-
-	srunner_run_all(sr, CK_NORMAL);
-	number_failed += srunner_ntests_failed(sr);
-	srunner_free(sr);
-
-	s = mapper_001_suite(); // mapper 1
-	sr = srunner_create(s);
+	sr = srunner_create(mapper_master_suite());
+	srunner_add_suite(sr, mapper_000_suite());
+	srunner_add_suite(sr, mapper_001_suite());
 
 	srunner_run_all(sr, CK_NORMAL);
 	number_failed += srunner_ntests_failed(sr);

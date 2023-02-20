@@ -667,6 +667,15 @@ START_TEST (mapper_001_prg_rom_reads)
 }
 
 
+Suite* mapper_master_suite(void)
+{
+	Suite* s;
+
+	s = suite_create("All Mapper Tests");
+
+	return s;
+}
+
 Suite* mapper_000_suite(void)
 {
 	Suite* s;
