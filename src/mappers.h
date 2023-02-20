@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 void mapper_write(Cpu6502* cpu, uint16_t addr, uint8_t val);
+uint8_t mapper_read(const Cpu6502* cpu, uint16_t addr);
 void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu);
 
 #endif /* __MAPPERS__ */

@@ -68,6 +68,52 @@ void mapper_write(Cpu6502* cpu, uint16_t addr, uint8_t val)
 	}
 }
 
+static inline uint8_t cpu_open_bus(const Cpu6502* cpu)
+{
+	return cpu->data_bus;
+}
+
+static uint8_t prg_ram_reads(bool enable_prg_ram, const Cpu6502* cpu, uint16_t addr)
+{
+	uint8_t read_val = 0;
+
+	if (enable_prg_ram) {
+		read_val = cpu->mem[addr];
+	} else {
+		// if PRG RAM is disabled reads will return open bus behaviour
+		read_val = cpu_open_bus(cpu);
+	}
+
+	return read_val;
+}
+
+uint8_t mapper_read(const Cpu6502* cpu, uint16_t addr)
+{
+	uint8_t read_val = 0;
+	// Read from PRG ROM regardless of mapper
+	if (addr >= 0x8000) {
+		read_val = cpu->mem[addr];
+		return read_val; // early return
+	}
+
+	switch (cpu->cpu_mapper_io->mapper_number) {
+	case 0:
+		read_val = cpu_open_bus(cpu);
+		break;
+	case 1:
+		read_val = cpu_open_bus(cpu);
+
+		if ((addr >= 0x6000) && (addr < 0x8000)) {
+			read_val = prg_ram_reads(cpu->cpu_mapper_io->enable_prg_ram, cpu, addr);
+		}
+		break;
+	default:
+		break;
+	}
+
+	return read_val;
+}
+
 // used to change the nametable mirroring on the fly
 static void set_nametable_mirroring(Cpu6502* cpu)
 {

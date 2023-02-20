@@ -176,6 +176,27 @@ START_TEST (mapper_000_chr_rom_banks)
 	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_1[0x0000], &chr_array_2[0], 4 * KiB);
 }
 
+START_TEST (mapper_000_unmapped_open_bus_reads)
+{
+	cpu_mapper_tester->mapper_number = 0;
+	uint16_t addr = 0x50EF;
+
+	mp_cpu->mem[addr] = 0x3D;
+	mp_cpu->data_bus = 0x98;
+
+	ck_assert_uint_eq(mapper_read(mp_cpu, addr), mp_cpu->data_bus);
+}
+
+START_TEST (mapper_000_prg_rom_reads)
+{
+	cpu_mapper_tester->mapper_number = 0;
+	uint16_t prg_rom_addr = 0xABC0; // PRG ROM window is $8000 to $FFFF
+
+	mp_cpu->mem[prg_rom_addr] = 0x3E;
+
+	ck_assert_uint_eq(mapper_read(mp_cpu, prg_rom_addr), mp_cpu->mem[prg_rom_addr]);
+}
+
 START_TEST (mapper_001_last_write_selects_reg)
 {
 	cpu_mapper_tester->mapper_number = 1;
@@ -600,11 +621,57 @@ START_TEST (mapper_001_prg_ram_disabled_writes)
 	ck_assert_uint_ne(mp_cpu->mem[prg_ram_addr], 0x0F);
 }
 
+START_TEST (mapper_001_prg_ram_enabled_reads)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->enable_prg_ram = true;
+	uint16_t prg_ram_addr = 0x6000; // PRG RAM window is $6000 to $7FFF
+
+	mp_cpu->mem[prg_ram_addr] = 0xC3;
+	mp_cpu->data_bus = 0x5E;
+
+	ck_assert_uint_eq(mapper_read(mp_cpu, prg_ram_addr), 0xC3);
+}
+
+START_TEST (mapper_001_prg_ram_disabled_reads)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->enable_prg_ram = false;
+	uint16_t prg_ram_addr = 0x7B00; // PRG RAM window is $6000 to $7FFF
+
+	mp_cpu->mem[prg_ram_addr] = 0x0D;
+	mp_cpu->data_bus = 0x5E;
+
+	ck_assert_uint_eq(mapper_read(mp_cpu, prg_ram_addr), mp_cpu->data_bus);
+}
+
+START_TEST (mapper_001_unmapped_open_bus_reads)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	uint16_t addr = 0x4FC2;
+
+	mp_cpu->mem[addr] = 0x0D;
+	mp_cpu->data_bus = 0x5E;
+
+	ck_assert_uint_eq(mapper_read(mp_cpu, addr), mp_cpu->data_bus);
+}
+
+START_TEST (mapper_001_prg_rom_reads)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	uint16_t prg_rom_addr = 0x9FC2; // PRG ROM window is $8000 to $FFFF
+
+	mp_cpu->mem[prg_rom_addr] = 0x0D;
+
+	ck_assert_uint_eq(mapper_read(mp_cpu, prg_rom_addr), mp_cpu->mem[prg_rom_addr]);
+}
+
 
 Suite* mapper_000_suite(void)
 {
 	Suite* s;
 	TCase* tc_prg_and_chr_banks;
+	TCase* tc_other_misc_tests;
 
 	s = suite_create("Mapper 000 Tests");
 	tc_prg_and_chr_banks = tcase_create("PRG and CHR Banks Tests");
@@ -612,6 +679,11 @@ Suite* mapper_000_suite(void)
 	tcase_add_loop_test(tc_prg_and_chr_banks, mapper_000_prg_rom_banks, 0, 2);
 	tcase_add_loop_test(tc_prg_and_chr_banks, mapper_000_chr_rom_banks, 0, 2);
 	suite_add_tcase(s, tc_prg_and_chr_banks);
+	tc_other_misc_tests = tcase_create("Mapper 000 Misc. Tests");
+	tcase_add_checked_fixture(tc_other_misc_tests, setup, teardown);
+	tcase_add_test(tc_other_misc_tests, mapper_000_unmapped_open_bus_reads);
+	tcase_add_test(tc_other_misc_tests, mapper_000_prg_rom_reads);
+	suite_add_tcase(s, tc_other_misc_tests);
 
 	return s;
 }
@@ -625,6 +697,7 @@ Suite* mapper_001_suite(void)
 	TCase* tc_mmc1_reg2_bank_select; // chr1 register
 	TCase* tc_mmc1_reg3_bank_select; // prg register
 	TCase* tc_mmc1_prg_ram;
+	TCase* tc_mmc1_other;
 
 	s = suite_create("Mapper 001 Tests");
 	tc_mmc1_registers = tcase_create("MMC1 Registers Tests");
@@ -659,7 +732,14 @@ Suite* mapper_001_suite(void)
 	tcase_add_checked_fixture(tc_mmc1_prg_ram, setup, teardown);
 	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_enabled_writes);
 	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_disabled_writes);
+	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_enabled_reads);
+	tcase_add_test(tc_mmc1_prg_ram, mapper_001_prg_ram_disabled_reads);
 	suite_add_tcase(s, tc_mmc1_prg_ram);
+	tc_mmc1_other = tcase_create("MMC1 Misc. Tests");
+	tcase_add_checked_fixture(tc_mmc1_other, setup, teardown);
+	tcase_add_test(tc_mmc1_other, mapper_001_unmapped_open_bus_reads);
+	tcase_add_test(tc_mmc1_other, mapper_001_prg_rom_reads);
+	suite_add_tcase(s, tc_mmc1_other);
 
 	return s;
 }
