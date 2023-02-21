@@ -288,6 +288,9 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 			// reg 1: RxxC CCCC
 			// C bits
 			unsigned bank_select = buffer & 0x1F;
+			unsigned chr_rom_banks = cpu->cpu_mapper_io->chr->rom_size / (4 * KiB);
+			normalise_any_out_of_bounds_bank(&bank_select, chr_rom_banks);
+
 			if (cpu->cpu_mapper_io->chr_bank_size == 8) {
 				// ignore lowest bit (can only be aligned to even 4K banks: 0, 2, 4 etc.)
 				// so can just shift out the lsb and offset each bank by 8K
@@ -300,6 +303,9 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 		} else if ((addr >= 0xC000) && (addr <= 0xDFFF)) {
 			// reg 2: RxxC CCCC (ignored if CHR banks are in 8K mode)
 			unsigned bank_select = buffer & 0x1F;
+			unsigned chr_rom_banks = cpu->cpu_mapper_io->chr->rom_size / (4 * KiB);
+			normalise_any_out_of_bounds_bank(&bank_select, chr_rom_banks);
+
 			if (cpu->cpu_mapper_io->chr_bank_size == 4) {
 				// Only copy CHR ROM
 				if (cpu->cpu_mapper_io->chr->rom_size) {
