@@ -299,6 +299,14 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 			// reg 3: RxxB PPPP
 			unsigned bank_select = buffer & 0x0F;
 			unsigned prg_rom_banks = cpu->cpu_mapper_io->prg_rom->size / (16 * KiB);
+			// Out of range bank
+			if (bank_select >= prg_rom_banks) {
+				// ignore upper bits of PRG ROM bank
+				// prg_rom_banks should be aligned to a power of 2
+				// otherwise calculation below should be "&= log2(prg_rom_banks)"
+				bank_select &= prg_rom_banks - 1;
+			}
+
 			if (cpu->cpu_mapper_io->prg_rom_bank_size == 32) {
 				// ignore lowest bit (can only be aligned to even 16K banks: 0, 2, 4 etc.)
 				// so can just shift out the lsb and offset each bank by 32K
