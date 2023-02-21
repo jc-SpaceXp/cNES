@@ -694,7 +694,7 @@ START_TEST (mapper_001_reg3_prg_lo_bank_select_16k)
 	cpu_mapper_tester->prg_high_bank_fixed = true;
 	mp_cpu->cycle = 13;
 	uint16_t prg_reg = 0xFF5E; // $E000 to $FFFF
-	unsigned int bank_select = _i; // 0-31 banks
+	unsigned int bank_select = _i; // 0-15 banks
 	uint8_t* prg_window = calloc(256 * KiB, sizeof(uint8_t));
 	mp_cart->prg_rom.data = prg_window;
 	mp_cart->prg_rom.size = 256 * KiB;
@@ -736,7 +736,7 @@ START_TEST (mapper_001_reg3_prg_hi_bank_select_16k)
 	cpu_mapper_tester->prg_high_bank_fixed = false;
 	mp_cpu->cycle = 13;
 	uint16_t prg_reg = 0xFF5E; // $E000 to $FFFF
-	unsigned int bank_select = _i; // 0-31 banks
+	unsigned int bank_select = _i; // 0-15 banks
 	uint8_t* prg_window = calloc(256 * KiB, sizeof(uint8_t));
 	mp_cart->prg_rom.data = prg_window;
 	mp_cart->prg_rom.size = 256 * KiB;
@@ -765,6 +765,46 @@ START_TEST (mapper_001_reg3_prg_hi_bank_select_16k)
 	ck_assert_mem_eq(&mp_cpu->mem[0xC000]
 	                , prg_window + bank_select * 16 * KiB
 	                , 16 * KiB);
+	free(prg_window);
+}
+
+START_TEST (mapper_001_reg3_prg_ram_enable_bit)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->prg_rom_bank_size = 16;
+	// Lo/Hi bank mirror each other, one must be true and one must be false
+	cpu_mapper_tester->prg_low_bank_fixed = true;
+	cpu_mapper_tester->prg_high_bank_fixed = false;
+	mp_cpu->cycle = 13;
+	uint16_t prg_reg = 0xFF5E; // $E000 to $FFFF
+	uint8_t prg_ram_bit[3] = {0x00, 0x00, 0x01}; // enabled, enabled. disabled
+	// Size 0 for enabled prg ram to test if bool is set if no prg ram is available
+	// even though the bit is set
+	unsigned prg_ram_size[3] = {8 * KiB, 0 * KiB, 8 * KiB};
+	mp_cart->prg_ram.size = prg_ram_size[_i];
+	uint8_t* prg_window = calloc(256 * KiB, sizeof(uint8_t));
+	mp_cart->prg_rom.data = prg_window;
+	mp_cart->prg_rom.size = 256 * KiB;
+	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
+	for (int bank = 0; bank < 16; ++bank) {
+		memset(mp_cart->prg_rom.data + bank * 16 * KiB, bank, 16 * KiB);
+	}
+
+	// 1st write is LSB and last is MSB
+	mapper_write(mp_cpu, prg_reg, 0x00); // 1
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, 0x00); // 2
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, 0x00); // 3
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, 0x00); // 4
+	mp_cpu->cycle += 5;
+	mapper_write(mp_cpu, prg_reg, prg_ram_bit[_i]); // 5
+	mp_cpu->cycle += 5;
+	bool expected_val[3] = {true, false, false};
+
+	ck_assert_uint_eq(cpu_mapper_tester->enable_prg_ram, expected_val[_i]);
+
 	free(prg_window);
 }
 
@@ -856,7 +896,7 @@ Suite* mapper_001_suite(void)
 	TCase* tc_mmc1_reg0_bits; // ctrl register
 	TCase* tc_mmc1_reg1_bank_select; // chr0 register
 	TCase* tc_mmc1_reg2_bank_select; // chr1 register
-	TCase* tc_mmc1_reg3_bank_select; // prg register
+	TCase* tc_mmc1_reg3; // prg register
 	TCase* tc_mmc1_prg_ram;
 	TCase* tc_mmc1_other;
 
@@ -887,12 +927,13 @@ Suite* mapper_001_suite(void)
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_8k_rom_ignored, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_8k_ram_ignored, 0, 32);
 	suite_add_tcase(s, tc_mmc1_reg2_bank_select);
-	tc_mmc1_reg3_bank_select = tcase_create("MMC1 Reg3/Prg Register Tests");
-	tcase_add_checked_fixture(tc_mmc1_reg3_bank_select, setup, teardown);
-	tcase_add_loop_test(tc_mmc1_reg3_bank_select, mapper_001_reg3_prg_bank_select_32k, 0, 16);
-	tcase_add_loop_test(tc_mmc1_reg3_bank_select, mapper_001_reg3_prg_lo_bank_select_16k, 0, 16);
-	tcase_add_loop_test(tc_mmc1_reg3_bank_select, mapper_001_reg3_prg_hi_bank_select_16k, 0, 16);
-	suite_add_tcase(s, tc_mmc1_reg3_bank_select);
+	tc_mmc1_reg3 = tcase_create("MMC1 Reg3/Prg Register Tests");
+	tcase_add_checked_fixture(tc_mmc1_reg3, setup, teardown);
+	tcase_add_loop_test(tc_mmc1_reg3, mapper_001_reg3_prg_bank_select_32k, 0, 16);
+	tcase_add_loop_test(tc_mmc1_reg3, mapper_001_reg3_prg_lo_bank_select_16k, 0, 16);
+	tcase_add_loop_test(tc_mmc1_reg3, mapper_001_reg3_prg_hi_bank_select_16k, 0, 16);
+	tcase_add_loop_test(tc_mmc1_reg3, mapper_001_reg3_prg_ram_enable_bit, 0, 3);
+	suite_add_tcase(s, tc_mmc1_reg3);
 	tc_mmc1_prg_ram = tcase_create("MMC1 PRG RAM Tests");
 	tcase_add_checked_fixture(tc_mmc1_prg_ram, setup, teardown);
 	tcase_add_loop_test(tc_mmc1_prg_ram, mapper_001_prg_ram_writes, 0, 2);
