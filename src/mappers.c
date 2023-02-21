@@ -189,6 +189,17 @@ static void mapper_001(Cartridge* cart, Cpu6502* cpu, const Ppu2C02* ppu)
 	set_prg_rom_bank_2(cpu, prg_rom_banks - 1);
 }
 
+static normalise_any_out_of_bounds_bank(unsigned* bank_select, unsigned total_banks)
+{
+	// Out of range bank
+	if (*bank_select >= total_banks) {
+		// ignore upper bits of bank number
+		// banks should be aligned to a power of 2
+		// otherwise calculation below should be "&= log2(total_banks)"
+		*bank_select &= total_banks - 1;
+	}
+}
+
 
 static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 {
@@ -299,13 +310,7 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 			// reg 3: RxxB PPPP
 			unsigned bank_select = buffer & 0x0F;
 			unsigned prg_rom_banks = cpu->cpu_mapper_io->prg_rom->size / (16 * KiB);
-			// Out of range bank
-			if (bank_select >= prg_rom_banks) {
-				// ignore upper bits of PRG ROM bank
-				// prg_rom_banks should be aligned to a power of 2
-				// otherwise calculation below should be "&= log2(prg_rom_banks)"
-				bank_select &= prg_rom_banks - 1;
-			}
+			normalise_any_out_of_bounds_bank(&bank_select, prg_rom_banks);
 
 			if (cpu->cpu_mapper_io->prg_rom_bank_size == 32) {
 				// ignore lowest bit (can only be aligned to even 16K banks: 0, 2, 4 etc.)
