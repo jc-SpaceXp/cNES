@@ -115,35 +115,36 @@ uint8_t mapper_read(const Cpu6502* cpu, uint16_t addr)
 }
 
 // used to change the nametable mirroring on the fly
-static void set_nametable_mirroring(Cpu6502* cpu)
+static void set_nametable_mirroring(struct PpuMemoryMap* vram
+                                   , PpuNametableMirroringType nametable_mirroring)
 {
-	if (*(cpu->cpu_ppu_io->nametable_mirroring) == SINGLE_SCREEN_A) {
-		cpu->cpu_ppu_io->vram->nametable_0 = &cpu->cpu_ppu_io->vram->nametable_A;
-		cpu->cpu_ppu_io->vram->nametable_1 = &cpu->cpu_ppu_io->vram->nametable_A;
-		cpu->cpu_ppu_io->vram->nametable_2 = &cpu->cpu_ppu_io->vram->nametable_A;
-		cpu->cpu_ppu_io->vram->nametable_3 = &cpu->cpu_ppu_io->vram->nametable_A;
-	} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == SINGLE_SCREEN_B) {
-		cpu->cpu_ppu_io->vram->nametable_0 = &cpu->cpu_ppu_io->vram->nametable_B;
-		cpu->cpu_ppu_io->vram->nametable_1 = &cpu->cpu_ppu_io->vram->nametable_B;
-		cpu->cpu_ppu_io->vram->nametable_2 = &cpu->cpu_ppu_io->vram->nametable_B;
-		cpu->cpu_ppu_io->vram->nametable_3 = &cpu->cpu_ppu_io->vram->nametable_B;
-	} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == HORIZONTAL) {
-		cpu->cpu_ppu_io->vram->nametable_0 = &cpu->cpu_ppu_io->vram->nametable_A;
-		cpu->cpu_ppu_io->vram->nametable_1 = &cpu->cpu_ppu_io->vram->nametable_A;
-		cpu->cpu_ppu_io->vram->nametable_2 = &cpu->cpu_ppu_io->vram->nametable_B;
-		cpu->cpu_ppu_io->vram->nametable_3 = &cpu->cpu_ppu_io->vram->nametable_B;
-	} else if (*(cpu->cpu_ppu_io->nametable_mirroring) == VERTICAL) {
-		cpu->cpu_ppu_io->vram->nametable_0 = &cpu->cpu_ppu_io->vram->nametable_A;
-		cpu->cpu_ppu_io->vram->nametable_1 = &cpu->cpu_ppu_io->vram->nametable_B;
-		cpu->cpu_ppu_io->vram->nametable_2 = &cpu->cpu_ppu_io->vram->nametable_A;
-		cpu->cpu_ppu_io->vram->nametable_3 = &cpu->cpu_ppu_io->vram->nametable_B;
+	if (nametable_mirroring == SINGLE_SCREEN_A) {
+		vram->nametable_0 = &vram->nametable_A;
+		vram->nametable_1 = &vram->nametable_A;
+		vram->nametable_2 = &vram->nametable_A;
+		vram->nametable_3 = &vram->nametable_A;
+	} else if (nametable_mirroring == SINGLE_SCREEN_B) {
+		vram->nametable_0 = &vram->nametable_B;
+		vram->nametable_1 = &vram->nametable_B;
+		vram->nametable_2 = &vram->nametable_B;
+		vram->nametable_3 = &vram->nametable_B;
+	} else if (nametable_mirroring == HORIZONTAL) {
+		vram->nametable_0 = &vram->nametable_A;
+		vram->nametable_1 = &vram->nametable_A;
+		vram->nametable_2 = &vram->nametable_B;
+		vram->nametable_3 = &vram->nametable_B;
+	} else if (nametable_mirroring == VERTICAL) {
+		vram->nametable_0 = &vram->nametable_A;
+		vram->nametable_1 = &vram->nametable_B;
+		vram->nametable_2 = &vram->nametable_A;
+		vram->nametable_3 = &vram->nametable_B;
 	}
 }
 
 void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 {
 	// init mirroring mapping
-	set_nametable_mirroring(cpu);
+	set_nametable_mirroring(&ppu->vram, ppu->nametable_mirroring);
 	switch (cpu->cpu_mapper_io->mapper_number) {
 	case 0:
 		mapper_000(cart, cpu, ppu);
@@ -238,19 +239,23 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 			switch (buffer & 0x03) {
 			case 0x00: // 1-screen mirroring nametable 0
 				*(cpu->cpu_ppu_io->nametable_mirroring) = SINGLE_SCREEN_A;
-				set_nametable_mirroring(cpu);
+				set_nametable_mirroring(cpu->cpu_ppu_io->vram
+				                       , *cpu->cpu_ppu_io->nametable_mirroring);
 				break;
 			case 0x01: // 1-screen mirroring nametable 1
 				*(cpu->cpu_ppu_io->nametable_mirroring) = SINGLE_SCREEN_B;
-				set_nametable_mirroring(cpu);
+				set_nametable_mirroring(cpu->cpu_ppu_io->vram
+				                       , *cpu->cpu_ppu_io->nametable_mirroring);
 				break;
 			case 0x02: // 0b10 vertical mirroring
 				*(cpu->cpu_ppu_io->nametable_mirroring) = VERTICAL;
-				set_nametable_mirroring(cpu);
+				set_nametable_mirroring(cpu->cpu_ppu_io->vram
+				                       , *cpu->cpu_ppu_io->nametable_mirroring);
 				break;
 			case 0x03: // 0b11 horizontal mirroring
 				*(cpu->cpu_ppu_io->nametable_mirroring) = HORIZONTAL;
-				set_nametable_mirroring(cpu);
+				set_nametable_mirroring(cpu->cpu_ppu_io->vram
+				                       , *cpu->cpu_ppu_io->nametable_mirroring);
 				break;
 			}
 			// H bit
