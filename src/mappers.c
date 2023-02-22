@@ -189,7 +189,7 @@ static void mapper_001(Cartridge* cart, Cpu6502* cpu, const Ppu2C02* ppu)
 	set_prg_rom_bank_2(cpu, prg_rom_banks - 1);
 }
 
-static normalise_any_out_of_bounds_bank(unsigned* bank_select, unsigned total_banks)
+static void normalise_any_out_of_bounds_bank(unsigned* bank_select, unsigned total_banks)
 {
 	// Out of range bank
 	if (*bank_select >= total_banks) {
