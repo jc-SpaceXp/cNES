@@ -494,7 +494,7 @@ START_TEST (mapper_001_reg1_chr0_bank_select_8k_ram_ignored)
 	free(chr_window);
 }
 
-START_TEST (mapper_001_reg1_chr0_bank_select_4k_rom_ignore_upper_bits)
+START_TEST (mapper_001_reg1_chr0_bank_select_4k_rom_out_of_bounds)
 {
 	cpu_mapper_tester->mapper_number = 1;
 	mp_cpu->cycle = 13;
@@ -528,7 +528,7 @@ START_TEST (mapper_001_reg1_chr0_bank_select_4k_rom_ignore_upper_bits)
 	free(chr_window);
 }
 
-START_TEST (mapper_001_reg1_chr0_bank_select_8k_rom_ignore_upper_bits)
+START_TEST (mapper_001_reg1_chr0_bank_select_8k_rom_out_of_bounds)
 {
 	cpu_mapper_tester->mapper_number = 1;
 	mp_cpu->cycle = 13;
@@ -732,7 +732,7 @@ START_TEST (mapper_001_reg2_chr1_bank_select_8k_ram_ignored)
 	free(chr_window);
 }
 
-START_TEST (mapper_001_reg2_chr1_bank_select_4k_rom_ignore_upper_bits)
+START_TEST (mapper_001_reg2_chr1_bank_select_4k_rom_out_of_bounds)
 {
 	cpu_mapper_tester->mapper_number = 1;
 	mp_cpu->cycle = 13;
@@ -1149,8 +1149,8 @@ Suite* mapper_001_suite(void)
 	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_4k_ram_ignored, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_8k_rom, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_8k_ram_ignored, 0, 32);
-	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_4k_rom_ignore_upper_bits, 0, 32);
-	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_8k_rom_ignore_upper_bits, 0, 16);
+	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_4k_rom_out_of_bounds, 0, 32);
+	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_8k_rom_out_of_bounds, 0, 16);
 	suite_add_tcase(s, tc_mmc1_reg1_bank_select);
 	tc_mmc1_reg2_bank_select = tcase_create("MMC1 Reg2/Chr1 Register Tests");
 	tcase_add_checked_fixture(tc_mmc1_reg2_bank_select, setup, teardown);
@@ -1158,7 +1158,7 @@ Suite* mapper_001_suite(void)
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_4k_ram_ignored, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_8k_rom_ignored, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_8k_ram_ignored, 0, 32);
-	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_4k_rom_ignore_upper_bits, 0, 32);
+	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_4k_rom_out_of_bounds, 0, 32);
 	suite_add_tcase(s, tc_mmc1_reg2_bank_select);
 	tc_mmc1_reg3 = tcase_create("MMC1 Reg3/Prg Register Tests");
 	tcase_add_checked_fixture(tc_mmc1_reg3, setup, teardown);
