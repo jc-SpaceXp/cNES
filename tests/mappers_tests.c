@@ -107,6 +107,19 @@ static void setup(void)
 	map_ppu_data_to_cpu_ppu_io(mp_cpu_ppu_io, mp_ppu);
 	mp_cpu->cpu_ppu_io = mp_cpu_ppu_io;
 	mp_ppu->nametable_mirroring = SINGLE_SCREEN_A;
+
+	// Don't rely on uninitialised values when comparing memory
+	// Unit tests set a whole block to a constant value
+	// so setting adjacent values to different ones will make
+	// sure that the unit tests are always valid
+	mp_ppu->vram.pattern_table_0[0x0000] = 0x01;
+	mp_ppu->vram.pattern_table_0[0x0001] = 0x02;
+	mp_ppu->vram.pattern_table_1[0x0000] = 0x01;
+	mp_ppu->vram.pattern_table_1[0x0001] = 0x02;
+	mp_cpu->mem[0x8000] = 0x01;
+	mp_cpu->mem[0x8001] = 0x02;
+	mp_cpu->mem[0xC000] = 0x01;
+	mp_cpu->mem[0xC001] = 0x02;
 }
 
 static void teardown(void)
