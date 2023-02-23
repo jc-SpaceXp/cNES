@@ -6477,89 +6477,39 @@ START_TEST (set_data_bus_for_writes)
 END_TEST
 
 
-Suite* cpu_suite(void)
+
+Suite* cpu_master_suite(void)
+{
+	Suite* s;
+
+	s = suite_create("All Cpu Tests");
+
+	return s;
+}
+
+Suite* cpu_test_helpers_suite(void)
 {
 	Suite* s;
 	TCase* tc_test_helpers;
-	TCase* tc_address_modes;
-	TCase* tc_branch_not_taken_addr;
-	TCase* tc_branch_taken_addr;
-	TCase* tc_branch_take_page_cross;
-	TCase* tc_cpu_reads;
-	TCase* tc_cpu_writes;
-	TCase* tc_cpu_stack_op;
-	TCase* tc_cpu_isa;
-	TCase* tc_cpu_hardware_interrupts;
-	TCase* tc_cpu_instruction_trace_logger;
-	TCase* tc_cpu_address_modes_rw_logic;
-	TCase* tc_cpu_address_modes_cycles;
-	TCase* tc_cpu_special_decoders_cycles;
-	TCase* tc_cpu_basic_functions;
 
-	s = suite_create("Cpu Tests");
+	s = suite_create("Cpu Unit Test Helpers Tests");
+
 	tc_test_helpers = tcase_create("Test Helpers");
 	tcase_add_test(tc_test_helpers, test_strcmp_reverse_opcode_lut);
 	suite_add_tcase(s, tc_test_helpers);
-	tc_address_modes = tcase_create("Address Modes Correct Address");
-	tcase_add_checked_fixture(tc_address_modes, setup, teardown);
-	tcase_add_test(tc_address_modes, addr_mode_imm);
-	tcase_add_test(tc_address_modes, addr_mode_abs_read_store);
-	tcase_add_test(tc_address_modes, addr_mode_abs_rmw);
-	tcase_add_test(tc_address_modes, addr_mode_abs_jmp);
-	tcase_add_test(tc_address_modes, addr_mode_absx_read_store);
-	tcase_add_test(tc_address_modes, addr_mode_absx_read_store_page_cross);
-	tcase_add_test(tc_address_modes, addr_mode_absx_read_store_STx_no_page_cross);
-	tcase_add_test(tc_address_modes, addr_mode_absx_rmw);
-	tcase_add_test(tc_address_modes, addr_mode_absy_read_store);
-	tcase_add_test(tc_address_modes, addr_mode_absy_read_store_page_cross);
-	tcase_add_test(tc_address_modes, addr_mode_absy_read_store_STx_no_page_cross);
-	tcase_add_test(tc_address_modes, addr_mode_zp_read_store);
-	tcase_add_test(tc_address_modes, addr_mode_zp_rmw);
-	tcase_add_test(tc_address_modes, addr_mode_zpx_read_store);
-	tcase_add_test(tc_address_modes, addr_mode_zpx_read_store_page_cross);
-	tcase_add_test(tc_address_modes, addr_mode_zpx_rmw);
-	tcase_add_test(tc_address_modes, addr_mode_zpy_read_store);
-	tcase_add_test(tc_address_modes, addr_mode_zpy_read_store_page_cross);
-	tcase_add_test(tc_address_modes, ind_jmp);
-	tcase_add_test(tc_address_modes, ind_jmp_bug);
-	tcase_add_test(tc_address_modes, addr_mode_indx_read_store);
-	tcase_add_test(tc_address_modes, addr_mode_indy_read_store);
-	tcase_add_test(tc_address_modes, addr_mode_indy_read_store_page_cross);
-	tcase_add_test(tc_address_modes, addr_mode_indy_read_store_STx_no_page_cross);
-	suite_add_tcase(s, tc_address_modes);
-	tc_branch_not_taken_addr = tcase_create("Branch Not Taken Correct Address");
-	tcase_add_checked_fixture(tc_branch_not_taken_addr, setup, teardown);
-	tcase_add_test(tc_branch_not_taken_addr, bcc_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, bcs_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, beq_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, bmi_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, bne_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, bpl_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, bvc_not_taken_correct_addr);
-	tcase_add_test(tc_branch_not_taken_addr, bvs_not_taken_correct_addr);
-	suite_add_tcase(s, tc_branch_not_taken_addr);
-	tc_branch_taken_addr = tcase_create("Branch Taken Correct Address");
-	tcase_add_checked_fixture(tc_branch_taken_addr, setup, teardown);
-	tcase_add_test(tc_branch_taken_addr, bcc_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, bcs_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, beq_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, bmi_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, bne_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, bpl_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, bvc_taken_correct_addr);
-	tcase_add_test(tc_branch_taken_addr, bvs_taken_correct_addr);
-	suite_add_tcase(s, tc_branch_taken_addr);
-	tc_branch_take_page_cross = tcase_create("Branch Taken Correct Page Cross Address");
-	tcase_add_checked_fixture(tc_branch_take_page_cross, setup, teardown);
-	tcase_add_test(tc_branch_take_page_cross, bcc_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, bcs_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, beq_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, bmi_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, bne_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, bpl_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, bvc_take_page_cross_correct_addr);
-	tcase_add_test(tc_branch_take_page_cross, bvs_take_page_cross_correct_addr);
-	suite_add_tcase(s, tc_branch_take_page_cross);
+
+	return s;
+}
+
+Suite* cpu_memory_access_suite(void)
+{
+	Suite* s;
+	TCase* tc_cpu_reads;
+	TCase* tc_cpu_writes;
+	TCase* tc_cpu_stack_op;
+
+	s = suite_create("Cpu Memory Access Tests (RAM/Stack etc.)");
+
 	tc_cpu_reads = tcase_create("Cpu Memory Mapped Reads");
 	tcase_add_checked_fixture(tc_cpu_reads, setup, teardown);
 	tcase_add_test(tc_cpu_reads, ram_read_non_mirrored);
@@ -6597,6 +6547,251 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_stack_op, stack_pull_no_underflow);
 	tcase_add_test(tc_cpu_stack_op, stack_pull_underflow);
 	suite_add_tcase(s, tc_cpu_stack_op);
+
+	return s;
+}
+
+Suite* cpu_bus_signals_suite(void)
+{
+	Suite* s;
+	TCase* tc_cpu_basic_functions;
+
+	s = suite_create("Cpu Bus Signals (Address & Data Bus) Tests");
+
+	tc_cpu_basic_functions = tcase_create("Basic Tests");
+	tcase_add_checked_fixture(tc_cpu_basic_functions, setup, teardown);
+	tcase_add_test(tc_cpu_basic_functions, set_address_bus_bytes_adh_adl);
+	tcase_add_test(tc_cpu_basic_functions, set_address_bus_from_pc);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_from_address_bus_read);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_adl);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_adh);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_bal);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_inl);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_inh);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_branch_offset);
+	tcase_add_test(tc_cpu_basic_functions, set_data_bus_for_writes);
+	suite_add_tcase(s, tc_cpu_basic_functions);
+
+	return s;
+}
+
+Suite* cpu_address_mode_final_address_suite(void)
+{
+	Suite* s;
+	TCase* tc_address_modes;
+
+	s = suite_create("Cpu Address Modes Final Address Tests");
+
+	tc_address_modes = tcase_create("Address Modes Correct Address");
+	tcase_add_checked_fixture(tc_address_modes, setup, teardown);
+	tcase_add_test(tc_address_modes, addr_mode_imm);
+	tcase_add_test(tc_address_modes, addr_mode_abs_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_abs_rmw);
+	tcase_add_test(tc_address_modes, addr_mode_abs_jmp);
+	tcase_add_test(tc_address_modes, addr_mode_absx_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_absx_read_store_page_cross);
+	tcase_add_test(tc_address_modes, addr_mode_absx_read_store_STx_no_page_cross);
+	tcase_add_test(tc_address_modes, addr_mode_absx_rmw);
+	tcase_add_test(tc_address_modes, addr_mode_absy_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_absy_read_store_page_cross);
+	tcase_add_test(tc_address_modes, addr_mode_absy_read_store_STx_no_page_cross);
+	tcase_add_test(tc_address_modes, addr_mode_zp_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_zp_rmw);
+	tcase_add_test(tc_address_modes, addr_mode_zpx_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_zpx_read_store_page_cross);
+	tcase_add_test(tc_address_modes, addr_mode_zpx_rmw);
+	tcase_add_test(tc_address_modes, addr_mode_zpy_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_zpy_read_store_page_cross);
+	tcase_add_test(tc_address_modes, ind_jmp);
+	tcase_add_test(tc_address_modes, ind_jmp_bug);
+	tcase_add_test(tc_address_modes, addr_mode_indx_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_indy_read_store);
+	tcase_add_test(tc_address_modes, addr_mode_indy_read_store_page_cross);
+	tcase_add_test(tc_address_modes, addr_mode_indy_read_store_STx_no_page_cross);
+	suite_add_tcase(s, tc_address_modes);
+
+	return s;
+}
+
+Suite* cpu_branch_address_suite(void)
+{
+	Suite* s;
+	TCase* tc_branch_not_taken_addr;
+	TCase* tc_branch_taken_addr;
+	TCase* tc_branch_take_page_cross;
+
+	s = suite_create("Branch Address Tests");
+
+	tc_branch_not_taken_addr = tcase_create("Branch Not Taken Correct Address");
+	tcase_add_checked_fixture(tc_branch_not_taken_addr, setup, teardown);
+	tcase_add_test(tc_branch_not_taken_addr, bcc_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bcs_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, beq_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bmi_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bne_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bpl_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bvc_not_taken_correct_addr);
+	tcase_add_test(tc_branch_not_taken_addr, bvs_not_taken_correct_addr);
+	suite_add_tcase(s, tc_branch_not_taken_addr);
+	tc_branch_taken_addr = tcase_create("Branch Taken Correct Address");
+	tcase_add_checked_fixture(tc_branch_taken_addr, setup, teardown);
+	tcase_add_test(tc_branch_taken_addr, bcc_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bcs_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, beq_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bmi_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bne_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bpl_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bvc_taken_correct_addr);
+	tcase_add_test(tc_branch_taken_addr, bvs_taken_correct_addr);
+	suite_add_tcase(s, tc_branch_taken_addr);
+	tc_branch_take_page_cross = tcase_create("Branch Taken Correct Page Cross Address");
+	tcase_add_checked_fixture(tc_branch_take_page_cross, setup, teardown);
+	tcase_add_test(tc_branch_take_page_cross, bcc_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bcs_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, beq_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bmi_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bne_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bpl_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bvc_take_page_cross_correct_addr);
+	tcase_add_test(tc_branch_take_page_cross, bvs_take_page_cross_correct_addr);
+	suite_add_tcase(s, tc_branch_take_page_cross);
+
+	return s;
+}
+
+Suite* cpu_single_cycle_suite(void)
+{
+	Suite* s;
+	TCase* tc_cpu_address_modes_cycles;
+	TCase* tc_cpu_address_modes_rw_logic;
+	TCase* tc_cpu_special_decoders_cycles;
+
+	s = suite_create("Single Cycle Address Mode Tests (and unique instructions)");
+
+	tc_cpu_address_modes_cycles = tcase_create("Cpu Address Modes Cycle-By-Cycle Verification");
+	tcase_add_checked_fixture(tc_cpu_address_modes_cycles, setup, teardown);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t3_dummy_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t4_dummy_write);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t3_no_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t3_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t4);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t3_1st_absx_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t4_2nd_absx_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t5_dummy_write);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_no_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t4);
+	tcase_add_test(tc_cpu_address_modes_cycles, acc_t1_dummy_opcode_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, imp_t1_dummy_opcode_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t2_dummy_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t4);
+	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t5);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t4_no_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t4_page_cross);
+	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t5);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_read_store_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t2);
+	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t3_dummy_write);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t2_dummy_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t2_dummy_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t4_dummy_write);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t1);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t2_dummy_read);
+	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t3);
+	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t1_branch_not_taken);
+	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t2_branch_taken_no_page_cross_pending);
+	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t2_branch_taken_page_cross_pending);
+	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t3_branch_taken_page_cross);
+	suite_add_tcase(s, tc_cpu_address_modes_cycles);
+	tc_cpu_address_modes_rw_logic = tcase_create("Cpu Address Modes R/W Logic");
+	tcase_add_checked_fixture(tc_cpu_address_modes_rw_logic, setup, teardown);
+	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, abs_store_only_writes_on_last_cycle, 0, 3);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, absx_store_only_writes_on_last_cycle);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, absy_store_only_writes_on_last_cycle);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, indx_store_only_writes_on_last_cycle);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, indy_store_only_writes_on_last_cycle);
+	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, zp_store_only_writes_on_last_cycle, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, zpx_store_only_writes_on_last_cycle, 0, 2);
+	tcase_add_test(tc_cpu_address_modes_rw_logic, zpy_store_only_writes_on_last_cycle);
+	suite_add_tcase(s, tc_cpu_address_modes_rw_logic);
+	tc_cpu_special_decoders_cycles = tcase_create("Cpu Special Instruction Decoders Cycle-By-Cycle Verification");
+	tcase_add_checked_fixture(tc_cpu_special_decoders_cycles, setup, teardown);
+	tcase_add_test(tc_cpu_special_decoders_cycles, abs_jmp_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, abs_jmp_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t4_no_jmp_bug);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t6);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t6);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t6);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t2);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t3);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t4);
+	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t5);
+	tcase_add_test(tc_cpu_special_decoders_cycles, stack_push_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t1);
+	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t2);
+	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
+
+	return s;
+}
+
+Suite* cpu_isa_suite(void)
+{
+	Suite* s;
+	TCase* tc_cpu_isa;
+
+	s = suite_create("Cpu ISA Tests");
+
 	tc_cpu_isa = tcase_create("Cpu Instruction Set Architecture Results & Flag Updates");
 	tcase_add_checked_fixture(tc_cpu_isa, setup, teardown);
 	tcase_add_test(tc_cpu_isa, isa_lda_clear_nz_flags);
@@ -6718,10 +6913,32 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_isa, isa_brk_result_only);
 	tcase_add_test(tc_cpu_isa, isa_nop_result_only);
 	suite_add_tcase(s, tc_cpu_isa);
+
+	return s;
+}
+
+Suite* cpu_hardware_interrupts_suite(void)
+{
+	Suite* s;
+	TCase* tc_cpu_hardware_interrupts;
+
+	s = suite_create("Cpu Hardware Interrupt Tests");
+
 	tc_cpu_hardware_interrupts = tcase_create("Cpu Hardware Interrupts (no opcodes e.g. IRQ)");
 	tcase_add_checked_fixture(tc_cpu_hardware_interrupts, setup, teardown);
 	tcase_add_test(tc_cpu_hardware_interrupts, irq_correct_interrupt_vector);
 	suite_add_tcase(s, tc_cpu_hardware_interrupts);
+
+	return s;
+}
+
+Suite* cpu_trace_logger_suite(void)
+{
+	Suite* s;
+	TCase* tc_cpu_instruction_trace_logger;
+
+	s = suite_create("Cpu Trace Logger Tests");
+
 	tc_cpu_instruction_trace_logger = tcase_create("Cpu Instruction Trace Logger");
 	tcase_add_checked_fixture(tc_cpu_instruction_trace_logger, setup, teardown);
 	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_adc, 0, 8);
@@ -6781,132 +6998,6 @@ Suite* cpu_suite(void)
 	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_txs);
 	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_tya);
 	suite_add_tcase(s, tc_cpu_instruction_trace_logger);
-	tc_cpu_address_modes_rw_logic = tcase_create("Cpu Address Modes R/W Logic");
-	tcase_add_checked_fixture(tc_cpu_address_modes_rw_logic, setup, teardown);
-	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, abs_store_only_writes_on_last_cycle, 0, 3);
-	tcase_add_test(tc_cpu_address_modes_rw_logic, absx_store_only_writes_on_last_cycle);
-	tcase_add_test(tc_cpu_address_modes_rw_logic, absy_store_only_writes_on_last_cycle);
-	tcase_add_test(tc_cpu_address_modes_rw_logic, indx_store_only_writes_on_last_cycle);
-	tcase_add_test(tc_cpu_address_modes_rw_logic, indy_store_only_writes_on_last_cycle);
-	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, zp_store_only_writes_on_last_cycle, 0, 3);
-	tcase_add_loop_test(tc_cpu_address_modes_rw_logic, zpx_store_only_writes_on_last_cycle, 0, 2);
-	tcase_add_test(tc_cpu_address_modes_rw_logic, zpy_store_only_writes_on_last_cycle);
-	suite_add_tcase(s, tc_cpu_address_modes_rw_logic);
-	tc_cpu_address_modes_cycles = tcase_create("Cpu Address Modes Cycle-By-Cycle Verification");
-	tcase_add_checked_fixture(tc_cpu_address_modes_cycles, setup, teardown);
-	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t2);
-	tcase_add_test(tc_cpu_address_modes_cycles, abs_read_store_t3);
-	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t2);
-	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t3_dummy_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, abs_rmw_t4_dummy_write);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t2);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t3_no_page_cross);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t3_page_cross);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_read_store_t4);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t2);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t3_1st_absx_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t4_2nd_absx_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, absx_rmw_t5_dummy_write);
-	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t2);
-	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_no_page_cross);
-	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t3_page_cross);
-	tcase_add_test(tc_cpu_address_modes_cycles, absy_read_store_t4);
-	tcase_add_test(tc_cpu_address_modes_cycles, acc_t1_dummy_opcode_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, imp_t1_dummy_opcode_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t2_dummy_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t3);
-	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t4);
-	tcase_add_test(tc_cpu_address_modes_cycles, indx_read_store_t5);
-	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t2);
-	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t3);
-	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t4_no_page_cross);
-	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t4_page_cross);
-	tcase_add_test(tc_cpu_address_modes_cycles, indy_read_store_t5);
-	tcase_add_test(tc_cpu_address_modes_cycles, zp_read_store_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, zp_read_store_t2);
-	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t2);
-	tcase_add_test(tc_cpu_address_modes_cycles, zp_rmw_t3_dummy_write);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t2_dummy_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpx_read_store_t3);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t2_dummy_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t3);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpx_rmw_t4_dummy_write);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t1);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t2_dummy_read);
-	tcase_add_test(tc_cpu_address_modes_cycles, zpy_read_store_t3);
-	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t1_branch_not_taken);
-	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t2_branch_taken_no_page_cross_pending);
-	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t2_branch_taken_page_cross_pending);
-	tcase_add_test(tc_cpu_address_modes_cycles, branch_ops_t3_branch_taken_page_cross);
-	suite_add_tcase(s, tc_cpu_address_modes_cycles);
-	tc_cpu_special_decoders_cycles = tcase_create("Cpu Special Instruction Decoders Cycle-By-Cycle Verification");
-	tcase_add_checked_fixture(tc_cpu_special_decoders_cycles, setup, teardown);
-	tcase_add_test(tc_cpu_special_decoders_cycles, abs_jmp_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, abs_jmp_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t3);
-	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t4_no_jmp_bug);
-	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t3);
-	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t4);
-	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t5);
-	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t3);
-	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t4);
-	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t5);
-	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t6);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t3);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t4);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t5);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t6);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t3);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t4);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t5);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t6);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t3);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t4);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t5);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t3);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t4);
-	tcase_add_test(tc_cpu_special_decoders_cycles, rts_t5);
-	tcase_add_test(tc_cpu_special_decoders_cycles, stack_push_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t2);
-	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
-	tc_cpu_basic_functions = tcase_create("Cpu Basic Tests");
-	tcase_add_checked_fixture(tc_cpu_basic_functions, setup, teardown);
-	tcase_add_test(tc_cpu_basic_functions, set_address_bus_bytes_adh_adl);
-	tcase_add_test(tc_cpu_basic_functions, set_address_bus_from_pc);
-	tcase_add_test(tc_cpu_basic_functions, set_data_bus_from_address_bus_read);
-	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_adl);
-	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_adh);
-	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_bal);
-	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_inl);
-	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_inh);
-	tcase_add_test(tc_cpu_basic_functions, set_data_bus_and_branch_offset);
-	tcase_add_test(tc_cpu_basic_functions, set_data_bus_for_writes);
-	suite_add_tcase(s, tc_cpu_basic_functions);
 
 	return s;
 }
