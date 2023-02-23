@@ -6665,6 +6665,7 @@ Suite* cpu_single_cycle_suite(void)
 	TCase* tc_cpu_address_modes_cycles;
 	TCase* tc_cpu_address_modes_rw_logic;
 	TCase* tc_cpu_special_decoders_cycles;
+	TCase* tc_cpu_hardware_interrupts;
 
 	s = suite_create("Single Cycle Address Mode Tests (and unique instructions)");
 
@@ -6755,18 +6756,6 @@ Suite* cpu_single_cycle_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t4);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t5);
 	tcase_add_test(tc_cpu_special_decoders_cycles, brk_t6);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t3);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t4);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t5);
-	tcase_add_test(tc_cpu_special_decoders_cycles, irq_t6);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t1);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t2);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t3);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t4);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t5);
-	tcase_add_test(tc_cpu_special_decoders_cycles, nmi_t6);
 	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t1);
 	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, rti_t3);
@@ -6781,6 +6770,21 @@ Suite* cpu_single_cycle_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t1);
 	tcase_add_test(tc_cpu_special_decoders_cycles, stack_pull_t2);
 	suite_add_tcase(s, tc_cpu_special_decoders_cycles);
+	tc_cpu_hardware_interrupts = tcase_create("Hardware Interrupts Cycle-By-Cycle Verification");
+	tcase_add_checked_fixture(tc_cpu_hardware_interrupts, setup, teardown);
+	tcase_add_test(tc_cpu_hardware_interrupts, irq_t1);
+	tcase_add_test(tc_cpu_hardware_interrupts, irq_t2);
+	tcase_add_test(tc_cpu_hardware_interrupts, irq_t3);
+	tcase_add_test(tc_cpu_hardware_interrupts, irq_t4);
+	tcase_add_test(tc_cpu_hardware_interrupts, irq_t5);
+	tcase_add_test(tc_cpu_hardware_interrupts, irq_t6);
+	tcase_add_test(tc_cpu_hardware_interrupts, nmi_t1);
+	tcase_add_test(tc_cpu_hardware_interrupts, nmi_t2);
+	tcase_add_test(tc_cpu_hardware_interrupts, nmi_t3);
+	tcase_add_test(tc_cpu_hardware_interrupts, nmi_t4);
+	tcase_add_test(tc_cpu_hardware_interrupts, nmi_t5);
+	tcase_add_test(tc_cpu_hardware_interrupts, nmi_t6);
+	suite_add_tcase(s, tc_cpu_hardware_interrupts);
 
 	return s;
 }
