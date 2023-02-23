@@ -3893,7 +3893,7 @@ START_TEST (irq_correct_interrupt_vector)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_adc)
+START_TEST (log_adc)
 {
 	char ins[4] = "ADC";
 	uint8_t adc_opcodes[8] = { reverse_opcode_lut(&ins, IMM)
@@ -3911,7 +3911,7 @@ START_TEST (log_correct_instruction_mnemonic_adc)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_and)
+START_TEST (log_and)
 {
 	char ins[4] = "AND";
 	uint8_t and_opcodes[8] = { reverse_opcode_lut(&ins, IMM)
@@ -3929,7 +3929,7 @@ START_TEST (log_correct_instruction_mnemonic_and)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_asl)
+START_TEST (log_asl)
 {
 	char ins[4] = "ASL";
 	uint8_t asl_opcodes[5] = { reverse_opcode_lut(&ins, ACC)
@@ -3944,7 +3944,7 @@ START_TEST (log_correct_instruction_mnemonic_asl)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_bcc)
+START_TEST (log_bcc)
 {
 	char ins[4] = "BCC";
 	uint8_t bcc_opcode  = reverse_opcode_lut(&ins, REL);
@@ -3955,7 +3955,7 @@ START_TEST (log_correct_instruction_mnemonic_bcc)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_bcs)
+START_TEST (log_bcs)
 {
 	char ins[4] = "BCS";
 	uint8_t bcs_opcode  = reverse_opcode_lut(&ins, REL);
@@ -3966,7 +3966,7 @@ START_TEST (log_correct_instruction_mnemonic_bcs)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_beq)
+START_TEST (log_beq)
 {
 	char ins[4] = "BEQ";
 	uint8_t beq_opcode  = reverse_opcode_lut(&ins, REL);
@@ -3977,7 +3977,7 @@ START_TEST (log_correct_instruction_mnemonic_beq)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_bit)
+START_TEST (log_bit)
 {
 	char ins[4] = "BIT";
 	uint8_t bit_opcodes[2] = { reverse_opcode_lut(&ins, ZP)
@@ -3989,7 +3989,7 @@ START_TEST (log_correct_instruction_mnemonic_bit)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_bmi)
+START_TEST (log_bmi)
 {
 	char ins[4] = "BMI";
 	uint8_t bmi_opcode  = reverse_opcode_lut(&ins, REL);
@@ -4000,7 +4000,7 @@ START_TEST (log_correct_instruction_mnemonic_bmi)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_bne)
+START_TEST (log_bne)
 {
 	char ins[4] = "BNE";
 	uint8_t bne_opcode  = reverse_opcode_lut(&ins, REL);
@@ -4011,7 +4011,7 @@ START_TEST (log_correct_instruction_mnemonic_bne)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_bpl)
+START_TEST (log_bpl)
 {
 	char ins[4] = "BPL";
 	uint8_t bpl_opcode  = reverse_opcode_lut(&ins, REL);
@@ -4022,7 +4022,7 @@ START_TEST (log_correct_instruction_mnemonic_bpl)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_brk)
+START_TEST (log_brk)
 {
 	char ins[4] = "BRK";
 	uint8_t brk_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4033,7 +4033,7 @@ START_TEST (log_correct_instruction_mnemonic_brk)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_bvc)
+START_TEST (log_bvc)
 {
 	char ins[4] = "BVC";
 	uint8_t bvc_opcode  = reverse_opcode_lut(&ins, REL);
@@ -4044,7 +4044,7 @@ START_TEST (log_correct_instruction_mnemonic_bvc)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_bvs)
+START_TEST (log_bvs)
 {
 	char ins[4] = "BVS";
 	uint8_t bvs_opcode  = reverse_opcode_lut(&ins, REL);
@@ -4055,7 +4055,7 @@ START_TEST (log_correct_instruction_mnemonic_bvs)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_clc)
+START_TEST (log_clc)
 {
 	char ins[4] = "CLC";
 	uint8_t clc_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4066,7 +4066,7 @@ START_TEST (log_correct_instruction_mnemonic_clc)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_cld)
+START_TEST (log_cld)
 {
 	char ins[4] = "CLD";
 	uint8_t cld_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4077,7 +4077,7 @@ START_TEST (log_correct_instruction_mnemonic_cld)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_cli)
+START_TEST (log_cli)
 {
 	char ins[4] = "CLI";
 	uint8_t cli_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4088,7 +4088,7 @@ START_TEST (log_correct_instruction_mnemonic_cli)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_clv)
+START_TEST (log_clv)
 {
 	char ins[4] = "CLV";
 	uint8_t clv_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4099,7 +4099,7 @@ START_TEST (log_correct_instruction_mnemonic_clv)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_cmp)
+START_TEST (log_cmp)
 {
 	char ins[4] = "CMP";
 	uint8_t cmp_opcodes[8] = { reverse_opcode_lut(&ins, IMM)
@@ -4117,7 +4117,7 @@ START_TEST (log_correct_instruction_mnemonic_cmp)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_cpx)
+START_TEST (log_cpx)
 {
 	char ins[4] = "CPX";
 	uint8_t cpx_opcodes[3] = { reverse_opcode_lut(&ins, IMM)
@@ -4130,7 +4130,7 @@ START_TEST (log_correct_instruction_mnemonic_cpx)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_cpy)
+START_TEST (log_cpy)
 {
 	char ins[4] = "CPY";
 	uint8_t cpy_opcodes[3] = { reverse_opcode_lut(&ins, IMM)
@@ -4143,7 +4143,7 @@ START_TEST (log_correct_instruction_mnemonic_cpy)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_dec)
+START_TEST (log_dec)
 {
 	char ins[4] = "DEC";
 	uint8_t dec_opcodes[4] = { reverse_opcode_lut(&ins, ZP)
@@ -4157,7 +4157,7 @@ START_TEST (log_correct_instruction_mnemonic_dec)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_dex)
+START_TEST (log_dex)
 {
 	char ins[4] = "DEX";
 	uint8_t dex_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4168,7 +4168,7 @@ START_TEST (log_correct_instruction_mnemonic_dex)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_dey)
+START_TEST (log_dey)
 {
 	char ins[4] = "DEY";
 	uint8_t dey_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4179,7 +4179,7 @@ START_TEST (log_correct_instruction_mnemonic_dey)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_eor)
+START_TEST (log_eor)
 {
 	char ins[4] = "EOR";
 	uint8_t eor_opcodes[8] = { reverse_opcode_lut(&ins, IMM)
@@ -4197,7 +4197,7 @@ START_TEST (log_correct_instruction_mnemonic_eor)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_inc)
+START_TEST (log_inc)
 {
 	char ins[4] = "INC";
 	uint8_t inc_opcodes[4] = { reverse_opcode_lut(&ins, ZP)
@@ -4210,7 +4210,7 @@ START_TEST (log_correct_instruction_mnemonic_inc)
 	ck_assert_str_eq("INC ", cpu->instruction);
 }
 
-START_TEST (log_correct_instruction_mnemonic_inx)
+START_TEST (log_inx)
 {
 	char ins[4] = "INX";
 	uint8_t inx_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4221,7 +4221,7 @@ START_TEST (log_correct_instruction_mnemonic_inx)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_iny)
+START_TEST (log_iny)
 {
 	char ins[4] = "INY";
 	uint8_t iny_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4232,7 +4232,7 @@ START_TEST (log_correct_instruction_mnemonic_iny)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_jmp)
+START_TEST (log_jmp)
 {
 	char ins[4] = "JMP";
 	uint8_t jmp_opcodes[2] = { reverse_opcode_lut(&ins, ABS)
@@ -4256,7 +4256,7 @@ START_TEST (log_correct_instruction_and_address_jsr)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_lda)
+START_TEST (log_lda)
 {
 	char ins[4] = "LDA";
 	uint8_t lda_opcodes[8] = { reverse_opcode_lut(&ins, IMM)
@@ -4274,7 +4274,7 @@ START_TEST (log_correct_instruction_mnemonic_lda)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_ldx)
+START_TEST (log_ldx)
 {
 	char ins[4] = "LDX";
 	uint8_t ldx_opcodes[5] = { reverse_opcode_lut(&ins, IMM)
@@ -4289,7 +4289,7 @@ START_TEST (log_correct_instruction_mnemonic_ldx)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_ldy)
+START_TEST (log_ldy)
 {
 	char ins[4] = "LDY";
 	uint8_t ldy_opcodes[5] = { reverse_opcode_lut(&ins, IMM)
@@ -4304,7 +4304,7 @@ START_TEST (log_correct_instruction_mnemonic_ldy)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_lsr)
+START_TEST (log_lsr)
 {
 	char ins[4] = "LSR";
 	uint8_t lsr_opcodes[5] = { reverse_opcode_lut(&ins, ACC)
@@ -4319,7 +4319,7 @@ START_TEST (log_correct_instruction_mnemonic_lsr)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_nop)
+START_TEST (log_nop)
 {
 	char ins[4] = "NOP";
 	uint8_t nop_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4330,7 +4330,7 @@ START_TEST (log_correct_instruction_mnemonic_nop)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_ora)
+START_TEST (log_ora)
 {
 	char ins[4] = "ORA";
 	uint8_t ora_opcodes[8] = { reverse_opcode_lut(&ins, IMM)
@@ -4348,7 +4348,7 @@ START_TEST (log_correct_instruction_mnemonic_ora)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_pha)
+START_TEST (log_pha)
 {
 	char ins[4] = "PHA";
 	uint8_t pha_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4359,7 +4359,7 @@ START_TEST (log_correct_instruction_mnemonic_pha)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_php)
+START_TEST (log_php)
 {
 	char ins[4] = "PHP";
 	uint8_t php_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4370,7 +4370,7 @@ START_TEST (log_correct_instruction_mnemonic_php)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_pla)
+START_TEST (log_pla)
 {
 	char ins[4] = "PLA";
 	uint8_t pla_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4381,7 +4381,7 @@ START_TEST (log_correct_instruction_mnemonic_pla)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_plp)
+START_TEST (log_plp)
 {
 	char ins[4] = "PLP";
 	uint8_t plp_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4392,7 +4392,7 @@ START_TEST (log_correct_instruction_mnemonic_plp)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_rol)
+START_TEST (log_rol)
 {
 	char ins[4] = "ROL";
 	uint8_t rol_opcodes[5] = { reverse_opcode_lut(&ins, ACC)
@@ -4407,7 +4407,7 @@ START_TEST (log_correct_instruction_mnemonic_rol)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_ror)
+START_TEST (log_ror)
 {
 	char ins[4] = "ROR";
 	uint8_t ror_opcodes[5] = { reverse_opcode_lut(&ins, ACC)
@@ -4422,7 +4422,7 @@ START_TEST (log_correct_instruction_mnemonic_ror)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_rti)
+START_TEST (log_rti)
 {
 	char ins[4] = "RTI";
 	uint8_t rti_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4433,7 +4433,7 @@ START_TEST (log_correct_instruction_mnemonic_rti)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_rts)
+START_TEST (log_rts)
 {
 	char ins[4] = "RTS";
 	uint8_t rts_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4444,7 +4444,7 @@ START_TEST (log_correct_instruction_mnemonic_rts)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_sbc)
+START_TEST (log_sbc)
 {
 	char ins[4] = "SBC";
 	uint8_t sbc_opcodes[8] = { reverse_opcode_lut(&ins, IMM)
@@ -4462,7 +4462,7 @@ START_TEST (log_correct_instruction_mnemonic_sbc)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_sec)
+START_TEST (log_sec)
 {
 	char ins[4] = "SEC";
 	uint8_t sec_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4473,7 +4473,7 @@ START_TEST (log_correct_instruction_mnemonic_sec)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_sed)
+START_TEST (log_sed)
 {
 	char ins[4] = "SED";
 	uint8_t sed_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4484,7 +4484,7 @@ START_TEST (log_correct_instruction_mnemonic_sed)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_sei)
+START_TEST (log_sei)
 {
 	char ins[4] = "SEI";
 	uint8_t sei_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4495,7 +4495,7 @@ START_TEST (log_correct_instruction_mnemonic_sei)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_sta)
+START_TEST (log_sta)
 {
 	char ins[4] = "STA";
 	uint8_t sta_opcodes[7] = { reverse_opcode_lut(&ins, ZP)
@@ -4512,7 +4512,7 @@ START_TEST (log_correct_instruction_mnemonic_sta)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_stx)
+START_TEST (log_stx)
 {
 	char ins[4] = "STX";
 	uint8_t stx_opcodes[3] = { reverse_opcode_lut(&ins, ZP)
@@ -4525,7 +4525,7 @@ START_TEST (log_correct_instruction_mnemonic_stx)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_sty)
+START_TEST (log_sty)
 {
 	char ins[4] = "STY";
 	uint8_t sty_opcodes[3] = { reverse_opcode_lut(&ins, ZP)
@@ -4538,7 +4538,7 @@ START_TEST (log_correct_instruction_mnemonic_sty)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_tax)
+START_TEST (log_tax)
 {
 	char ins[4] = "TAX";
 	uint8_t tax_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4549,7 +4549,7 @@ START_TEST (log_correct_instruction_mnemonic_tax)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_tay)
+START_TEST (log_tay)
 {
 	char ins[4] = "TAY";
 	uint8_t tay_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4560,7 +4560,7 @@ START_TEST (log_correct_instruction_mnemonic_tay)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_tsx)
+START_TEST (log_tsx)
 {
 	char ins[4] = "TSX";
 	uint8_t tsx_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4571,7 +4571,7 @@ START_TEST (log_correct_instruction_mnemonic_tsx)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_txa)
+START_TEST (log_txa)
 {
 	char ins[4] = "TXA";
 	uint8_t txa_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4582,7 +4582,7 @@ START_TEST (log_correct_instruction_mnemonic_txa)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_txs)
+START_TEST (log_txs)
 {
 	char ins[4] = "TXS";
 	uint8_t txs_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -4593,7 +4593,7 @@ START_TEST (log_correct_instruction_mnemonic_txs)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_mnemonic_tya)
+START_TEST (log_tya)
 {
 	char ins[4] = "TYA";
 	uint8_t tya_opcode  = reverse_opcode_lut(&ins, IMP);
@@ -6939,69 +6939,69 @@ Suite* cpu_hardware_interrupts_suite(void)
 Suite* cpu_trace_logger_suite(void)
 {
 	Suite* s;
-	TCase* tc_cpu_instruction_trace_logger;
+	TCase* tc_cpu_instruction_mnemonic;
 
 	s = suite_create("Cpu Trace Logger Tests");
 
-	tc_cpu_instruction_trace_logger = tcase_create("Cpu Instruction Trace Logger");
-	tcase_add_checked_fixture(tc_cpu_instruction_trace_logger, setup, teardown);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_adc, 0, 8);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_and, 0, 8);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_asl, 0, 5);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_bcc);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_bcs);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_beq);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_bit, 0, 2);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_bmi);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_bne);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_bpl);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_brk);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_bvc);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_bvs);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_clc);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_cld);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_cli);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_clv);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_cmp, 0, 8);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_cpx, 0, 3);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_cpy, 0, 3);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_dec, 0, 4);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_dex);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_dey);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_eor, 0, 8);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_inc, 0, 4);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_inx);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_iny);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_jmp, 0, 2);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_and_address_jsr);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_lda, 0, 8);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_ldx, 0, 5);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_ldy, 0, 5);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_lsr, 0, 5);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_nop);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_ora, 0, 8);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_pha);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_php);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_pla);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_plp);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_rol, 0, 5);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_ror, 0, 5);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_rti);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_rts);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_sbc, 0, 8);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_sec);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_sed);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_sei);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_sta, 0, 7);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_stx, 0, 3);
-	tcase_add_loop_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_sty, 0, 3);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_tax);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_tay);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_tsx);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_txa);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_txs);
-	tcase_add_test(tc_cpu_instruction_trace_logger, log_correct_instruction_mnemonic_tya);
-	suite_add_tcase(s, tc_cpu_instruction_trace_logger);
+	tc_cpu_instruction_mnemonic = tcase_create("Cpu Instruction Trace Logger");
+	tcase_add_checked_fixture(tc_cpu_instruction_mnemonic, setup, teardown);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_adc, 0, 8);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_and, 0, 8);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_asl, 0, 5);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_bcc);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_bcs);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_beq);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_bit, 0, 2);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_bmi);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_bne);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_bpl);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_brk);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_bvc);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_bvs);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_clc);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_cld);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_cli);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_clv);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_cmp, 0, 8);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_cpx, 0, 3);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_cpy, 0, 3);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_dec, 0, 4);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_dex);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_dey);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_eor, 0, 8);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_inc, 0, 4);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_inx);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_iny);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_jmp, 0, 2);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_correct_instruction_and_address_jsr);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_lda, 0, 8);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_ldx, 0, 5);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_ldy, 0, 5);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_lsr, 0, 5);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_nop);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_ora, 0, 8);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_pha);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_php);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_pla);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_plp);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_rol, 0, 5);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_ror, 0, 5);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_rti);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_rts);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_sbc, 0, 8);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_sec);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_sed);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_sei);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_sta, 0, 7);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_stx, 0, 3);
+	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_sty, 0, 3);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_tax);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_tay);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_tsx);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_txa);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_txs);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_tya);
+	suite_add_tcase(s, tc_cpu_instruction_mnemonic);
 
 	return s;
 }
