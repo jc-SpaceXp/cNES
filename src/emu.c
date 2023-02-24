@@ -311,6 +311,7 @@ program_exit:
 	free(ppu);
 	free(cpu);
 	free(cpu_ppu);
+	free(cpu_mapper);
 
 early_return:
 	return ret;
