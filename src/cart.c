@@ -48,6 +48,10 @@ int cart_init(Cartridge* cart)
 	cart->trainer.size = 0;
 	cart->non_volatile_mem = false;  // used for "battery-backed" ROMS e.g. Legend of Zelda
 
+	cart->chr.data = NULL;
+	cart->prg_rom.data = NULL;
+	cart->trainer.data = NULL;
+
 	return_code = 0;
 
 	return return_code;

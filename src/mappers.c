@@ -170,6 +170,7 @@ static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 		memcpy(&cpu->mem[0x8000], cart->prg_rom.data, 32 * KiB);
 	}
 	free(cart->prg_rom.data);
+	cart->prg_rom.data = NULL;
 
 	/* Load CHR_ROM data into PPU VRAM */
 	if (cart->chr.rom_size) {
@@ -177,6 +178,7 @@ static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 		memcpy(&ppu->vram.pattern_table_1[0x0000], cart->chr.data + (4 * KiB), 4 * KiB);
 	}
 	free(cart->chr.data);
+	cart->chr.data = NULL;
 }
 
 

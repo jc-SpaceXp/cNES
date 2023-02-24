@@ -300,6 +300,9 @@ int main(int argc, char** argv)
 	ret = 0;
 
 program_exit:
+	free(cart->chr.data);
+	free(cart->prg_rom.data);
+	free(cart->trainer.data);
 	free(cart);
 	free(cnes_windows.cnes_main);
 #ifdef __DEBUG__
