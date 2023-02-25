@@ -7,6 +7,7 @@
 #include "ppu.h"  // needed for cpu/ppu read/write functions
 #include "gui.h"  // needed for cpu/ppu read/write functions (due to ppu.h)
 #include "cpu_ppu_interface.h" // needed for NMI
+#include "cpu_mapper_interface.h" // needed for open bus tests
 
 
 /* Get opcode from instruction and addressing mode
@@ -229,6 +230,7 @@ static void run_hw_interrupt_cycle_by_cycle(Cpu6502* cpu
 
 // globals for unit tests (as setup/teardown take void args)
 Cpu6502* cpu;
+CpuMapperShare* c_cpu_mapper;
 
 void setup(void)
 {
@@ -240,9 +242,29 @@ void setup(void)
 	}
 }
 
+void mapper_setup(void)
+{
+	setup();
+	c_cpu_mapper = malloc(sizeof(CpuMapperShare)); // test double
+
+	if (!c_cpu_mapper) {
+		// fail, lack of memory
+		ck_abort_msg("Failed to allocate memory to cpu/mapper struct");
+	}
+
+	cpu->cpu_mapper_io = c_cpu_mapper;
+	cpu->cpu_mapper_io->mapper_number = 0;
+}
+
 void teardown(void)
 {
 	free(cpu);
+}
+
+void mapper_teardown(void)
+{
+	free(c_cpu_mapper);
+	teardown();
 }
 
 /* Test helpers unit tests
@@ -571,6 +593,201 @@ START_TEST (stack_pull_underflow)
 	ck_assert_uint_eq(0x00, cpu->stack);
 	ck_assert_uint_eq(0xA2, stack_pull(cpu));
 	ck_assert_uint_eq(0x01, cpu->stack);
+}
+
+
+START_TEST (open_bus_reads_abs_t3)
+{
+	// make sure it is a read instruction
+	char ins[4] = "EOR";
+	uint8_t opcode = reverse_opcode_lut(&ins, ABS);
+	cpu->A = 0x00;
+	cpu->data_bus = 0x51; // previous t2 cycle would have set this (ADH)
+	cpu->addr_lo = 0x3F;
+	cpu->addr_hi = 0x51;
+
+	cpu->instruction_cycles_remaining = 1;
+	isa_info[opcode].decode_opcode(cpu);
+	isa_info[opcode].execute_opcode(cpu);
+
+	ck_assert_uint_eq(cpu->A, cpu->data_bus);
+}
+
+START_TEST (open_bus_reads_absx_t3_dummy_read)
+{
+	// make sure it is a read instruction
+	char ins[4] = "ORA";
+	uint8_t opcode = reverse_opcode_lut(&ins, ABSX);
+	cpu->A = 0x00;
+	cpu->data_bus = 0x41; // previous t2 cycle would have set this (ADH)
+	// make sure a page cross occurs for the dummy read from an open bus
+	cpu->X = 0xB1;
+	cpu->addr_lo = 0x4F;
+	cpu->addr_hi = 0x41;
+
+	cpu->instruction_cycles_remaining = 2;
+	isa_info[opcode].decode_opcode(cpu);
+
+	// ensure a page cross happened, otherwise the next check is pointless
+	ck_assert_uint_ne(cpu->instruction_state, EXECUTE);
+	ck_assert_uint_eq(cpu->data_bus, cpu->addr_hi); // an open bus read, value shouldn't change
+}
+
+START_TEST (open_bus_reads_absx_t4_page_cross_read)
+{
+	// make sure it is a read instruction
+	char ins[4] = "ORA";
+	uint8_t opcode = reverse_opcode_lut(&ins, ABSX);
+	cpu->A = 0x00;
+	cpu->data_bus = 0x41; // previous t2 cycle would have set this (ADH)
+	cpu->X = 0xB1;
+	cpu->addr_lo = 0x4F;
+	cpu->addr_hi = 0x41;
+
+	cpu->instruction_cycles_remaining = 1;
+	isa_info[opcode].decode_opcode(cpu);
+	isa_info[opcode].execute_opcode(cpu);
+
+	ck_assert_uint_eq(cpu->A, cpu->addr_hi);
+}
+
+START_TEST (open_bus_reads_absy_t3_dummy_read)
+{
+	// make sure it is a read instruction
+	char ins[4] = "ORA";
+	uint8_t opcode = reverse_opcode_lut(&ins, ABSY);
+	cpu->A = 0x00;
+	cpu->data_bus = 0x60; // previous t2 cycle would have set this (ADH)
+	// make sure a page cross occurs for the dummy read from an open bus
+	cpu->Y = 0xCC;
+	cpu->addr_lo = 0x3F;
+	cpu->addr_hi = 0x60;
+
+	cpu->instruction_cycles_remaining = 2;
+	isa_info[opcode].decode_opcode(cpu);
+
+	// ensure a page cross happened, otherwise the next check is pointless
+	ck_assert_uint_ne(cpu->instruction_state, EXECUTE);
+	ck_assert_uint_eq(cpu->data_bus, cpu->addr_hi); // an open bus read, value shouldn't change
+}
+
+START_TEST (open_bus_reads_absy_t4_page_cross_read)
+{
+	// make sure it is a read instruction
+	char ins[4] = "ORA";
+	uint8_t opcode = reverse_opcode_lut(&ins, ABSY);
+	cpu->A = 0x00;
+	cpu->data_bus = 0x60; // previous t2 cycle would have set this (ADH)
+	cpu->Y = 0xCC;
+	cpu->addr_lo = 0x3F;
+	cpu->addr_hi = 0x60;
+
+	cpu->instruction_cycles_remaining = 1;
+	isa_info[opcode].decode_opcode(cpu);
+	isa_info[opcode].execute_opcode(cpu);
+
+	ck_assert_uint_eq(cpu->A, cpu->addr_hi);
+}
+
+START_TEST (open_bus_reads_indx_t5)
+{
+	// make sure it is a read instruction
+	char ins[4] = "LDA";
+	uint8_t opcode = reverse_opcode_lut(&ins, INDX);
+	cpu->A = 0xE0;
+	cpu->data_bus = 0x49; // previous t4 cycle would have set this (ADH)
+	// already had: base address + X = ADL and base address + X + 1 = ADH
+	cpu->addr_lo = 0x10;
+	cpu->addr_hi = 0x49;
+
+	cpu->instruction_cycles_remaining = 1;
+	isa_info[opcode].decode_opcode(cpu);
+	isa_info[opcode].execute_opcode(cpu);
+
+	ck_assert_uint_eq(cpu->A, cpu->addr_hi);
+}
+
+START_TEST (open_bus_reads_indy_t4_dummy_read)
+{
+	// make sure it is a read instruction
+	char ins[4] = "LDA";
+	uint8_t opcode = reverse_opcode_lut(&ins, INDY);
+	cpu->data_bus = 0x73; // previous t3 cycle would have set this (ADH)
+	// make sure a page cross occurs for the dummy read from an open bus
+	cpu->Y = 0x31;
+	cpu->addr_lo = 0xFA;
+	cpu->addr_hi = 0x73;
+
+	cpu->instruction_cycles_remaining = 2;
+	isa_info[opcode].decode_opcode(cpu);
+
+	// ensure a page cross happened, otherwise the next check is pointless
+	ck_assert_uint_ne(cpu->instruction_state, EXECUTE);
+	ck_assert_uint_eq(cpu->data_bus, cpu->addr_hi); // an open bus read, value shouldn't change
+}
+
+START_TEST (open_bus_reads_indy_t5)
+{
+	// make sure it is a read instruction
+	char ins[4] = "LDA";
+	uint8_t opcode = reverse_opcode_lut(&ins, INDY);
+	cpu->data_bus = 0x73; // previous t3 cycle would have set this (ADH)
+	cpu->Y = 0x31;
+	cpu->addr_lo = 0xFA;
+	cpu->addr_hi = 0x73;
+
+	cpu->instruction_cycles_remaining = 1;
+	isa_info[opcode].decode_opcode(cpu);
+	isa_info[opcode].execute_opcode(cpu);
+
+	ck_assert_uint_eq(cpu->A, cpu->addr_hi);
+}
+
+START_TEST (open_bus_reads_abs_rmw_t3_dummy_read)
+{
+	// make sure it is a rmw instruction
+	char ins[4] = "INC";
+	uint8_t opcode = reverse_opcode_lut(&ins, ABS);
+	cpu->data_bus = 0x40; // previous t2 cycle would have set this (ADH)
+	cpu->addr_lo = 0x20;
+	cpu->addr_hi = 0x40;
+
+	cpu->instruction_cycles_remaining = 3;
+	isa_info[opcode].decode_opcode(cpu);
+
+	ck_assert_uint_eq(cpu->data_bus, cpu->addr_hi);
+}
+
+START_TEST (open_bus_reads_absx_rmw_t3_dummy_read)
+{
+	// make sure it is a rmw instruction
+	char ins[4] = "LSR";
+	uint8_t opcode = reverse_opcode_lut(&ins, ABSX);
+	cpu->data_bus = 0x4B; // previous t2 cycle would have set this (ADH)
+	cpu->X = 0xFF;
+	cpu->addr_lo = 0x0F;
+	cpu->addr_hi = 0x4B;
+
+	cpu->instruction_cycles_remaining = 4;
+	isa_info[opcode].decode_opcode(cpu);
+
+	ck_assert_uint_eq(cpu->data_bus, cpu->addr_hi);
+}
+
+START_TEST (open_bus_reads_absx_rmw_t4_indexed_read)
+{
+	// make sure it is a rmw instruction
+	char ins[4] = "LSR";
+	uint8_t opcode = reverse_opcode_lut(&ins, ABSX);
+	cpu->data_bus = 0x4B; // previous t2 cycle would have set this (ADH)
+	cpu->X = 0xFF;
+	cpu->addr_lo = 0x0F;
+	cpu->addr_hi = 0x4B;
+
+	cpu->instruction_cycles_remaining = 3;
+	isa_info[opcode].decode_opcode(cpu);
+
+	ck_assert_uint_eq(cpu->data_bus, cpu->addr_hi);
 }
 
 
@@ -5275,8 +5492,9 @@ START_TEST (isa_jsr_result_only)
 START_TEST (isa_rti_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "RTI", IMP);
+	cpu->PC = 0x1900;
 	// inverse of pull operations
-	stack_push(cpu, 0x80); // push addr_hi onto stack
+	stack_push(cpu, 0x18); // push addr_hi onto stack
 	stack_push(cpu, 0x01); // push addr_lo onto stack
 	stack_push(cpu, 0x40); // push status reg onto stack (Flag_V)
 
@@ -5285,8 +5503,8 @@ START_TEST (isa_rti_result_only)
 	                        , isa_info[cpu->opcode].max_cycles - 1, FETCH);
 
 	ck_assert_uint_eq(0x01, cpu->addr_lo);
-	ck_assert_uint_eq(0x80, cpu->addr_hi);
-	ck_assert_uint_eq(0x8001, cpu->PC);
+	ck_assert_uint_eq(0x18, cpu->addr_hi);
+	ck_assert_uint_eq(0x1801, cpu->PC);
 	// Flags depend on previous stack
 	ck_assert((cpu->P & FLAG_N) != FLAG_N);
 	ck_assert((cpu->P & FLAG_V) == FLAG_V);
@@ -5298,6 +5516,7 @@ START_TEST (isa_rti_result_only)
 START_TEST (isa_rts_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "RTS", IMP);
+	cpu->PC = 0x190B;
 	// inverse of pull operations
 	stack_push(cpu, 0x80); // push addr_hi onto stack
 	stack_push(cpu, 0x02); // push addr_lo onto stack
@@ -5699,6 +5918,7 @@ START_TEST (isa_plp_result_only)
 START_TEST (isa_brk_result_only)
 {
 	set_opcode_from_address_mode_and_instruction(cpu, "BRK", IMP);
+	cpu->PC = 0x19A0; // init PC before dummy read
 	cpu->mem[BRK_VECTOR] = 0x0A; // addr_lo
 	cpu->mem[BRK_VECTOR + 1] = 0x90; // addr_hi
 	cpu->P = FLAG_N | FLAG_V | FLAG_Z | FLAG_C;
@@ -5754,6 +5974,7 @@ END_TEST
  */
 START_TEST (irq_correct_interrupt_vector)
 {
+	cpu->PC = 0x19B0; // init PC before dummy read
 	cpu->mem[IRQ_VECTOR] = 0xFA; // addr_lo
 	cpu->mem[IRQ_VECTOR + 1] = 0xC4; // addr_hi
 	cpu->P = FLAG_N | FLAG_V | FLAG_Z;
@@ -6135,7 +6356,9 @@ START_TEST (log_correct_instruction_and_address_jsr)
 	char ins[4] = "JSR";
 	uint8_t jsr_opcode  = reverse_opcode_lut(&ins, ABS);
 	cpu->instruction_cycles_remaining = 1; // last cycle sets the trace logger strings
+	cpu->PC = 0x190C;
 	cpu->addr_lo = 0x04; // set @ earlier cycles, read from PC
+
 	isa_info[jsr_opcode].execute_opcode(cpu);
 
 	ck_assert_str_eq("JSR $0004", cpu->instruction);
@@ -6521,6 +6744,7 @@ Suite* cpu_memory_access_suite(void)
 	TCase* tc_cpu_reads;
 	TCase* tc_cpu_writes;
 	TCase* tc_cpu_stack_op;
+	TCase* tc_cpu_open_bus;
 
 	s = suite_create("Cpu Memory Access Tests (RAM/Stack etc.)");
 
@@ -6561,6 +6785,20 @@ Suite* cpu_memory_access_suite(void)
 	tcase_add_test(tc_cpu_stack_op, stack_pull_no_underflow);
 	tcase_add_test(tc_cpu_stack_op, stack_pull_underflow);
 	suite_add_tcase(s, tc_cpu_stack_op);
+	tc_cpu_open_bus = tcase_create("Cpu Open Bus Reads");
+	tcase_add_checked_fixture(tc_cpu_open_bus, mapper_setup, mapper_teardown);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_abs_t3);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_absx_t3_dummy_read);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_absx_t4_page_cross_read);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_absy_t3_dummy_read);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_absy_t4_page_cross_read);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_indx_t5);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_indy_t4_dummy_read);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_indy_t5);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_abs_rmw_t3_dummy_read);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_absx_rmw_t3_dummy_read);
+	tcase_add_test(tc_cpu_open_bus, open_bus_reads_absx_rmw_t4_indexed_read);
+	suite_add_tcase(s, tc_cpu_open_bus);
 
 	return s;
 }

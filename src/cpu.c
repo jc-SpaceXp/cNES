@@ -20,6 +20,7 @@
 #define ADDR_OAM_DMA          0x4014U
 #define ADDR_JOY1             0x4016U
 #define ADDR_JOY2             0x4017U
+#define ADDR_MAPPER_START     0x4020U
 
 // Address masks
 #define RAM_NON_MIRROR_MASK     0x07FFU
@@ -494,6 +495,8 @@ uint8_t read_from_cpu(Cpu6502* cpu, uint16_t addr)
 		read = read_4016(cpu);
 	} else if (addr == ADDR_JOY2) {
 		read = read_4017(cpu);
+	} else if (addr >= ADDR_MAPPER_START) {
+		read = mapper_read(cpu, addr);
 	} else {
 		read = cpu->mem[addr]; /* catch-all */
 	}
