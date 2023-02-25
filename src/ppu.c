@@ -231,7 +231,7 @@ uint8_t read_from_ppu_vram(const struct PpuMemoryMap* mem, unsigned addr)
 		ret = (*mem->nametable_3)[addr & 0x03FF];
 	} else if (addr < 0x4000) {
 		// 0x3F00 to 0x3F20 and mirrors down to 0x3FFF
-		ret = mem->palette_ram[addr & 0x001F];
+		ret = mem->palette_ram[addr & 0x001F] & 0x3F; // upper two bits aren't implemented
 	}
 
 	return ret;

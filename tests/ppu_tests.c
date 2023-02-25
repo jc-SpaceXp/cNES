@@ -674,47 +674,49 @@ START_TEST (nametable_3_partial_mirror_reads_upper_bound)
 }
 
 // Palette RAM is from 0x3F00 to 0x3F1F
-START_TEST (palette_ram_reads_lower_bound)
+// upper two bits of the upper byte aren't implemented (read back as 0s)
+START_TEST (palette_ram_reads_lower_bound_ignores_unused_bits)
 {
 	write_to_ppu_vram(vram, 0x3F00, 0xA0);
-	ck_assert_uint_eq(0xA0, read_from_ppu_vram(vram, 0x3F00));
+	ck_assert_uint_eq(0xA0 & 0x3F, read_from_ppu_vram(vram, 0x3F00));
 }
 
-START_TEST (palette_ram_reads_other_bound)
+START_TEST (palette_ram_reads_other_bound_ignores_unused_bits)
 {
 	write_to_ppu_vram(vram, 0x3F11, 0xC6);
-	ck_assert_uint_eq(0xC6, read_from_ppu_vram(vram, 0x3F11));
+	ck_assert_uint_eq(0xC6 & 0x3F, read_from_ppu_vram(vram, 0x3F11));
 }
 
-START_TEST (palette_ram_reads_upper_bound)
+START_TEST (palette_ram_reads_upper_bound_ignores_unused_bits)
 {
 	write_to_ppu_vram(vram, 0x3F1F, 0xE1);
-	ck_assert_uint_eq(0xE1, read_from_ppu_vram(vram, 0x3F1F));
+	ck_assert_uint_eq(0xE1 & 0x3F, read_from_ppu_vram(vram, 0x3F1F));
 }
 
 // Palette RAM mirrors are from 0x3F20 to 0x3FFF
-START_TEST (palette_ram_mirror_reads_lower_bound)
+// upper two bits of the upper byte aren't implemented (read back as 0s)
+START_TEST (palette_ram_mirror_reads_lower_bound_ignores_unused_bits)
 {
 	write_to_ppu_vram(vram, 0x3F20, 0x53);
-	ck_assert_uint_eq(0x53, read_from_ppu_vram(vram, 0x3F20));
+	ck_assert_uint_eq(0x53 & 0x3F, read_from_ppu_vram(vram, 0x3F20));
 }
 
-START_TEST (palette_ram_mirror_reads_other_bound_1)
+START_TEST (palette_ram_mirror_reads_other_bound_1_ignores_unused_bits)
 {
 	write_to_ppu_vram(vram, 0x3F4A, 0x66);
-	ck_assert_uint_eq(0x66, read_from_ppu_vram(vram, 0x3F4A));
+	ck_assert_uint_eq(0x66 & 0x3F, read_from_ppu_vram(vram, 0x3F4A));
 }
 
-START_TEST (palette_ram_mirror_reads_other_bound_2)
+START_TEST (palette_ram_mirror_reads_other_bound_2_ignores_unused_bits)
 {
 	write_to_ppu_vram(vram, 0x3F91, 0x77);
-	ck_assert_uint_eq(0x77, read_from_ppu_vram(vram, 0x3F91));
+	ck_assert_uint_eq(0x77 & 0x3F, read_from_ppu_vram(vram, 0x3F91));
 }
 
-START_TEST (palette_ram_mirror_reads_upper_bound)
+START_TEST (palette_ram_mirror_reads_upper_bound_ignores_unused_bits)
 {
 	write_to_ppu_vram(vram, 0x3FFF, 0xB0);
-	ck_assert_uint_eq(0xB0, read_from_ppu_vram(vram, 0x3FFF));
+	ck_assert_uint_eq(0xB0 & 0x3F, read_from_ppu_vram(vram, 0x3FFF));
 }
 
 START_TEST (nametable_mirroring_horizontal)
@@ -2090,13 +2092,13 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_reads_lower_bound);
 	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_reads_other_bound);
 	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_other_bound_1);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_other_bound_2);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_upper_bound);
+	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_reads_lower_bound_ignores_unused_bits);
+	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_reads_other_bound_ignores_unused_bits);
+	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_reads_upper_bound_ignores_unused_bits);
+	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_lower_bound_ignores_unused_bits);
+	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_other_bound_1_ignores_unused_bits);
+	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_other_bound_2_ignores_unused_bits);
+	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_upper_bound_ignores_unused_bits);
 	tcase_add_test(tc_ppu_vram_read_writes, debug_all_nametables);
 	suite_add_tcase(s, tc_ppu_vram_read_writes);
 	tc_ppu_rendering = tcase_create("PPU Rendering Related Tests");
