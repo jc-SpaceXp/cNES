@@ -6357,7 +6357,8 @@ START_TEST (log_correct_instruction_and_address_jsr)
 	uint8_t jsr_opcode  = reverse_opcode_lut(&ins, ABS);
 	cpu->instruction_cycles_remaining = 1; // last cycle sets the trace logger strings
 	cpu->PC = 0x190C;
-	cpu->addr_lo = 0x04; // set @ earlier cycles, read from PC
+	cpu->addr_lo = 0x04; // set at earlier cycles, read from PC
+	write_to_cpu(cpu, cpu->PC, 0x00); // set ADH for logger
 
 	isa_info[jsr_opcode].execute_opcode(cpu);
 
