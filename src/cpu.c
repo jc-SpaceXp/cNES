@@ -1576,7 +1576,8 @@ static void update_flag_c(Cpu6502* cpu, const int carry_out)
 static void execute_LDA(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "LDA ");
-	cpu->A = read_from_cpu(cpu, cpu->target_addr);
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+	cpu->A = cpu->operand;
 	update_flag_n(cpu, cpu->A);
 	update_flag_z(cpu, cpu->A);
 }
@@ -1587,7 +1588,8 @@ static void execute_LDA(Cpu6502* cpu)
 static void execute_LDX(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "LDX ");
-	cpu->X = read_from_cpu(cpu, cpu->target_addr);
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+	cpu->X = cpu->operand;
 	update_flag_n(cpu, cpu->X);
 	update_flag_z(cpu, cpu->X);
 }
@@ -1598,7 +1600,8 @@ static void execute_LDX(Cpu6502* cpu)
 static void execute_LDY(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "LDY ");
-	cpu->Y = read_from_cpu(cpu, cpu->target_addr);
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+	cpu->Y = cpu->operand;
 	update_flag_n(cpu, cpu->Y);
 	update_flag_z(cpu, cpu->Y);
 }
@@ -1814,7 +1817,8 @@ static void execute_SBC(Cpu6502* cpu)
 static void execute_AND(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "AND ");
-	cpu->A &= read_from_cpu(cpu, cpu->target_addr);
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+	cpu->A &= cpu->operand;
 	update_flag_n(cpu, cpu->A);
 	update_flag_z(cpu, cpu->A);
 }
@@ -1862,7 +1866,8 @@ static void execute_BIT(Cpu6502* cpu)
 static void execute_EOR(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "EOR ");
-	cpu->A ^= read_from_cpu(cpu, cpu->target_addr);
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+	cpu->A ^= cpu->operand;
 	update_flag_n(cpu, cpu->A);
 	update_flag_z(cpu, cpu->A);
 }
@@ -1894,7 +1899,8 @@ static void execute_LSR(Cpu6502* cpu)
 static void execute_ORA(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "ORA ");
-	cpu->A |= read_from_cpu(cpu, cpu->target_addr);
+	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
+	cpu->A |= cpu->operand;
 	update_flag_n(cpu, cpu->A);
 	update_flag_z(cpu, cpu->A);
 }

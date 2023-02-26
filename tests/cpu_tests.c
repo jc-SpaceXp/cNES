@@ -6798,10 +6798,19 @@ END_TEST
 
 START_TEST (log_imm_data)
 {
-	char ins[3][4] = { "SBC", "CMP", "ADC" };
-	uint8_t imm_opcodes[3] = { reverse_opcode_lut(&ins[0], IMM)
-	                         , reverse_opcode_lut(&ins[1], IMM)
-	                         , reverse_opcode_lut(&ins[2], IMM)};
+	char ins[11][4] = { "LDY", "CPY", "CPX", "ORA", "AND", "EOR", "ADC", "LDA"
+	                  , "CMP", "SBC", "LDX" };
+	uint8_t imm_opcodes[11] = { reverse_opcode_lut(&ins[0], IMM)
+	                          , reverse_opcode_lut(&ins[1], IMM)
+	                          , reverse_opcode_lut(&ins[2], IMM)
+	                          , reverse_opcode_lut(&ins[3], IMM)
+	                          , reverse_opcode_lut(&ins[4], IMM)
+	                          , reverse_opcode_lut(&ins[5], IMM)
+	                          , reverse_opcode_lut(&ins[6], IMM)
+	                          , reverse_opcode_lut(&ins[7], IMM)
+	                          , reverse_opcode_lut(&ins[8], IMM)
+	                          , reverse_opcode_lut(&ins[9], IMM)
+	                          , reverse_opcode_lut(&ins[10], IMM)};
 
 	cpu->PC = 0x9022;
 	cpu->mem[cpu->PC] = 0xC0; // immediate byte
@@ -7529,7 +7538,7 @@ Suite* cpu_trace_logger_suite(void)
 	tcase_add_loop_test(tc_cpu_address_mode, log_absx_data, 0, 3);
 	tcase_add_loop_test(tc_cpu_address_mode, log_absy_data, 0, 3);
 	tcase_add_loop_test(tc_cpu_address_mode, log_acc, 0, 3);
-	tcase_add_loop_test(tc_cpu_address_mode, log_imm_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_imm_data, 0, 11);
 	tcase_add_loop_test(tc_cpu_address_mode, log_imp, 0, 3);
 	tcase_add_test(tc_cpu_address_mode, log_ind_jmp_data);
 	tcase_add_loop_test(tc_cpu_address_mode, log_indx_data, 0, 3);
