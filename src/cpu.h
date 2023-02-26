@@ -171,6 +171,7 @@ void set_data_bus_via_write(Cpu6502* cpu, uint8_t data);
 void stack_push(Cpu6502* cpu, uint8_t val);
 uint8_t stack_pull(Cpu6502* cpu);
 void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_t end_addr);
+void cpu_debugger(const Cpu6502* cpu, char* instruction, char* append_int, char* end);
 void update_cpu_info(Cpu6502* cpu);
 
 

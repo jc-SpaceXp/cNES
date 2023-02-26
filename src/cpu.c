@@ -31,7 +31,6 @@ static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr);
 static void write_4016(uint8_t data, Cpu6502* cpu);
 static unsigned read_4016(Cpu6502* cpu);
 static unsigned read_4017(Cpu6502* cpu);
-static void cpu_debugger(const Cpu6502* cpu, char* instruction, char* append_int, char* end);  // warning unused function, currently hidden behind conditional execution
 static void log_cpu_info(Cpu6502* cpu, const bool no_logging);  // warning unused function, currently hidden behind conditional execution
 static void fetch_opcode(Cpu6502* cpu);
 static bool fixed_cycles_on_store(const Cpu6502* cpu);
@@ -855,7 +854,7 @@ static bool branch_not_taken(const Cpu6502* cpu)
 	return result;
 }
 
-static void cpu_debugger(const Cpu6502* cpu, char* instruction, char* append_int, char* end)
+void cpu_debugger(const Cpu6502* cpu, char* instruction, char* append_int, char* end)
 {
 	switch(cpu->address_mode) {
 	case ABS:

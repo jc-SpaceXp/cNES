@@ -6715,6 +6715,273 @@ START_TEST (log_tya)
 END_TEST
 
 
+START_TEST (log_abs_data)
+{
+	char ins[3][4] = { "STA", "ROR", "STY" };
+	uint8_t abs_opcodes[3] = { reverse_opcode_lut(&ins[0], ABS)
+	                         , reverse_opcode_lut(&ins[1], ABS)
+	                         , reverse_opcode_lut(&ins[2], ABS)};
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xC0; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x00; // addr_hi (from cpu->PC + 1)
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[abs_opcodes[_i]].decode_opcode
+	                        , isa_info[abs_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("$00C0", cpu->end);
+}
+END_TEST
+
+START_TEST (log_absx_data)
+{
+	char ins[3][4] = { "LDA", "CMP", "ORA" };
+	uint8_t absx_opcodes[3] = { reverse_opcode_lut(&ins[0], ABSX)
+	                          , reverse_opcode_lut(&ins[1], ABSX)
+	                          , reverse_opcode_lut(&ins[2], ABSX)};
+
+	cpu->X = 0x03;
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xFF; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x80; // addr_hi (from cpu->PC + 1)
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[absx_opcodes[_i]].decode_opcode
+	                        , isa_info[absx_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("$80FF,X", cpu->end);
+}
+END_TEST
+
+START_TEST (log_absy_data)
+{
+	char ins[3][4] = { "EOR", "STA", "ORA" };
+	uint8_t absy_opcodes[3] = { reverse_opcode_lut(&ins[0], ABSY)
+	                          , reverse_opcode_lut(&ins[1], ABSY)
+	                          , reverse_opcode_lut(&ins[2], ABSY)};
+
+	cpu->Y = 0x03;
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0x5F; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0xFF; // addr_hi (from cpu->PC + 1)
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[absy_opcodes[_i]].decode_opcode
+	                        , isa_info[absy_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("$FF5F,Y", cpu->end);
+}
+END_TEST
+
+START_TEST (log_acc)
+{
+	char ins[3][4] = { "ROL", "LSR", "ASL" };
+	uint8_t acc_opcodes[3] = { reverse_opcode_lut(&ins[0], ACC)
+	                         , reverse_opcode_lut(&ins[1], ACC)
+	                         , reverse_opcode_lut(&ins[2], ACC)};
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = acc_opcodes[_i]; // next opcode
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[acc_opcodes[_i]].decode_opcode
+	                        , isa_info[acc_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("A", cpu->end);
+}
+END_TEST
+
+START_TEST (log_imm_data)
+{
+	char ins[3][4] = { "SBC", "CMP", "ADC" };
+	uint8_t imm_opcodes[3] = { reverse_opcode_lut(&ins[0], IMM)
+	                         , reverse_opcode_lut(&ins[1], IMM)
+	                         , reverse_opcode_lut(&ins[2], IMM)};
+
+	cpu->PC = 0x9022;
+	cpu->mem[cpu->PC] = 0xC0; // immediate byte
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[imm_opcodes[_i]].decode_opcode
+	                        , isa_info[imm_opcodes[_i]].max_cycles - 1, EXECUTE);
+	isa_info[imm_opcodes[_i]].execute_opcode(cpu); // reads the 2nd byte here (the immediate operand)
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("#$C0", cpu->end);
+}
+END_TEST
+
+START_TEST (log_imp)
+{
+	char ins[3][4] = { "RTS", "PHA", "CLI" };
+	uint8_t imp_opcodes[3] = { reverse_opcode_lut(&ins[0], IMP)
+	                         , reverse_opcode_lut(&ins[1], IMP)
+	                         , reverse_opcode_lut(&ins[2], IMP)};
+
+	cpu->PC = 0x9022;
+	cpu->mem[cpu->PC] = 0xC0;
+	cpu->stack = 0xFF;
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[imp_opcodes[_i]].decode_opcode
+	                        , isa_info[imp_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("", cpu->end);
+}
+END_TEST
+
+START_TEST (log_ind_jmp_data)
+{
+	char ins[4] = "JMP";
+	uint8_t opcode  = reverse_opcode_lut(&ins, IND);
+
+	cpu->PC = 0x9022;
+	cpu->mem[cpu->PC] = 0x38; // index lo
+	cpu->mem[cpu->PC + 1] = 0x01; // index hi
+	write_to_cpu(cpu, 0x0138, 0x84); // addr_lo
+	write_to_cpu(cpu, 0x0138 + 1, 0x4E); // addr_hi
+
+	// minus one as we skip the fetch cycle
+	isa_info[opcode].decode_opcode(cpu);
+	run_logic_cycle_by_cycle(cpu, isa_info[opcode].execute_opcode
+	                        , isa_info[opcode].max_cycles - 1, FETCH);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("($0138)", cpu->end);
+}
+END_TEST
+
+START_TEST (log_indx_data)
+{
+	char ins[3][4] = { "ORA", "AND", "STA" };
+	uint8_t indx_opcodes[3] = { reverse_opcode_lut(&ins[0], INDX)
+	                          , reverse_opcode_lut(&ins[1], INDX)
+	                          , reverse_opcode_lut(&ins[2], INDX)};
+
+	cpu->X = 0x03;
+	cpu->PC = 0xABCD;
+	cpu->mem[cpu->PC] = 0x20; // base address
+	cpu->mem[0x20] = 0x01; // dummy read
+	cpu->mem[0x20 + cpu->X] = 0x41; // addr_lo
+	cpu->mem[0x20 + cpu->X + 1] = 0x01; // addr_hi
+	cpu->mem[0x0141] = 0x90;
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[indx_opcodes[_i]].decode_opcode
+	                        , isa_info[indx_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("($20,X)", cpu->end);
+}
+END_TEST
+
+START_TEST (log_indy_data)
+{
+	char ins[3][4] = { "ADC", "CMP", "STA" };
+	uint8_t indy_opcodes[3] = { reverse_opcode_lut(&ins[0], INDY)
+	                          , reverse_opcode_lut(&ins[1], INDY)
+	                          , reverse_opcode_lut(&ins[2], INDY)};
+
+	cpu->X = 0x03;
+	cpu->PC = 0xABCD;
+	cpu->mem[cpu->PC] = 0x44; // base address
+	cpu->mem[0x44] = 0xE0; // addr_lo
+	cpu->mem[0x44 + 1] = 0x00; // addr_hi
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[indy_opcodes[_i]].decode_opcode
+	                        , isa_info[indy_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("($44),Y", cpu->end);
+}
+END_TEST
+
+START_TEST (log_rel_data)
+{
+	char ins[3][4] = { "BVC", "BPL", "BCS" };
+	uint8_t rel_opcodes[3] = { reverse_opcode_lut(&ins[0], REL)
+	                         , reverse_opcode_lut(&ins[1], REL)
+	                         , reverse_opcode_lut(&ins[2], REL)};
+
+	cpu->PC = 0xBF80;
+	cpu->mem[cpu->PC] = 0x56; // branch offset
+	cpu->old_PC = 0xBF80; // PC value before all the increments from decoding
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[rel_opcodes[_i]].decode_opcode
+	                        , isa_info[rel_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("$BFD8", cpu->end); // PC + offset + 2
+}
+END_TEST
+
+START_TEST (log_zp_data)
+{
+	char ins[3][4] = { "STX", "DEC", "ASL" };
+	uint8_t zp_opcodes[3] = { reverse_opcode_lut(&ins[0], ZP)
+	                        , reverse_opcode_lut(&ins[1], ZP)
+	                        , reverse_opcode_lut(&ins[2], ZP)};
+
+	cpu->PC = 0x0120;
+	cpu->mem[cpu->PC] = 0x56; // addr_lo
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[zp_opcodes[_i]].decode_opcode
+	                        , isa_info[zp_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("$56", cpu->end);
+}
+END_TEST
+
+START_TEST (log_zpx_data)
+{
+	char ins[3][4] = { "SBC", "LSR", "INC" };
+	uint8_t zpx_opcodes[3] = { reverse_opcode_lut(&ins[0], ZPX)
+	                         , reverse_opcode_lut(&ins[1], ZPX)
+	                         , reverse_opcode_lut(&ins[2], ZPX)};
+
+	cpu->X = 0x08;
+	cpu->PC = 0x0220;
+	cpu->mem[cpu->PC] = 0x43; // addr_lo
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[zpx_opcodes[_i]].decode_opcode
+	                        , isa_info[zpx_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("$43,X", cpu->end);
+}
+END_TEST
+
+START_TEST (log_zpy_data)
+{
+	char ins[2][4] = { "LDX", "STX" };
+	uint8_t zpy_opcodes[2] = { reverse_opcode_lut(&ins[0], ZPY)
+	                         , reverse_opcode_lut(&ins[1], ZPY)};
+
+	cpu->Y = 0x08;
+	cpu->PC = 0x0320;
+	cpu->mem[cpu->PC] = 0x89; // addr_lo
+
+	// minus one as we skip the fetch cycle
+	run_logic_cycle_by_cycle(cpu, isa_info[zpy_opcodes[_i]].decode_opcode
+	                        , isa_info[zpy_opcodes[_i]].max_cycles - 1, EXECUTE);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("$89,Y", cpu->end);
+}
+END_TEST
+
+
 
 Suite* cpu_master_suite(void)
 {
@@ -7193,6 +7460,7 @@ Suite* cpu_trace_logger_suite(void)
 {
 	Suite* s;
 	TCase* tc_cpu_instruction_mnemonic;
+	TCase* tc_cpu_address_mode;
 
 	s = suite_create("Cpu Trace Logger Tests");
 
@@ -7255,6 +7523,22 @@ Suite* cpu_trace_logger_suite(void)
 	tcase_add_test(tc_cpu_instruction_mnemonic, log_txs);
 	tcase_add_test(tc_cpu_instruction_mnemonic, log_tya);
 	suite_add_tcase(s, tc_cpu_instruction_mnemonic);
+	tc_cpu_address_mode = tcase_create("Trace Address Mode Part");
+	tcase_add_checked_fixture(tc_cpu_address_mode, setup, teardown);
+	tcase_add_loop_test(tc_cpu_address_mode, log_abs_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_absx_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_absy_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_acc, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_imm_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_imp, 0, 3);
+	tcase_add_test(tc_cpu_address_mode, log_ind_jmp_data);
+	tcase_add_loop_test(tc_cpu_address_mode, log_indx_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_indy_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_rel_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_zp_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_zpx_data, 0, 3);
+	tcase_add_loop_test(tc_cpu_address_mode, log_zpy_data, 0, 2);
+	suite_add_tcase(s, tc_cpu_address_mode);
 
 	return s;
 }
