@@ -6915,6 +6915,8 @@ START_TEST (log_rel_data)
 	                         , reverse_opcode_lut(&ins[1], REL)
 	                         , reverse_opcode_lut(&ins[2], REL)};
 
+	cpu->opcode = rel_opcodes[_i]; // needed for branch taken (or not) function
+
 	cpu->PC = 0xBF80;
 	cpu->mem[cpu->PC] = 0x56; // branch offset
 	cpu->old_PC = 0xBF80; // PC value before all the increments from decoding
