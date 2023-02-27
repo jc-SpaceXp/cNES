@@ -212,6 +212,62 @@ START_TEST (mapper_000_prg_rom_reads)
 	ck_assert_uint_eq(mapper_read(mp_cpu, prg_rom_addr), mp_cpu->mem[prg_rom_addr]);
 }
 
+/* TMP TEST: CHR RAM bankswitching
+ */
+void set_8k_chr_bank(uint8_t** const cart_chr_data, unsigned eight_kib_bank_offset
+                    , uint8_t** ppu_pattern_table_0k, uint8_t** ppu_pattern_table_4k)
+{
+	// 8k: (0) 0 1  (1) 2 3  (2) 4 5  (3) 6 7 (in 4 Kb banks)
+	// 0 and 1 4kb banks make 1 8k bank, ()'s represent an 8k bank
+	uint8_t even_4k_banks =  eight_kib_bank_offset * 2;
+	uint8_t odd_4k_banks =  even_4k_banks + 1;
+
+	*ppu_pattern_table_0k = *cart_chr_data + (even_4k_banks * 4  * KiB);
+	*ppu_pattern_table_4k = *cart_chr_data + (odd_4k_banks * 4  * KiB);
+}
+
+void set_4k_chr_bank(uint8_t** const cart_chr_data, unsigned four_kib_bank_offset
+                    , uint8_t** ppu_4k_pattern_table)
+{
+	*ppu_4k_pattern_table = *cart_chr_data + (four_kib_bank_offset * 4  * KiB);
+}
+
+START_TEST (chr_bankswitch_new_change_initial_test)
+{
+	cpu_mapper_tester->mapper_number = 0;
+
+	uint8_t* chr_data = calloc(64 * KiB, sizeof(uint8_t));
+
+	uint8_t* chr_bank_0k = NULL;
+	uint8_t* chr_bank_4k = NULL;
+
+	unsigned bank_select = _i; // max is 64k / 8k (banks) --> 8 8k banks or 16 4k banks
+	uint8_t even_4k_banks =  bank_select * 2;
+	uint8_t odd_4k_banks =  even_4k_banks + 1;
+
+	for (int bank = 0; bank < 16; ++bank) {
+		memset(chr_data + bank * 4 * KiB, bank, 4 * KiB);
+	}
+
+
+	//printf("even_banks %d\n", even_4k_banks);
+	//printf("odd_banks %d\n", odd_4k_banks);
+
+	// test 4K banks
+	set_8k_chr_bank(&chr_data, _i, &chr_bank_0k, &chr_bank_4k);
+
+	ck_assert_ptr_eq(chr_data + (even_4k_banks * 4 * KiB), chr_bank_0k);
+	ck_assert_ptr_eq(chr_data + (odd_4k_banks * 4 * KiB), chr_bank_4k);
+
+	ck_assert_mem_eq(chr_data + (even_4k_banks * 4 * KiB), chr_bank_0k, 4 * KiB);
+	ck_assert_mem_eq(chr_data + (odd_4k_banks * 4 * KiB), chr_bank_4k, 4 * KiB);
+
+	set_4k_chr_bank(&chr_data, 3, &chr_bank_4k);
+	ck_assert_ptr_eq(chr_data + (3 * 4 * KiB), chr_bank_4k);
+
+	free(chr_data);
+}
+
 START_TEST (mapper_001_last_write_selects_reg)
 {
 	cpu_mapper_tester->mapper_number = 1;
@@ -1154,6 +1210,8 @@ Suite* mapper_000_suite(void)
 	tcase_add_checked_fixture(tc_other_misc_tests, setup, teardown);
 	tcase_add_test(tc_other_misc_tests, mapper_000_unmapped_open_bus_reads);
 	tcase_add_test(tc_other_misc_tests, mapper_000_prg_rom_reads);
+	// QUICK TEST
+	tcase_add_loop_test(tc_other_misc_tests, chr_bankswitch_new_change_initial_test, 0, 8);
 	suite_add_tcase(s, tc_other_misc_tests);
 
 	return s;
