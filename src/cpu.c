@@ -2096,6 +2096,7 @@ static void execute_JMP(Cpu6502* cpu)
  */
 static void execute_JSR(Cpu6502* cpu)
 {
+	strcpy(cpu->instruction, "JSR ");
 	// opcode fetched: T0
 	switch (cpu->instruction_cycles_remaining) {
 	case 5: // T1
@@ -2122,10 +2123,7 @@ static void execute_JSR(Cpu6502* cpu)
 		set_data_bus_via_read(cpu, cpu->PC, ADH);
 		cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo;
 		cpu->PC = cpu->target_addr;
-
-		strcpy(cpu->instruction, "JSR $");
-		sprintf(cpu->append_int, "%.4X", cpu->target_addr);
-		strcat(cpu->instruction, cpu->append_int);
+		cpu->address_mode = ABS; // needed for trace logger
 		break;
 	}
 

@@ -6351,18 +6351,14 @@ START_TEST (log_jmp)
 }
 END_TEST
 
-START_TEST (log_correct_instruction_and_address_jsr)
+START_TEST (log_jsr)
 {
 	char ins[4] = "JSR";
-	uint8_t jsr_opcode  = reverse_opcode_lut(&ins, ABS);
-	cpu->instruction_cycles_remaining = 1; // last cycle sets the trace logger strings
-	cpu->PC = 0x190C;
-	cpu->addr_lo = 0x04; // set at earlier cycles, read from PC
-	write_to_cpu(cpu, cpu->PC, 0x00); // set ADH for logger
+	uint8_t jsr_opcode  = reverse_opcode_lut(&ins, IMP);
 
 	isa_info[jsr_opcode].execute_opcode(cpu);
 
-	ck_assert_str_eq("JSR $0004", cpu->instruction);
+	ck_assert_str_eq("JSR ", cpu->instruction);
 }
 END_TEST
 
@@ -6990,6 +6986,25 @@ START_TEST (log_zpy_data)
 }
 END_TEST
 
+START_TEST (log_jsr_data)
+{
+	char ins[4] = "JSR";
+	uint8_t opcode  = reverse_opcode_lut(&ins, IMP);
+
+	cpu->PC = 0x8000;
+	cpu->mem[cpu->PC] = 0xC0; // addr_lo
+	cpu->mem[cpu->PC + 1] = 0x00; // addr_hi (from cpu->PC + 1)
+
+	// minus one as we skip the fetch cycle
+	isa_info[cpu->opcode].decode_opcode(cpu); // setup needed for the for loop below
+	run_logic_cycle_by_cycle(cpu, isa_info[opcode].execute_opcode
+	                        , isa_info[opcode].max_cycles - 1, FETCH);
+	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+
+	ck_assert_str_eq("$00C0", cpu->end);
+}
+END_TEST
+
 
 
 Suite* cpu_master_suite(void)
@@ -7503,7 +7518,7 @@ Suite* cpu_trace_logger_suite(void)
 	tcase_add_test(tc_cpu_instruction_mnemonic, log_inx);
 	tcase_add_test(tc_cpu_instruction_mnemonic, log_iny);
 	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_jmp, 0, 2);
-	tcase_add_test(tc_cpu_instruction_mnemonic, log_correct_instruction_and_address_jsr);
+	tcase_add_test(tc_cpu_instruction_mnemonic, log_jsr);
 	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_lda, 0, 8);
 	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_ldx, 0, 5);
 	tcase_add_loop_test(tc_cpu_instruction_mnemonic, log_ldy, 0, 5);
@@ -7547,6 +7562,7 @@ Suite* cpu_trace_logger_suite(void)
 	tcase_add_loop_test(tc_cpu_address_mode, log_zp_data, 0, 3);
 	tcase_add_loop_test(tc_cpu_address_mode, log_zpx_data, 0, 3);
 	tcase_add_loop_test(tc_cpu_address_mode, log_zpy_data, 0, 2);
+	tcase_add_test(tc_cpu_address_mode, log_jsr_data);
 	suite_add_tcase(s, tc_cpu_address_mode);
 
 	return s;
