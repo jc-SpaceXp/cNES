@@ -162,10 +162,10 @@ void write_to_ppu_vram(struct PpuMemoryMap* mem, unsigned addr, uint8_t data)
 {
 	if (addr < 0x1000) {
 		// 0x0000 to 0x0FFF
-		mem->pattern_table_0[addr] = data;
+		mem->pattern_table_0k[addr] = data;
 	} else if (addr < 0x2000) {
 		// 0x1000 to 0x1FFF
-		mem->pattern_table_1[addr & 0x0FFF] = data;
+		mem->pattern_table_4k[addr & 0x0FFF] = data;
 	} else if (addr < 0x2400) {
 		// 0x2000 to 0x23FF
 		(*mem->nametable_0)[addr & 0x03FF] = data;
@@ -201,10 +201,10 @@ uint8_t read_from_ppu_vram(const struct PpuMemoryMap* mem, unsigned addr)
 	uint8_t ret = 0;
 	if (addr < 0x1000) {
 		// 0x0000 to 0x0FFF
-		ret = mem->pattern_table_0[addr];
+		ret = mem->pattern_table_0k[addr];
 	} else if (addr < 0x2000) {
 		// 0x1000 to 0x1FFF
-		ret = mem->pattern_table_1[addr & 0x0FFF];
+		ret = mem->pattern_table_4k[addr & 0x0FFF];
 	} else if (addr < 0x2400) {
 		// 0x2000 to 0x23FF
 		ret = (*mem->nametable_0)[addr & 0x03FF];
@@ -311,9 +311,9 @@ void ppu_mem_hexdump_addr_range(const Ppu2C02* ppu, const enum PpuMemoryTypes pp
 			} else if (ppu_mem == SECONDARY_OAM) {
 				printf("%.2X ", ppu->scanline_oam[start_addr + x]);
 			} else if (ppu_mem == PATTERN_TABLE_0) {
-				printf("%.2X ", ppu->vram.pattern_table_0[start_addr + x]);
+				printf("%.2X ", ppu->vram.pattern_table_0k[start_addr + x]);
 			} else if (ppu_mem == PATTERN_TABLE_1) {
-				printf("%.2X ", ppu->vram.pattern_table_1[start_addr + x]);
+				printf("%.2X ", ppu->vram.pattern_table_4k[start_addr + x]);
 			} else if (ppu_mem == NAMETABLE_A) {
 				printf("%.2X ", ppu->vram.nametable_A[start_addr + x]);
 			} else if (ppu_mem == NAMETABLE_B) {

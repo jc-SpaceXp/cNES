@@ -48,7 +48,8 @@ int cart_init(Cartridge* cart)
 	cart->trainer.size = 0;
 	cart->non_volatile_mem = false;  // used for "battery-backed" ROMS e.g. Legend of Zelda
 
-	cart->chr.data = NULL;
+	cart->chr_rom.data = NULL;
+	cart->chr_ram.data = NULL;
 	cart->prg_rom.data = NULL;
 	cart->trainer.data = NULL;
 
@@ -119,8 +120,8 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 
 	/* parsing header, assume iNES format */
 	cart->prg_rom.size = 16 * (KiB) * header[4];
-	cart->chr.rom_size = 8  * (KiB) * header[5]; // Pattern table data (if any)
-	cart->chr.ram_size = 8  * (KiB) * !header[5];
+	cart->chr_rom.size = 8  * (KiB) * header[5]; // Pattern table data (if any)
+	cart->chr_ram.size = 8  * (KiB) * !header[5];
 	mapper = (header[7] & 0xF0) | ((header[6] & 0xF0) >> 4); // upper-half byte represents the mapper byte number from header bytes 6 and 7
 	cart->prg_ram.size = 8  * (KiB) * header[8];
 	if (!cart->prg_ram.size) {
@@ -156,7 +157,7 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 
 	if (cart->header == NES_2) {
 		cart->prg_rom.size = 16 * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[4], header[9] & NES2_PRG_ROM_MSB_MASK);
-		cart->chr.rom_size = 8  * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[5], header[9] & NES2_CHR_ROM_MSB_MASK);
+		cart->chr_rom.size = 8  * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[5], header[9] & NES2_CHR_ROM_MSB_MASK);
 
 		// Calculate exponent of PRG ROM if necessary
 		if ((header[9] & NES2_PRG_ROM_MSB_MASK) == NES2_PRG_ROM_EXPONENT_SIZE) {
@@ -167,7 +168,7 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 		// Calculate exponent of CHR ROM if necessary
 		if ((header[9] & NES2_CHR_ROM_MSB_MASK) == NES2_CHR_ROM_EXPONENT_SIZE) {
 			unsigned multiplier = (header[5] & NES2_MULT_VAL_MASK) * 2 + 1;
-			cart->chr.rom_size = (1 << (header[5] & NES2_EXPONENT_VAL_MASK)) * multiplier;
+			cart->chr_rom.size = (1 << (header[5] & NES2_EXPONENT_VAL_MASK)) * multiplier;
 		}
 		// Byte 6 is the same as before
 		cpu->cpu_mapper_io->mapper_number |= (header[8] & 0x0F) << 8; // an extra 4 bits are added to the mapper number
@@ -177,9 +178,9 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 		unsigned shift_count = header[10] & VOLATILE_RAM_SHIFT_MASK;
 		if (shift_count) {  cart->prg_ram.size = 64 << shift_count; }
 
-		cart->chr.ram_size = 0;
+		cart->chr_ram.size = 0;
 		shift_count = header[11] & VOLATILE_RAM_SHIFT_MASK;
-		if (shift_count) {  cart->chr.ram_size = 64 << shift_count; }
+		if (shift_count) {  cart->chr_ram.size = 64 << shift_count; }
 
 		// so far only processing PAL/NTSC
 		cart->video_mode = NTSC;
@@ -208,16 +209,23 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 	}
 	fread(cart->prg_rom.data, 1, cart->prg_rom.size, rom);
 
-	/* loading data into chr_rom */
-	unsigned chr_size = cart->chr.rom_size ? cart->chr.rom_size : cart->chr.ram_size;
-	if (chr_size) {
-		cart->chr.data = malloc(chr_size);
-		if (!cart->chr.data) {
-			free(cart->prg_rom.data);
+	/* Loading data into chr_rom */
+	if (cart->chr_rom.size) {
+		cart->chr_rom.data = malloc(cart->chr_rom.size);
+		if (!cart->chr_rom.data) {
 			fclose(rom);
 			return 8;
 		}
-		fread(cart->chr.data, 1, chr_size, rom);
+		fread(cart->chr_rom.data, 1, cart->chr_rom.size, rom);
+	}
+
+	/* Allocate any CHR RAM here too */
+	if (cart->chr_ram.size) {
+		cart->chr_ram.data = calloc(cart->chr_ram.size, sizeof(uint8_t));
+		if (!cart->chr_ram.data) {
+			fclose(rom);
+			return 8;
+		}
 	}
 
 	fclose(rom);
@@ -288,8 +296,8 @@ static void log_cart_info(const Cartridge* cart, const char* filename, const Cpu
 
 	printf("PRG ROM size: %d KiB\n", cart->prg_rom.size / (KiB));
 	printf("PRG RAM (WRAM) size: %d KiB (Some mappers have no PRG RAM, for INES header the value maybe ignored)\n", cart->prg_ram.size / (KiB));
-	printf("CHR ROM size: %d KiB\n", cart->chr.rom_size / (KiB));
-	printf("CHR RAM (VRAM) size: %d KiB\n", cart->chr.ram_size / (KiB));
+	printf("CHR ROM size: %d KiB\n", cart->chr_rom.size / (KiB));
+	printf("CHR RAM (VRAM) size: %d KiB\n", cart->chr_ram.size / (KiB));
 	printf("Trainer: ");
 	print_yes_or_no(cart->trainer.size);
 	printf("Battery/Non-volatile Memory: ");

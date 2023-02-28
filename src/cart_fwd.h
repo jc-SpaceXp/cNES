@@ -2,7 +2,7 @@
 #define __CART_FWD__
 
 // Ensure forward declerations come before other includes
-typedef struct Memory Memory;
+typedef struct CartMemory CartMemory;
 typedef struct ChrMemory ChrMemory;
 typedef struct Cartridge Cartridge;
 

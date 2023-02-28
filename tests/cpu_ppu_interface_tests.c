@@ -68,11 +68,23 @@ static void vram_setup(void)
 		ck_abort_msg("Failed to allocate memory to vram struct");
 	}
 
+	cpio_vram->pattern_table_0k = malloc(4 * KiB);
+	cpio_vram->pattern_table_4k = malloc(4 * KiB);
+
+	if (!cpio_vram->pattern_table_0k || !cpio_vram->pattern_table_4k) {
+		// malloc fails
+		ck_abort_msg("Failed to allocate memory to the ppu chr data");
+	}
+
 	cpu_ppu_tester->vram = cpio_vram;
+	cpu_ppu_tester->vram->pattern_table_0k = cpio_vram->pattern_table_0k;
+	cpu_ppu_tester->vram->pattern_table_4k = cpio_vram->pattern_table_4k;
 }
 
 static void vram_teardown(void)
 {
+	free(cpio_vram->pattern_table_0k);
+	free(cpio_vram->pattern_table_4k);
 	free(cpio_vram);
 }
 
@@ -97,8 +109,9 @@ static void setup(void)
 	cpu_ppu_tester->fine_x = &cpio_fine_x;
 	cpio_cpu->cpu_ppu_io = cpu_ppu_tester;
 	cpio_cpu->cpu_mapper_io = cpio_cpu_mapper;
-	cpio_cpu->cpu_mapper_io->chr = &cpio_cart->chr;
-	cpio_cpu->cpu_mapper_io->chr->ram_size = 1; // allow writes to CHR-RAM
+	cpio_cpu->cpu_mapper_io->chr_rom = &cpio_cart->chr_rom;
+	cpio_cpu->cpu_mapper_io->chr_ram = &cpio_cart->chr_ram;
+	cpio_cpu->cpu_mapper_io->chr_ram->size = 1; // allow writes to CHR-RAM
 }
 
 static void teardown(void)

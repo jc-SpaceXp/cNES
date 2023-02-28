@@ -10,9 +10,10 @@
 // Shared mapper/cpu struct
 struct CpuMapperShare {
 	// Mirror data from Cart struct
-	Memory* prg_rom;
-	Memory* prg_ram;
-	ChrMemory* chr;
+	CartMemory* prg_rom;
+	CartMemory* prg_ram;
+	CartMemory* chr_rom;
+	CartMemory* chr_ram;
 	unsigned mapper_number;
 
 	// currently these are only MMC1 specific (struct may change later)

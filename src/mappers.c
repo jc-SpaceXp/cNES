@@ -11,8 +11,8 @@
 
 // Static prototype functions
 static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val);
-static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu);
-static void mapper_001(Cartridge* cart, Cpu6502* cpu, const Ppu2C02* ppu);
+static void mapper_000(Cartridge* cart, Cpu6502* cpu, struct PpuMemoryMap* vram);
+static void mapper_001(Cartridge* cart, Cpu6502* cpu, struct PpuMemoryMap* vram);
 
 // Helper functions
 static inline void set_prg_rom_bank_1(Cpu6502* cpu, const unsigned prg_bank_offset, const unsigned kib_size)
@@ -29,18 +29,20 @@ static inline void set_prg_rom_bank_2(Cpu6502* cpu, const unsigned prg_bank_offs
 		  , 16 * KiB);
 }
 
-static inline void set_chr_bank_1(Cpu6502* cpu, const unsigned chr_bank_offset, const unsigned kib_size)
+static inline void set_4k_chr_bank(uint8_t** const cart_chr_data, unsigned four_kib_bank_offset
+                                  , uint8_t** ppu_4k_pattern_table)
 {
-	memcpy(&cpu->cpu_ppu_io->vram->pattern_table_0[0x0000]
-		  , cpu->cpu_mapper_io->chr->data + ((chr_bank_offset) * (kib_size))
-		  , kib_size);
+	*ppu_4k_pattern_table = *cart_chr_data + (four_kib_bank_offset * 4 * KiB);
 }
 
-static inline void set_chr_bank_2(Cpu6502* cpu, const unsigned chr_bank_offset)
+static inline void set_8k_chr_bank(uint8_t** const cart_chr_data, unsigned eight_kib_bank_offset
+                                  , uint8_t** ppu_pattern_table_0k, uint8_t** ppu_pattern_table_4k)
 {
-	memcpy(&cpu->cpu_ppu_io->vram->pattern_table_1[0x0000]
-		  , cpu->cpu_mapper_io->chr->data + ((chr_bank_offset) * (4 * KiB))
-		  , 4 * KiB);
+	unsigned even_4k_banks = eight_kib_bank_offset * 2;
+	unsigned odd_4k_banks = even_4k_banks + 1;
+
+	*ppu_pattern_table_0k = *cart_chr_data + (even_4k_banks * 4 * KiB);
+	*ppu_pattern_table_4k = *cart_chr_data + (odd_4k_banks * 4 * KiB);
 }
 
 // allow writes to PRG RAM / WRAM (CPU: 0x6000 to 0x7FFF) if enabled
@@ -147,10 +149,10 @@ void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 	set_nametable_mirroring(&ppu->vram, ppu->nametable_mirroring);
 	switch (cpu->cpu_mapper_io->mapper_number) {
 	case 0:
-		mapper_000(cart, cpu, ppu);
+		mapper_000(cart, cpu, &ppu->vram);
 		break;
 	case 1:
-		mapper_001(cart, cpu, ppu);
+		mapper_001(cart, cpu, &ppu->vram);
 		break;
 	default:
 		fprintf(stderr, "Mapper %d isn't implemented\n", cpu->cpu_mapper_io->mapper_number);
@@ -160,9 +162,9 @@ void init_mapper(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 
 
 /* NROM mapper */
-static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
+static void mapper_000(Cartridge* cart, Cpu6502* cpu, struct PpuMemoryMap* vram)
 {
-	/* Load PRG_ROM into CPU program memory space */
+	/* Load PRG ROM into CPU program memory space */
 	if (cart->prg_rom.size == (16 * KiB)) {
 		memcpy(&cpu->mem[0x8000], cart->prg_rom.data, 16 * KiB); // First 16KiB
 		memcpy(&cpu->mem[0xC000], cart->prg_rom.data, 16 * KiB); // Last 16KiB (Mirrored)
@@ -172,24 +174,34 @@ static void mapper_000(Cartridge* cart, Cpu6502* cpu, Ppu2C02* ppu)
 	free(cart->prg_rom.data);
 	cart->prg_rom.data = NULL;
 
-	/* Load CHR_ROM data into PPU VRAM */
-	if (cart->chr.rom_size) {
-		memcpy(&ppu->vram.pattern_table_0[0x0000], cart->chr.data, 4 * KiB);
-		memcpy(&ppu->vram.pattern_table_1[0x0000], cart->chr.data + (4 * KiB), 4 * KiB);
+	/* Load CHR ROM data into PPU VRAM, NROM always seems to have 8K CHR ROM */
+	if (cart->chr_rom.size) {
+		set_4k_chr_bank(&cart->chr_rom.data, 0, &vram->pattern_table_0k);
+		set_4k_chr_bank(&cart->chr_rom.data, 1, &vram->pattern_table_4k);
 	}
-	free(cart->chr.data);
-	cart->chr.data = NULL;
 }
 
 
 /* SxROM (MMC1) mapper */
 // power on state
-static void mapper_001(Cartridge* cart, Cpu6502* cpu, const Ppu2C02* ppu)
+static void mapper_001(Cartridge* cart, Cpu6502* cpu, struct PpuMemoryMap* vram)
 {
-	(void) ppu; // suppress unused variable warning
 	unsigned prg_rom_banks = cart->prg_rom.size / (16 * KiB);
 	set_prg_rom_bank_1(cpu, 0, 16 * KiB);
 	set_prg_rom_bank_2(cpu, prg_rom_banks - 1);
+
+	// setup chr banks so they actually point to something on startup
+	if (cart->chr_rom.size) {
+		set_4k_chr_bank(&cart->chr_rom.data, 0, &vram->pattern_table_0k);
+		set_4k_chr_bank(&cart->chr_rom.data, 1, &vram->pattern_table_4k);
+	} else if (cart->chr_ram.size) {
+		set_4k_chr_bank(&cart->chr_ram.data, 0, &vram->pattern_table_0k);
+		set_4k_chr_bank(&cart->chr_ram.data, 0, &vram->pattern_table_4k);
+	}
+
+	if (cart->chr_ram.size == (8 * KiB)) {
+		set_4k_chr_bank(&cart->chr_ram.data, 1, &vram->pattern_table_4k);
+	}
 }
 
 static void normalise_any_out_of_bounds_bank(unsigned* bank_select, unsigned total_banks)
@@ -200,6 +212,42 @@ static void normalise_any_out_of_bounds_bank(unsigned* bank_select, unsigned tot
 		// banks should be aligned to a power of 2
 		// otherwise calculation below should be "&= log2(total_banks)"
 		*bank_select &= total_banks - 1;
+	}
+}
+
+static void mmc1_set_chr_0_bank(CpuMapperShare const* cpu_mapper, struct PpuMemoryMap* vram
+                               , unsigned bank_select)
+{
+	if (cpu_mapper->chr_rom->size) {
+		if (cpu_mapper->chr_bank_size == 4) {
+			set_4k_chr_bank(&cpu_mapper->chr_rom->data, bank_select
+			               , &vram->pattern_table_0k);
+		} else if (cpu_mapper->chr_bank_size == 8) {
+			set_8k_chr_bank(&cpu_mapper->chr_rom->data, bank_select
+			               , &vram->pattern_table_0k
+			               , &vram->pattern_table_4k);
+		}
+	} else if (cpu_mapper->chr_ram->size) {
+		if (cpu_mapper->chr_bank_size == 4) {
+			set_4k_chr_bank(&cpu_mapper->chr_ram->data, bank_select
+			               , &vram->pattern_table_0k);
+		} else if (cpu_mapper->chr_bank_size == 8) {
+			set_8k_chr_bank(&cpu_mapper->chr_ram->data, bank_select
+			               , &vram->pattern_table_0k
+			               , &vram->pattern_table_4k);
+		}
+	}
+}
+
+static void mmc1_set_chr_1_bank(CpuMapperShare const* cpu_mapper, struct PpuMemoryMap* vram
+                               , unsigned bank_select)
+{
+	if (cpu_mapper->chr_rom->size) {
+		set_4k_chr_bank(&cpu_mapper->chr_rom->data, bank_select
+		               , &vram->pattern_table_4k);
+	} else if (cpu_mapper->chr_ram->size) {
+		set_4k_chr_bank(&cpu_mapper->chr_ram->data, bank_select
+		               , &vram->pattern_table_4k);
 	}
 }
 
@@ -295,29 +343,35 @@ static void mmc1_reg_write(Cpu6502* cpu, const uint16_t addr, const uint8_t val)
 			// reg 1: RxxC CCCC
 			// C bits
 			unsigned bank_select = buffer & 0x1F;
-			unsigned chr_rom_banks = cpu->cpu_mapper_io->chr->rom_size / (4 * KiB);
-			normalise_any_out_of_bounds_bank(&bank_select, chr_rom_banks);
+			unsigned chr_banks = cpu->cpu_mapper_io->chr_rom->size / (4 * KiB);
+			// assume CHR ROM first then try CHR RAM
+			if (cpu->cpu_mapper_io->chr_ram->size) {
+				chr_banks = cpu->cpu_mapper_io->chr_ram->size / (4 * KiB);
+			}
+			normalise_any_out_of_bounds_bank(&bank_select, chr_banks);
 
 			if (cpu->cpu_mapper_io->chr_bank_size == 8) {
 				// ignore lowest bit (can only be aligned to even 4K banks: 0, 2, 4 etc.)
 				// so can just shift out the lsb and offset each bank by 8K
 				bank_select >>= 1;
 			}
-			// Only copy CHR ROM
-			if (cpu->cpu_mapper_io->chr->rom_size) {
-				set_chr_bank_1(cpu, bank_select, cpu->cpu_mapper_io->chr_bank_size * KiB);
-			}
+			// Either bankwitch CHR ROM or RAM
+			mmc1_set_chr_0_bank((CpuMapperShare const*) cpu->cpu_mapper_io
+			                    , cpu->cpu_ppu_io->vram, bank_select);
 		} else if ((addr >= 0xC000) && (addr <= 0xDFFF)) {
 			// reg 2: RxxC CCCC (ignored if CHR banks are in 8K mode)
 			unsigned bank_select = buffer & 0x1F;
-			unsigned chr_rom_banks = cpu->cpu_mapper_io->chr->rom_size / (4 * KiB);
-			normalise_any_out_of_bounds_bank(&bank_select, chr_rom_banks);
+			unsigned chr_banks = cpu->cpu_mapper_io->chr_rom->size / (4 * KiB);
+			// assume CHR ROM first then try CHR RAM
+			if (cpu->cpu_mapper_io->chr_ram->size) {
+				chr_banks = cpu->cpu_mapper_io->chr_ram->size / (4 * KiB);
+			}
+			normalise_any_out_of_bounds_bank(&bank_select, chr_banks);
 
 			if (cpu->cpu_mapper_io->chr_bank_size == 4) {
-				// Only copy CHR ROM
-				if (cpu->cpu_mapper_io->chr->rom_size) {
-					set_chr_bank_2(cpu, bank_select);
-				}
+				// Either bankwitch CHR ROM or RAM
+				mmc1_set_chr_1_bank((CpuMapperShare const*) cpu->cpu_mapper_io
+				                   , cpu->cpu_ppu_io->vram, bank_select);
 			}
 		} else if (addr >= 0xE000) { // else (addr >= 0xE000 && addr <= 0xFFFF)
 			// reg 3: RxxB PPPP

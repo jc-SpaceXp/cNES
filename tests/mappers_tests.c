@@ -26,7 +26,8 @@ static void cart_setup(void)
 	// Free'ing NULL is defined, if pointer isn't set then free is invalid
 	mp_cart->prg_rom.data = NULL;
 	mp_cart->prg_ram.data = NULL;
-	mp_cart->chr.data = NULL;
+	mp_cart->chr_rom.data = NULL;
+	mp_cart->chr_ram.data = NULL;
 }
 
 static void cart_teardown(void)
@@ -99,8 +100,9 @@ static void setup(void)
 	cpu_ppu_setup();
 
 	mp_cpu->cpu_mapper_io = cpu_mapper_tester;
-	mp_cpu->cpu_mapper_io->chr = &mp_cart->chr;
-	mp_cpu->cpu_mapper_io->chr->ram_size = 1; // allow writes to CHR-RAM
+	mp_cpu->cpu_mapper_io->chr_rom = &mp_cart->chr_rom;
+	mp_cpu->cpu_mapper_io->chr_ram = &mp_cart->chr_ram;
+	mp_cpu->cpu_mapper_io->chr_ram->size = 1; // allow writes to CHR-RAM
 	mp_cpu->cpu_mapper_io->prg_ram = &mp_cart->prg_ram;
 	mp_cpu->cpu_mapper_io->prg_ram->size = 0; // disable writes to PRG-RAM
 
@@ -112,10 +114,6 @@ static void setup(void)
 	// Unit tests set a whole block to a constant value
 	// so setting adjacent values to different ones will make
 	// sure that the unit tests are always valid
-	mp_ppu->vram.pattern_table_0[0x0000] = 0x01;
-	mp_ppu->vram.pattern_table_0[0x0001] = 0x02;
-	mp_ppu->vram.pattern_table_1[0x0000] = 0x01;
-	mp_ppu->vram.pattern_table_1[0x0001] = 0x02;
 	mp_cpu->mem[0x8000] = 0x01;
 	mp_cpu->mem[0x8001] = 0x02;
 	mp_cpu->mem[0xC000] = 0x01;
@@ -140,7 +138,7 @@ static uint8_t get_nth_bit(unsigned int input, unsigned int bit_pos)
 
 START_TEST (mapper_000_prg_rom_banks)
 {
-	mp_cart->chr.rom_size = 0;
+	mp_cart->chr_rom.size = 0;
 	cpu_mapper_tester->mapper_number = 0;
 	unsigned int prg_rom_sizes[2] = {16 * KiB, 32 * KiB};
 	uint8_t* prg_window = calloc(32 * KiB, sizeof(uint8_t));
@@ -164,14 +162,14 @@ START_TEST (mapper_000_prg_rom_banks)
 
 START_TEST (mapper_000_chr_rom_banks)
 {
-	mp_cart->chr.rom_size = 8 * KiB; // chr data is always 8K for mapper 0
+	mp_cart->chr_rom.size = 8 * KiB; // chr data is always 8K for mapper 0
 	cpu_mapper_tester->mapper_number = 0;
 	uint8_t* chr_window = calloc(8 * KiB, sizeof(uint8_t));
 	// Split chr 8K into 2 4K regions
 	uint8_t chr_banks[2][2] = {{0xA0, 0xA0}, {0xA0, 0x08}};
-	mp_cart->chr.data = chr_window;
-	memset(mp_cart->chr.data,           chr_banks[_i][0], 4 * KiB);
-	memset(mp_cart->chr.data + 4 * KiB, chr_banks[_i][1], 4 * KiB);
+	mp_cart->chr_rom.data = chr_window;
+	memset(mp_cart->chr_rom.data,           chr_banks[_i][0], 4 * KiB);
+	memset(mp_cart->chr_rom.data + 4 * KiB, chr_banks[_i][1], 4 * KiB);
 	// Mirror prg_banks into arrays so we can check the result
 	// as the prg_rom.data is free'd by the mapper_000() function
 	uint8_t chr_array_1[4 * KiB] = {0};
@@ -187,8 +185,11 @@ START_TEST (mapper_000_chr_rom_banks)
 
 	// pattern table_0 is vram address 0x0000-0x0FFF (4K)
 	// pattern table_1 is vram address 0x1000-0x1FFF (4K)
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0[0x0000], &chr_array_1[0], 4 * KiB);
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_1[0x0000], &chr_array_2[0], 4 * KiB);
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0k[0x0000], &chr_array_1[0], 4 * KiB);
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_4k[0x0000], &chr_array_2[0], 4 * KiB);
+
+	free(chr_window);
+	// prg free is handled by mapper 0 function
 }
 
 START_TEST (mapper_000_unmapped_open_bus_reads)
@@ -444,13 +445,13 @@ START_TEST (mapper_001_reg1_chr0_bank_select_4k_rom)
 	mp_cpu->cycle = 13;
 	uint16_t chr0_reg = 0xA49B; // $A000 to $BFFF
 	cpu_mapper_tester->chr_bank_size = 4; // KiB size, 32 possible ROM banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 128 * KiB;
-	cpu_mapper_tester->chr->ram_size = 0;
+	cpu_mapper_tester->chr_rom->size = 128 * KiB;
+	cpu_mapper_tester->chr_ram->size = 0;
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_rom.data = chr_window;
 	for (int bank = 0; bank < 32; ++bank) {
-		memset(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+		memset(mp_cart->chr_rom.data + bank * 4 * KiB, bank, 4 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -465,27 +466,27 @@ START_TEST (mapper_001_reg1_chr0_bank_select_4k_rom)
 	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 4)); // 5
 	mp_cpu->cycle += 5;
 
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0k[0x0000]
 	                , chr_window + bank_select * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
 }
 
-START_TEST (mapper_001_reg1_chr0_bank_select_4k_ram_ignored)
+START_TEST (mapper_001_reg1_chr0_bank_select_4k_ram)
 {
 	cpu_mapper_tester->mapper_number = 1;
 	mp_cpu->cycle = 13;
 	uint16_t chr0_reg = 0xA49B; // $A000 to $BFFF
 	cpu_mapper_tester->chr_bank_size = 4; // KiB size, 32 possible banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 0;
-	cpu_mapper_tester->chr->ram_size = 4 * KiB;
+	cpu_mapper_tester->chr_rom->size = 0;
+	cpu_mapper_tester->chr_ram->size = 128 * KiB; // for testing purposes (actual limit is 8 KiB)
 	// There are no chr banks for chr ram in MMC1 but testing to see
 	// that no bankswitching is attempted
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_ram.data = chr_window;
 	for (int bank = 0; bank < 32; ++bank) {
-		memset(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+		memset(mp_cart->chr_ram.data + bank * 4 * KiB, bank, 4 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -500,7 +501,7 @@ START_TEST (mapper_001_reg1_chr0_bank_select_4k_ram_ignored)
 	mapper_write(mp_cpu, chr0_reg, get_nth_bit(_i, 4)); // 5
 	mp_cpu->cycle += 5;
 
-	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_0[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0k[0x0000]
 	                , chr_window + bank_select * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
@@ -512,13 +513,13 @@ START_TEST (mapper_001_reg1_chr0_bank_select_8k_rom)
 	mp_cpu->cycle = 13;
 	uint16_t chr0_reg = 0xB49B; // $A000 to $BFFF
 	cpu_mapper_tester->chr_bank_size = 8; // KiB size, 16 possible 8K ROM banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 128 * KiB;
-	cpu_mapper_tester->chr->ram_size = 0;
+	cpu_mapper_tester->chr_rom->size = 128 * KiB;
+	cpu_mapper_tester->chr_ram->size = 0;
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_rom.data = chr_window;
 	for (int bank = 0; bank < 16; ++bank) {
-		memset(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
+		memset(mp_cart->chr_rom.data + bank * 8 * KiB, bank, 8 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -537,31 +538,31 @@ START_TEST (mapper_001_reg1_chr0_bank_select_8k_rom)
 	// since lowest bit is ignored we get this pattern for even banks
 	// (pattern_table_0): 0 0 2 2 4 4 6 6 8 8 etc. for increasing
 	// even 4K banks (0, 2, 4 etc.) (via (_i >> 1) * 2)
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0k[0x0000]
 	                , chr_window + ((bank_select >> 1) * 2) * 4 * KiB
 	                , 4 * KiB);
 	// odd 4K banks (1, 3, 5 etc.) (via even banks calc + 1)
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_1[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_4k[0x0000]
 	                , chr_window + (((bank_select >> 1) * 2) + 1) * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
 }
 
-START_TEST (mapper_001_reg1_chr0_bank_select_8k_ram_ignored)
+START_TEST (mapper_001_reg1_chr0_bank_select_8k_ram)
 {
 	cpu_mapper_tester->mapper_number = 1;
 	mp_cpu->cycle = 13;
 	uint16_t chr0_reg = 0xB49B; // $A000 to $BFFF
 	cpu_mapper_tester->chr_bank_size = 8; // KiB size, 16 possible 8K ROM banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 0;
-	cpu_mapper_tester->chr->ram_size = 8 * KiB;
+	cpu_mapper_tester->chr_rom->size = 0;
+	cpu_mapper_tester->chr_ram->size = 8 * KiB; // test that upper bits of bank select are ignored
 	// There are no chr banks for chr ram in MMC1 but testing to see
 	// that no bankswitching is attempted
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_ram.data = chr_window;
 	for (int bank = 0; bank < 16; ++bank) {
-		memset(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
+		memset(mp_cart->chr_ram.data + bank * 8 * KiB, bank, 8 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -580,12 +581,16 @@ START_TEST (mapper_001_reg1_chr0_bank_select_8k_ram_ignored)
 	// since lowest bit is ignored we get this pattern for even banks
 	// (pattern_table_0): 0 0 2 2 4 4 6 6 8 8 etc. for increasing
 	// even 4K banks (0, 2, 4 etc.) (via (_i >> 1) * 2)
-	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_0[0x0000]
-	                , chr_window + ((bank_select >> 1) * 2) * 4 * KiB
+	// Only lowest bit is used in 8K RAM (after a right shift of 1)
+	uint8_t even_banks = ((bank_select >> 1) * 2) & 0x01;
+	uint8_t odd_banks = even_banks + 1;
+
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0k[0x0000]
+	                , chr_window + (even_banks * 4 * KiB)
 	                , 4 * KiB);
 	// odd 4K banks (1, 3, 5 etc.) (via even banks calc + 1)
-	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_1[0x0000]
-	                , chr_window + (((bank_select >> 1) * 2) + 1) * 4 * KiB
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_4k[0x0000]
+	                , chr_window + (odd_banks * 4 * KiB)
 	                , 4 * KiB);
 	free(chr_window);
 }
@@ -596,13 +601,13 @@ START_TEST (mapper_001_reg1_chr0_bank_select_4k_rom_out_of_bounds)
 	mp_cpu->cycle = 13;
 	uint16_t chr0_reg = 0xA49B; // $A000 to $BFFF
 	cpu_mapper_tester->chr_bank_size = 4; // KiB size, 32 possible ROM banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 64 * KiB;
-	cpu_mapper_tester->chr->ram_size = 0;
+	cpu_mapper_tester->chr_rom->size = 64 * KiB;
+	cpu_mapper_tester->chr_ram->size = 0;
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_rom.data = chr_window;
 	for (int bank = 0; bank < 32; ++bank) {
-		memset(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+		memset(mp_cart->chr_rom.data + bank * 4 * KiB, bank, 4 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -618,7 +623,7 @@ START_TEST (mapper_001_reg1_chr0_bank_select_4k_rom_out_of_bounds)
 	mp_cpu->cycle += 5;
 
 	// Only lowest 4 bits are used in 64K ROM
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0k[0x0000]
 	                , chr_window + (bank_select & 0x0F) * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
@@ -630,13 +635,13 @@ START_TEST (mapper_001_reg1_chr0_bank_select_8k_rom_out_of_bounds)
 	mp_cpu->cycle = 13;
 	uint16_t chr0_reg = 0xB49B; // $A000 to $BFFF
 	cpu_mapper_tester->chr_bank_size = 8; // KiB size, 16 possible 8K ROM banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 64 * KiB;
-	cpu_mapper_tester->chr->ram_size = 0;
+	cpu_mapper_tester->chr_rom->size = 64 * KiB;
+	cpu_mapper_tester->chr_ram->size = 0;
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_rom.data = chr_window;
 	for (int bank = 0; bank < 16; ++bank) {
-		memset(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
+		memset(mp_cart->chr_rom.data + bank * 8 * KiB, bank, 8 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -660,11 +665,11 @@ START_TEST (mapper_001_reg1_chr0_bank_select_8k_rom_out_of_bounds)
 	// 16 4K banks hence the lowest 4 bits are used with the LSB being ignored/shifted out
 	uint8_t even_banks = ((bank_select & 0x0F) >> 1) * 2;
 	uint8_t odd_banks = even_banks + 1;
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0k[0x0000]
 	                , chr_window + even_banks * 4 * KiB
 	                , 4 * KiB);
 	// odd 4K banks (1, 3, 5 etc.) (via even banks calc + 1)
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_1[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_4k[0x0000]
 	                , chr_window + odd_banks * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
@@ -676,13 +681,13 @@ START_TEST (mapper_001_reg2_chr1_bank_select_4k_rom)
 	mp_cpu->cycle = 13;
 	uint16_t chr1_reg = 0xCF1C; // $C000 to $DFFF
 	cpu_mapper_tester->chr_bank_size = 4; // KiB size, 32 possible ROM banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 128 * KiB;
-	cpu_mapper_tester->chr->ram_size = 0;
+	cpu_mapper_tester->chr_rom->size = 128 * KiB;
+	cpu_mapper_tester->chr_ram->size = 0;
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_rom.data = chr_window;
 	for (int bank = 0; bank < 32; ++bank) {
-		memset(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+		memset(mp_cart->chr_rom.data + bank * 4 * KiB, bank, 4 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -697,27 +702,27 @@ START_TEST (mapper_001_reg2_chr1_bank_select_4k_rom)
 	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 4)); // 5
 	mp_cpu->cycle += 5;
 
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_1[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_4k[0x0000]
 	                , chr_window + bank_select * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
 }
 
-START_TEST (mapper_001_reg2_chr1_bank_select_4k_ram_ignored)
+START_TEST (mapper_001_reg2_chr1_bank_select_4k_ram)
 {
 	cpu_mapper_tester->mapper_number = 1;
 	mp_cpu->cycle = 13;
 	uint16_t chr1_reg = 0xCF1C; // $C000 to $DFFF
 	cpu_mapper_tester->chr_bank_size = 4; // KiB size, 32 possible banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 0;
-	cpu_mapper_tester->chr->ram_size = 4 * KiB;
+	cpu_mapper_tester->chr_rom->size = 0;
+	cpu_mapper_tester->chr_ram->size = 128 * KiB; // for testing purposes (actual limit is 8 KiB)
 	// There are no chr banks for chr ram in MMC1 but testing to see
 	// that no bankswitching is attempted
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_ram.data = chr_window;
 	for (int bank = 0; bank < 32; ++bank) {
-		memset(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+		memset(mp_cart->chr_ram.data + bank * 4 * KiB, bank, 4 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -732,7 +737,7 @@ START_TEST (mapper_001_reg2_chr1_bank_select_4k_ram_ignored)
 	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 4)); // 5
 	mp_cpu->cycle += 5;
 
-	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_1[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_4k[0x0000]
 	                , chr_window + bank_select * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
@@ -744,17 +749,20 @@ START_TEST (mapper_001_reg2_chr1_bank_select_8k_rom_ignored)
 	mp_cpu->cycle = 13;
 	uint16_t chr1_reg = 0xCF1C; // $C000 to $DFFF
 	cpu_mapper_tester->chr_bank_size = 8; // KiB size, 16 possible 8K ROM banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 128 * KiB;
-	cpu_mapper_tester->chr->ram_size = 0;
+	cpu_mapper_tester->chr_rom->size = 128 * KiB;
+	cpu_mapper_tester->chr_ram->size = 0;
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_rom.data = chr_window;
 	for (int bank = 0; bank < 16; ++bank) {
-		memset(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
+		memset(mp_cart->chr_rom.data + bank * 8 * KiB, bank, 8 * KiB);
 	}
 	// Set chr data to all 1's
-	memset(&mp_ppu->vram.pattern_table_0[0x0000], 0xFF, 4 * KiB);
-	memset(&mp_ppu->vram.pattern_table_1[0x0000], 0xFF, 4 * KiB);
+	uint8_t* ppu_chr = calloc(8 * KiB, sizeof(uint8_t));
+	mp_ppu->vram.pattern_table_0k = ppu_chr;
+	mp_ppu->vram.pattern_table_4k = ppu_chr + 4 * KiB;
+	memset(&mp_ppu->vram.pattern_table_0k[0x0000], 0xFF, 4 * KiB);
+	memset(&mp_ppu->vram.pattern_table_4k[0x0000], 0xFF, 4 * KiB);
 
 	// 1st write is LSB and last is MSB
 	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 0)); // 1
@@ -772,14 +780,15 @@ START_TEST (mapper_001_reg2_chr1_bank_select_8k_rom_ignored)
 	// since lowest bit is ignored we get this pattern for even banks
 	// (pattern_table_0): 0 0 2 2 4 4 6 6 8 8 etc. for increasing
 	// even 4K banks (0, 2, 4 etc.) (via (_i >> 1) * 2)
-	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_1[0x0000]
+	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_4k[0x0000]
 	                , chr_window + ((bank_select >> 1) * 2) * 4 * KiB
 	                , 4 * KiB);
 	// odd 4K banks (1, 3, 5 etc.) (via even banks calc + 1)
-	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_1[0x0000]
+	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_4k[0x0000]
 	                , chr_window + (((bank_select >> 1) * 2) + 1) * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
+	free(ppu_chr);
 }
 
 START_TEST (mapper_001_reg2_chr1_bank_select_8k_ram_ignored)
@@ -788,19 +797,22 @@ START_TEST (mapper_001_reg2_chr1_bank_select_8k_ram_ignored)
 	mp_cpu->cycle = 13;
 	uint16_t chr1_reg = 0xCF1C; // $C000 to $DFFF
 	cpu_mapper_tester->chr_bank_size = 8; // KiB size, 16 possible 8K banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 0;
-	cpu_mapper_tester->chr->ram_size = 8 * KiB;
+	cpu_mapper_tester->chr_rom->size = 0;
+	cpu_mapper_tester->chr_ram->size = 8 * KiB;
 	// There are no chr banks for chr ram in MMC1 but testing to see
 	// that no bankswitching is attempted
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_ram.data = chr_window;
 	for (int bank = 0; bank < 16; ++bank) {
-		memset(mp_cart->chr.data + bank * 8 * KiB, bank, 8 * KiB);
+		memset(mp_cart->chr_ram.data + bank * 8 * KiB, bank, 8 * KiB);
 	}
 	// Set chr data to all 1's
-	memset(&mp_ppu->vram.pattern_table_0[0x0000], 0xFF, 4 * KiB);
-	memset(&mp_ppu->vram.pattern_table_1[0x0000], 0xFF, 4 * KiB);
+	uint8_t* ppu_chr = calloc(8 * KiB, sizeof(uint8_t));
+	mp_ppu->vram.pattern_table_0k = ppu_chr;
+	mp_ppu->vram.pattern_table_4k = ppu_chr + 4 * KiB;
+	memset(&mp_ppu->vram.pattern_table_0k[0x0000], 0xFF, 4 * KiB);
+	memset(&mp_ppu->vram.pattern_table_4k[0x0000], 0xFF, 4 * KiB);
 
 	// 1st write is LSB and last is MSB
 	mapper_write(mp_cpu, chr1_reg, get_nth_bit(_i, 0)); // 1
@@ -818,14 +830,15 @@ START_TEST (mapper_001_reg2_chr1_bank_select_8k_ram_ignored)
 	// since lowest bit is ignored we get this pattern for even banks
 	// (pattern_table_0): 0 0 2 2 4 4 6 6 8 8 etc. for increasing
 	// even 4K banks (0, 2, 4 etc.) (via (_i >> 1) * 2)
-	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_1[0x0000]
+	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_4k[0x0000]
 	                , chr_window + ((bank_select >> 1) * 2) * 4 * KiB
 	                , 4 * KiB);
 	// odd 4K banks (1, 3, 5 etc.) (via even banks calc + 1)
-	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_1[0x0000]
+	ck_assert_mem_ne(&mp_ppu->vram.pattern_table_4k[0x0000]
 	                , chr_window + (((bank_select >> 1) * 2) + 1) * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
+	free(ppu_chr);
 }
 
 START_TEST (mapper_001_reg2_chr1_bank_select_4k_rom_out_of_bounds)
@@ -834,13 +847,13 @@ START_TEST (mapper_001_reg2_chr1_bank_select_4k_rom_out_of_bounds)
 	mp_cpu->cycle = 13;
 	uint16_t chr1_reg = 0xCF1C; // $C000 to $DFFF
 	cpu_mapper_tester->chr_bank_size = 4; // KiB size, 32 possible ROM banks in 128K chr
-	cpu_mapper_tester->chr->rom_size = 32 * KiB;
-	cpu_mapper_tester->chr->ram_size = 0;
+	cpu_mapper_tester->chr_rom->size = 32 * KiB;
+	cpu_mapper_tester->chr_ram->size = 0;
 	unsigned int bank_select = _i; // 0-31 banks
 	uint8_t* chr_window = calloc(128 * KiB, sizeof(uint8_t));
-	mp_cart->chr.data = chr_window;
+	mp_cart->chr_rom.data = chr_window;
 	for (int bank = 0; bank < 32; ++bank) {
-		memset(mp_cart->chr.data + bank * 4 * KiB, bank, 4 * KiB);
+		memset(mp_cart->chr_rom.data + bank * 4 * KiB, bank, 4 * KiB);
 	}
 
 	// 1st write is LSB and last is MSB
@@ -856,7 +869,7 @@ START_TEST (mapper_001_reg2_chr1_bank_select_4k_rom_out_of_bounds)
 	mp_cpu->cycle += 5;
 
 	// Only lowest 3 bits are used in 32K ROM
-	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_1[0x0000]
+	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_4k[0x0000]
 	                , chr_window + (bank_select & 0x07) * 4 * KiB
 	                , 4 * KiB);
 	free(chr_window);
@@ -1244,16 +1257,16 @@ Suite* mapper_001_suite(void)
 	tc_mmc1_reg1_bank_select = tcase_create("MMC1 Reg1/Chr0 Register Tests");
 	tcase_add_checked_fixture(tc_mmc1_reg1_bank_select, setup, teardown);
 	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_4k_rom, 0, 32);
-	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_4k_ram_ignored, 0, 32);
+	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_4k_ram, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_8k_rom, 0, 32);
-	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_8k_ram_ignored, 0, 32);
+	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_8k_ram, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_4k_rom_out_of_bounds, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg1_bank_select, mapper_001_reg1_chr0_bank_select_8k_rom_out_of_bounds, 0, 16);
 	suite_add_tcase(s, tc_mmc1_reg1_bank_select);
 	tc_mmc1_reg2_bank_select = tcase_create("MMC1 Reg2/Chr1 Register Tests");
 	tcase_add_checked_fixture(tc_mmc1_reg2_bank_select, setup, teardown);
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_4k_rom, 0, 32);
-	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_4k_ram_ignored, 0, 32);
+	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_4k_ram, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_8k_rom_ignored, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_8k_ram_ignored, 0, 32);
 	tcase_add_loop_test(tc_mmc1_reg2_bank_select, mapper_001_reg2_chr1_bank_select_4k_rom_out_of_bounds, 0, 32);

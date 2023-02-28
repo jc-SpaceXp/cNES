@@ -22,11 +22,20 @@ static void setup(void)
 	if (ppu_init(ppu, cpu_ppu)) {
 		ck_abort_msg("Failed to initialise the ppu struct");
 	}
+
+	ppu->vram.pattern_table_0k = malloc(4 * KiB);
+	ppu->vram.pattern_table_4k = malloc(4 * KiB);
+	if (!ppu->vram.pattern_table_0k || !ppu->vram.pattern_table_4k) {
+		// malloc fails
+		ck_abort_msg("Failed to allocate memory for pattern tables");
+	}
 }
 
 static void teardown(void)
 {
 	free(cpu_ppu);
+	free(ppu->vram.pattern_table_0k);
+	free(ppu->vram.pattern_table_4k);
 	free(ppu);
 }
 
@@ -38,11 +47,20 @@ static void vram_setup(void)
 		// malloc fails
 		ck_abort_msg("Failed to allocate memory to vram struct");
 	}
+	vram->pattern_table_0k = malloc(4 * KiB);
+	vram->pattern_table_4k = malloc(4 * KiB);
+	if (!vram->pattern_table_0k || !vram->pattern_table_4k) {
+		// malloc fails
+		ck_abort_msg("Failed to allocate memory for pattern tables");
+	}
+
 }
 
 static void vram_teardown(void)
 {
 	teardown();
+	free(vram->pattern_table_0k);
+	free(vram->pattern_table_4k);
 	free(vram);
 }
 
@@ -191,37 +209,37 @@ static void check_single_screen_B_nametable_mirroring(struct PpuMemoryMap* vram
 START_TEST (pattern_table_0_writes_lower_bound)
 {
 	write_to_ppu_vram(vram, 0x0000, 0xD1);
-	ck_assert_uint_eq(0xD1, vram->pattern_table_0[0x0000]);
+	ck_assert_uint_eq(0xD1, vram->pattern_table_0k[0x0000]);
 }
 
 START_TEST (pattern_table_0_writes_other_bound)
 {
 	write_to_ppu_vram(vram, 0x004B, 0x72);
-	ck_assert_uint_eq(0x72, vram->pattern_table_0[0x004B]);
+	ck_assert_uint_eq(0x72, vram->pattern_table_0k[0x004B]);
 }
 
 START_TEST (pattern_table_0_writes_upper_bound)
 {
 	write_to_ppu_vram(vram, 0x0FFF, 0x29);
-	ck_assert_uint_eq(0x29, vram->pattern_table_0[0x0FFF]);
+	ck_assert_uint_eq(0x29, vram->pattern_table_0k[0x0FFF]);
 }
 
 START_TEST (pattern_table_1_writes_lower_bound)
 {
 	write_to_ppu_vram(vram, 0x1000, 0xE1);
-	ck_assert_uint_eq(0xE1, vram->pattern_table_1[0x0000]);
+	ck_assert_uint_eq(0xE1, vram->pattern_table_4k[0x0000]);
 }
 
 START_TEST (pattern_table_1_writes_other_bound)
 {
 	write_to_ppu_vram(vram, 0x11BD, 0x52);
-	ck_assert_uint_eq(0x52, vram->pattern_table_1[0x11BD & 0x0FFF]);
+	ck_assert_uint_eq(0x52, vram->pattern_table_4k[0x11BD & 0x0FFF]);
 }
 
 START_TEST (pattern_table_1_writes_upper_bound)
 {
 	write_to_ppu_vram(vram, 0x1FFF, 0x3A);
-	ck_assert_uint_eq(0x3A, vram->pattern_table_1[0x2FFF & 0x0FFF]);
+	ck_assert_uint_eq(0x3A, vram->pattern_table_4k[0x2FFF & 0x0FFF]);
 }
 
 // Nametable 0 is from 0x2000 to 0x23FF
@@ -452,8 +470,8 @@ START_TEST (writes_past_upper_bound_have_no_effect)
 	vram->nametable_3 = &vram->nametable_A;
 	write_to_ppu_vram(vram, 0x4FFF, 0xAA);
 
-	ck_assert_uint_ne(0xAA, vram->pattern_table_0[0x4FFF & 0x0FFF]);
-	ck_assert_uint_ne(0xAA, vram->pattern_table_1[0x4FFF & 0x0FFF]);
+	ck_assert_uint_ne(0xAA, vram->pattern_table_0k[0x4FFF & 0x0FFF]);
+	ck_assert_uint_ne(0xAA, vram->pattern_table_4k[0x4FFF & 0x0FFF]);
 	ck_assert_uint_ne(0xAA, (*vram->nametable_0)[0x4FFF & 0x03FF]);
 	ck_assert_uint_ne(0xAA, (*vram->nametable_1)[0x4FFF & 0x03FF]);
 	ck_assert_uint_ne(0xAA, (*vram->nametable_2)[0x4FFF & 0x03FF]);

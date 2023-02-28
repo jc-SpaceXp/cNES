@@ -300,7 +300,8 @@ int main(int argc, char** argv)
 	ret = 0;
 
 program_exit:
-	free(cart->chr.data);
+	free(cart->chr_rom.data);
+	free(cart->chr_ram.data);
 	free(cart->prg_rom.data);
 	free(cart->trainer.data);
 	free(cart);

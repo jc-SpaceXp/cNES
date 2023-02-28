@@ -36,8 +36,8 @@ typedef enum PpuNametableMirroringType {
 
 // Non-mirrored memory mapping of ppu vram
 struct PpuMemoryMap {
-	uint8_t pattern_table_0[0x1000]; // vram: 0x0000 to 0x0FFF
-	uint8_t pattern_table_1[0x1000]; // vram: 0x1000 to 0x1FFF
+	uint8_t* pattern_table_0k; // vram: 0x0000 to 0x0FFF
+	uint8_t* pattern_table_4k; // vram: 0x1000 to 0x1FFF
 	uint8_t nametable_A[0x0400]; // vram: 0x2000 to 0x2400
 	uint8_t nametable_B[0x0400]; // second pattern table, address depends on nametable mirroring
 	uint8_t palette_ram[0x0020]; // vram: 0x3F00 to 0x3F1F

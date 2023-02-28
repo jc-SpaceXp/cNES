@@ -21,7 +21,9 @@ int cpu_mapper_init(CpuMapperShare* cpu_mapper, Cartridge* cart)
 	// Assign mirrors to cartridge data
 	cpu_mapper->prg_rom = &cart->prg_rom;
 	cpu_mapper->prg_ram = &cart->prg_ram;
-	cpu_mapper->chr = &cart->chr;
+	cpu_mapper->chr_rom = &cart->chr_rom;
+	cpu_mapper->chr_ram = &cart->chr_ram;
+
 
 	cpu_mapper->mapper_number = 0;
 	cpu_mapper->prg_rom_bank_size = 0;

@@ -25,24 +25,19 @@ typedef enum VideoType {
 	PAL = 1,
 } VideoType;
 
-struct Memory {
+struct CartMemory {
 	uint8_t* data;
 	uint32_t size;
-};
-
-struct ChrMemory {
-	uint8_t* data;
-	uint32_t rom_size; // either CHR RAM or CHR ROM is used
-	uint32_t ram_size; // .. . one of these should hold 0
 };
 
 struct Cartridge {
 	VideoType video_mode;
 	HeaderFormat header;
-	Memory prg_rom; // Program ROM, data sent to CPU
-	Memory prg_ram; // Program RAM, data sent to CPU
-	Memory trainer; // Trainer data (depends on mapper if used or not)
-	ChrMemory chr; // CHR data, sprite and background pattern tables sent to PPU
+	CartMemory prg_rom; // Program ROM, data sent to CPU
+	CartMemory prg_ram; // Program RAM, data sent to CPU
+	CartMemory trainer; // Trainer data (depends on mapper if used or not)
+	CartMemory chr_rom; // CHR data, sprite and background pattern tables sent to PPU
+	CartMemory chr_ram;
 	bool non_volatile_mem; // battery and other types of non-volatile memory
 };
 

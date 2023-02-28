@@ -654,7 +654,7 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 	case 0x2007:
 		// OAM_DATA
 		cpu->cpu_ppu_io->ppu_data = data;
-		write_2007(data, cpu->cpu_mapper_io->chr->ram_size, cpu->cpu_ppu_io);
+		write_2007(data, cpu->cpu_mapper_io->chr_ram->size, cpu->cpu_ppu_io);
 		break;
 	case 0x4014:
 		// DMA
