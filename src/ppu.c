@@ -83,6 +83,7 @@ int ppu_init(Ppu2C02* ppu, CpuPpuShare* cp)
 	ppu->old_cycle = ppu->cycle;
 	ppu->old_scanline = ppu->scanline;
 	ppu->odd_frame = false;
+	ppu->fine_x = 0;
 
 	/* Set PPU Latches and shift reg to 0 */
 	ppu->bkg_internals.pt_lo_shift_reg = 0;
