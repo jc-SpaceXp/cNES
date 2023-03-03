@@ -694,16 +694,16 @@ START_TEST (nametable_y_offset_is_valid_for_all_coarse_y)
 	ck_assert_uint_eq(nametable_y_offset_address(_i), (_i % 30) << 5);
 }
 
-START_TEST (fetch_nametable_byte_nametable_0_addr_no_fine_y)
+START_TEST (fetch_nametable_byte_nametable_0_addr_ignore_fine_y)
 {
 	ppu->vram.nametable_0 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	unsigned fine_y = 0;
+	unsigned fine_y[2] = {0, 3};
 	unsigned coarse_x = 1;
 	unsigned coarse_y = 17;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2000, fine_y
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2000, fine_y[_i]
 	                                                           , coarse_x, coarse_y);
 	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x21);
 
@@ -712,25 +712,62 @@ START_TEST (fetch_nametable_byte_nametable_0_addr_no_fine_y)
 	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0x21);
 }
 
-START_TEST (fetch_nametable_byte_nametable_0_addr_fine_y_is_ignored)
+START_TEST (fetch_nametable_byte_nametable_1_addr_ignore_fine_y)
 {
-	ppu->vram.nametable_0 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
 	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
 	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	unsigned fine_y = 3;
+	ppu->vram_addr = 0x06B1;
+	unsigned fine_y[2] = {0, 1};
 	unsigned coarse_x = 1;
-	unsigned coarse_y = 17;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2000, fine_y
+	unsigned coarse_y = 19;
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2400, fine_y[_i]
 	                                                           , coarse_x, coarse_y);
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x21);
+	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xB1);
 
 	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0x21);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xB1);
 }
 
-START_TEST (fetch_nametable_byte_nametable_0_addr_in_attribute_table)
+START_TEST (fetch_nametable_byte_nametable_2_addr_ignore_fine_y)
+{
+	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
+	unsigned fine_y[2] = {0, 2};
+	unsigned coarse_x = 1;
+	unsigned coarse_y = 0;
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2800, fine_y[_i]
+	                                                           , coarse_x, coarse_y);
+	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x80);
+
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
+
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0x80);
+}
+
+START_TEST (fetch_nametable_byte_nametable_3_addr_ignore_fine_y)
+{
+	ppu->vram.nametable_0 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
+	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
+	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
+	unsigned fine_y[2] = {0, 7};
+	unsigned coarse_x = 13;
+	unsigned coarse_y = 23;
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y[_i]
+	                                                           , coarse_x, coarse_y);
+	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xED);
+
+	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
+
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xED);
+}
+
+START_TEST (fetch_nametable_byte_in_attribute_table)
 {
 	// Possible that the current vram address is in the attribute table
 	// Still must read the attribute table byte as if it was in the nametable section
@@ -740,184 +777,18 @@ START_TEST (fetch_nametable_byte_nametable_0_addr_in_attribute_table)
 	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
 	unsigned coarse_x = 16;
 	unsigned coarse_y = 12;
-	ppu->vram_addr = attribute_address_from_nametable_scroll_offsets(0x2000
+	uint16_t nametable_address[4] = {0x2000, 0x2400, 0x2800, 0x2C00};
+	ppu->vram_addr = attribute_address_from_nametable_scroll_offsets(nametable_address[_i]
 	                                                                , coarse_x
 	                                                                , coarse_y);
-	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xAC);
+	uint8_t write_vals[4] = {0xAC, 0xAF, 0xA1, 0xAD};
+	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, write_vals[_i]);
 
 	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
 
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xAC);
+	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, write_vals[_i]);
 }
 
-START_TEST (fetch_nametable_byte_nametable_1_addr_no_fine_y)
-{
-	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	ppu->vram_addr = 0x06B1;
-	unsigned fine_y = 0;
-	unsigned coarse_x = 1;
-	unsigned coarse_y = 19;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2400, fine_y
-	                                                           , coarse_x, coarse_y);
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xB1);
-
-	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
-
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xB1);
-}
-
-START_TEST (fetch_nametable_byte_nametable_1_addr_fine_y_is_ignored)
-{
-	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	unsigned fine_y = 1;
-	unsigned coarse_x = 1;
-	unsigned coarse_y = 19;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2400, fine_y
-	                                                           , coarse_x, coarse_y);
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xB1);
-
-	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
-
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xB1);
-}
-
-START_TEST (fetch_nametable_byte_nametable_1_addr_in_attribute_table)
-{
-	// Possible that the current vram address is in the attribute table
-	// Still must read the attribute table byte as if it was in the nametable section
-	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_2 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_3 = &ppu->vram.nametable_B;
-	unsigned coarse_x = 4;
-	unsigned coarse_y = 3;
-	ppu->vram_addr = attribute_address_from_nametable_scroll_offsets(0x2400
-	                                                                , coarse_x
-	                                                                , coarse_y);
-	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xA1);
-
-	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
-
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xA1);
-}
-
-START_TEST (fetch_nametable_byte_nametable_2_addr_no_fine_y)
-{
-	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	unsigned fine_y = 0;
-	unsigned coarse_x = 1;
-	unsigned coarse_y = 0;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2800, fine_y
-	                                                           , coarse_x, coarse_y);
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x80);
-
-	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
-
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0x80);
-}
-
-START_TEST (fetch_nametable_byte_nametable_2_addr_fine_y_is_ignored)
-{
-	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	unsigned fine_y = 2;
-	unsigned coarse_x = 1;
-	unsigned coarse_y = 0;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2800, fine_y
-	                                                           , coarse_x, coarse_y);
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0x80);
-
-	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
-
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0x80);
-}
-
-START_TEST (fetch_nametable_byte_nametable_2_addr_in_attribute_table)
-{
-	// Possible that the current vram address is in the attribute table
-	// Still must read the attribute table byte as if it was in the nametable section
-	ppu->vram.nametable_0 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	unsigned coarse_x = 29;
-	unsigned coarse_y = 22;
-	ppu->vram_addr = attribute_address_from_nametable_scroll_offsets(0x2800
-	                                                                , coarse_x
-	                                                                , coarse_y);
-	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xAF);
-
-	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
-
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xAF);
-}
-
-START_TEST (fetch_nametable_byte_nametable_3_addr_no_fine_y)
-{
-	ppu->vram.nametable_0 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	unsigned fine_y = 0;
-	unsigned coarse_x = 13;
-	unsigned coarse_y = 23;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
-	                                                           , coarse_x, coarse_y);
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xED);
-
-	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
-
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xED);
-}
-
-START_TEST (fetch_nametable_byte_nametable_3_addr_fine_y_is_ignored)
-{
-	ppu->vram.nametable_0 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	unsigned fine_y = 7;
-	unsigned coarse_x = 13;
-	unsigned coarse_y = 23;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
-	                                                           , coarse_x, coarse_y);
-	write_to_ppu_vram(&ppu->vram, 0x2000 | (ppu->vram_addr & 0x0FFF), 0xED);
-
-	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
-
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xED);
-}
-
-START_TEST (fetch_nametable_byte_nametable_3_addr_in_attribute_table)
-{
-	// Possible that the current vram address is in the attribute table
-	// Still must read the attribute table byte as if it was in the nametable section
-	ppu->vram.nametable_0 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_1 = &ppu->vram.nametable_B;
-	ppu->vram.nametable_2 = &ppu->vram.nametable_A;
-	ppu->vram.nametable_3 = &ppu->vram.nametable_A;
-	unsigned coarse_x = 15;
-	unsigned coarse_y = 21;
-	ppu->vram_addr = attribute_address_from_nametable_scroll_offsets(0x2C00
-	                                                                , coarse_x
-	                                                                , coarse_y);
-	write_to_ppu_vram(&ppu->vram, ppu->vram_addr, 0xAD);
-
-	fetch_nt_byte(&ppu->vram, ppu->vram_addr, &ppu->bkg_internals);
-
-	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, 0xAD);
-}
 
 START_TEST (vram_encoder_nametable_0_no_offset)
 {
@@ -1565,17 +1436,17 @@ START_TEST (reverse_bits_function_all_valid_inputs)
 }
 
 
-START_TEST (fetch_pattern_table_lo_no_fine_y_offset)
+START_TEST (fetch_pattern_table_lo_for_fine_y_offsets)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
 	ppu->bkg_internals.nt_byte = 0x41;
 	uint8_t pt_byte = 0x37;
-	unsigned fine_y = 0;
-	unsigned coarse_x = 1;
-	unsigned coarse_y = 21;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
-	                                                           , coarse_x, coarse_y);
-	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y;
+	unsigned fine_y[2] = {0, 5}; // fine y influences the pt address e.g. 0x0000 to 0x0007
+	unsigned coarse_x[2] = {1, 14};
+	unsigned coarse_y[2] = {21, 9};
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y[_i]
+	                                                           , coarse_x[_i], coarse_y[_i]);
+	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y[_i];
 	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu->cpu_ppu_io)
 	                              | pattern_table_address
 	                              , pt_byte);
@@ -1587,61 +1458,17 @@ START_TEST (fetch_pattern_table_lo_no_fine_y_offset)
 	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_lo_latch);
 }
 
-START_TEST (fetch_pattern_table_lo_fine_y_offset)
-{
-	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
-	ppu->bkg_internals.nt_byte = 0x8F;
-	uint8_t pt_byte = 0xCE;
-	unsigned fine_y = 5;
-	unsigned coarse_x = 14;
-	unsigned coarse_y = 9;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2401, fine_y
-	                                                           , coarse_x, coarse_y);
-	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y;
-	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu->cpu_ppu_io)
-	                              | pattern_table_address
-	                              , pt_byte);
-
-	// fine y is taken from vram_address
-	fetch_pt_lo(&ppu->vram, ppu->vram_addr
-	           , ppu_base_pt_address(ppu->cpu_ppu_io), &ppu->bkg_internals);
-
-	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_lo_latch);
-}
-
-START_TEST (fetch_pattern_table_hi_no_fine_y_offset)
+START_TEST (fetch_pattern_table_hi_for_fine_y_offsets)
 {
 	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
 	ppu->bkg_internals.nt_byte = 0x20;
 	uint8_t pt_byte = 0x19;
-	unsigned fine_y = 0;
-	unsigned coarse_x = 19;
-	unsigned coarse_y = 9;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y
-	                                                           , coarse_x, coarse_y);
-	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y + 8;
-	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu->cpu_ppu_io)
-	                              | pattern_table_address
-	                              , pt_byte);
-
-	// fine y is taken from vram_address
-	fetch_pt_hi(&ppu->vram, ppu->vram_addr
-	           , ppu_base_pt_address(ppu->cpu_ppu_io), &ppu->bkg_internals);
-
-	ck_assert_uint_eq(reverse_bits_in_byte(pt_byte), ppu->bkg_internals.pt_hi_latch);
-}
-
-START_TEST (fetch_pattern_table_hi_fine_y_offset)
-{
-	ppu->cpu_ppu_io->ppu_ctrl = _i << 4; // address is 0x0000 or 0x1000
-	ppu->bkg_internals.nt_byte = 0xDB;
-	uint8_t pt_byte = 0xA3;
-	unsigned fine_y = 7;
-	unsigned coarse_x = 4;
-	unsigned coarse_y = 23;
-	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2008, fine_y
-	                                                           , coarse_x, coarse_y);
-	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y + 8;
+	unsigned fine_y[2] = {0, 7}; // fine y influences the pt address e.g. 0x0000 to 0x0007
+	unsigned coarse_x[2] = {19, 4};
+	unsigned coarse_y[2] = {9, 23};
+	ppu->vram_addr = nametable_vram_address_from_scroll_offsets(0x2C00, fine_y[_i]
+	                                                           , coarse_x[_i], coarse_y[_i]);
+	uint16_t pattern_table_address = (ppu->bkg_internals.nt_byte << 4) + fine_y[_i] + 8;
 	write_to_ppu_vram(&ppu->vram, ppu_base_pt_address(ppu->cpu_ppu_io)
 	                              | pattern_table_address
 	                              , pt_byte);
@@ -1725,60 +1552,19 @@ START_TEST (attribute_shift_reg_from_top_left_quadrant)
 	ck_assert_uint_eq(0xFF, ppu->bkg_internals.at_lo_shift_reg);
 }
 
-START_TEST (pixel_buffer_set_top_left_corner)
+START_TEST (pixel_buffer_set_corner_pixels)
 {
 	const unsigned int max_width = 256;
-	unsigned int x_pos = 0;
-	unsigned int y_pos = 0;
-	uint32_t rgb = 0x0035313A;
+	unsigned int x_pos[4] = {0, 255,  0, 255}; // top left, top right, bottom left, bottom right
+	unsigned int y_pos[4] = {0, 0,  239, 239};
+	unsigned pixel_index = x_pos[_i] + (256 * y_pos[_i]);
+	uint32_t rgb[4] = {0x0035313A, 0x00FFC0CB, 0x0032CD32, 0x006A5ACD};
 	uint8_t alpha = 0xFF;
-	rgb |= (uint32_t) alpha << 24;
+	rgb[_i] |= (uint32_t) alpha << 24;
 
-	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
+	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos[_i], y_pos[_i], rgb[_i], alpha);
 
-	ck_assert_uint_eq(rgb, pixel_buffer[0]);
-}
-
-START_TEST (pixel_buffer_set_top_right_corner)
-{
-	const unsigned int max_width = 256;
-	unsigned int x_pos = 255;
-	unsigned int y_pos = 0;
-	uint32_t rgb = 0x00FFC0CB;
-	uint8_t alpha = 0xFF;
-	rgb |= (uint32_t) alpha << 24;
-
-	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
-
-	ck_assert_uint_eq(rgb, pixel_buffer[x_pos]);
-}
-
-START_TEST (pixel_buffer_set_bottom_left_corner)
-{
-	const unsigned int max_width = 256;
-	unsigned int x_pos = 0;
-	unsigned int y_pos = 239;
-	uint32_t rgb = 0x0032CD32;
-	uint8_t alpha = 0xFF;
-	rgb |= (uint32_t) alpha << 24;
-
-	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
-
-	ck_assert_uint_eq(rgb, pixel_buffer[256 * y_pos]);
-}
-
-START_TEST (pixel_buffer_set_bottom_right_corner)
-{
-	const unsigned int max_width = 256;
-	unsigned int x_pos = max_width - 1;
-	unsigned int y_pos = 239;
-	uint32_t rgb = 0x006A5ACD;
-	uint8_t alpha = 0xFF;
-	rgb |= (uint32_t) alpha << 24;
-
-	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
-
-	ck_assert_uint_eq(rgb, pixel_buffer[x_pos + (256 * y_pos)]);
+	ck_assert_uint_eq(rgb[_i], pixel_buffer[pixel_index]);
 }
 
 START_TEST (pixel_buffer_set_out_of_bounds_allowed)
@@ -1874,34 +1660,22 @@ Suite* ppu_suite(void)
 	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_B_read_writes);
 	tcase_add_loop_test(tc_ppu_rendering, nametable_x_offset_is_valid_for_all_coarse_x, 0, 64);
 	tcase_add_loop_test(tc_ppu_rendering, nametable_y_offset_is_valid_for_all_coarse_y, 0, 60);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_0_addr_no_fine_y);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_0_addr_fine_y_is_ignored);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_0_addr_in_attribute_table);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_1_addr_no_fine_y);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_1_addr_fine_y_is_ignored);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_1_addr_in_attribute_table);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_2_addr_no_fine_y);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_2_addr_fine_y_is_ignored);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_2_addr_in_attribute_table);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_no_fine_y);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_fine_y_is_ignored);
-	tcase_add_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_in_attribute_table);
+	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_nametable_0_addr_ignore_fine_y, 0, 2);
+	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_nametable_1_addr_ignore_fine_y, 0, 2);
+	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_nametable_2_addr_ignore_fine_y, 0, 2);
+	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_ignore_fine_y, 0, 2);
+	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_in_attribute_table, 0, 4);
 	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_0_random_scroll_offsets);
 	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_1_random_scroll_offsets);
 	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_2_random_scroll_offsets);
 	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_3_random_scroll_offsets);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_lo_no_fine_y_offset, 0, 2);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_lo_fine_y_offset, 0, 2);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_hi_no_fine_y_offset, 0, 2);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_hi_fine_y_offset, 0, 2);
+	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_lo_for_fine_y_offsets, 0, 2);
+	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_hi_for_fine_y_offsets, 0, 2);
 	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_bottom_right_quadrant);
 	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_top_right_quadrant);
 	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_bottom_left_quadrant);
 	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_top_left_quadrant);
-	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_top_left_corner);
-	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_top_right_corner);
-	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_bottom_left_corner);
-	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_bottom_right_corner);
+	tcase_add_loop_test(tc_ppu_rendering, pixel_buffer_set_corner_pixels, 0, 4);
 	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_out_of_bounds_allowed);
 	suite_add_tcase(s, tc_ppu_rendering);
 	tc_ppu_unit_test_helpers = tcase_create("PPU Unit Test Helper Functions");
