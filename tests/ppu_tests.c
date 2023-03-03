@@ -206,260 +206,154 @@ static void check_single_screen_B_nametable_mirroring(struct PpuMemoryMap* vram
 	                 , read_from_ppu_vram(vram, 0x2400 + addr_offset));
 }
 
-START_TEST (pattern_table_0_writes_lower_bound)
+START_TEST (pattern_table_0_writes)
 {
-	write_to_ppu_vram(vram, 0x0000, 0xD1);
-	ck_assert_uint_eq(0xD1, vram->pattern_table_0k[0x0000]);
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x0000, 0x004B, 0x0FFF};
+	uint8_t write_val[3] = {0xD1, 0x72, 0x29};
+
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
+
+	ck_assert_uint_eq(write_val[_i], vram->pattern_table_0k[vram_address[_i]]);
 }
 
-START_TEST (pattern_table_0_writes_other_bound)
+START_TEST (pattern_table_1_writes)
 {
-	write_to_ppu_vram(vram, 0x004B, 0x72);
-	ck_assert_uint_eq(0x72, vram->pattern_table_0k[0x004B]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x1000, 0x11BD, 0x1FFF};
+	uint8_t write_val[3] = {0xE1, 0x52, 0x3A};
 
-START_TEST (pattern_table_0_writes_upper_bound)
-{
-	write_to_ppu_vram(vram, 0x0FFF, 0x29);
-	ck_assert_uint_eq(0x29, vram->pattern_table_0k[0x0FFF]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (pattern_table_1_writes_lower_bound)
-{
-	write_to_ppu_vram(vram, 0x1000, 0xE1);
-	ck_assert_uint_eq(0xE1, vram->pattern_table_4k[0x0000]);
-}
-
-START_TEST (pattern_table_1_writes_other_bound)
-{
-	write_to_ppu_vram(vram, 0x11BD, 0x52);
-	ck_assert_uint_eq(0x52, vram->pattern_table_4k[0x11BD & 0x0FFF]);
-}
-
-START_TEST (pattern_table_1_writes_upper_bound)
-{
-	write_to_ppu_vram(vram, 0x1FFF, 0x3A);
-	ck_assert_uint_eq(0x3A, vram->pattern_table_4k[0x2FFF & 0x0FFF]);
+	ck_assert_uint_eq(write_val[_i], vram->pattern_table_4k[vram_address[_i] & 0x0FFF]);
 }
 
 // Nametable 0 is from 0x2000 to 0x23FF
-START_TEST (nametable_0_writes_lower_bound)
+START_TEST (nametable_0_writes)
 {
 	vram->nametable_0 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2000, 0x09);
-	ck_assert_uint_eq(0x09, (*vram->nametable_0)[0x2000 & 0x03FF]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x2000, 0x210D, 0x23FF};
+	uint8_t write_val[3] = {0x09, 0x13, 0xA5};
 
-START_TEST (nametable_0_writes_other_bound)
-{
-	vram->nametable_0 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x210D, 0x13);
-	ck_assert_uint_eq(0x13, (*vram->nametable_0)[0x210D & 0x03FF]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_0_writes_upper_bound)
-{
-	vram->nametable_0 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x23FF, 0xA5);
-	ck_assert_uint_eq(0xA5, (*vram->nametable_0)[0x23FF & 0x03FF]);
+	ck_assert_uint_eq(write_val[_i], (*vram->nametable_0)[vram_address[_i] & 0x03FF]);
 }
 
 // Nametable 1 is from 0x2400 to 0x27FF
-START_TEST (nametable_1_writes_lower_bound)
+START_TEST (nametable_1_writes)
 {
 	vram->nametable_1 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2400, 0x11);
-	ck_assert_uint_eq(0x11, (*vram->nametable_1)[0x2400 & 0x03FF]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x2400, 0x260D, 0x27FF};
+	uint8_t write_val[3] = {0x11, 0x46, 0x91};
 
-START_TEST (nametable_1_writes_other_bound)
-{
-	vram->nametable_1 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x260D, 0x46);
-	ck_assert_uint_eq(0x46, (*vram->nametable_1)[0x260D & 0x03FF]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_1_writes_upper_bound)
-{
-	vram->nametable_1 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x27FF, 0x91);
-	ck_assert_uint_eq(0x91, (*vram->nametable_1)[0x27FF & 0x03FF]);
+	ck_assert_uint_eq(write_val[_i], (*vram->nametable_1)[vram_address[_i] & 0x03FF]);
 }
 
 // Nametable 2 is from 0x2800 to 0x2BFF
-START_TEST (nametable_2_writes_lower_bound)
+START_TEST (nametable_2_writes)
 {
 	vram->nametable_2 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2800, 0x3F);
-	ck_assert_uint_eq(0x3F, (*vram->nametable_2)[0x2800 & 0x03FF]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x2800, 0x29AD, 0x2BFF};
+	uint8_t write_val[3] = {0x3F, 0x77, 0xD8};
 
-START_TEST (nametable_2_writes_other_bound)
-{
-	vram->nametable_2 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x29AD, 0x77);
-	ck_assert_uint_eq(0x77, (*vram->nametable_2)[0x29AD & 0x03FF]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_2_writes_upper_bound)
-{
-	vram->nametable_2 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2BFF, 0xD8);
-	ck_assert_uint_eq(0xD8, (*vram->nametable_2)[0x2BFF & 0x03FF]);
+	ck_assert_uint_eq(write_val[_i], (*vram->nametable_2)[vram_address[_i] & 0x03FF]);
 }
 
 // Nametable 3 is from 0x2C00 to 0x2FFF
-START_TEST (nametable_3_writes_lower_bound)
+START_TEST (nametable_3_writes)
 {
 	vram->nametable_3 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2C00, 0x0B);
-	ck_assert_uint_eq(0x0B, (*vram->nametable_3)[0x2C00 & 0x03FF]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x2C00, 0x2EEA, 0x2FFF};
+	uint8_t write_val[3] = {0x0B, 0x93, 0xFF};
 
-START_TEST (nametable_3_writes_other_bound)
-{
-	vram->nametable_3 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2EEA, 0x93);
-	ck_assert_uint_eq(0x93, (*vram->nametable_3)[0x2EEA & 0x03FF]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_3_writes_upper_bound)
-{
-	vram->nametable_3 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2FFF, 0xFF);
-	ck_assert_uint_eq(0xFF, (*vram->nametable_3)[0x2FFF & 0x03FF]);
+	ck_assert_uint_eq(write_val[_i], (*vram->nametable_3)[vram_address[_i] & 0x03FF]);
 }
 
 // Nametable 0 is from 0x2000 to 0x23FF
-START_TEST (nametable_0_mirror_writes_lower_bound)
+START_TEST (nametable_0_mirror_writes)
 {
 	vram->nametable_0 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3000, 0x09);
-	ck_assert_uint_eq(0x09, (*vram->nametable_0)[0x3000 & 0x03FF]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3000, 0x310D, 0x33FF};
+	uint8_t write_val[3] = {0x09, 0x13, 0xA5};
 
-START_TEST (nametable_0_mirror_writes_other_bound)
-{
-	vram->nametable_0 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x310D, 0x13);
-	ck_assert_uint_eq(0x13, (*vram->nametable_0)[0x310D & 0x03FF]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_0_mirror_writes_upper_bound)
-{
-	vram->nametable_0 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x33FF, 0xA5);
-	ck_assert_uint_eq(0xA5, (*vram->nametable_0)[0x33FF & 0x03FF]);
+	ck_assert_uint_eq(write_val[_i], (*vram->nametable_0)[vram_address[_i] & 0x03FF]);
 }
 
 // Nametable 1 is from 0x2400 to 0x27FF
-START_TEST (nametable_1_mirror_writes_lower_bound)
+START_TEST (nametable_1_mirror_writes)
 {
 	vram->nametable_1 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3400, 0x11);
-	ck_assert_uint_eq(0x11, (*vram->nametable_1)[0x3400 & 0x03FF]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3400, 0x360D, 0x37FF};
+	uint8_t write_val[3] = {0x11, 0x46, 0x91};
 
-START_TEST (nametable_1_mirror_writes_other_bound)
-{
-	vram->nametable_1 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x360D, 0x46);
-	ck_assert_uint_eq(0x46, (*vram->nametable_1)[0x360D & 0x03FF]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_1_mirror_writes_upper_bound)
-{
-	vram->nametable_1 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x37FF, 0x91);
-	ck_assert_uint_eq(0x91, (*vram->nametable_1)[0x37FF & 0x03FF]);
+	ck_assert_uint_eq(write_val[_i], (*vram->nametable_1)[vram_address[_i] & 0x03FF]);
 }
 
 // Nametable 2 is from 0x2800 to 0x2BFF
-START_TEST (nametable_2_mirror_writes_lower_bound)
+START_TEST (nametable_2_mirror_writes)
 {
 	vram->nametable_2 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3800, 0x3F);
-	ck_assert_uint_eq(0x3F, (*vram->nametable_2)[0x3800 & 0x03FF]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3800, 0x39AD, 0x3BFF};
+	uint8_t write_val[3] = {0x3F, 0x77, 0xD8};
 
-START_TEST (nametable_2_mirror_writes_other_bound)
-{
-	vram->nametable_2 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x39AD, 0x77);
-	ck_assert_uint_eq(0x77, (*vram->nametable_2)[0x39AD & 0x03FF]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_2_mirror_writes_upper_bound)
-{
-	vram->nametable_2 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3BFF, 0xD8);
-	ck_assert_uint_eq(0xD8, (*vram->nametable_2)[0x3BFF & 0x03FF]);
+	ck_assert_uint_eq(write_val[_i], (*vram->nametable_2)[vram_address[_i] & 0x03FF]);
 }
 
 // Nametable 3 is from 0x2C00 to 0x2FFF
-START_TEST (nametable_3_partial_mirror_writes_lower_bound)
+START_TEST (nametable_3_partial_mirror_writes)
 {
 	vram->nametable_3 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3C00, 0x0B);
-	ck_assert_uint_eq(0x0B, (*vram->nametable_3)[0x3C00 & 0x03FF]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3C00, 0x3DDA, 0x3EFF}; // upper limit is $3EFF not $3FFF
+	uint8_t write_val[3] = {0x0B, 0x93, 0xFF};
 
-START_TEST (nametable_3_partial_mirror_writes_other_bound)
-{
-	vram->nametable_3 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3DDA, 0x93);
-	ck_assert_uint_eq(0x93, (*vram->nametable_3)[0x3DDA & 0x03FF]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_3_partial_mirror_writes_upper_bound)
-{
-	vram->nametable_3 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3EFF, 0xFF);
-	ck_assert_uint_eq(0xFF, (*vram->nametable_3)[0x3EFF & 0x03FF]);
+	ck_assert_uint_eq(write_val[_i], (*vram->nametable_3)[vram_address[_i] & 0x03FF]);
 }
 
 // Palette RAM is from 0x3F00 to 0x3F1F
-START_TEST (palette_ram_writes_lower_bound)
+START_TEST (palette_ram_writes)
 {
-	write_to_ppu_vram(vram, 0x3F00, 0xA0);
-	ck_assert_uint_eq(0xA0, vram->palette_ram[0x3F00 & 0x001F]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3F00, 0x3F11, 0x3F1F};
+	uint8_t write_val[3] = {0xA0, 0xC6, 0xE1};
 
-START_TEST (palette_ram_writes_other_bound)
-{
-	write_to_ppu_vram(vram, 0x3F11, 0xC6);
-	ck_assert_uint_eq(0xC6, vram->palette_ram[0x3F11 & 0x001F]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (palette_ram_writes_upper_bound)
-{
-	write_to_ppu_vram(vram, 0x3F1F, 0xE1);
-	ck_assert_uint_eq(0xE1, vram->palette_ram[0x3F1F & 0x001F]);
+	ck_assert_uint_eq(write_val[_i], vram->palette_ram[vram_address[_i] & 0x001F]);
 }
 
 // Palette RAM mirrors are from 0x3F20 to 0x3FFF
-START_TEST (palette_ram_mirror_writes_lower_bound)
+START_TEST (palette_ram_mirror_writes)
 {
-	write_to_ppu_vram(vram, 0x3F20, 0x53);
-	ck_assert_uint_eq(0x53, vram->palette_ram[0x3F20 & 0x001F]);
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[4] = {0x3F20, 0x3F4A, 0x3F91, 0x3FFF};
+	uint8_t write_val[4] = {0x53, 0x66, 0x77, 0xB0};
 
-START_TEST (palette_ram_mirror_writes_other_bound_1)
-{
-	write_to_ppu_vram(vram, 0x3F4A, 0x66);
-	ck_assert_uint_eq(0x66, vram->palette_ram[0x3F4A & 0x001F]);
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (palette_ram_mirror_writes_other_bound_2)
-{
-	write_to_ppu_vram(vram, 0x3F91, 0x77);
-	ck_assert_uint_eq(0x77, vram->palette_ram[0x3F91 & 0x001F]);
-}
-
-START_TEST (palette_ram_mirror_writes_upper_bound)
-{
-	write_to_ppu_vram(vram, 0x3FFF, 0xB0);
-	ck_assert_uint_eq(0xB0, vram->palette_ram[0x3FFF & 0x001F]);
+	ck_assert_uint_eq(write_val[_i], vram->palette_ram[vram_address[_i] & 0x001F]);
 }
 
 START_TEST (writes_past_upper_bound_have_no_effect)
@@ -479,263 +373,162 @@ START_TEST (writes_past_upper_bound_have_no_effect)
 	ck_assert_uint_ne(0xAA, vram->palette_ram[0x4FFF & 0x001F]);
 }
 
-START_TEST (pattern_table_0_reads_lower_bound)
+START_TEST (pattern_table_0_reads)
 {
-	write_to_ppu_vram(vram, 0x0000, 0xD1);
-	ck_assert_uint_eq(0xD1, read_from_ppu_vram(vram, 0x0000));
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x0000, 0x004B, 0x0FFF};
+	uint8_t write_val[3] = {0xD1, 0x72, 0x29};
+
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
+
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
-START_TEST (pattern_table_0_reads_other_bound)
+START_TEST (pattern_table_1_reads)
 {
-	write_to_ppu_vram(vram, 0x004B, 0x72);
-	ck_assert_uint_eq(0x72, read_from_ppu_vram(vram, 0x004B));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x1000, 0x11BD, 0x1FFF};
+	uint8_t write_val[3] = {0xE1, 0x52, 0x3A};
 
-START_TEST (pattern_table_0_reads_upper_bound)
-{
-	write_to_ppu_vram(vram, 0x0FFF, 0x29);
-	ck_assert_uint_eq(0x29, read_from_ppu_vram(vram, 0x0FFF));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (pattern_table_1_reads_lower_bound)
-{
-	write_to_ppu_vram(vram, 0x1000, 0xE1);
-	ck_assert_uint_eq(0xE1, read_from_ppu_vram(vram, 0x1000));
-}
-
-START_TEST (pattern_table_1_reads_other_bound)
-{
-	write_to_ppu_vram(vram, 0x11BD, 0x52);
-	ck_assert_uint_eq(0x52, read_from_ppu_vram(vram, 0x11BD));
-}
-
-START_TEST (pattern_table_1_reads_upper_bound)
-{
-	write_to_ppu_vram(vram, 0x1FFF, 0x3A);
-	ck_assert_uint_eq(0x3A, read_from_ppu_vram(vram, 0x1FFF));
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Nametable 0 is from 0x2000 to 0x23FF
-START_TEST (nametable_0_reads_lower_bound)
+START_TEST (nametable_0_reads)
 {
 	vram->nametable_0 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2000, 0x09);
-	ck_assert_uint_eq(0x09, read_from_ppu_vram(vram, 0x2000));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x2000, 0x210D, 0x23FF};
+	uint8_t write_val[3] = {0x09, 0x13, 0x3A};
 
-START_TEST (nametable_0_reads_other_bound)
-{
-	vram->nametable_0 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x210D, 0x13);
-	ck_assert_uint_eq(0x13, read_from_ppu_vram(vram, 0x210D));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_0_reads_upper_bound)
-{
-	vram->nametable_0 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x23FF, 0xA5);
-	ck_assert_uint_eq(0xA5, read_from_ppu_vram(vram, 0x23FF));
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Nametable 1 is from 0x2400 to 0x27FF
-START_TEST (nametable_1_reads_lower_bound)
+START_TEST (nametable_1_reads)
 {
 	vram->nametable_1 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2400, 0x11);
-	ck_assert_uint_eq(0x11, read_from_ppu_vram(vram, 0x2400));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x2400, 0x260D, 0x27FF};
+	uint8_t write_val[3] = {0x11, 0x46, 0x91};
 
-START_TEST (nametable_1_reads_other_bound)
-{
-	vram->nametable_1 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x260D, 0x46);
-	ck_assert_uint_eq(0x46, read_from_ppu_vram(vram, 0x260D));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_1_reads_upper_bound)
-{
-	vram->nametable_1 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x27FF, 0x91);
-	ck_assert_uint_eq(0x91, read_from_ppu_vram(vram, 0x27FF));
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Nametable 2 is from 0x2800 to 0x2BFF
-START_TEST (nametable_2_reads_lower_bound)
+START_TEST (nametable_2_reads)
 {
 	vram->nametable_2 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2800, 0x3F);
-	ck_assert_uint_eq(0x3F, read_from_ppu_vram(vram, 0x2800));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x2800, 0x29AD, 0x2BFF};
+	uint8_t write_val[3] = {0x3F, 0x77, 0xD8};
 
-START_TEST (nametable_2_reads_other_bound)
-{
-	vram->nametable_2 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x29AD, 0x77);
-	ck_assert_uint_eq(0x77, read_from_ppu_vram(vram, 0x29AD));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_2_reads_upper_bound)
-{
-	vram->nametable_2 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2BFF, 0xD8);
-	ck_assert_uint_eq(0xD8, read_from_ppu_vram(vram, 0x2BFF));
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Nametable 3 is from 0x2C00 to 0x2FFF
-START_TEST (nametable_3_reads_lower_bound)
+START_TEST (nametable_3_reads)
 {
 	vram->nametable_3 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2C00, 0x0B);
-	ck_assert_uint_eq(0x0B, read_from_ppu_vram(vram, 0x2C00));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x2C00, 0x2EEA, 0x2FFF};
+	uint8_t write_val[3] = {0x0B, 0x93, 0xFF};
 
-START_TEST (nametable_3_reads_other_bound)
-{
-	vram->nametable_3 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2EEA, 0x93);
-	ck_assert_uint_eq(0x93, read_from_ppu_vram(vram, 0x2EEA));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_3_reads_upper_bound)
-{
-	vram->nametable_3 = &vram->nametable_A;
-	write_to_ppu_vram(vram, 0x2FFF, 0xFF);
-	ck_assert_uint_eq(0xFF, read_from_ppu_vram(vram, 0x2FFF));
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Nametable 0 is from 0x2000 to 0x23FF
-START_TEST (nametable_0_mirror_reads_lower_bound)
+START_TEST (nametable_0_mirror_reads)
 {
 	vram->nametable_0 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3000, 0x09);
-	ck_assert_uint_eq(0x09, read_from_ppu_vram(vram, 0x3000));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3000, 0x310D, 0x33FF};
+	uint8_t write_val[3] = {0x09, 0x13, 0xA5};
 
-START_TEST (nametable_0_mirror_reads_other_bound)
-{
-	vram->nametable_0 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x310D, 0x13);
-	ck_assert_uint_eq(0x13, read_from_ppu_vram(vram, 0x310D));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_0_mirror_reads_upper_bound)
-{
-	vram->nametable_0 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x33FF, 0xA5);
-	ck_assert_uint_eq(0xA5, read_from_ppu_vram(vram, 0x33FF));
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Nametable 1 is from 0x2400 to 0x27FF
-START_TEST (nametable_1_mirror_reads_lower_bound)
+START_TEST (nametable_1_mirror_reads)
 {
 	vram->nametable_1 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3400, 0x11);
-	ck_assert_uint_eq(0x11, read_from_ppu_vram(vram, 0x3400));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3400, 0x360D, 0x37FF};
+	uint8_t write_val[3] = {0x11, 0x46, 0x91};
 
-START_TEST (nametable_1_mirror_reads_other_bound)
-{
-	vram->nametable_1 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x360D, 0x46);
-	ck_assert_uint_eq(0x46, read_from_ppu_vram(vram, 0x360D));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_1_mirror_reads_upper_bound)
-{
-	vram->nametable_1 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x37FF, 0x91);
-	ck_assert_uint_eq(0x91, read_from_ppu_vram(vram, 0x37FF));
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Nametable 2 is from 0x2800 to 0x2BFF
-START_TEST (nametable_2_mirror_reads_lower_bound)
+START_TEST (nametable_2_mirror_reads)
 {
 	vram->nametable_2 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3800, 0x3F);
-	ck_assert_uint_eq(0x3F, read_from_ppu_vram(vram, 0x3800));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3800, 0x39AD, 0x3BFF};
+	uint8_t write_val[3] = {0x3F, 0x77, 0xD8};
 
-START_TEST (nametable_2_mirror_reads_other_bound)
-{
-	vram->nametable_2 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x39AD, 0x77);
-	ck_assert_uint_eq(0x77, read_from_ppu_vram(vram, 0x39AD));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_2_mirror_reads_upper_bound)
-{
-	vram->nametable_2 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3BFF, 0xD8);
-	ck_assert_uint_eq(0xD8, read_from_ppu_vram(vram, 0x3BFF));
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Nametable 3 is from 0x2C00 to 0x2FFF
-START_TEST (nametable_3_partial_mirror_reads_lower_bound)
+START_TEST (nametable_3_partial_mirror_reads)
 {
 	vram->nametable_3 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3C00, 0x0B);
-	ck_assert_uint_eq(0x0B, read_from_ppu_vram(vram, 0x3C00));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3C00, 0x3DDA, 0x3EFF}; // upper limit is $3EFF not $3FFF
+	uint8_t write_val[3] = {0x0B, 0x93, 0xFF};
 
-START_TEST (nametable_3_partial_mirror_reads_other_bound)
-{
-	vram->nametable_3 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3DDA, 0x93);
-	ck_assert_uint_eq(0x93, read_from_ppu_vram(vram, 0x3DDA));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (nametable_3_partial_mirror_reads_upper_bound)
-{
-	vram->nametable_3 = &vram->nametable_B;
-	write_to_ppu_vram(vram, 0x3EFF, 0xFF);
-	ck_assert_uint_eq(0xFF, read_from_ppu_vram(vram, 0x3EFF));
+	ck_assert_uint_eq(write_val[_i], read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Palette RAM is from 0x3F00 to 0x3F1F
 // upper two bits of the upper byte aren't implemented (read back as 0s)
-START_TEST (palette_ram_reads_lower_bound_ignores_unused_bits)
+START_TEST (palette_ram_reads_ignores_unused_bits)
 {
-	write_to_ppu_vram(vram, 0x3F00, 0xA0);
-	ck_assert_uint_eq(0xA0 & 0x3F, read_from_ppu_vram(vram, 0x3F00));
-}
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[3] = {0x3F00, 0x3F11, 0x3F1F};
+	uint8_t write_val[3] = {0xA0, 0xC6, 0xE1};
+	unsigned palette_data_mask = 0x3F; // upper 2 bits aren't used for palette data
 
-START_TEST (palette_ram_reads_other_bound_ignores_unused_bits)
-{
-	write_to_ppu_vram(vram, 0x3F11, 0xC6);
-	ck_assert_uint_eq(0xC6 & 0x3F, read_from_ppu_vram(vram, 0x3F11));
-}
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
 
-START_TEST (palette_ram_reads_upper_bound_ignores_unused_bits)
-{
-	write_to_ppu_vram(vram, 0x3F1F, 0xE1);
-	ck_assert_uint_eq(0xE1 & 0x3F, read_from_ppu_vram(vram, 0x3F1F));
+	ck_assert_uint_eq(write_val[_i] & palette_data_mask
+	                 , read_from_ppu_vram(vram, vram_address[_i]));
 }
 
 // Palette RAM mirrors are from 0x3F20 to 0x3FFF
 // upper two bits of the upper byte aren't implemented (read back as 0s)
-START_TEST (palette_ram_mirror_reads_lower_bound_ignores_unused_bits)
+START_TEST (palette_ram_mirror_reads_ignores_unused_bits)
 {
-	write_to_ppu_vram(vram, 0x3F20, 0x53);
-	ck_assert_uint_eq(0x53 & 0x3F, read_from_ppu_vram(vram, 0x3F20));
+	// Lower, other and upper bounds addresses
+	uint16_t vram_address[4] = {0x3F20, 0x3F4A, 0x3F91, 0x3FFF};
+	uint8_t write_val[4] = {0x53, 0x66, 0x77, 0xB0};
+	unsigned palette_data_mask = 0x3F; // upper 2 bits aren't used for palette data
+
+	write_to_ppu_vram(vram, vram_address[_i], write_val[_i]);
+
+	ck_assert_uint_eq(write_val[_i] & palette_data_mask
+	                 , read_from_ppu_vram(vram, vram_address[_i]));
 }
 
-START_TEST (palette_ram_mirror_reads_other_bound_1_ignores_unused_bits)
-{
-	write_to_ppu_vram(vram, 0x3F4A, 0x66);
-	ck_assert_uint_eq(0x66 & 0x3F, read_from_ppu_vram(vram, 0x3F4A));
-}
-
-START_TEST (palette_ram_mirror_reads_other_bound_2_ignores_unused_bits)
-{
-	write_to_ppu_vram(vram, 0x3F91, 0x77);
-	ck_assert_uint_eq(0x77 & 0x3F, read_from_ppu_vram(vram, 0x3F91));
-}
-
-START_TEST (palette_ram_mirror_reads_upper_bound_ignores_unused_bits)
-{
-	write_to_ppu_vram(vram, 0x3FFF, 0xB0);
-	ck_assert_uint_eq(0xB0 & 0x3F, read_from_ppu_vram(vram, 0x3FFF));
-}
 
 START_TEST (nametable_mirroring_horizontal)
 {
@@ -2042,81 +1835,31 @@ Suite* ppu_suite(void)
 	s = suite_create("Ppu Tests");
 	tc_ppu_vram_read_writes = tcase_create("VRAM Read/Write Tests");
 	tcase_add_checked_fixture(tc_ppu_vram_read_writes, vram_setup, vram_teardown);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_0_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_0_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_0_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_1_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_1_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_1_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_mirror_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_mirror_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_mirror_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_mirror_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_mirror_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_mirror_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_mirror_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_mirror_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_mirror_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_writes_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_writes_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_writes_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_writes_other_bound_1);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_writes_other_bound_2);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_writes_upper_bound);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, pattern_table_0_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, pattern_table_1_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_0_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_1_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_2_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_3_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_0_mirror_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_1_mirror_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_2_mirror_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, palette_ram_writes, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, palette_ram_mirror_writes, 0, 4);
 	tcase_add_test(tc_ppu_vram_read_writes, writes_past_upper_bound_have_no_effect);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_0_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_0_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_0_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_1_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_1_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, pattern_table_1_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_mirror_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_mirror_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_0_mirror_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_mirror_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_mirror_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_1_mirror_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_mirror_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_mirror_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_2_mirror_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_reads_lower_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_reads_other_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_reads_upper_bound);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_reads_lower_bound_ignores_unused_bits);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_reads_other_bound_ignores_unused_bits);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_reads_upper_bound_ignores_unused_bits);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_lower_bound_ignores_unused_bits);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_other_bound_1_ignores_unused_bits);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_other_bound_2_ignores_unused_bits);
-	tcase_add_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_upper_bound_ignores_unused_bits);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, pattern_table_0_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, pattern_table_1_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_0_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_1_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_2_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_3_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_0_mirror_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_1_mirror_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_2_mirror_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_reads, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, palette_ram_reads_ignores_unused_bits, 0, 3);
+	tcase_add_loop_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_ignores_unused_bits, 0, 3);
 	tcase_add_test(tc_ppu_vram_read_writes, debug_all_nametables);
 	suite_add_tcase(s, tc_ppu_vram_read_writes);
 	tc_ppu_rendering = tcase_create("PPU Rendering Related Tests");
