@@ -206,6 +206,237 @@ static void check_single_screen_B_nametable_mirroring(struct PpuMemoryMap* vram
 	                 , read_from_ppu_vram(vram, 0x2400 + addr_offset));
 }
 
+
+/* Test helpers unit tests
+ */
+
+// Remeber that the ppu's internal vram (and temporary vram) address registers
+//   are formatted as follows: 0yyy NNYY YYYX XXXX
+//
+//   where y is fine y
+//         NN is the base nametbale address, 0 ($2000), 1($2400), 2 ($2800), 3 ($2C00)
+//         Y is Coarse Y, tile offset in Y direction, incremented every 8 pixels down
+//         X is Coarse X, tile offset in X direction, incremented every 8 pixels across
+//
+// These tests ensure that any given coarse x, coarse y and fine y values are enoded using
+// the format above
+//
+// Out of bounds values will wrap back around to 0 from the max coarse x or y or fine y vals
+// such that the offset address shouldn't bleed into the adjacent nametable
+START_TEST (vram_encoder_nametable_0)
+{
+	unsigned fine_y[8] =   {0, 0, 0,  0, 7,  4,  0, 0};
+	unsigned coarse_x[8] = {0, 1, 2, 31, 0, 12, 40, 0};
+	unsigned coarse_y[8] = {0, 0, 1, 29, 0,  5,  3, 38};
+	uint16_t vram_address[8][2] = { {0x2000, 0x0000}
+	                              , {0x23FF, 0x0001}
+	                              , {0x2008, 0x0022}
+	                              , {0x2112, 0x03BF}
+	                              , {0x3000, 0x7000}
+	                              , {0x0000, 0x40AC}
+	                              , {0x239B, 0x0068}
+	                              , {0x239B, 0x0100} };
+
+	uint16_t expected_offset = vram_address[_i][1];
+	uint16_t encoded_vram_address = nametable_vram_address_from_scroll_offsets(vram_address[_i][0]
+	                                                                    , fine_y[_i]
+	                                                                    , coarse_x[_i]
+	                                                                    , coarse_y[_i]);
+
+	ck_assert_uint_eq(expected_offset, encoded_vram_address);
+}
+
+START_TEST (vram_encoder_nametable_1)
+{
+	unsigned fine_y[9] =   {0, 0, 0,  0, 7,  4, 100,  0, 0};
+	unsigned coarse_x[9] = {0, 4, 1, 31, 0, 12,   0, 39, 0};
+	unsigned coarse_y[9] = {0, 0, 2, 29, 0,  5,   0,  0, 39};
+	uint16_t vram_address[9][2] = { {0x0400, 0x0400}
+	                              , {0x24FF, 0x0404}
+	                              , {0x2778, 0x0441}
+	                              , {0x2512, 0x07BF}
+	                              , {0x3400, 0x7400}
+	                              , {0x2400, 0x44AC}
+	                              , {0x2470, 0x7400}
+	                              , {0x2687, 0x0407}
+	                              , {0x2439, 0x0520} };
+
+	uint16_t expected_offset = vram_address[_i][1];
+	uint16_t encoded_vram_address = nametable_vram_address_from_scroll_offsets(vram_address[_i][0]
+	                                                                    , fine_y[_i]
+	                                                                    , coarse_x[_i]
+	                                                                    , coarse_y[_i]);
+
+	ck_assert_uint_eq(expected_offset, encoded_vram_address);
+}
+
+START_TEST (vram_encoder_nametable_2)
+{
+	unsigned fine_y[9] =   {0,  0,  0,  0, 3,  4, 15,  0, 0};
+	unsigned coarse_x[9] = {0, 31,  4, 31, 0, 11,  0, 42, 0};
+	unsigned coarse_y[9] = {0,  0, 10, 29, 0,  5,  0,  0, 41};
+	uint16_t vram_address[9][2] = { {0x0800, 0x0800}
+	                              , {0x281F, 0x081F}
+	                              , {0x2878, 0x0944}
+	                              , {0x2812, 0x0BBF}
+	                              , {0x3800, 0x3800}
+	                              , {0x2900, 0x48AB}
+	                              , {0x2A15, 0x7800}
+	                              , {0x2A47, 0x080A}
+	                              , {0x2841, 0x0960} };
+
+	uint16_t expected_offset = vram_address[_i][1];
+	uint16_t encoded_vram_address = nametable_vram_address_from_scroll_offsets(vram_address[_i][0]
+	                                                                    , fine_y[_i]
+	                                                                    , coarse_x[_i]
+	                                                                    , coarse_y[_i]);
+
+	ck_assert_uint_eq(expected_offset, encoded_vram_address);
+}
+
+START_TEST (vram_encoder_nametable_3)
+{
+	unsigned fine_y[9] =   {0,  0,  0,  0, 1,  6, 31,  0, 0};
+	unsigned coarse_x[9] = {0, 13, 11, 31, 0, 21,  0, 51, 3};
+	unsigned coarse_y[9] = {0,  0, 12, 29, 0,  3,  0,  0, 31};
+	uint16_t vram_address[9][2] = { {0x0C00, 0x0C00}
+	                              , {0x2D0D, 0x0C0D}
+	                              , {0x2C78, 0x0D8B}
+	                              , {0x2C12, 0x0FBF}
+	                              , {0x3C11, 0x1C00}
+	                              , {0x2D70, 0x6C75}
+	                              , {0x2D15, 0x7C00}
+	                              , {0x2D47, 0x0C13}
+	                              , {0x2D41, 0x0C23} };
+
+	uint16_t expected_offset = vram_address[_i][1];
+	uint16_t encoded_vram_address = nametable_vram_address_from_scroll_offsets(vram_address[_i][0]
+	                                                                    , fine_y[_i]
+	                                                                    , coarse_x[_i]
+	                                                                    , coarse_y[_i]);
+
+	ck_assert_uint_eq(expected_offset, encoded_vram_address);
+}
+
+
+// The encoding of the attribute address is as follows:
+//   0010 NN11 11YY YXXX
+// Where
+//   Coarse X's lowest two bits are shifted out
+//   Coarse Y & 0x0C merges into Coarse X (upper two bits from the shift out)
+//   Coarse Y's upper bit is shifted down by 4 bits (as are the other Coarse Y bits too)
+//   fine y is ignored
+//
+//   These tests handle the those coarse x, coarse y, fine y and nametable inputs
+//   Values exceeding their maximum value should wrap back around (from 0 to their max val)
+//   see the + 32 or + 30 values for coarse x or coarse y below
+START_TEST (attribute_address_encoder_nametable_0)
+{
+	unsigned coarse_x[4] = {0, 20, 15 + 32,       3};
+	unsigned coarse_y[4] = {0,  7,      24, 16 + 30};
+	uint16_t vram_address[4] = {0x2001, 0x201F, 0x2200, 0x2201};
+
+	uint16_t expected_address[4] = {0x23C0, 0x23CD, 0x23F3, 0x23E0};
+	uint16_t attribute_address = attribute_address_from_nametable_scroll_offsets(vram_address[_i]
+	                                                                     , coarse_x[_i]
+	                                                                     , coarse_y[_i]);
+
+	ck_assert_uint_eq(expected_address[_i], attribute_address);
+}
+
+START_TEST (attribute_address_encoder_nametable_0_tile_sample_within_at_byte)
+{
+	// indexes are: top left, top right, bottom left and bottom right tiles
+	unsigned coarse_x[4] = {1, 3, 0, 2};
+	unsigned coarse_y[4] = {0, 1, 2, 3};
+
+	ck_assert_uint_eq(0x23C0, attribute_address_from_nametable_scroll_offsets(0x2001
+	                                                                         , coarse_x[_i], coarse_y[_i]));
+}
+
+START_TEST (attribute_address_encoder_nametable_1)
+{
+	unsigned coarse_x[4] = {0,  1, 10 + 32,       29};
+	unsigned coarse_y[4] = {0, 28,      11, 12 + 30};
+	uint16_t vram_address[4] = {0x2400, 0x241F, 0x27FF, 0x2601};
+
+	uint16_t expected_address[4] = {0x27C0, 0x27F8, 0x27D2, 0x27DF};
+	uint16_t attribute_address = attribute_address_from_nametable_scroll_offsets(vram_address[_i]
+	                                                                     , coarse_x[_i]
+	                                                                     , coarse_y[_i]);
+
+	ck_assert_uint_eq(expected_address[_i], attribute_address);
+}
+
+START_TEST (attribute_address_encoder_nametable_1_tile_sample_within_at_byte)
+{
+	// indexes are: top left, top right, bottom left and bottom right tiles
+	unsigned coarse_x[4] = {16, 19, 17, 18};
+	unsigned coarse_y[4] = {5, 4, 6, 7};
+
+	ck_assert_uint_eq(0x27CC, attribute_address_from_nametable_scroll_offsets(0x240D
+	                                                                         , coarse_x[_i], coarse_y[_i]));
+}
+
+START_TEST (attribute_address_encoder_nametable_2)
+{
+	unsigned coarse_x[4] = {0, 13, 5 + 32,      18};
+	unsigned coarse_y[4] = {0, 13,     26, 17 + 30};
+	uint16_t vram_address[4] = {0x1800, 0x291F, 0x3A00, 0x2BB1};
+
+	uint16_t expected_address[4] = {0x2BC0, 0x2BDB, 0x2BF1, 0x2BE4};
+	uint16_t attribute_address = attribute_address_from_nametable_scroll_offsets(vram_address[_i]
+	                                                                     , coarse_x[_i]
+	                                                                     , coarse_y[_i]);
+
+	ck_assert_uint_eq(expected_address[_i], attribute_address);
+}
+
+START_TEST (attribute_address_encoder_nametable_2_tile_sample_within_at_byte)
+{
+	// indexes are: top left, top right, bottom left and bottom right tiles
+	unsigned coarse_x[4] = {24, 27, 25, 26};
+	unsigned coarse_y[4] = {9, 9, 10, 11};
+
+	ck_assert_uint_eq(0x2BD6, attribute_address_from_nametable_scroll_offsets(0x2812
+	                                                                         , coarse_x[_i], coarse_y[_i]));
+}
+
+START_TEST (attribute_address_encoder_nametable_3)
+{
+	unsigned coarse_x[4] = {0,  8, 16 + 32,    24};
+	unsigned coarse_y[4] = {0, 29,      6, 1 + 30};
+	uint16_t vram_address[4] = {0x2C00, 0x2C3F, 0x2FFF, 0x2DE1};
+
+	uint16_t expected_address[4] = {0x2FC0, 0x2FFA, 0x2FCC, 0x2FC6};
+	uint16_t attribute_address = attribute_address_from_nametable_scroll_offsets(vram_address[_i]
+	                                                                     , coarse_x[_i]
+	                                                                     , coarse_y[_i]);
+
+	ck_assert_uint_eq(expected_address[_i], attribute_address);
+}
+
+START_TEST (attribute_address_encoder_nametable_3_tile_sample_within_at_byte)
+{
+	// indexes are: top left, top right, bottom left and bottom right tiles
+	unsigned coarse_x[4] = {16, 18, 17, 18};
+	unsigned coarse_y[4] = {12, 13, 15, 14};
+
+	ck_assert_uint_eq(0x2FDC, attribute_address_from_nametable_scroll_offsets(0x0C0D
+	                                                                         , coarse_x[_i], coarse_y[_i]));
+}
+
+
+START_TEST (reverse_bits_function_all_valid_inputs)
+{
+	// re-reversing the reversed bits will produce the original number
+	// and also verify the function works as expected
+	ck_assert_uint_eq(_i, reverse_bits_in_byte(reverse_bits_in_byte(_i)));
+}
+
+
+/* Vram unit tests
+ */
 START_TEST (pattern_table_0_writes)
 {
 	// Lower, other and upper bounds addresses
@@ -530,6 +761,8 @@ START_TEST (palette_ram_mirror_reads_ignores_unused_bits)
 }
 
 
+/* Ppu rendering unit tests
+ */
 START_TEST (nametable_mirroring_horizontal)
 {
 	vram->nametable_0 = &vram->nametable_A;
@@ -789,221 +1022,6 @@ START_TEST (fetch_nametable_byte_in_attribute_table)
 	ck_assert_uint_eq(ppu->bkg_internals.nt_byte, write_vals[_i]);
 }
 
-// Remeber that the ppu's internal vram (and temporary vram) address registers
-//   are formatted as follows: 0yyy NNYY YYYX XXXX
-//
-//   where y is fine y
-//         NN is the base nametbale address, 0 ($2000), 1($2400), 2 ($2800), 3 ($2C00)
-//         Y is Coarse Y, tile offset in Y direction, incremented every 8 pixels down
-//         X is Coarse X, tile offset in X direction, incremented every 8 pixels across
-//
-// These tests ensure that any given coarse x, coarse y and fine y values are enoded using
-// the format above
-//
-// Out of bounds values will wrap back around to 0 from the max coarse x or y or fine y vals
-// such that the offset address shouldn't bleed into the adjacent nametable
-START_TEST (vram_encoder_nametable_0)
-{
-	unsigned fine_y[8] =   {0, 0, 0,  0, 7,  4,  0, 0};
-	unsigned coarse_x[8] = {0, 1, 2, 31, 0, 12, 40, 0};
-	unsigned coarse_y[8] = {0, 0, 1, 29, 0,  5,  3, 38};
-	uint16_t vram_address[8][2] = { {0x2000, 0x0000}
-	                              , {0x23FF, 0x0001}
-	                              , {0x2008, 0x0022}
-	                              , {0x2112, 0x03BF}
-	                              , {0x3000, 0x7000}
-	                              , {0x0000, 0x40AC}
-	                              , {0x239B, 0x0068}
-	                              , {0x239B, 0x0100} };
-
-	uint16_t expected_offset = vram_address[_i][1];
-	uint16_t encoded_vram_address = nametable_vram_address_from_scroll_offsets(vram_address[_i][0]
-	                                                                    , fine_y[_i]
-	                                                                    , coarse_x[_i]
-	                                                                    , coarse_y[_i]);
-
-	ck_assert_uint_eq(expected_offset, encoded_vram_address);
-}
-
-START_TEST (vram_encoder_nametable_1)
-{
-	unsigned fine_y[9] =   {0, 0, 0,  0, 7,  4, 100,  0, 0};
-	unsigned coarse_x[9] = {0, 4, 1, 31, 0, 12,   0, 39, 0};
-	unsigned coarse_y[9] = {0, 0, 2, 29, 0,  5,   0,  0, 39};
-	uint16_t vram_address[9][2] = { {0x0400, 0x0400}
-	                              , {0x24FF, 0x0404}
-	                              , {0x2778, 0x0441}
-	                              , {0x2512, 0x07BF}
-	                              , {0x3400, 0x7400}
-	                              , {0x2400, 0x44AC}
-	                              , {0x2470, 0x7400}
-	                              , {0x2687, 0x0407}
-	                              , {0x2439, 0x0520} };
-
-	uint16_t expected_offset = vram_address[_i][1];
-	uint16_t encoded_vram_address = nametable_vram_address_from_scroll_offsets(vram_address[_i][0]
-	                                                                    , fine_y[_i]
-	                                                                    , coarse_x[_i]
-	                                                                    , coarse_y[_i]);
-
-	ck_assert_uint_eq(expected_offset, encoded_vram_address);
-}
-
-START_TEST (vram_encoder_nametable_2)
-{
-	unsigned fine_y[9] =   {0,  0,  0,  0, 3,  4, 15,  0, 0};
-	unsigned coarse_x[9] = {0, 31,  4, 31, 0, 11,  0, 42, 0};
-	unsigned coarse_y[9] = {0,  0, 10, 29, 0,  5,  0,  0, 41};
-	uint16_t vram_address[9][2] = { {0x0800, 0x0800}
-	                              , {0x281F, 0x081F}
-	                              , {0x2878, 0x0944}
-	                              , {0x2812, 0x0BBF}
-	                              , {0x3800, 0x3800}
-	                              , {0x2900, 0x48AB}
-	                              , {0x2A15, 0x7800}
-	                              , {0x2A47, 0x080A}
-	                              , {0x2841, 0x0960} };
-
-	uint16_t expected_offset = vram_address[_i][1];
-	uint16_t encoded_vram_address = nametable_vram_address_from_scroll_offsets(vram_address[_i][0]
-	                                                                    , fine_y[_i]
-	                                                                    , coarse_x[_i]
-	                                                                    , coarse_y[_i]);
-
-	ck_assert_uint_eq(expected_offset, encoded_vram_address);
-}
-
-START_TEST (vram_encoder_nametable_3)
-{
-	unsigned fine_y[9] =   {0,  0,  0,  0, 1,  6, 31,  0, 0};
-	unsigned coarse_x[9] = {0, 13, 11, 31, 0, 21,  0, 51, 3};
-	unsigned coarse_y[9] = {0,  0, 12, 29, 0,  3,  0,  0, 31};
-	uint16_t vram_address[9][2] = { {0x0C00, 0x0C00}
-	                              , {0x2D0D, 0x0C0D}
-	                              , {0x2C78, 0x0D8B}
-	                              , {0x2C12, 0x0FBF}
-	                              , {0x3C11, 0x1C00}
-	                              , {0x2D70, 0x6C75}
-	                              , {0x2D15, 0x7C00}
-	                              , {0x2D47, 0x0C13}
-	                              , {0x2D41, 0x0C23} };
-
-	uint16_t expected_offset = vram_address[_i][1];
-	uint16_t encoded_vram_address = nametable_vram_address_from_scroll_offsets(vram_address[_i][0]
-	                                                                    , fine_y[_i]
-	                                                                    , coarse_x[_i]
-	                                                                    , coarse_y[_i]);
-
-	ck_assert_uint_eq(expected_offset, encoded_vram_address);
-}
-
-// The encoding of the attribute address is as follows:
-//   0010 NN11 11YY YXXX
-// Where
-//   Coarse X's lowest two bits are shifted out
-//   Coarse Y & 0x0C merges into Coarse X (upper two bits from the shift out)
-//   Coarse Y's upper bit is shifted down by 4 bits (as are the other Coarse Y bits too)
-//   fine y is ignored
-//
-//   These tests handle the those coarse x, coarse y, fine y and nametable inputs
-//   Values exceeding their maximum value should wrap back around (from 0 to their max val)
-//   see the + 32 or + 30 values for coarse x or coarse y below
-START_TEST (attribute_address_encoder_nametable_0)
-{
-	unsigned coarse_x[4] = {0, 20, 15 + 32,       3};
-	unsigned coarse_y[4] = {0,  7,      24, 16 + 30};
-	uint16_t vram_address[4] = {0x2001, 0x201F, 0x2200, 0x2201};
-
-	uint16_t expected_address[4] = {0x23C0, 0x23CD, 0x23F3, 0x23E0};
-	uint16_t attribute_address = attribute_address_from_nametable_scroll_offsets(vram_address[_i]
-	                                                                     , coarse_x[_i]
-	                                                                     , coarse_y[_i]);
-
-	ck_assert_uint_eq(expected_address[_i], attribute_address);
-}
-
-START_TEST (attribute_address_encoder_nametable_0_tile_sample_within_at_byte)
-{
-	// indexes are: top left, top right, bottom left and bottom right tiles
-	unsigned coarse_x[4] = {1, 3, 0, 2};
-	unsigned coarse_y[4] = {0, 1, 2, 3};
-
-	ck_assert_uint_eq(0x23C0, attribute_address_from_nametable_scroll_offsets(0x2001
-	                                                                         , coarse_x[_i], coarse_y[_i]));
-}
-
-START_TEST (attribute_address_encoder_nametable_1)
-{
-	unsigned coarse_x[4] = {0,  1, 10 + 32,       29};
-	unsigned coarse_y[4] = {0, 28,      11, 12 + 30};
-	uint16_t vram_address[4] = {0x2400, 0x241F, 0x27FF, 0x2601};
-
-	uint16_t expected_address[4] = {0x27C0, 0x27F8, 0x27D2, 0x27DF};
-	uint16_t attribute_address = attribute_address_from_nametable_scroll_offsets(vram_address[_i]
-	                                                                     , coarse_x[_i]
-	                                                                     , coarse_y[_i]);
-
-	ck_assert_uint_eq(expected_address[_i], attribute_address);
-}
-
-START_TEST (attribute_address_encoder_nametable_1_tile_sample_within_at_byte)
-{
-	// indexes are: top left, top right, bottom left and bottom right tiles
-	unsigned coarse_x[4] = {16, 19, 17, 18};
-	unsigned coarse_y[4] = {5, 4, 6, 7};
-
-	ck_assert_uint_eq(0x27CC, attribute_address_from_nametable_scroll_offsets(0x240D
-	                                                                         , coarse_x[_i], coarse_y[_i]));
-}
-
-START_TEST (attribute_address_encoder_nametable_2)
-{
-	unsigned coarse_x[4] = {0, 13, 5 + 32,      18};
-	unsigned coarse_y[4] = {0, 13,     26, 17 + 30};
-	uint16_t vram_address[4] = {0x1800, 0x291F, 0x3A00, 0x2BB1};
-
-	uint16_t expected_address[4] = {0x2BC0, 0x2BDB, 0x2BF1, 0x2BE4};
-	uint16_t attribute_address = attribute_address_from_nametable_scroll_offsets(vram_address[_i]
-	                                                                     , coarse_x[_i]
-	                                                                     , coarse_y[_i]);
-
-	ck_assert_uint_eq(expected_address[_i], attribute_address);
-}
-
-START_TEST (attribute_address_encoder_nametable_2_tile_sample_within_at_byte)
-{
-	// indexes are: top left, top right, bottom left and bottom right tiles
-	unsigned coarse_x[4] = {24, 27, 25, 26};
-	unsigned coarse_y[4] = {9, 9, 10, 11};
-
-	ck_assert_uint_eq(0x2BD6, attribute_address_from_nametable_scroll_offsets(0x2812
-	                                                                         , coarse_x[_i], coarse_y[_i]));
-}
-
-START_TEST (attribute_address_encoder_nametable_3)
-{
-	unsigned coarse_x[4] = {0,  8, 16 + 32,    24};
-	unsigned coarse_y[4] = {0, 29,      6, 1 + 30};
-	uint16_t vram_address[4] = {0x2C00, 0x2C3F, 0x2FFF, 0x2DE1};
-
-	uint16_t expected_address[4] = {0x2FC0, 0x2FFA, 0x2FCC, 0x2FC6};
-	uint16_t attribute_address = attribute_address_from_nametable_scroll_offsets(vram_address[_i]
-	                                                                     , coarse_x[_i]
-	                                                                     , coarse_y[_i]);
-
-	ck_assert_uint_eq(expected_address[_i], attribute_address);
-}
-
-START_TEST (attribute_address_encoder_nametable_3_tile_sample_within_at_byte)
-{
-	// indexes are: top left, top right, bottom left and bottom right tiles
-	unsigned coarse_x[4] = {16, 18, 17, 18};
-	unsigned coarse_y[4] = {12, 13, 15, 14};
-
-	ck_assert_uint_eq(0x2FDC, attribute_address_from_nametable_scroll_offsets(0x0C0D
-	                                                                         , coarse_x[_i], coarse_y[_i]));
-}
-
 START_TEST (fetch_attribute_byte_nametable_0_random_scroll_offsets)
 {
 	unsigned fine_y = 0;
@@ -1094,13 +1112,6 @@ START_TEST (fetch_attribute_byte_nametable_3_random_scroll_offsets)
 
 
 	ck_assert_uint_eq(0xC3, ppu->bkg_internals.at_latch);
-}
-
-START_TEST (reverse_bits_function_all_valid_inputs)
-{
-	// re-reversing the reversed bits will produce the original number
-	// and also verify the function works as expected
-	ck_assert_uint_eq(_i, reverse_bits_in_byte(reverse_bits_in_byte(_i)));
 }
 
 
@@ -1279,14 +1290,47 @@ START_TEST (debug_all_nametables)
 }
 
 
-Suite* ppu_suite(void)
+Suite* ppu_master_suite(void)
+{
+	Suite* s;
+
+	s = suite_create("All Ppu Tests");
+
+	return s;
+}
+
+Suite* ppu_test_helpers_suite(void)
+{
+	Suite* s;
+	TCase* tc_ppu_unit_test_helpers;
+
+	s = suite_create("Ppu Unit Test Helpers");
+	tc_ppu_unit_test_helpers = tcase_create("PPU Unit Test Helper Functions");
+	tcase_add_checked_fixture(tc_ppu_unit_test_helpers, setup, teardown);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0, 0, 8);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1, 0, 9);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2, 0, 9);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3, 0, 9);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_0, 0, 4);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_0_tile_sample_within_at_byte, 0, 4);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_1, 0, 4);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_1_tile_sample_within_at_byte, 0, 4);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_2, 0, 4);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_2_tile_sample_within_at_byte, 0, 4);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3, 0, 4);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_tile_sample_within_at_byte, 0, 4);
+	tcase_add_loop_test(tc_ppu_unit_test_helpers, reverse_bits_function_all_valid_inputs, 0, 256);
+	suite_add_tcase(s, tc_ppu_unit_test_helpers);
+
+	return s;
+}
+
+Suite* ppu_vram_suite(void)
 {
 	Suite* s;
 	TCase* tc_ppu_vram_read_writes;
-	TCase* tc_ppu_rendering;
-	TCase* tc_ppu_unit_test_helpers;
 
-	s = suite_create("Ppu Tests");
+	s = suite_create("Ppu Vram Tests");
 	tc_ppu_vram_read_writes = tcase_create("VRAM Read/Write Tests");
 	tcase_add_checked_fixture(tc_ppu_vram_read_writes, vram_setup, vram_teardown);
 	tcase_add_loop_test(tc_ppu_vram_read_writes, pattern_table_0_writes, 0, 3);
@@ -1314,54 +1358,48 @@ Suite* ppu_suite(void)
 	tcase_add_loop_test(tc_ppu_vram_read_writes, nametable_3_partial_mirror_reads, 0, 3);
 	tcase_add_loop_test(tc_ppu_vram_read_writes, palette_ram_reads_ignores_unused_bits, 0, 3);
 	tcase_add_loop_test(tc_ppu_vram_read_writes, palette_ram_mirror_reads_ignores_unused_bits, 0, 3);
-	tcase_add_test(tc_ppu_vram_read_writes, debug_all_nametables);
 	suite_add_tcase(s, tc_ppu_vram_read_writes);
-	tc_ppu_rendering = tcase_create("PPU Rendering Related Tests");
-	tcase_add_checked_fixture(tc_ppu_rendering, vram_setup, vram_teardown);
-	tcase_add_test(tc_ppu_rendering, nametable_mirroring_horizontal);
-	tcase_add_test(tc_ppu_rendering, nametable_mirroring_horizontal_read_writes);
-	tcase_add_test(tc_ppu_rendering, nametable_mirroring_vertical);
-	tcase_add_test(tc_ppu_rendering, nametable_mirroring_vertical_read_writes);
-	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_A);
-	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_A_read_writes);
-	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_B);
-	tcase_add_test(tc_ppu_rendering, nametable_mirroring_single_screen_B_read_writes);
-	tcase_add_loop_test(tc_ppu_rendering, nametable_x_offset_is_valid_for_all_coarse_x, 0, 64);
-	tcase_add_loop_test(tc_ppu_rendering, nametable_y_offset_is_valid_for_all_coarse_y, 0, 60);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_nametable_0_addr_ignore_fine_y, 0, 2);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_nametable_1_addr_ignore_fine_y, 0, 2);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_nametable_2_addr_ignore_fine_y, 0, 2);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_nametable_3_addr_ignore_fine_y, 0, 2);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_nametable_byte_in_attribute_table, 0, 4);
-	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_0_random_scroll_offsets);
-	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_1_random_scroll_offsets);
-	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_2_random_scroll_offsets);
-	tcase_add_test(tc_ppu_rendering, fetch_attribute_byte_nametable_3_random_scroll_offsets);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_lo_for_fine_y_offsets, 0, 2);
-	tcase_add_loop_test(tc_ppu_rendering, fetch_pattern_table_hi_for_fine_y_offsets, 0, 2);
-	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_bottom_right_quadrant);
-	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_top_right_quadrant);
-	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_bottom_left_quadrant);
-	tcase_add_test(tc_ppu_rendering, attribute_shift_reg_from_top_left_quadrant);
-	tcase_add_loop_test(tc_ppu_rendering, pixel_buffer_set_corner_pixels, 0, 4);
-	tcase_add_test(tc_ppu_rendering, pixel_buffer_set_out_of_bounds_allowed);
-	suite_add_tcase(s, tc_ppu_rendering);
-	tc_ppu_unit_test_helpers = tcase_create("PPU Unit Test Helper Functions");
-	tcase_add_checked_fixture(tc_ppu_unit_test_helpers, setup, teardown);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_0, 0, 8);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_1, 0, 9);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_2, 0, 9);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, vram_encoder_nametable_3, 0, 9);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_0, 0, 4);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_0_tile_sample_within_at_byte, 0, 4);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_1, 0, 4);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_1_tile_sample_within_at_byte, 0, 4);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_2, 0, 4);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_2_tile_sample_within_at_byte, 0, 4);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3, 0, 4);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, attribute_address_encoder_nametable_3_tile_sample_within_at_byte, 0, 4);
-	tcase_add_loop_test(tc_ppu_unit_test_helpers, reverse_bits_function_all_valid_inputs, 0, 256);
-	suite_add_tcase(s, tc_ppu_unit_test_helpers);
+
+	return s;
+}
+
+Suite* ppu_rendering_suite(void)
+{
+	Suite* s;
+	TCase* tc_bkg_rendering;
+
+	s = suite_create("Ppu Rendering Related Tests");
+	tc_bkg_rendering = tcase_create("Background Rendering Tests");
+	tcase_add_checked_fixture(tc_bkg_rendering, vram_setup, vram_teardown);
+	tcase_add_test(tc_bkg_rendering, nametable_mirroring_horizontal);
+	tcase_add_test(tc_bkg_rendering, nametable_mirroring_horizontal_read_writes);
+	tcase_add_test(tc_bkg_rendering, nametable_mirroring_vertical);
+	tcase_add_test(tc_bkg_rendering, nametable_mirroring_vertical_read_writes);
+	tcase_add_test(tc_bkg_rendering, nametable_mirroring_single_screen_A);
+	tcase_add_test(tc_bkg_rendering, nametable_mirroring_single_screen_A_read_writes);
+	tcase_add_test(tc_bkg_rendering, nametable_mirroring_single_screen_B);
+	tcase_add_test(tc_bkg_rendering, nametable_mirroring_single_screen_B_read_writes);
+	tcase_add_loop_test(tc_bkg_rendering, nametable_x_offset_is_valid_for_all_coarse_x, 0, 64);
+	tcase_add_loop_test(tc_bkg_rendering, nametable_y_offset_is_valid_for_all_coarse_y, 0, 60);
+	tcase_add_loop_test(tc_bkg_rendering, fetch_nametable_byte_nametable_0_addr_ignore_fine_y, 0, 2);
+	tcase_add_loop_test(tc_bkg_rendering, fetch_nametable_byte_nametable_1_addr_ignore_fine_y, 0, 2);
+	tcase_add_loop_test(tc_bkg_rendering, fetch_nametable_byte_nametable_2_addr_ignore_fine_y, 0, 2);
+	tcase_add_loop_test(tc_bkg_rendering, fetch_nametable_byte_nametable_3_addr_ignore_fine_y, 0, 2);
+	tcase_add_loop_test(tc_bkg_rendering, fetch_nametable_byte_in_attribute_table, 0, 4);
+	tcase_add_test(tc_bkg_rendering, fetch_attribute_byte_nametable_0_random_scroll_offsets);
+	tcase_add_test(tc_bkg_rendering, fetch_attribute_byte_nametable_1_random_scroll_offsets);
+	tcase_add_test(tc_bkg_rendering, fetch_attribute_byte_nametable_2_random_scroll_offsets);
+	tcase_add_test(tc_bkg_rendering, fetch_attribute_byte_nametable_3_random_scroll_offsets);
+	tcase_add_loop_test(tc_bkg_rendering, fetch_pattern_table_lo_for_fine_y_offsets, 0, 2);
+	tcase_add_loop_test(tc_bkg_rendering, fetch_pattern_table_hi_for_fine_y_offsets, 0, 2);
+	tcase_add_test(tc_bkg_rendering, attribute_shift_reg_from_bottom_right_quadrant);
+	tcase_add_test(tc_bkg_rendering, attribute_shift_reg_from_top_right_quadrant);
+	tcase_add_test(tc_bkg_rendering, attribute_shift_reg_from_bottom_left_quadrant);
+	tcase_add_test(tc_bkg_rendering, attribute_shift_reg_from_top_left_quadrant);
+	tcase_add_loop_test(tc_bkg_rendering, pixel_buffer_set_corner_pixels, 0, 4);
+	tcase_add_test(tc_bkg_rendering, pixel_buffer_set_out_of_bounds_allowed);
+	tcase_add_test(tc_bkg_rendering, debug_all_nametables);
+	suite_add_tcase(s, tc_bkg_rendering);
 
 	return s;
 }

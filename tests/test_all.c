@@ -28,8 +28,10 @@ int main(void)
 	srunner_free(sr);
 
 	// ppu tests
-	s = ppu_suite();
-	sr = srunner_create(s);
+	sr = srunner_create(ppu_master_suite());
+	srunner_add_suite(sr, ppu_test_helpers_suite());
+	srunner_add_suite(sr, ppu_vram_suite());
+	srunner_add_suite(sr, ppu_rendering_suite());
 
 	srunner_run_all(sr, CK_NORMAL);
 	number_failed += srunner_ntests_failed(sr);
