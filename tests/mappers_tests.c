@@ -138,58 +138,70 @@ static uint8_t get_nth_bit(unsigned int input, unsigned int bit_pos)
 
 START_TEST (mapper_000_prg_rom_banks)
 {
-	mp_cart->chr_rom.size = 0;
 	cpu_mapper_tester->mapper_number = 0;
+
 	unsigned int prg_rom_sizes[2] = {16 * KiB, 32 * KiB};
-	uint8_t* prg_window = calloc(32 * KiB, sizeof(uint8_t));
+	// For 16K size mirror 1st 16K in last 16K bank (filling out the 32K cpu prg rom space)
 	uint8_t prg_banks[2][2] = {{0xA0, 0xA0}, {0xA0, 0x08}};
+
+	uint8_t* prg_window = calloc(32 * KiB, sizeof(uint8_t));
 	mp_cart->prg_rom.size = prg_rom_sizes[_i];
 	mp_cart->prg_rom.data = prg_window;
-	memset(mp_cart->prg_rom.data,            prg_banks[_i][0], 16 * KiB);
-	memset(mp_cart->prg_rom.data + 16 * KiB, prg_banks[_i][1], 16 * KiB);
+	mp_cart->chr_rom.size = 0;
 	// Mirror prg_banks into arrays so we can check the result
 	// as the prg_rom.data is free'd by the mapper_000() function
-	uint8_t prg_array_1[16 * KiB] = {0};
-	uint8_t prg_array_2[16 * KiB] = {0};
+	uint8_t prg_array_1[16 * KiB] = {0}; // 1st 16K bank
+	uint8_t prg_array_2[16 * KiB] = {0}; // 2nd 16K bank
+
+	memset(mp_cart->prg_rom.data,            prg_banks[_i][0], 16 * KiB);
+	memset(mp_cart->prg_rom.data + 16 * KiB, prg_banks[_i][1], 16 * KiB);
 	memset(&prg_array_1[0], prg_banks[_i][0], 16 * KiB);
 	memset(&prg_array_2[0], prg_banks[_i][1], 16 * KiB);
 
+
 	init_mapper(mp_cart, mp_cpu, mp_ppu);
+
 
 	ck_assert_mem_eq(&mp_cpu->mem[0x8000], &prg_array_1[0], 16 * KiB);
 	ck_assert_mem_eq(&mp_cpu->mem[0xC000], &prg_array_2[0], 16 * KiB);
+	// prg rom free'ing is handled by mapper 0 function
 }
 
 START_TEST (mapper_000_chr_rom_banks)
 {
-	mp_cart->chr_rom.size = 8 * KiB; // chr data is always 8K for mapper 0
 	cpu_mapper_tester->mapper_number = 0;
-	uint8_t* chr_window = calloc(8 * KiB, sizeof(uint8_t));
+
 	// Split chr 8K into 2 4K regions
 	uint8_t chr_banks[2][2] = {{0xA0, 0xA0}, {0xA0, 0x08}};
+
+	uint8_t* chr_window = calloc(8 * KiB, sizeof(uint8_t));
 	mp_cart->chr_rom.data = chr_window;
-	memset(mp_cart->chr_rom.data,           chr_banks[_i][0], 4 * KiB);
-	memset(mp_cart->chr_rom.data + 4 * KiB, chr_banks[_i][1], 4 * KiB);
+	mp_cart->chr_rom.size = 8 * KiB; // chr data is always 8K for mapper 0
 	// Mirror prg_banks into arrays so we can check the result
 	// as the prg_rom.data is free'd by the mapper_000() function
 	uint8_t chr_array_1[4 * KiB] = {0};
 	uint8_t chr_array_2[4 * KiB] = {0};
-	memset(&chr_array_1[0], chr_banks[_i][0], 4 * KiB);
-	memset(&chr_array_2[0], chr_banks[_i][1], 4 * KiB);;
-	// Need to set prg data too otherwise we get segfaults
-	mp_cart->prg_rom.size = 32 * KiB;
+	// Need to set prg data too otherwise we get segfaults (prg data is parsed before chr)
 	uint8_t* prg_window = calloc(32 * KiB, sizeof(uint8_t));
 	mp_cart->prg_rom.data = prg_window;
+	mp_cart->prg_rom.size = 32 * KiB;
+
+	memset(mp_cart->chr_rom.data,           chr_banks[_i][0], 4 * KiB);
+	memset(mp_cart->chr_rom.data + 4 * KiB, chr_banks[_i][1], 4 * KiB);
+	memset(&chr_array_1[0], chr_banks[_i][0], 4 * KiB);
+	memset(&chr_array_2[0], chr_banks[_i][1], 4 * KiB);;
+
 
 	init_mapper(mp_cart, mp_cpu, mp_ppu);
+
 
 	// pattern table_0 is vram address 0x0000-0x0FFF (4K)
 	// pattern table_1 is vram address 0x1000-0x1FFF (4K)
 	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_0k[0x0000], &chr_array_1[0], 4 * KiB);
 	ck_assert_mem_eq(&mp_ppu->vram.pattern_table_4k[0x0000], &chr_array_2[0], 4 * KiB);
 
-	free(chr_window);
-	// prg free is handled by mapper 0 function
+	free(chr_window); // must manually free chr rom
+	// prg rom free'ing is handled by mapper 0 function
 }
 
 START_TEST (mapper_000_unmapped_open_bus_reads)
