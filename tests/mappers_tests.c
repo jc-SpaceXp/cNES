@@ -328,6 +328,80 @@ START_TEST (mapper_001_five_writes_selects_reg)
 	ck_assert_uint_eq(cpu_mapper_tester->chr_bank_size, chr_bank_size[_i]);
 }
 
+START_TEST (mapper_001_reset_cancels_five_writes)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->prg_rom_bank_size = 32; // reset will change this to 16
+	cpu_mapper_tester->chr_bank_size = 4; // should remain unchanged
+	cpu_mapper_tester->prg_high_bank_fixed = false; // reset will change this to true
+	mp_cpu->cycle = 13;
+	uint16_t ctrl_reg = 0x9000; // $8000 to $9FFF
+	// value shouldn't change on 5th write as there is a reset in one of those writes
+	// reset is values larger than 0x80
+	uint8_t write_val[5][5] = { {0x80, 0x00, 0x00, 0x00, 0x00}
+	                          , {0x00, 0x80, 0x77, 0x03, 0x01}
+	                          , {0x00, 0x00, 0x97, 0x33, 0x01}
+	                          , {0x00, 0x00, 0x08, 0xF0, 0x00}
+	                          , {0x11, 0x7F, 0x01, 0x0F, 0xB3} };
+	// expected vals
+	uint8_t prg_rom_bank_size = 16;
+	uint8_t chr_bank_size = 4;
+	// Reset will set prg rom banks too, avoid a seg fault
+	uint8_t* prg_window = calloc(256 * KiB, sizeof(uint8_t));
+	mp_cart->prg_rom.data = prg_window;
+	mp_cart->prg_rom.size = 256 * KiB;
+	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
+
+	// 1st write is LSB and last is MSB
+	for (int w = 0; w < 5; ++w) {
+		mapper_write(mp_cpu, ctrl_reg + w, write_val[_i][w]); // 5 writes
+		mp_cpu->cycle += 5;
+	}
+
+	ck_assert_uint_eq(cpu_mapper_tester->prg_rom_bank_size, prg_rom_bank_size);
+	ck_assert_uint_eq(cpu_mapper_tester->chr_bank_size, chr_bank_size);
+	ck_assert(cpu_mapper_tester->prg_high_bank_fixed == true);
+	free(prg_window);
+}
+
+START_TEST (mapper_001_reset_requires_five_more_writes)
+{
+	cpu_mapper_tester->mapper_number = 1;
+	cpu_mapper_tester->chr_bank_size = 4; // changing this through MMC1 reg (after a reset)
+	mp_cpu->cycle = 13;
+	uint16_t ctrl_reg = 0x9000; // $8000 to $9FFF
+	// value shouldn't change on 5th write as there is a reset in one of those writes
+	// reset is values larger than 0x80, 5 writes after reset should be a valid write to a register
+	uint8_t write_val[5][10] = { {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01, 0x01}
+	                           , {0x00, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01, 0x01}
+	                           , {0x00, 0x00, 0x97, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01}
+	                           , {0x00, 0x00, 0x08, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01}
+	                           , {0x11, 0x7F, 0x01, 0x0F, 0xB3, 0x00, 0x00, 0x00, 0x00, 0x00}
+	                           };
+	// expected vals
+	uint8_t chr_bank_size[5][10] = { {4, 4, 4, 4, 4, 8, 8, 8, 8, 8}
+	                               , {4, 4, 4, 4, 4, 4, 8, 8, 8, 8}
+	                               , {4, 4, 4, 4, 4, 4, 4, 8, 8, 8}
+	                               , {4, 4, 4, 4, 4, 4, 4, 4, 8, 8}
+	                               , {4, 4, 4, 4, 4, 4, 4, 4, 4, 8} };
+	// Reset will set prg rom banks too, avoid a seg fault
+	uint8_t* prg_window = calloc(256 * KiB, sizeof(uint8_t));
+	mp_cart->prg_rom.data = prg_window;
+	mp_cart->prg_rom.size = 256 * KiB;
+	cpu_mapper_tester->prg_rom = &mp_cart->prg_rom;
+
+	// 1st write is LSB and last is MSB
+	for (int w = 0; w < 10; ++w) {
+		mapper_write(mp_cpu, ctrl_reg + w, write_val[_i][w]);
+		mp_cpu->cycle += 10;
+
+		// Verify
+		ck_assert_uint_eq(cpu_mapper_tester->chr_bank_size, chr_bank_size[_i][w]);
+	}
+	free(prg_window);
+}
+
+
 START_TEST (mapper_001_reg0_mm_bits)
 {
 	cpu_mapper_tester->mapper_number = 1;
@@ -1316,10 +1390,12 @@ Suite* mapper_001_suite(void)
 	TCase* tc_mmc1_other;
 
 	s = suite_create("Mapper 001 Tests");
-	tc_mmc1_registers = tcase_create("MMC1 Registers Tests");
+	tc_mmc1_registers = tcase_create("MMC1 Basic Registers Tests");
 	tcase_add_checked_fixture(tc_mmc1_registers, setup, teardown);
 	tcase_add_test(tc_mmc1_registers, mapper_001_last_write_selects_reg);
 	tcase_add_loop_test(tc_mmc1_registers, mapper_001_five_writes_selects_reg, 0, 5);
+	tcase_add_loop_test(tc_mmc1_registers, mapper_001_reset_cancels_five_writes, 0, 5);
+	tcase_add_loop_test(tc_mmc1_registers, mapper_001_reset_requires_five_more_writes, 0, 5);
 	suite_add_tcase(s, tc_mmc1_registers);
 	tc_mmc1_reg0_bits = tcase_create("MMC1 Reg0/Ctrl Register Tests");
 	tcase_add_checked_fixture(tc_mmc1_reg0_bits, setup, teardown);
