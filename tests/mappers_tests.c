@@ -415,25 +415,19 @@ START_TEST (mapper_001_reg0_mm_bits)
 	                                           , VERTICAL
 	                                           , HORIZONTAL };
 
-	uint8_t* nt_0_pointer[4] = { &mp_ppu->vram.nametable_A[0] /* Single screen A */
-	                           , &mp_ppu->vram.nametable_B[0] /* Single screen B */
-	                           , &mp_ppu->vram.nametable_A[0] /* etc. */
-	                           , &mp_ppu->vram.nametable_A[0] };
+	// nt 0, nt 1
+	// nt 2, nt 3
+	uint8_t* nt_pointers[4][4] = { { mp_ppu->vram.nametable_A, mp_ppu->vram.nametable_A
+	                               , mp_ppu->vram.nametable_A, mp_ppu->vram.nametable_A }
 
-	uint8_t* nt_1_pointer[4] = { &mp_ppu->vram.nametable_A[0]
-	                           , &mp_ppu->vram.nametable_B[0]
-	                           , &mp_ppu->vram.nametable_B[0]
-	                           , &mp_ppu->vram.nametable_A[0] };
+	                             , { mp_ppu->vram.nametable_B, mp_ppu->vram.nametable_B
+	                               , mp_ppu->vram.nametable_B, mp_ppu->vram.nametable_B }
 
-	uint8_t* nt_2_pointer[4] = { &mp_ppu->vram.nametable_A[0]
-	                           , &mp_ppu->vram.nametable_B[0]
-	                           , &mp_ppu->vram.nametable_A[0]
-	                           , &mp_ppu->vram.nametable_B[0] };
+	                             , { mp_ppu->vram.nametable_A, mp_ppu->vram.nametable_B
+	                               , mp_ppu->vram.nametable_A, mp_ppu->vram.nametable_B }
 
-	uint8_t* nt_3_pointer[4] = { &mp_ppu->vram.nametable_A[0]
-	                           , &mp_ppu->vram.nametable_B[0]
-	                           , &mp_ppu->vram.nametable_B[0]
-	                           , &mp_ppu->vram.nametable_B[0] };
+	                             , { mp_ppu->vram.nametable_A, mp_ppu->vram.nametable_A
+	                               , mp_ppu->vram.nametable_B, mp_ppu->vram.nametable_B } };
 
 	// 1st write is LSB and last is MSB
 	mapper_write(mp_cpu, ctrl_reg, get_nth_bit(_i, 0)); // 1 (buffer: xxxx?)
@@ -449,10 +443,10 @@ START_TEST (mapper_001_reg0_mm_bits)
 
 	ck_assert_uint_eq(mp_ppu->nametable_mirroring, mirror_mode[_i]);
 	// Ensure namtable pointers are also correctly switched too
-	ck_assert_ptr_eq(mp_ppu->vram.nametable_0, nt_0_pointer[_i]);
-	ck_assert_ptr_eq(mp_ppu->vram.nametable_1, nt_1_pointer[_i]);
-	ck_assert_ptr_eq(mp_ppu->vram.nametable_2, nt_2_pointer[_i]);
-	ck_assert_ptr_eq(mp_ppu->vram.nametable_3, nt_3_pointer[_i]);
+	ck_assert_ptr_eq(mp_ppu->vram.nametable_0, nt_pointers[_i][0]);
+	ck_assert_ptr_eq(mp_ppu->vram.nametable_1, nt_pointers[_i][1]);
+	ck_assert_ptr_eq(mp_ppu->vram.nametable_2, nt_pointers[_i][2]);
+	ck_assert_ptr_eq(mp_ppu->vram.nametable_3, nt_pointers[_i][3]);
 }
 
 START_TEST (mapper_001_reg0_h_bit)
