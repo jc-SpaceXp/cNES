@@ -1,8 +1,9 @@
 ** What is cNES
 
 cNES is a NES emulator which is only supported under Linux. It currently
-is capable of playing any NROM (mapper 0) game in theory. Games tested:
-/Super Mario Bros, Donkey Kong, Nuts & Milk, and Balloon Fight/.
+is capable of playing any NROM (mapper 0) or MMC1 (mapper 1) game in theory
+. Games tested: /Super Mario Bros, Donkey Kong, Nuts & Milk, Balloon Fight, Metroid,
+ and The Legend of Zelda/.
 
 cNES is the result of me wanting to get more experienced with /C/ and to
 work on some sort of computer architecture project. I settled on the NES
@@ -55,13 +56,15 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 
 =#define __DEBUG__= Outputs CPU and PPU information to the terminal (=make DEBUG=1= satisfies this requirement)
 
+=make ASAN=1= Enables address sanitizer and the undefined address sanitizer (ASan and UBsan, requires the DEBUG option to be enabled too)
+
 *Command-line Options:*
 
 =-o FILE= Opens a user-provided file (necessary to run the emualtor) (note: FILE must be provided)
 
 =-c CYCLES= Run cNES for a fixed number of CPU cycles (note: CYCLES must be provided)
 
-=-u UI_SCALE_FACTOR = Scaling factor (integer) to be applied to the displayed output
+=-u UI_SCALE_FACTOR= Scaling factor (integer) to be applied to the displayed output
 
 =-l= Outputs CPU and PPU information to a file called "trace_log.txt"
 
