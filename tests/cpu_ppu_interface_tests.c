@@ -649,7 +649,6 @@ Suite* cpu_ppu_suite(void)
 
 	s = suite_create("Cpu Ppu Tests");
 	tc_cpu_ppu_registers = tcase_create("CPU/PPU Registers");
-	//tcase_add_checked_fixture(tc_cpu_ppu_registers, vram_setup, vram_teardown);
 	tcase_add_checked_fixture(tc_cpu_ppu_registers, setup, teardown);
 	tcase_add_test(tc_cpu_ppu_registers, read_ppu_status_2002_resets);
 	tcase_add_test(tc_cpu_ppu_registers, read_ppu_status_2002_return_value);
