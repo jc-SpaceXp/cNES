@@ -1,76 +1,94 @@
 ** What is cNES
 
-cNES is a NES emulator which is only supported under Linux. It currently
-is capable of playing any NROM (mapper 0) or MMC1 (mapper 1) game in theory
-. Games tested: /Super Mario Bros, Donkey Kong, Nuts & Milk, Balloon Fight, Metroid,
- and The Legend of Zelda/.
-
-cNES is the result of me wanting to get more experienced with /C/ and to
+cNES is the result of me wanting to get more experience with /C/ and to
 work on some sort of computer architecture project. I settled on the NES
 due to the extensive documentation, especially that of the CPU and the
 [[https://medium.com/@fogleman/i-made-an-nes-emulator-here-s-what-i-learned-about-the-original-nintendo-2e078c9b28fe][meduim
 article]] by fogleman. There is already a plethora of NES projects
-online, so I wanted to make this project mine and to not abandon the
-project or copy code; whilst learning about the hardware. Its been a
-challenge and the result so far is an emulator that isn't perfect but
-one I'm proud of!
+online, so I wanted to make this project mine. I didn't want to abandon the
+project or copy code, like many other NES emulators hosted online. It's been
+a challenge so far, the result is an emulator that isn't perfect but one
+that I'm proud of!
 
 ** Screenshots
 
 [[file:screens/donkey_kong.png]] [[file:screens/zelda_1.png]]
 [[file:screens/super_mario_bros.png]] [[file:screens/megaman2.png]]
 
-** Todo
-
-- Process controller input for player 2
-- Add audio support
-- Potentially add support for other mappers (once above is all done)
-
 ** Building cNES
 
-cNES can be compiled and used on Linux.
+cNES is built using make on Linux.
 
-*Requirements:* 
-- C99 compatible compiler
-- SDL2 (used to render screen)
-- gcc or clang
+*Prerequisites:*
+- make
+- [[https://gcc.gnu.org/][gcc]] or [[https://clang.llvm.org/][clang]] compilers
+  - gcc versions >= 4.8 or clang versions >= 3.1 are required to use the address sanitizer compile option ([[https://github.com/google/sanitizers/wiki/AddressSanitizer][ASan]])
+- [[https://libcheck.github.io/check/][libcheck]] (currently unit tests are always run when compiling cNES)
+- [[https://wiki.libsdl.org/SDL2/Introduction][SDL2]]
 
-With the requirements satisfied. It is as simple as:
+With the prerequisites satisfied, it is as simple as:
 
-#+BEGIN_EXAMPLE
-        $ make
-        $ make DEBUG=1
+#+BEGIN_EXAMPLE bash
+# Build cnes
+$ make
+
+# Build cnes (option 2)
+$ make all
+
+# Build cnes and clean previous build
+$ make clean all
+
+# For developers:
+# Build cnes debug version, contains debug symbols (useful for GDB)
+$ make DEBUG=1
+
+# Build cnes with ASan enabled
+$ make DEBUG=1 ASAN=1
+
+# Build cnes using a specific compiler (gcc by default)
+$ make CC=gcc
+
+# Build cnes using a specific compiler (clang)
+$ make CC=clang
+
+# Can also enable debug and ASan options with a compiler option too
+$ make CC=clang DEBUG=1 ASAN=1
 #+END_EXAMPLE
 
-(With the latter making a DEBUG build)
-
-Alternatively you can specify the compiler like so: (default is gcc) =$make cc=clang DEBUG=1=
+The compiled binary will either end up in =./build/release/bin/= or =./build/debug/bin/=
 
 ** Running cNES
 
-#+BEGIN_EXAMPLE
-        $ ./cnes -o FILE
+#+BEGIN_EXAMPLE bash
+# Most common use case, opening a nes game/file with the correct build path
+$ ./build/release/bin/cnes -o FILE
+
+# Simplifying the path to the cnes binary, future examples will use this shortened notation (real path is likely above)
+$ ./cnes -o FILE
+
+# cnes usage, listing all the command-line options available to cnes
+$ ./cnes -h
+
+USAGE: cnes [options]
+OPTIONS:
+        -h
+        Shows all the possible command-line options
+
+        -l
+        Enable logging to a file
+
+        -s
+        Suppress logging to file or terminal
+
+        -o FILE
+        Open the provided file
+
+        -c CYCLES
+        Run the CPU up to the specified number of cycles
+
+        -u UI_SCALE_FACTOR
+        Scaling factor (integer) to be applied to the displayed output
 #+END_EXAMPLE
-
-*Optional settings:*
-
-=#define __DEBUG__= Outputs CPU and PPU information to the terminal (=make DEBUG=1= satisfies this requirement)
-
-=make ASAN=1= Enables address sanitizer and the undefined address sanitizer (ASan and UBsan, requires the DEBUG option to be enabled too)
-
-*Command-line Options:*
-
-=-o FILE= Opens a user-provided file (necessary to run the emualtor) (note: FILE must be provided)
-
-=-c CYCLES= Run cNES for a fixed number of CPU cycles (note: CYCLES must be provided)
-
-=-u UI_SCALE_FACTOR= Scaling factor (integer) to be applied to the displayed output
-
-=-l= Outputs CPU and PPU information to a file called "trace_log.txt"
-
-=-s= Disable CPU and PPU logging (disables either writing to disk or terminal)
-
-=-h= List of all the command line options inside your terminal
 
 *Controls:*
 
@@ -97,6 +115,13 @@ Alternatively you can specify the compiler like so: (default is gcc) =$make cc=c
 
 Here is a place to find a source of legal (test) ROMS: https://wiki.nesdev.com/w/index.php/Emulator_tests
 
+** Missing Features
+
+- No controller support for player 2
+- No audio
+- Only supports the NTSC region so far (no PAL)
+- Limited mapper support, see above
+
 ** License
 
 cNES is zlib licensed, as found in the [[file:LICENSE][LICENSE]] file.
@@ -120,31 +145,28 @@ https://www.dwheeler.com/6502/oneelkruns/asm1step.html
 https://github.com/paramsingh/gameboi
 
 #+BEGIN_QUOTE
-  At a certain point I understood how the NES PPU worked and how
-  background rendering worked but I was unable to put this thinking into
-  code. This project massively helped me because it served as a readable
-  reference on how to add SDL2 into my project.
+  At a certain point I understood how the NES PPU worked but I was unable
+  to put this thinking into code (in terms of how to use SDL2 to display
+  the PPU output). This project massively helped me because it served as a
+  readable reference on how to add SDL2 into my project.
 #+END_QUOTE
 
 https://github.com/mwillsey/NES
 
 #+BEGIN_QUOTE
-  Again this massively helped my PPU progress. I understood the
-  background rendering of the PPU and wanted to implement the rendering
-  of a fixed nametable i.e. starting from $2000. So I attempted to see
-  if I could render the title screen (of Donkey Kong). This project
-  helped me build my first iteration of my PPU. They also calculated a
-  fixed nametable (no scrolling), I used their project to help render
-  the title screen of Donkey Kong which it did but not correctly.
-  Nonetheless it was an important breakthrough and my project wouldn't
-  be where it is now without this project.
+  Again, this project was crucial in generating my first iteration of my
+  PPU rendering. I understood how the background was rendered. For an
+  easy first attempt at rendering I tried to implement the drawing of a
+  fixed nametable (no scrolling) i.e. starting from $2000, like what the
+  title screen of Donkey Kong does. An important landmark for cNES as this
+  guided me in generating my first visual output.
 #+END_QUOTE
 
 https://github.com/SourMesen/Mesen
 
 #+BEGIN_QUOTE
-  I wouldn't of made so much progress on my PPU and fixing my CPU bugs
-  without the amazing debugging qualities of Mesen. It is a great
-  emulator and several times I've consulted their source code to better
-  my understanding of how to successfully emulate the NES.
+  I wouldn't of made so much progress on my PPU and CPU without the amazing
+  debugging qualities of Mesen. It is a great emulator! Several times
+  I've consulted their source code to better my understanding of how to
+  successfully emulate the NES.
 #+END_QUOTE
