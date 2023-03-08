@@ -162,8 +162,7 @@ START_TEST (read_ppu_status_2002_resets)
 	// Vblank flag in $2002
 	cpu_ppu_tester->ppu_status = 0xE0; // set all $2002 flags
 
-	//read_ppu_reg(0x2002, cpio_cpu);
-	read_2002(cpu_ppu_tester);
+	read_ppu_reg(0x2002, cpio_cpu);
 
 	ck_assert_uint_eq(0x60, cpu_ppu_tester->ppu_status);
 }
