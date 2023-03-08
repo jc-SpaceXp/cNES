@@ -8,7 +8,6 @@
 int main(void)
 {
 	int number_failed;
-	Suite* s;
 	SRunner* sr;
 
 	// cpu tests
@@ -38,8 +37,9 @@ int main(void)
 	srunner_free(sr);
 
 	// cpu ppu tests
-	s = cpu_ppu_suite();
-	sr = srunner_create(s);
+	sr = srunner_create(cpu_ppu_master_suite());
+	srunner_add_suite(sr, ppu_registers_read_write_suite());
+	srunner_add_suite(sr, ppu_registers_flags_suite());
 
 	srunner_run_all(sr, CK_NORMAL);
 	number_failed += srunner_ntests_failed(sr);

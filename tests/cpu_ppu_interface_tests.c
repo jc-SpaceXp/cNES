@@ -522,6 +522,7 @@ START_TEST (write_ppu_data_2007_during_rendering)
 	ck_assert_uint_eq(0x6B, read_from_ppu_vram(cpu_ppu_tester->vram, 0x2001));
 }
 
+
 START_TEST (ppu_ctrl_vram_addr_inc_value)
 {
 	uint8_t reg_val[3] = {0x00, 0x04, 0xFF & ~0x04};  // clear bit (+1), set bit (+32)
@@ -642,57 +643,84 @@ START_TEST (ppu_status_sprite_overflow)
 	ck_assert(result[_i] == sprite_overflow_occured(cpu_ppu_tester));
 }
 
-Suite* cpu_ppu_suite(void)
+
+Suite* cpu_ppu_master_suite(void)
 {
 	Suite* s;
-	TCase* tc_cpu_ppu_registers;
 
-	s = suite_create("Cpu Ppu Tests");
-	tc_cpu_ppu_registers = tcase_create("CPU/PPU Registers");
-	tcase_add_checked_fixture(tc_cpu_ppu_registers, setup, teardown);
-	tcase_add_test(tc_cpu_ppu_registers, read_ppu_status_2002_resets);
-	tcase_add_test(tc_cpu_ppu_registers, read_ppu_status_2002_return_value);
-	tcase_add_test(tc_cpu_ppu_registers, read_oam_data_2004_outside_of_rendering);
-	tcase_add_test(tc_cpu_ppu_registers, read_oam_data_2004_during_rendering);
-	tcase_add_test(tc_cpu_ppu_registers, read_oam_data_2004_unused_attribute_bits_as_clear);
-	tcase_add_test(tc_cpu_ppu_registers, read_ppu_data_2007_non_palette_buffering);
-	tcase_add_test(tc_cpu_ppu_registers, read_ppu_data_2007_palette_buffering);
-	tcase_add_loop_test(tc_cpu_ppu_registers, read_ppu_data_2007_outside_of_rendering, 0, 2);
-	tcase_add_test(tc_cpu_ppu_registers, read_ppu_data_2007_during_rendering);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_ctrl_2000_scrolling_clears_specific_bits);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_ctrl_2000_scrolling_sets_specific_bits);
-	tcase_add_test(tc_cpu_ppu_registers, write_oam_addr_2003_sets_oam_address);
-	tcase_add_test(tc_cpu_ppu_registers, write_oam_data_2004_outside_rendering_period);
-	tcase_add_test(tc_cpu_ppu_registers, write_oam_data_2004_during_rendering_period);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_scroll_2005_scrolling_1st_write_clears_coarse_x);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_scroll_2005_scrolling_1st_write_sets_coarse_x_and_fine_x);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_scroll_2005_scrolling_1st_write_toggles_write_bit);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_scroll_2005_scrolling_2nd_write_clears_coarse_y_and_fine_y);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_scroll_2005_scrolling_2nd_write_toggles_write_bit);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_scroll_2005_scrolling_2nd_write_sets_coarse_y_and_fine_y);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_addr_2006_scrolling_1st_write_clears_upper_byte);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_addr_2006_scrolling_1st_write_sets_upper_byte);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_addr_2006_scrolling_1st_write_toggles_write_bit);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_addr_2006_scrolling_2nd_write_clears_lower_byte);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_addr_2006_scrolling_2nd_write_sets_lower_byte);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_addr_2006_scrolling_2nd_write_updates);
-	tcase_add_loop_test(tc_cpu_ppu_registers, write_ppu_data_2007_outside_of_rendering, 0, 2);
-	tcase_add_test(tc_cpu_ppu_registers, write_ppu_data_2007_during_rendering);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_ctrl_vram_addr_inc_value, 0, 3);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_ctrl_base_nt_address, 0, 5);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_ctrl_sprite_height, 0, 3);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_show_background, 0, 3);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_show_sprite, 0, 3);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_hide_leftmost_8_pixels_background, 0, 3);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_hide_leftmost_8_pixels_sprite, 0, 3);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_mask_enable_greyscale, 0, 3);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_status_sprite_overflow, 0, 3);
-	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_clear_others_clear);
-	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_clear_others_set);
-	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_set_others_clear);
-	tcase_add_test(tc_cpu_ppu_registers, ppu_ctrl_base_pt_address_bit_set_others_set);
-	tcase_add_loop_test(tc_cpu_ppu_registers, ppu_ctrl_base_sprite_pattern_table_address, 0, 3);
-	suite_add_tcase(s, tc_cpu_ppu_registers);
+	s = suite_create("Cpu/Ppu Register Tests");
+
+	return s;
+}
+
+Suite* ppu_registers_read_write_suite(void)
+{
+	Suite* s;
+	TCase* tc_ppu_register_reads;
+	TCase* tc_ppu_register_writes;
+
+	s = suite_create("Ppu Registers Read/Write Tests");
+	tc_ppu_register_reads = tcase_create("Ppu Register Reads");
+	tcase_add_checked_fixture(tc_ppu_register_reads, setup, teardown);
+	tcase_add_test(tc_ppu_register_reads, read_ppu_status_2002_resets);
+	tcase_add_test(tc_ppu_register_reads, read_ppu_status_2002_return_value);
+	tcase_add_test(tc_ppu_register_reads, read_oam_data_2004_outside_of_rendering);
+	tcase_add_test(tc_ppu_register_reads, read_oam_data_2004_during_rendering);
+	tcase_add_test(tc_ppu_register_reads, read_oam_data_2004_unused_attribute_bits_as_clear);
+	tcase_add_test(tc_ppu_register_reads, read_ppu_data_2007_non_palette_buffering);
+	tcase_add_test(tc_ppu_register_reads, read_ppu_data_2007_palette_buffering);
+	tcase_add_loop_test(tc_ppu_register_reads, read_ppu_data_2007_outside_of_rendering, 0, 2);
+	tcase_add_test(tc_ppu_register_reads, read_ppu_data_2007_during_rendering);
+	suite_add_tcase(s, tc_ppu_register_reads);
+	tc_ppu_register_writes = tcase_create("Ppu Register Writes");
+	tcase_add_checked_fixture(tc_ppu_register_writes, setup, teardown);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_ctrl_2000_scrolling_clears_specific_bits);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_ctrl_2000_scrolling_sets_specific_bits);
+	tcase_add_test(tc_ppu_register_writes, write_oam_addr_2003_sets_oam_address);
+	tcase_add_test(tc_ppu_register_writes, write_oam_data_2004_outside_rendering_period);
+	tcase_add_test(tc_ppu_register_writes, write_oam_data_2004_during_rendering_period);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_scroll_2005_scrolling_1st_write_clears_coarse_x);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_scroll_2005_scrolling_1st_write_sets_coarse_x_and_fine_x);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_scroll_2005_scrolling_1st_write_toggles_write_bit);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_scroll_2005_scrolling_2nd_write_clears_coarse_y_and_fine_y);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_scroll_2005_scrolling_2nd_write_toggles_write_bit);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_scroll_2005_scrolling_2nd_write_sets_coarse_y_and_fine_y);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_addr_2006_scrolling_1st_write_clears_upper_byte);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_addr_2006_scrolling_1st_write_sets_upper_byte);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_addr_2006_scrolling_1st_write_toggles_write_bit);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_addr_2006_scrolling_2nd_write_clears_lower_byte);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_addr_2006_scrolling_2nd_write_sets_lower_byte);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_addr_2006_scrolling_2nd_write_updates);
+	tcase_add_loop_test(tc_ppu_register_writes, write_ppu_data_2007_outside_of_rendering, 0, 2);
+	tcase_add_test(tc_ppu_register_writes, write_ppu_data_2007_during_rendering);
+	suite_add_tcase(s, tc_ppu_register_writes);
+
+	return s;
+}
+
+Suite* ppu_registers_flags_suite(void)
+{
+	Suite* s;
+	TCase* tc_ppu_register_flags;
+
+	s = suite_create("Ppu Registers Flags Tests");
+	tc_ppu_register_flags = tcase_create("Ppu Register Flag Functions");
+	tcase_add_checked_fixture(tc_ppu_register_flags, setup, teardown);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_vram_addr_inc_value, 0, 3);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_nt_address, 0, 5);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_sprite_height, 0, 3);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_show_background, 0, 3);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_show_sprite, 0, 3);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_hide_leftmost_8_pixels_background, 0, 3);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_hide_leftmost_8_pixels_sprite, 0, 3);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_enable_greyscale, 0, 3);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_status_sprite_overflow, 0, 3);
+	tcase_add_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address_bit_clear_others_clear);
+	tcase_add_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address_bit_clear_others_set);
+	tcase_add_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address_bit_set_others_clear);
+	tcase_add_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address_bit_set_others_set);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_sprite_pattern_table_address, 0, 3);
+	suite_add_tcase(s, tc_ppu_register_flags);
 
 	return s;
 }
