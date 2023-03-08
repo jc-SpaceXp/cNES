@@ -572,6 +572,15 @@ START_TEST (ppu_ctrl_sprite_height)
 	ck_assert_uint_eq(height[_i], ppu_sprite_height(cpu_ppu_tester));
 }
 
+START_TEST (ppu_ctrl_enable_nmi)
+{
+	uint8_t reg_val[4] = {0x00, 0x80, 0xFF & ~0x80, 0xFF};
+	bool enable_nmi[4] = {false, true, false, true}; // clear bit (false), set bit (true)
+	cpu_ppu_tester->ppu_ctrl = reg_val[_i];
+
+	ck_assert(enable_nmi[_i] == ppu_ctrl_gen_nmi_bit_set(cpu_ppu_tester));
+}
+
 START_TEST (ppu_mask_enable_greyscale)
 {
 	uint8_t reg_val[4] = {0x00, 0x01, 0xFF & ~0x01, 0xFF};
@@ -617,6 +626,16 @@ START_TEST (ppu_mask_show_sprite)
 	ck_assert(result[_i] == ppu_show_sprite(cpu_ppu_tester));
 }
 
+START_TEST (ppu_mask_rendering_enabled)
+{
+	uint8_t reg_val[8] = {0x00, 0x18, 0x10, 0x08, 0xFF & ~0x18, 0xFF & ~0x10, 0xFF & ~0x08, 0xFF};
+	// false if no bits set, otherwise true
+	bool result[8] = {false, true, true, true, false, true, true, true};
+	cpu_ppu_tester->ppu_mask = reg_val[_i];
+
+	ck_assert(result[_i] == ppu_mask_bg_or_sprite_enabled(cpu_ppu_tester));
+}
+
 START_TEST (ppu_status_sprite_overflow)
 {
 	uint8_t reg_val[4] = {0x00, 0x20, 0xFF & ~0x20, 0xFF};
@@ -624,6 +643,15 @@ START_TEST (ppu_status_sprite_overflow)
 	cpu_ppu_tester->ppu_status = reg_val[_i];
 
 	ck_assert(result[_i] == sprite_overflow_occured(cpu_ppu_tester));
+}
+
+START_TEST (ppu_status_vblank_period)
+{
+	uint8_t reg_val[4] = {0x00, 0x80, 0xFF & ~0x80, 0xFF};
+	bool vblank_period[4] = {false, true, false, true}; // clear bit (false), set bit (true)
+	cpu_ppu_tester->ppu_status = reg_val[_i];
+
+	ck_assert(vblank_period[_i] == ppu_status_vblank_bit_set(cpu_ppu_tester));
 }
 
 
@@ -694,12 +722,15 @@ Suite* ppu_registers_flags_suite(void)
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_sprite_pattern_table_address, 0, 4);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address, 0, 4);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_sprite_height, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_enable_nmi, 0, 4);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_enable_greyscale, 0, 4);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_hide_leftmost_8_pixels_background, 0, 4);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_hide_leftmost_8_pixels_sprite, 0, 4);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_show_background, 0, 4);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_show_sprite, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_rendering_enabled, 0, 8);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_status_sprite_overflow, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_status_vblank_period, 0, 4);
 	suite_add_tcase(s, tc_ppu_register_flags);
 
 	return s;
