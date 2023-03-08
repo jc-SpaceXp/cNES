@@ -523,74 +523,68 @@ START_TEST (write_ppu_data_2007_during_rendering)
 }
 
 
-START_TEST (ppu_ctrl_vram_addr_inc_value)
-{
-	uint8_t reg_val[3] = {0x00, 0x04, 0xFF & ~0x04};  // clear bit (+1), set bit (+32)
-	unsigned increment[3] = {1, 32, 1};
-	cpu_ppu_tester->ppu_ctrl = reg_val[_i];
-
-	ck_assert_uint_eq(increment[_i], ppu_vram_addr_inc(cpu_ppu_tester));
-}
-
 START_TEST (ppu_ctrl_base_nt_address)
 {
 	// testing a previously unused function
 	uint8_t reg_val[5] = {0x00, 0x01, 0x02, 0x03, 0xF8};
+	// NN bits: 00 ($2000), 01 ($2400), 10 ($2800), 11 ($2C00)
 	unsigned nt_address[5] = {0x2000, 0x2400, 0x2800, 0x2C00, 0x2000};
 	cpu_ppu_tester->ppu_ctrl = reg_val[_i];
 
 	ck_assert_uint_eq(nt_address[_i], ppu_base_nt_address(cpu_ppu_tester));
 }
 
+START_TEST (ppu_ctrl_vram_addr_inc_value)
+{
+	uint8_t reg_val[4] = {0x00, 0x04, 0xFF & ~0x04, 0xFF};
+	unsigned increment[4] = {1, 32, 1, 32}; // clear bit (+1), set bit (+32)
+	cpu_ppu_tester->ppu_ctrl = reg_val[_i];
+
+	ck_assert_uint_eq(increment[_i], ppu_vram_addr_inc(cpu_ppu_tester));
+}
+
+START_TEST (ppu_ctrl_base_sprite_pattern_table_address)
+{
+	uint8_t reg_val[4] = {0x00, 0x08, 0xFF & ~0x08, 0xFF};
+	// clear bit ($0000), set bit ($1000)
+	uint16_t base_address[4] = {0x0000, 0x1000, 0x0000, 0x1000};
+	cpu_ppu_tester->ppu_ctrl = reg_val[_i];
+
+	ck_assert_uint_eq(base_address[_i], ppu_sprite_pattern_table_addr(cpu_ppu_tester));
+}
+
 START_TEST (ppu_ctrl_base_pt_address)
 {
 	uint8_t reg_val[4] = {0x00, 0x10, 0xFF & ~0x10, 0xFF};
+	// clear bit ($0000), set bit ($1000)
 	uint16_t pt_address[4] = {0x0000, 0x1000, 0x0000, 0x1000};
 	cpu_ppu_tester->ppu_ctrl = reg_val[_i];
 
 	ck_assert_uint_eq(pt_address[_i], ppu_base_pt_address(cpu_ppu_tester));
 }
 
-START_TEST (ppu_ctrl_base_sprite_pattern_table_address)
-{
-	uint8_t reg_val[3] = {0x00, 0x08, 0xFF & ~0x08};
-	unsigned base_address[3] = {0x0000, 0x1000, 0x0000};
-	cpu_ppu_tester->ppu_ctrl = reg_val[_i];
-
-	ck_assert_uint_eq(base_address[_i], ppu_sprite_pattern_table_addr(cpu_ppu_tester));
-}
-
 START_TEST (ppu_ctrl_sprite_height)
 {
-	uint8_t reg_val[3] = {0x00, 0x20, 0xFF & ~0x20};
-	unsigned height[3] = {8, 16, 8};
+	uint8_t reg_val[4] = {0x00, 0x20, 0xFF & ~0x20, 0xFF};
+	unsigned height[4] = {8, 16, 8, 16}; // clear bit (8), set bit (16)
 	cpu_ppu_tester->ppu_ctrl = reg_val[_i];
 
 	ck_assert_uint_eq(height[_i], ppu_sprite_height(cpu_ppu_tester));
 }
 
-START_TEST (ppu_mask_show_background)
+START_TEST (ppu_mask_enable_greyscale)
 {
-	uint8_t reg_val[3] = {0x00, 0x08, 0xAF & ~0x08};
-	bool result[3] = {false, true, false};
+	uint8_t reg_val[4] = {0x00, 0x01, 0xFF & ~0x01, 0xFF};
+	bool result[4] = {false, true, false, true}; // clear bit (false), set bit (true)
 	cpu_ppu_tester->ppu_mask = reg_val[_i];
 
-	ck_assert(result[_i] == ppu_show_bg(cpu_ppu_tester));
-}
-
-START_TEST (ppu_mask_show_sprite)
-{
-	uint8_t reg_val[3] = {0x00, 0x10, 0xBF & ~0x10};
-	bool result[3] = {false, true, false};
-	cpu_ppu_tester->ppu_mask = reg_val[_i];
-
-	ck_assert(result[_i] == ppu_show_sprite(cpu_ppu_tester));
+	ck_assert(result[_i] == ppu_show_greyscale(cpu_ppu_tester));
 }
 
 START_TEST (ppu_mask_hide_leftmost_8_pixels_background)
 {
-	uint8_t reg_val[3] = {0x00, 0x02, 0xEF & ~0x02};
-	bool result[3] = {true, false, true};
+	uint8_t reg_val[4] = {0x00, 0x02, 0xEF & ~0x02, 0xFF};
+	bool result[4] = {true, false, true, false}; // clear bit (true), set bit (false)
 	cpu_ppu_tester->ppu_mask = reg_val[_i];
 
 	ck_assert(result[_i] == ppu_mask_left_8px_bg(cpu_ppu_tester));
@@ -598,26 +592,35 @@ START_TEST (ppu_mask_hide_leftmost_8_pixels_background)
 
 START_TEST (ppu_mask_hide_leftmost_8_pixels_sprite)
 {
-	uint8_t reg_val[3] = {0x00, 0x04, 0x0F & ~0x04};
-	bool result[3] = {true, false, true};
+	uint8_t reg_val[4] = {0x00, 0x04, 0x0F & ~0x04, 0xFF};
+	bool result[4] = {true, false, true, false}; // clear bit (true), set bit (false)
 	cpu_ppu_tester->ppu_mask = reg_val[_i];
 
 	ck_assert(result[_i] == ppu_mask_left_8px_sprite(cpu_ppu_tester));
 }
 
-START_TEST (ppu_mask_enable_greyscale)
+START_TEST (ppu_mask_show_background)
 {
-	uint8_t reg_val[3] = {0x00, 0x01, 0xFF & ~0x01};
-	bool result[3] = {false, true, false};
+	uint8_t reg_val[4] = {0x00, 0x08, 0xAF & ~0x08, 0xFF};
+	bool result[4] = {false, true, false, true}; // clear bit (false), set bit (true)
 	cpu_ppu_tester->ppu_mask = reg_val[_i];
 
-	ck_assert(result[_i] == ppu_show_greyscale(cpu_ppu_tester));
+	ck_assert(result[_i] == ppu_show_bg(cpu_ppu_tester));
+}
+
+START_TEST (ppu_mask_show_sprite)
+{
+	uint8_t reg_val[4] = {0x00, 0x10, 0xBF & ~0x10, 0xFF};
+	bool result[4] = {false, true, false, true}; // clear bit (false), set bit (true)
+	cpu_ppu_tester->ppu_mask = reg_val[_i];
+
+	ck_assert(result[_i] == ppu_show_sprite(cpu_ppu_tester));
 }
 
 START_TEST (ppu_status_sprite_overflow)
 {
-	uint8_t reg_val[3] = {0x00, 0x20, 0xFF & ~0x20};
-	bool result[3] = {false, true, false};
+	uint8_t reg_val[4] = {0x00, 0x20, 0xFF & ~0x20, 0xFF};
+	bool result[4] = {false, true, false, true}; // clear bit (false), set bit (true)
 	cpu_ppu_tester->ppu_status = reg_val[_i];
 
 	ck_assert(result[_i] == sprite_overflow_occured(cpu_ppu_tester));
@@ -686,17 +689,17 @@ Suite* ppu_registers_flags_suite(void)
 	s = suite_create("Ppu Registers Flags Tests");
 	tc_ppu_register_flags = tcase_create("Ppu Register Flag Functions");
 	tcase_add_checked_fixture(tc_ppu_register_flags, setup, teardown);
-	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_vram_addr_inc_value, 0, 3);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_nt_address, 0, 5);
-	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_sprite_height, 0, 3);
-	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_show_background, 0, 3);
-	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_show_sprite, 0, 3);
-	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_hide_leftmost_8_pixels_background, 0, 3);
-	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_hide_leftmost_8_pixels_sprite, 0, 3);
-	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_enable_greyscale, 0, 3);
-	tcase_add_loop_test(tc_ppu_register_flags, ppu_status_sprite_overflow, 0, 3);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_vram_addr_inc_value, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_sprite_pattern_table_address, 0, 4);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address, 0, 4);
-	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_sprite_pattern_table_address, 0, 3);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_sprite_height, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_enable_greyscale, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_hide_leftmost_8_pixels_background, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_hide_leftmost_8_pixels_sprite, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_show_background, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_show_sprite, 0, 4);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_status_sprite_overflow, 0, 4);
 	suite_add_tcase(s, tc_ppu_register_flags);
 
 	return s;
