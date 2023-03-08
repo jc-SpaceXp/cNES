@@ -542,33 +542,13 @@ START_TEST (ppu_ctrl_base_nt_address)
 	ck_assert_uint_eq(nt_address[_i], ppu_base_nt_address(cpu_ppu_tester));
 }
 
-START_TEST (ppu_ctrl_base_pt_address_bit_clear_others_clear)
+START_TEST (ppu_ctrl_base_pt_address)
 {
-	cpu_ppu_tester->ppu_ctrl = 0 << 4;
+	uint8_t reg_val[4] = {0x00, 0x10, 0xFF & ~0x10, 0xFF};
+	uint16_t pt_address[4] = {0x0000, 0x1000, 0x0000, 0x1000};
+	cpu_ppu_tester->ppu_ctrl = reg_val[_i];
 
-	ck_assert_uint_eq(0x0000, ppu_base_pt_address(cpu_ppu_tester));
-}
-
-START_TEST (ppu_ctrl_base_pt_address_bit_clear_others_set)
-{
-	cpu_ppu_tester->ppu_ctrl = 0xFF;
-	cpu_ppu_tester->ppu_ctrl &= ~0x10;
-
-	ck_assert_uint_eq(0x0000, ppu_base_pt_address(cpu_ppu_tester));
-}
-
-START_TEST (ppu_ctrl_base_pt_address_bit_set_others_clear)
-{
-	cpu_ppu_tester->ppu_ctrl = 1 << 4;
-
-	ck_assert_uint_eq(0x1000, ppu_base_pt_address(cpu_ppu_tester));
-}
-
-START_TEST (ppu_ctrl_base_pt_address_bit_set_others_set)
-{
-	cpu_ppu_tester->ppu_ctrl = 0xFF;
-
-	ck_assert_uint_eq(0x1000, ppu_base_pt_address(cpu_ppu_tester));
+	ck_assert_uint_eq(pt_address[_i], ppu_base_pt_address(cpu_ppu_tester));
 }
 
 START_TEST (ppu_ctrl_base_sprite_pattern_table_address)
@@ -715,10 +695,7 @@ Suite* ppu_registers_flags_suite(void)
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_hide_leftmost_8_pixels_sprite, 0, 3);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_mask_enable_greyscale, 0, 3);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_status_sprite_overflow, 0, 3);
-	tcase_add_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address_bit_clear_others_clear);
-	tcase_add_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address_bit_clear_others_set);
-	tcase_add_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address_bit_set_others_clear);
-	tcase_add_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address_bit_set_others_set);
+	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_pt_address, 0, 4);
 	tcase_add_loop_test(tc_ppu_register_flags, ppu_ctrl_base_sprite_pattern_table_address, 0, 3);
 	suite_add_tcase(s, tc_ppu_register_flags);
 
