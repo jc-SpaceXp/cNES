@@ -5,10 +5,20 @@
 #include "ppu.h"
 #include "cpu_ppu_interface.h"
 
+// Disable ASan for specific tests, apply to globals or function declarations
+// Only for clang at the moment as clang will flag the out of bounds pixel
+// test as a gloal buffer overflow
+#if defined(__clang__)
+#define ATTRIBUTE_NO_SANITIZE_ADDRESS __attribute__((no_sanitize("address")))
+#else
+#define ATTRIBUTE_NO_SANITIZE_ADDRESS
+#endif
+
 Ppu2C02* ppu;
 CpuPpuShare* cpu_ppu;
 struct PpuMemoryMap* vram;
 uint32_t pixel_buffer[256 * 240];
+ATTRIBUTE_NO_SANITIZE_ADDRESS uint32_t pixel_buffer_ignores_asan[256 * 240];
 
 static void setup(void)
 {
@@ -1246,6 +1256,8 @@ START_TEST (pixel_buffer_set_corner_pixels)
 	ck_assert_uint_eq(rgb[_i], pixel_buffer[pixel_index]);
 }
 
+// Suppress any errors of buffer overflow from ASan
+// ASan will catch these errors during runtime (during actual emulation)
 START_TEST (pixel_buffer_set_out_of_bounds_allowed)
 {
 	// Setting/accessing an array with an out of bounds subscript
@@ -1258,7 +1270,7 @@ START_TEST (pixel_buffer_set_out_of_bounds_allowed)
 	uint8_t alpha = 0xFF;
 	rgb |= (uint32_t) alpha << 24;
 
-	set_rgba_pixel_in_buffer(&pixel_buffer[0], max_width, x_pos, y_pos, rgb, alpha);
+	set_rgba_pixel_in_buffer(&pixel_buffer_ignores_asan[0], max_width, x_pos, y_pos, rgb, alpha);
 
 	ck_assert_uint_eq(1, 1); // don't rely on undefined behaviour for result
 }
