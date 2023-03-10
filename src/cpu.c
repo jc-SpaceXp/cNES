@@ -1709,8 +1709,15 @@ static void execute_ADC(Cpu6502* cpu)
 	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 
 	int result = cpu->A + cpu->operand + (cpu->P & FLAG_C);
-	bool overflow = ((cpu->A >> 7) == (cpu->operand >> 7))  // Overflow can only occur if MSBs are equal
-				  && ((cpu->A >> 7) != ((result & 0xFF) >> 7));  // result narrowed to 8 bits
+	unsigned a_reg_msb = cpu->A >> 7;
+	unsigned data_msb = cpu->operand >> 7;
+	unsigned result_msb = ((uint8_t) result) >> 7; // ignore 8th bit
+	// Overflow can only occur if adding numbers of the same sign (MSB)
+	// produces a different signed result (MSB of result isn't the same)
+	bool input_msbs_are_equal = a_reg_msb == data_msb;
+	bool result_msb_differs = a_reg_msb != result_msb; // only valid when input MSBs are the same
+	bool overflow = input_msbs_are_equal && result_msb_differs;
+
 	cpu->A = result;  // Result is narrowed to 8 bits
 	update_flag_n(cpu, cpu->A);
 	update_flag_v(cpu, overflow);
@@ -1799,8 +1806,18 @@ static void execute_SBC(Cpu6502* cpu)
 	cpu->operand = read_from_cpu(cpu, cpu->target_addr);
 
 	int result = cpu->A - cpu->operand - !(cpu->P & FLAG_C);
-	bool overflow = ((cpu->A >> 7) != (cpu->operand >> 7))  // Overflow can occur if MSBs are different
-				  && ((cpu->A >> 7) != ((result & 0xFF) >> 7));  // narrow result to 8 bits
+	unsigned a_reg_msb = cpu->A >> 7;
+	unsigned data_msb = cpu->operand >> 7;
+	unsigned result_msb = ((uint8_t) result) >> 7; // ignore 8th bit
+	// Subtracting 8-bit numbers of the same sign can never produce overflow
+	//
+	// Overflow can only occur if subtracting numbers with different signs (MSB)
+	// produces a signed result which is different to that of the first operand (A register)
+	// (or the same sign as the 2nd operand)
+	bool input_msbs_are_unequal = a_reg_msb != data_msb;
+	bool result_msb_differs_to_a_reg = a_reg_msb != result_msb;
+	bool overflow = input_msbs_are_unequal && result_msb_differs_to_a_reg;
+
 	cpu->A = result;  // Narrowed to 8 bits
 	update_flag_n(cpu, cpu->A);
 	update_flag_v(cpu, overflow);
