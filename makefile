@@ -66,9 +66,9 @@ $(OBJDIR)/%.o : %.c
 $(BINDIR):
 	mkdir -p $@
 
-$(BINDIR)/cnes: $(SRC_OBJS) | $(BINDIR)
+$(BINDIR)/cnes: $(SRC_OBJS) $(UTL_OBJS) | $(BINDIR)
 	@echo "--- Linking target"
-	$(CC) -o $@ $(SRC_OBJS) $(LDFLAGS)
+	$(CC) -o $@ $(SRC_OBJS) $(UTL_OBJS) $(LDFLAGS)
 	@echo "--- Done: Linking target"
 
 $(BINDIR)/test_all: $(TST_OBJS) $(TST_TMP_OBJS) | $(BINDIR)
