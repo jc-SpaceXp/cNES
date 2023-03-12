@@ -20,10 +20,15 @@ else
 endif
 
 SRCDIR := src
+UTLDIR := $(SRCDIR)/util
 BUILDDIR := build
 BINDIR := $(BUILDDIR)/$(CONFIG)/bin
 OBJDIR := $(BUILDDIR)/$(CONFIG)/obj
 DEPDIR := $(BUILDDIR)/$(CONFIG)/dep
+
+UTLS := $(UTLDIR)/bits_and_bytes.c
+UTL_OBJS := $(UTLS:%.c=$(OBJDIR)/%.o)
+UTL_DEPS := $(UTLS:%.c=$(DEPDIR)/%.d)
 
 SRCS := $(SRCDIR)/cart.c \
         $(SRCDIR)/cpu.c \
@@ -47,7 +52,8 @@ TST_TMP_OBJS := $(OBJDIR)/$(SRCDIR)/cpu.o \
                 $(OBJDIR)/$(SRCDIR)/gui.o \
                 $(OBJDIR)/$(SRCDIR)/cart.o \
                 $(OBJDIR)/$(SRCDIR)/cpu_ppu_interface.o \
-                $(OBJDIR)/$(SRCDIR)/cpu_mapper_interface.o
+                $(OBJDIR)/$(SRCDIR)/cpu_mapper_interface.o \
+                $(OBJDIR)/$(UTLDIR)/bits_and_bytes.o
 
 .PHONY: all
 all: $(BINDIR)/cnes $(BINDIR)/test_all
@@ -55,7 +61,7 @@ all: $(BINDIR)/cnes $(BINDIR)/test_all
 $(OBJDIR)/%.o : %.c
 	@mkdir -p $(@D)
 	@mkdir -p $(DEPDIR)/$(<D)
-	$(CC) $(CFLAGS) $(DEPFLAGS) -I $(SRCDIR) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEPFLAGS) -I $(SRCDIR) -I $(UTLDIR) -c $< -o $@
 
 $(BINDIR):
 	mkdir -p $@

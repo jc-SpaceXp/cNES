@@ -1,5 +1,6 @@
 #include <check.h>
 
+#include "util_tests.h"
 #include "cpu_tests.h"
 #include "ppu_tests.h"
 #include "cpu_ppu_interface_tests.h"
@@ -9,6 +10,13 @@ int main(void)
 {
 	int number_failed;
 	SRunner* sr;
+
+	// util tests
+	sr = srunner_create(util_suite());
+
+	srunner_run_all(sr, CK_NORMAL);
+	number_failed = srunner_ntests_failed(sr);
+	srunner_free(sr);
 
 	// cpu tests
 	sr = srunner_create(cpu_master_suite());
@@ -23,7 +31,7 @@ int main(void)
 	srunner_add_suite(sr, cpu_trace_logger_suite());
 
 	srunner_run_all(sr, CK_NORMAL);
-	number_failed = srunner_ntests_failed(sr);
+	number_failed += srunner_ntests_failed(sr);
 	srunner_free(sr);
 
 	// ppu tests
