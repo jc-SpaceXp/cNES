@@ -691,7 +691,7 @@ static unsigned read_4016(Cpu6502* cpu)
 	static unsigned clock_pulse = 0;
 	unsigned ret = 0;
 
-	ret = (cpu->player_1_controller >> clock_pulse) & 0x01;
+	ret = get_nth_bit(cpu->player_1_controller, clock_pulse);
 
 	++clock_pulse;
 	if (clock_pulse == 8) { clock_pulse = 0; }
@@ -705,7 +705,7 @@ static unsigned read_4017(Cpu6502* cpu)
 	static unsigned clock_pulse = 0;
 	unsigned ret = 0;
 
-	ret = (cpu->player_2_controller >> clock_pulse) & 0x01;
+	ret = get_nth_bit(cpu->player_2_controller, clock_pulse);
 
 	++clock_pulse;
 	if (clock_pulse == 8) { clock_pulse = 0; }
