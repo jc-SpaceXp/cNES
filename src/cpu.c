@@ -1468,9 +1468,11 @@ static void decode_Bxx(Cpu6502* cpu) // branch instructions
 		break;
 	case 2: // T2
 		// w/o carry --> (PCH | (PC + offset) & 0xFF)
-		set_address_bus_bytes(cpu, cpu->PC >> 8, (uint8_t) (cpu->PC + cpu->offset));
-		cpu->target_addr = (cpu->PC & 0xFF00) | ((cpu->PC + cpu->offset) & 0x00FF);
-		if (!page_cross_occurs(cpu->PC & 0xFF, cpu->offset)) {
+		set_address_bus_bytes(cpu
+		                     , get_hi_byte_from_addr(cpu->PC)
+		                     , get_lo_byte_from_addr(cpu->PC) + cpu->offset);
+		cpu->target_addr = cpu->address_bus;
+		if (!page_cross_occurs(get_lo_byte_from_addr(cpu->PC), cpu->offset)) {
 			cpu->instruction_state = EXECUTE;
 		}
 		break;
@@ -2126,13 +2128,13 @@ static void execute_JSR(Cpu6502* cpu)
 		break;
 	case 3: // T3 (PC + 2 from read_op)
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
-		set_data_bus_via_write(cpu, cpu->PC >> 8);
-		stack_push(cpu, (uint8_t) (cpu->PC >> 8)); // push PCH onto stack
+		set_data_bus_via_write(cpu, get_hi_byte_from_addr(cpu->PC));
+		stack_push(cpu, get_hi_byte_from_addr(cpu->PC)); // push PCH onto stack
 		break;
 	case 2: // T4 (PC + 2 from read_op)
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
-		set_data_bus_via_write(cpu, cpu->PC);
-		stack_push(cpu, (uint8_t) cpu->PC); // push PCL onto stack
+		set_data_bus_via_write(cpu, get_lo_byte_from_addr(cpu->PC));
+		stack_push(cpu, get_lo_byte_from_addr(cpu->PC)); // push PCL onto stack
 		break;
 	case 1: // T5
 		set_address_bus(cpu, cpu->PC);
@@ -2362,13 +2364,13 @@ static void execute_BRK(Cpu6502* cpu)
 		break;
 	case 5: // T2
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
-		set_data_bus_via_write(cpu, cpu->PC >> 8);
-		stack_push(cpu, (uint8_t) (cpu->PC >> 8)); // push PCH onto stack
+		set_data_bus_via_write(cpu, get_hi_byte_from_addr(cpu->PC));
+		stack_push(cpu, get_hi_byte_from_addr(cpu->PC)); // push PCH onto stack
 		break;
 	case 4: // T3
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
-		set_data_bus_via_write(cpu, cpu->PC);
-		stack_push(cpu, (uint8_t) cpu->PC); // push PCL onto stack
+		set_data_bus_via_write(cpu, get_lo_byte_from_addr(cpu->PC));
+		stack_push(cpu, get_lo_byte_from_addr(cpu->PC)); // push PCL onto stack
 		++cpu->PC; // needed?
 		break;
 	case 3: // T4
@@ -2415,13 +2417,13 @@ static void execute_IRQ(Cpu6502* cpu)
 		break;
 	case 5: // T2
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
-		set_data_bus_via_write(cpu, cpu->PC >> 8);
-		stack_push(cpu, (uint8_t) (cpu->PC >> 8)); // push PCH onto stack
+		set_data_bus_via_write(cpu, get_hi_byte_from_addr(cpu->PC));
+		stack_push(cpu, get_hi_byte_from_addr(cpu->PC)); // push PCH onto stack
 		break;
 	case 4: // T3
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
-		set_data_bus_via_write(cpu, cpu->PC);
-		stack_push(cpu, (uint8_t) cpu->PC); // push PCL onto stack
+		set_data_bus_via_write(cpu, get_lo_byte_from_addr(cpu->PC));
+		stack_push(cpu, get_lo_byte_from_addr(cpu->PC)); // push PCL onto stack
 		++cpu->PC;
 		break;
 	case 3: // T4
@@ -2459,13 +2461,13 @@ static void execute_NMI(Cpu6502* cpu)
 		break;
 	case 5: // T2
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
-		set_data_bus_via_write(cpu, cpu->PC >> 8);
-		stack_push(cpu, (uint8_t) (cpu->PC >> 8)); // push PCH onto stack
+		set_data_bus_via_write(cpu, get_hi_byte_from_addr(cpu->PC));
+		stack_push(cpu, get_hi_byte_from_addr(cpu->PC)); // push PCH onto stack
 		break;
 	case 4: // T3
 		set_address_bus(cpu, SP_START + cpu->stack); // SP points to an empty slot
-		set_data_bus_via_write(cpu, cpu->PC);
-		stack_push(cpu, (uint8_t) cpu->PC); // push PCL onto stack
+		set_data_bus_via_write(cpu, get_lo_byte_from_addr(cpu->PC));
+		stack_push(cpu, get_lo_byte_from_addr(cpu->PC)); // push PCL onto stack
 		++cpu->PC;
 		break;
 	case 3: // T4

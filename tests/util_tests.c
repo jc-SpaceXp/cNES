@@ -35,6 +35,41 @@ START_TEST (merge_bytes)
 	ck_assert_uint_eq(word_result, expected_result[_i]);
 }
 
+START_TEST (get_lo_byte)
+{
+	uint16_t addr[4] = {0xFFE1
+	                   , 0x0F1A
+	                   , 0x0058
+	                   , 0x20F4};
+
+	uint8_t expected_result[4] = {0xE1
+	                             , 0x1A
+	                             , 0x58
+	                             , 0xF4};
+
+	uint8_t lo_byte = get_lo_byte_from_addr(addr[_i]);
+
+	ck_assert_uint_eq(lo_byte, expected_result[_i]);
+}
+
+START_TEST (get_hi_byte)
+{
+	uint16_t addr[4] = {0xABE1
+	                   , 0x0F1A
+	                   , 0x0058
+	                   , 0x29F4};
+
+	uint8_t expected_result[4] = {0xAB
+	                             , 0x0F
+	                             , 0x00
+	                             , 0x29};
+
+	uint8_t hi_byte = get_hi_byte_from_addr(addr[_i]);
+
+	ck_assert_uint_eq(hi_byte, expected_result[_i]);
+}
+
+
 Suite* util_suite(void)
 {
 	Suite* s;
@@ -44,6 +79,8 @@ Suite* util_suite(void)
 	tc_util = tcase_create("Util Functions");
 	tcase_add_loop_test(tc_util, check_bit_pos_is_set, 0, 16);
 	tcase_add_loop_test(tc_util, merge_bytes, 0, 4);
+	tcase_add_loop_test(tc_util, get_lo_byte, 0, 4);
+	tcase_add_loop_test(tc_util, get_hi_byte, 0, 4);
 	suite_add_tcase(s, tc_util);
 
 	return s;
