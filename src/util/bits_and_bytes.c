@@ -20,3 +20,8 @@ uint8_t get_hi_byte_from_addr(uint16_t addr)
 {
 	return (addr >> 8);
 }
+
+void clear_hi_byte(uint16_t* addr)
+{
+	*addr &= ~0xFF00;
+}

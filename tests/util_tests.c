@@ -69,6 +69,23 @@ START_TEST (get_hi_byte)
 	ck_assert_uint_eq(hi_byte, expected_result[_i]);
 }
 
+START_TEST (clear_hi_byte_from_addr)
+{
+	uint16_t addr[4] = {0xCCB1
+	                   , 0x701E
+	                   , 0x0001
+	                   , 0x35F4};
+
+	uint16_t expected_result[4] = {0x00B1
+	                              , 0x001E
+	                              , 0x0001
+	                              , 0x00F4};
+
+	clear_hi_byte(&addr[_i]);
+
+	ck_assert_uint_eq(addr[_i], expected_result[_i]);
+}
+
 
 Suite* util_suite(void)
 {
@@ -81,6 +98,7 @@ Suite* util_suite(void)
 	tcase_add_loop_test(tc_util, merge_bytes, 0, 4);
 	tcase_add_loop_test(tc_util, get_lo_byte, 0, 4);
 	tcase_add_loop_test(tc_util, get_hi_byte, 0, 4);
+	tcase_add_loop_test(tc_util, clear_hi_byte_from_addr, 0, 4);
 	suite_add_tcase(s, tc_util);
 
 	return s;
