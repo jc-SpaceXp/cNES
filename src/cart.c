@@ -156,8 +156,8 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 	}
 
 	if (cart->header == NES_2) {
-		cart->prg_rom.size = 16 * (KiB) * append_hi_byte_to_lo_byte(header[4], header[9] & NES2_PRG_ROM_MSB_MASK);
-		cart->chr_rom.size = 8  * (KiB) * append_hi_byte_to_lo_byte(header[5], header[9] & NES2_CHR_ROM_MSB_MASK);
+		cart->prg_rom.size = 16 * (KiB) * append_hi_byte_to_lo_byte(header[9] & NES2_PRG_ROM_MSB_MASK, header[4]);
+		cart->chr_rom.size = 8  * (KiB) * append_hi_byte_to_lo_byte(header[9] & NES2_CHR_ROM_MSB_MASK, header[5]);
 
 		// Calculate exponent of PRG ROM if necessary
 		if ((header[9] & NES2_PRG_ROM_MSB_MASK) == NES2_PRG_ROM_EXPONENT_SIZE) {
