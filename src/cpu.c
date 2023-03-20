@@ -530,7 +530,7 @@ uint8_t read_ppu_reg(const uint16_t addr, Cpu6502* cpu)
 
 void set_address_bus_bytes(Cpu6502* cpu, uint8_t adh, uint8_t adl)
 {
-	cpu->address_bus = (adh << 8) | adl;
+	cpu->address_bus = append_hi_byte_to_lo_byte(adh, adl);
 }
 
 void set_address_bus(Cpu6502* cpu, uint16_t target_address)
@@ -567,12 +567,10 @@ void set_data_bus_via_write(Cpu6502* cpu, uint8_t data)
 /* Return 16 bit address in little endian format */
 static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr)
 {
-	return ((read_from_cpu(cpu, addr + 1) << 8) | read_from_cpu(cpu, addr));
-}
+	uint8_t lo_byte = read_from_cpu(cpu, addr);
+	uint8_t hi_byte = read_from_cpu(cpu, addr + 1);
 
-static uint16_t concat_address_bus_bytes(uint8_t adh, uint8_t adl)
-{
-	return ((adh << 8) | adl);
+	return append_hi_byte_to_lo_byte(hi_byte, lo_byte);
 }
 
 void cpu_generic_write(Cpu6502* cpu, enum CpuMemType mem_type
@@ -1037,7 +1035,7 @@ static void decode_ABS_read_store(Cpu6502* cpu)
 		break;
 	case 1: //T3
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -1060,7 +1058,7 @@ static void decode_ABS_rmw(Cpu6502* cpu)
 		break;
 	case 3: // T3 (dummy read)
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 2: // T4 (dummy write)
@@ -1089,7 +1087,7 @@ static void decode_ABSX_read_store(Cpu6502* cpu)
 		break;
 	case 2: // T3 (non-page cross address)
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo + cpu->X);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->X);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo + cpu->X);
 		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->X)) {
 			cpu->instruction_state = EXECUTE;
 			break;
@@ -1098,8 +1096,8 @@ static void decode_ABSX_read_store(Cpu6502* cpu)
 		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 1: // T4 (correct address, page crossed or not)
-		set_address_bus(cpu, concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X;
+		set_address_bus(cpu, append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo) + cpu->X);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo) + cpu->X;
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -1122,12 +1120,12 @@ static void decode_ABSX_rmw(Cpu6502* cpu)
 		break;
 	case 4: // T3 (dummy read)
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo + cpu->X);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->X);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo + cpu->X);
 		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 3: // T4
-		set_address_bus(cpu, concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->X;
+		set_address_bus(cpu, append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo) + cpu->X);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo) + cpu->X;
 		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 2: // T5 (dummy write)
@@ -1156,7 +1154,7 @@ static void decode_ABSY_read_store(Cpu6502* cpu)
 		break;
 	case 2: // T3 (non-page cross address)
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo + cpu->Y);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->Y);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo + cpu->Y);
 		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->Y)) {
 			cpu->instruction_state = EXECUTE;
 			break;
@@ -1165,8 +1163,8 @@ static void decode_ABSY_read_store(Cpu6502* cpu)
 		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 1: // T4 (correct address, page crossed or not)
-		set_address_bus(cpu, concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
+		set_address_bus(cpu, append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo) + cpu->Y);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -1230,7 +1228,7 @@ static void decode_INDX_read_store(Cpu6502* cpu)
 		break;
 	case 1: // T5
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -1256,7 +1254,7 @@ static void decode_INDY_read_store(Cpu6502* cpu)
 		break;
 	case 2: // T4 (non-page cross address)
 		set_address_bus_bytes(cpu, cpu->addr_hi, cpu->addr_lo + cpu->Y);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo + cpu->Y);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo + cpu->Y);
 		if (!fixed_cycles_on_store(cpu) && !page_cross_occurs(cpu->addr_lo, cpu->Y)) {
 			cpu->instruction_state = EXECUTE;
 			break;
@@ -1265,8 +1263,8 @@ static void decode_INDY_read_store(Cpu6502* cpu)
 		set_data_bus_via_read(cpu, cpu->target_addr, DATA);
 		break;
 	case 1: // T5 (correct address, page crossed or not)
-		set_address_bus(cpu, concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y);
-		cpu->target_addr = concat_address_bus_bytes(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
+		set_address_bus(cpu, append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo) + cpu->Y);
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo) + cpu->Y;
 		cpu->instruction_state = EXECUTE;
 		break;
 	}
@@ -2070,8 +2068,8 @@ static void execute_JMP(Cpu6502* cpu)
 		case 1: // T2
 			set_address_bus(cpu, cpu->PC);
 			set_data_bus_via_read(cpu, cpu->PC, ADH);
-			cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo; // END T2
-			cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo; // for debugger function
+			cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo); // END T2
+			cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo); // for debugger function
 			break;
 		}
 	} else if (cpu->address_mode == IND) {
@@ -2088,18 +2086,18 @@ static void execute_JMP(Cpu6502* cpu)
 			break;
 		case 2: // T3
 			set_address_bus_bytes(cpu, cpu->index_hi, cpu->index_lo);
-			set_data_bus_via_read(cpu, (cpu->index_hi << 8) | cpu->index_lo, ADL);
+			set_data_bus_via_read(cpu, append_hi_byte_to_lo_byte(cpu->index_hi, cpu->index_lo), ADL);
 			break;
 		case 1: // T4
-			set_address_bus(cpu, concat_address_bus_bytes(cpu->index_hi, cpu->index_lo) + 1);
-			set_data_bus_via_read(cpu, ((cpu->index_hi << 8) | cpu->index_lo) + 1, ADH);
+			set_address_bus(cpu, append_hi_byte_to_lo_byte(cpu->index_hi, cpu->index_lo) + 1);
+			set_data_bus_via_read(cpu, append_hi_byte_to_lo_byte(cpu->index_hi, cpu->index_lo) + 1, ADH);
 			if (cpu->index_lo == 0xFF) { // JMP bug
 				set_address_bus_bytes(cpu, cpu->index_hi, 0x00);
 				set_data_bus_via_read(cpu, cpu->index_hi << 8, ADH);
 			}
 
-			cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo; // END T4
-			cpu->target_addr = (cpu->index_hi << 8) | cpu->index_lo; // for debugger function
+			cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo); // END T4
+			cpu->target_addr = append_hi_byte_to_lo_byte(cpu->index_hi, cpu->index_lo); // for debugger function
 			break;
 		}
 	}
@@ -2139,7 +2137,7 @@ static void execute_JSR(Cpu6502* cpu)
 	case 1: // T5
 		set_address_bus(cpu, cpu->PC);
 		set_data_bus_via_read(cpu, cpu->PC, ADH);
-		cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo;
+		cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		cpu->PC = cpu->target_addr;
 		cpu->address_mode = ABS; // needed for trace logger
 		break;
@@ -2180,7 +2178,7 @@ static void execute_RTI(Cpu6502* cpu)
 		set_address_bus(cpu, SP_START + cpu->stack + 1); // pull increments SP to non-empty slot
 		cpu->addr_hi = stack_pull(cpu);
 		set_data_bus_via_write(cpu, cpu->addr_hi);
-		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
+		cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		break;
 	}
 
@@ -2195,7 +2193,7 @@ static void execute_RTI(Cpu6502* cpu)
 static void execute_RTS(Cpu6502* cpu)
 {
 	strcpy(cpu->instruction, "RTS");
-	cpu->target_addr = (cpu->addr_hi << 8) | cpu->addr_lo;
+	cpu->target_addr = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 	set_data_bus_via_read(cpu, cpu->target_addr, DATA); // dummy read
 	cpu->PC = cpu->target_addr + 1;
 }
@@ -2386,7 +2384,7 @@ static void execute_BRK(Cpu6502* cpu)
 	case 1: // T6
 		set_address_bus(cpu, BRK_VECTOR + 1);
 		set_data_bus_via_read(cpu, BRK_VECTOR + 1, ADH);
-		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
+		cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		break;
 	}
 
@@ -2439,7 +2437,7 @@ static void execute_IRQ(Cpu6502* cpu)
 	case 1: // T6
 		set_address_bus(cpu, IRQ_VECTOR + 1);
 		set_data_bus_via_read(cpu, IRQ_VECTOR + 1, ADH);
-		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
+		cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		break;
 	}
 
@@ -2483,7 +2481,7 @@ static void execute_NMI(Cpu6502* cpu)
 	case 1: // T6
 		set_address_bus(cpu, NMI_VECTOR + 1);
 		set_data_bus_via_read(cpu, NMI_VECTOR + 1, ADH);
-		cpu->PC = (cpu->addr_hi << 8) | cpu->addr_lo;
+		cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		cpu->cpu_ppu_io->nmi_pending = false;
 		cpu->process_interrupt = false;
 		cpu->cpu_ppu_io->nmi_cycles_left = 8;  // 8 as a decrement occurs after this function is called

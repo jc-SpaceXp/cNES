@@ -2,6 +2,7 @@
 #include "cpu.h"
 #include "ppu.h"
 #include "cpu_mapper_interface.h"
+#include "bits_and_bytes.h"
 
 #include <stdbool.h>
 #include <stdlib.h>
@@ -58,7 +59,6 @@ int cart_init(Cartridge* cart)
 	return return_code;
 }
 
-static uint16_t concat_lsb_and_msb_to_16_bit_val(const uint8_t lsb, const uint8_t msb);
 static void log_cart_info(const Cartridge* cart, const char* filename, const Cpu6502* cpu, const Ppu2C02* ppu, const uint8_t* header_bytes);
 
 int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu2C02* ppu)
@@ -156,8 +156,8 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 	}
 
 	if (cart->header == NES_2) {
-		cart->prg_rom.size = 16 * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[4], header[9] & NES2_PRG_ROM_MSB_MASK);
-		cart->chr_rom.size = 8  * (KiB) * concat_lsb_and_msb_to_16_bit_val(header[5], header[9] & NES2_CHR_ROM_MSB_MASK);
+		cart->prg_rom.size = 16 * (KiB) * append_hi_byte_to_lo_byte(header[9] & NES2_PRG_ROM_MSB_MASK, header[4]);
+		cart->chr_rom.size = 8  * (KiB) * append_hi_byte_to_lo_byte(header[9] & NES2_CHR_ROM_MSB_MASK, header[5]);
 
 		// Calculate exponent of PRG ROM if necessary
 		if ((header[9] & NES2_PRG_ROM_MSB_MASK) == NES2_PRG_ROM_EXPONENT_SIZE) {
@@ -236,12 +236,6 @@ int parse_nes_cart_file(Cartridge* cart, const char* filename, Cpu6502* cpu, Ppu
 	return 0;
 }
 
-
-// lsb/msb is least/most significant byte
-static inline uint16_t concat_lsb_and_msb_to_16_bit_val(const uint8_t lsb, const uint8_t msb)
-{
-	return ((msb << 8) | lsb);
-}
 
 static void print_header(const Cartridge* cart, const uint8_t* header_bytes)
 {
