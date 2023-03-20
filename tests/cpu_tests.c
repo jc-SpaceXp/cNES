@@ -8,6 +8,7 @@
 #include "gui.h"  // needed for cpu/ppu read/write functions (due to ppu.h)
 #include "cpu_ppu_interface.h" // needed for NMI
 #include "cpu_mapper_interface.h" // needed for open bus tests
+#include "bits_and_bytes.h"
 
 
 /* Get opcode from instruction and addressing mode
@@ -3009,6 +3010,24 @@ START_TEST (ind_jmp_t4_no_jmp_bug)
 	isa_info[reverse_opcode_lut(&ins, IND)].execute_opcode(cpu);
 
 	ck_assert_uint_eq(0x70, cpu->addr_hi);
+}
+END_TEST
+
+START_TEST (ind_jmp_t4_jmp_bug)
+{
+	char ins[4] = "JMP";
+	cpu->instruction_cycles_remaining = 1;
+	cpu->address_mode = IND;
+	cpu->index_hi = 0x01;
+	cpu->index_lo = 0xFF;
+	write_to_cpu(cpu, 0x01FF + 1, 0x70);
+	// Incorrect address (jmp bug)
+	write_to_cpu(cpu, append_hi_byte_to_lo_byte(cpu->index_hi, 0x00), 0x09);
+
+	isa_info[reverse_opcode_lut(&ins, IND)].execute_opcode(cpu);
+
+	ck_assert_uint_ne(0x70, cpu->addr_hi);
+	ck_assert_uint_eq(0x09, cpu->addr_hi);
 }
 END_TEST
 
@@ -7291,6 +7310,7 @@ Suite* cpu_single_cycle_suite(void)
 	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t3);
 	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t4_no_jmp_bug);
+	tcase_add_test(tc_cpu_special_decoders_cycles, ind_jmp_t4_jmp_bug);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t1);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t2);
 	tcase_add_test(tc_cpu_special_decoders_cycles, jsr_t3);
