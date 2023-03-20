@@ -2089,13 +2089,11 @@ static void execute_JMP(Cpu6502* cpu)
 			set_data_bus_via_read(cpu, cpu->address_bus, ADL);
 			break;
 		case 1: // T4
-			set_address_bus(cpu, append_hi_byte_to_lo_byte(cpu->index_hi, cpu->index_lo) + 1);
+			// Cast (which isn't needed) is used to make it very clear this handles
+			// the JMP bug situation when index_lo == 0xFF it will roll back around
+			// to 0x00 (whilst index_hi remains the same)
+			set_address_bus_bytes(cpu, cpu->index_hi, (uint8_t) cpu->index_lo + 1);
 			set_data_bus_via_read(cpu, cpu->address_bus, ADH);
-			if (cpu->index_lo == 0xFF) { // JMP bug
-				set_address_bus_bytes(cpu, cpu->index_hi, 0x00);
-				set_data_bus_via_read(cpu, cpu->index_hi << 8, ADH);
-			}
-
 			cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo); // END T4
 			cpu->target_addr = cpu->address_bus - 1; // for debugger function
 			break;
