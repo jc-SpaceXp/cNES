@@ -7,6 +7,7 @@
 #include "cpu_mapper_interface.h"
 #include "mappers.h"
 #include "cpu_ppu_interface.h"
+#include "bits_and_bytes.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -692,7 +693,7 @@ static unsigned read_4016(Cpu6502* cpu)
 	static unsigned clock_pulse = 0;
 	unsigned ret = 0;
 
-	ret = (cpu->player_1_controller >> clock_pulse) & 0x01;
+	ret = get_nth_bit(cpu->player_1_controller, clock_pulse);
 
 	++clock_pulse;
 	if (clock_pulse == 8) { clock_pulse = 0; }
@@ -706,7 +707,7 @@ static unsigned read_4017(Cpu6502* cpu)
 	static unsigned clock_pulse = 0;
 	unsigned ret = 0;
 
-	ret = (cpu->player_2_controller >> clock_pulse) & 0x01;
+	ret = get_nth_bit(cpu->player_2_controller, clock_pulse);
 
 	++clock_pulse;
 	if (clock_pulse == 8) { clock_pulse = 0; }

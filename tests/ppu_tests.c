@@ -4,6 +4,7 @@
 
 #include "ppu.h"
 #include "cpu_ppu_interface.h"
+#include "bits_and_bytes.h"
 
 // Disable ASan for specific tests, apply to globals or function declarations
 // Only for clang at the moment as clang will flag the out of bounds pixel
@@ -138,7 +139,7 @@ static uint8_t reverse_bits_in_byte(uint8_t input)
 
 	for (int i = 0; i < 8; i++) {
 		// gets bits 0-7 and shift up to bits 7-0
-		output |= ((input >> i) & 0x01) << (7 - i);
+		output |= get_nth_bit(input, i) << (7 - i);
 	}
 
 	return output;

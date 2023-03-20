@@ -8,6 +8,7 @@
 #include "cpu.h"
 #include "ppu.h"
 #include "cpu_ppu_interface.h"
+#include "bits_and_bytes.h"
 
 Cartridge* mp_cart;
 CpuMapperShare* cpu_mapper_tester;
@@ -127,12 +128,6 @@ static void teardown(void)
 	cpu_mapper_teardown();
 	cart_teardown();
 	cpu_ppu_teardown();
-}
-
-// 0 indexed bit pos
-static uint8_t get_nth_bit(unsigned int input, unsigned int bit_pos)
-{
-	return (input & (1 << bit_pos)) >> bit_pos;
 }
 
 

@@ -2,6 +2,7 @@
 #include "cpu.h"
 #include "gui.h"
 #include "cpu_ppu_interface.h"
+#include "bits_and_bytes.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -598,8 +599,8 @@ void fill_attribute_shift_reg(uint16_t nametable_addr, uint8_t attribute_data
 	// Shift registers contain repeated bits of the lo/hi bit
 	// as the shift register represents one tile
 	for (unsigned i = 0; i < 8; i++) {
-		bkg_internals->at_hi_shift_reg |= ((attr_bits & 0x02) >> 1) << i;
-		bkg_internals->at_lo_shift_reg |= (attr_bits & 0x01) << i;
+		bkg_internals->at_hi_shift_reg |= get_nth_bit(attr_bits, 1) << i;
+		bkg_internals->at_lo_shift_reg |= get_nth_bit(attr_bits, 0) << i;
 	}
 }
 
@@ -624,7 +625,7 @@ void set_rgba_pixel_in_buffer(uint32_t* pixel_buffer, unsigned max_width
  */
 static unsigned eight_to_one_mux(uint16_t input, unsigned select_lines)
 {
-	return (input & (1 << select_lines)) >> select_lines;
+	return get_nth_bit(input, select_lines);
 }
 
 static inline bool sprite_is_front_priority(const Ppu2C02* p, unsigned array_index)
@@ -832,8 +833,8 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 					//     making the bg aligned to the sprite (non-scrolled)
 					//   fine_x to get the correct scrolled pixel of bg tile
 					//   mask iterates through 8 pixels to get our lookahead
-					p->bg_lo_reg = (p->bkg_internals.pt_lo_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
-					p->bg_hi_reg = (p->bkg_internals.pt_hi_shift_reg >> (mask + p->fine_x + sp_h_offset - 1)) & 0x01;
+					p->bg_lo_reg = get_nth_bit(p->bkg_internals.pt_lo_shift_reg, mask + p->fine_x + sp_h_offset - 1);
+					p->bg_hi_reg = get_nth_bit(p->bkg_internals.pt_hi_shift_reg, mask + p->fine_x + sp_h_offset - 1);
 					unsigned tmp_pt_lo = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p->cpu_ppu_io) | p->oam[1] << 4) + sp_v_offset);
 					unsigned tmp_pt_hi = read_from_ppu_vram(&p->vram, (ppu_sprite_pattern_table_addr(p->cpu_ppu_io) | p->oam[1] << 4) + sp_v_offset + 8);
 					if (ppu_sprite_height(p->cpu_ppu_io) == 16) {
@@ -844,8 +845,8 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 
 					// Ger correct bit from sprite pattern tables
 					// MSB = 1st pixel (not using the reverse_bits function here)
-					p->sp_lo_reg = (tmp_pt_lo >> (8 - mask)) & 0x01;
-					p->sp_hi_reg = (tmp_pt_hi >> (8 - mask)) & 0x01;
+					p->sp_lo_reg = get_nth_bit(tmp_pt_lo, 8 - mask);
+					p->sp_hi_reg = get_nth_bit(tmp_pt_hi, 8 - mask);
 					// flip sprites horizontally
 					if (p->oam[2] & 0x40) {
 						// already fetched pattern table data just reverse it
@@ -861,8 +862,8 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 							tmp_pt_lo = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 23 - sp_v_offset));
 							tmp_pt_hi = read_from_ppu_vram(&p->vram, (0x1000 * (p->oam[1] & 0x01)) | ((uint16_t) ((p->oam[1] & 0xFE) << 4) + 31 - sp_v_offset));
 						}
-						p->sp_lo_reg = (tmp_pt_lo >> (8 - mask)) & 0x01;
-						p->sp_hi_reg = (tmp_pt_hi >> (8 - mask)) & 0x01;
+						p->sp_lo_reg = get_nth_bit(tmp_pt_lo, 8 - mask);
+						p->sp_hi_reg = get_nth_bit(tmp_pt_hi, 8 - mask);
 						if (p->oam[2] & 0x40) {
 							// already fetched pattern table data just reverse it
 							p->sp_lo_reg = reverse_bits[p->sp_lo_reg];
