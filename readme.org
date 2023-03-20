@@ -17,7 +17,7 @@ that I'm proud of!
 
 ** Building cNES
 
-cNES is built using make on Linux.
+cNES is built using make on Linux. It could also be built using the Windows Subsytem for Linux (WSL) on newer builds of Windows (10 and above).
 
 *Prerequisites:*
 - make
