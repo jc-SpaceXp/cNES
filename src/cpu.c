@@ -838,7 +838,7 @@ static bool branch_not_taken(const Cpu6502* cpu)
 	return result;
 }
 
-void cpu_debugger(const Cpu6502* cpu, char* instruction, char* append_int, char* end)
+void set_cpu_disassembler_trace(const Cpu6502* cpu, char* instruction, char* append_int, char* end)
 {
 	switch(cpu->address_mode) {
 	case ABS:
@@ -917,7 +917,7 @@ void cpu_debugger(const Cpu6502* cpu, char* instruction, char* append_int, char*
 	strcat(instruction, end); // execute_* functions provide the instruction string
 }
 
-void log_cpu_info(const Cpu6502* cpu)
+void print_cpu_instruction_trace(const Cpu6502* cpu)
 {
 	printf("%-6.4X ", cpu->old_PC);
 	printf("%-20s ", cpu->instruction);

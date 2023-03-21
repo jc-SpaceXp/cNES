@@ -35,8 +35,8 @@ void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2DisplayOutputs* cnes_window
 
 #ifdef __DEBUG__
 	if (!no_logging && cpu->trigger_trace_logger) {
-		cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
-		log_cpu_info(cpu);
+		set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
+		print_cpu_instruction_trace(cpu);
 		update_cpu_info(cpu);
 		append_ppu_info(ppu);
 		cpu->trigger_trace_logger = false;

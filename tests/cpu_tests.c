@@ -6744,7 +6744,7 @@ START_TEST (log_abs_data)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[abs_opcodes[_i]].decode_opcode
 	                        , isa_info[abs_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("$00C0", cpu->end);
 }
@@ -6765,7 +6765,7 @@ START_TEST (log_absx_data)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[absx_opcodes[_i]].decode_opcode
 	                        , isa_info[absx_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("$80FF,X", cpu->end);
 }
@@ -6786,7 +6786,7 @@ START_TEST (log_absy_data)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[absy_opcodes[_i]].decode_opcode
 	                        , isa_info[absy_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("$FF5F,Y", cpu->end);
 }
@@ -6805,7 +6805,7 @@ START_TEST (log_acc)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[acc_opcodes[_i]].decode_opcode
 	                        , isa_info[acc_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("A", cpu->end);
 }
@@ -6834,7 +6834,7 @@ START_TEST (log_imm_data)
 	run_logic_cycle_by_cycle(cpu, isa_info[imm_opcodes[_i]].decode_opcode
 	                        , isa_info[imm_opcodes[_i]].max_cycles - 1, EXECUTE);
 	isa_info[imm_opcodes[_i]].execute_opcode(cpu); // reads the 2nd byte here (the immediate operand)
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("#$C0", cpu->end);
 }
@@ -6854,7 +6854,7 @@ START_TEST (log_imp)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[imp_opcodes[_i]].decode_opcode
 	                        , isa_info[imp_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("", cpu->end);
 }
@@ -6875,7 +6875,7 @@ START_TEST (log_ind_jmp_data)
 	isa_info[opcode].decode_opcode(cpu);
 	run_logic_cycle_by_cycle(cpu, isa_info[opcode].execute_opcode
 	                        , isa_info[opcode].max_cycles - 1, FETCH);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("($0138)", cpu->end);
 }
@@ -6899,7 +6899,7 @@ START_TEST (log_indx_data)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[indx_opcodes[_i]].decode_opcode
 	                        , isa_info[indx_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("($20,X)", cpu->end);
 }
@@ -6921,7 +6921,7 @@ START_TEST (log_indy_data)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[indy_opcodes[_i]].decode_opcode
 	                        , isa_info[indy_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("($44),Y", cpu->end);
 }
@@ -6943,7 +6943,7 @@ START_TEST (log_rel_data)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[rel_opcodes[_i]].decode_opcode
 	                        , isa_info[rel_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("$BFD8", cpu->end); // PC + offset + 2
 }
@@ -6962,7 +6962,7 @@ START_TEST (log_zp_data)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[zp_opcodes[_i]].decode_opcode
 	                        , isa_info[zp_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("$56", cpu->end);
 }
@@ -6982,7 +6982,7 @@ START_TEST (log_zpx_data)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[zpx_opcodes[_i]].decode_opcode
 	                        , isa_info[zpx_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("$43,X", cpu->end);
 }
@@ -7001,7 +7001,7 @@ START_TEST (log_zpy_data)
 	// minus one as we skip the fetch cycle
 	run_logic_cycle_by_cycle(cpu, isa_info[zpy_opcodes[_i]].decode_opcode
 	                        , isa_info[zpy_opcodes[_i]].max_cycles - 1, EXECUTE);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("$89,Y", cpu->end);
 }
@@ -7020,7 +7020,7 @@ START_TEST (log_jsr_data)
 	isa_info[cpu->opcode].decode_opcode(cpu); // setup needed for the for loop below
 	run_logic_cycle_by_cycle(cpu, isa_info[opcode].execute_opcode
 	                        , isa_info[opcode].max_cycles - 1, FETCH);
-	cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+	set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 
 	ck_assert_str_eq("$00C0", cpu->end);
 }
