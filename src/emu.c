@@ -22,7 +22,7 @@
 #define RIGHT_BUTTON  0x80U
 
 
-void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2DisplayOutputs* cnes_windows, const bool no_logging)
+void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2DisplayOutputs* cnes_windows, const bool logging_cpu_instructions)
 {
 	// 3 : 1 PPU to CPU ratio
 	clock_cpu(cpu);
@@ -31,10 +31,10 @@ void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2DisplayOutputs* cnes_window
 	clock_ppu(ppu, cpu, cnes_windows);
 
 	// only used in DEBUG mode, suppress unused variable for RELEASE
-	(void) no_logging;
+	(void) logging_cpu_instructions;
 
 #ifdef __DEBUG__
-	if (!no_logging && cpu->trigger_trace_logger) {
+	if (logging_cpu_instructions && cpu->trigger_trace_logger) {
 		set_cpu_disassembler_trace(cpu, cpu->instruction, cpu->append_int, cpu->end);
 		print_cpu_instruction_trace(cpu);
 		update_cpu_info(cpu);
@@ -149,7 +149,7 @@ int main(int argc, char** argv)
 	unsigned long max_cycles = 0;
 	bool help = false;
 	bool log_to_file = false;
-	bool no_logging = false;
+	bool logging_cpu_instructions = true;
 	int ui_scale_factor = 1;
 
 	// process command line arguments
@@ -181,8 +181,8 @@ int main(int argc, char** argv)
 			log_to_file = true;
 #endif /* __DEBUG__ */
 			break;
-		case 's': // s - silent output (no instructionlogging, either to terminal or file)
-			no_logging = true;
+		case 's': // s - silent output (no instruction logging, either to terminal or file)
+			logging_cpu_instructions = false;
 			break;
 		case 'c': // c - execute emulator for a fixed number of cpu clock cycles
 			if (argc < 3 || (argv[2][0] == '-')) {
@@ -302,7 +302,7 @@ int main(int argc, char** argv)
 #endif/* __DEBUG__ */
 			}
 		}
-		clock_all_units(cpu, ppu, &cnes_windows, no_logging);
+		clock_all_units(cpu, ppu, &cnes_windows, logging_cpu_instructions);
 	}
 
 	SDL_Quit();
