@@ -47,7 +47,6 @@ int cpu_ppu_io_init(CpuPpuShare* cpu_ppu_io)
 	cpu_ppu_io->buffer_value = 0;
 
 	// Ppu related stuff
-	cpu_ppu_io->write_debug = false;
 	cpu_ppu_io->clear_status = false;
 	cpu_ppu_io->bg_early_disable_mask = false;
 	cpu_ppu_io->bg_early_enable_mask = false;

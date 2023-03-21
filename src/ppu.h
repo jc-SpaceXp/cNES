@@ -127,6 +127,7 @@ Ppu2C02* ppu_allocator(void);
 int ppu_init(Ppu2C02* ppu, CpuPpuShare* cp);
 
 /* Debug Functions */
+void append_ppu_info(Ppu2C02* cpu);
 void debug_ppu_regs(Cpu6502* cpu);
 void ppu_mem_hexdump_addr_range(const Ppu2C02* p, const enum PpuMemoryTypes ppu_mem, unsigned start_addr, uint16_t end_addr);
 uint16_t nametable_x_offset_address(const unsigned coarse_x);
@@ -163,7 +164,7 @@ void set_rgba_pixel_in_buffer(uint32_t* pixel_buffer, unsigned int max_width
                              , unsigned int rgb, uint8_t alpha);
 
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const bool no_logging);
+void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows);
 
 
 #endif /* __NES_PPU__ */

@@ -138,6 +138,7 @@ struct Cpu6502 {
 	int old_stack;
 	unsigned old_cycle;
 	bool process_interrupt;
+	bool trigger_trace_logger;
 };
 
 struct InstructionDetails {
@@ -151,7 +152,7 @@ extern struct InstructionDetails isa_info[256];
 Cpu6502* cpu_allocator(void);
 int cpu_init(Cpu6502* cpu, uint16_t pc, CpuPpuShare* cp, CpuMapperShare* cm);
 
-void clock_cpu(Cpu6502* cpu, const bool no_logging);
+void clock_cpu(Cpu6502* cpu);
 extern void (*hardware_interrupts[3])(Cpu6502* cpu); // used for unit tests of DMA/IRQ/NMI (non opcode interrupts)
 
 // Helper functions
@@ -173,6 +174,7 @@ void stack_push(Cpu6502* cpu, uint8_t val);
 uint8_t stack_pull(Cpu6502* cpu);
 void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_t end_addr);
 void cpu_debugger(const Cpu6502* cpu, char* instruction, char* append_int, char* end);
+void log_cpu_info(const Cpu6502* cpu);
 void update_cpu_info(Cpu6502* cpu);
 
 

@@ -32,7 +32,6 @@ static uint16_t return_little_endian(Cpu6502* cpu, uint16_t addr);
 static void write_4016(uint8_t data, Cpu6502* cpu);
 static unsigned read_4016(Cpu6502* cpu);
 static unsigned read_4017(Cpu6502* cpu);
-static void log_cpu_info(Cpu6502* cpu, const bool no_logging);  // warning unused function, currently hidden behind conditional execution
 static void fetch_opcode(Cpu6502* cpu);
 static bool fixed_cycles_on_store(const Cpu6502* cpu);
 static bool page_cross_occurs(const unsigned low_byte, const unsigned offset);
@@ -750,30 +749,16 @@ void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_
 	}
 }
 
-void clock_cpu(Cpu6502* cpu, const bool no_logging)
+void clock_cpu(Cpu6502* cpu)
 {
 	++cpu->cycle;
 	--cpu->instruction_cycles_remaining;
-
-	// only used in DEBUG mode, suppress unused variable for RELEASE
-	(void) no_logging;
 
 	// disable any pending interrupts when suppressing an NMI
 	if (cpu->cpu_ppu_io->ignore_nmi) {
 		cpu->process_interrupt = false;
 		cpu->cpu_ppu_io->ignore_nmi = false;
 	}
-
-#ifdef __DEBUG__
-	// ignore first cycle when cycle == old_cycle + 1
-	// only equal when POST_EXECUTE updates old_cycle to cycle
-	// otherwise they are always out of sync
-	// essentially this sets write_debug to true after the ppu has
-	// completed its relevant clocks (on the next cpu clock (FETCH))
-	if ((cpu->cycle != 1) && (cpu->cycle == (cpu->old_cycle + 1))) {
-		cpu->cpu_ppu_io->write_debug = true;
-	}
-#endif /* __DEBUG__ */
 
 	// Fetch-decode-execute state logic
 	if (cpu->instruction_state == FETCH) {
@@ -811,11 +796,7 @@ void clock_cpu(Cpu6502* cpu, const bool no_logging)
 
 	if (cpu->instruction_state == POST_EXECUTE) {
 		cpu->instruction_state = FETCH;
-#ifdef __DEBUG__
-		cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
-		log_cpu_info(cpu, no_logging);
-		update_cpu_info(cpu);
-#endif /* __DEBUG__ */
+		cpu->trigger_trace_logger = true;
 	}
 }
 
@@ -936,18 +917,16 @@ void cpu_debugger(const Cpu6502* cpu, char* instruction, char* append_int, char*
 	strcat(instruction, end); // execute_* functions provide the instruction string
 }
 
-static void log_cpu_info(Cpu6502* cpu, const bool no_logging)
+void log_cpu_info(const Cpu6502* cpu)
 {
-	if (!no_logging) {
-		printf("%-6.4X ", cpu->old_PC);
-		printf("%-20s ", cpu->instruction);
-		printf("A:%.2X ", cpu->old_A);
-		printf("X:%.2X ", cpu->old_X);
-		printf("Y:%.2X ", cpu->old_Y);
-		printf("P:%.2X ", cpu->old_P);
-		printf("SP:%.2X ", cpu->old_stack);
-		printf("CPU:%-10u", cpu->old_cycle);
-	}
+	printf("%-6.4X ", cpu->old_PC);
+	printf("%-20s ", cpu->instruction);
+	printf("A:%.2X ", cpu->old_A);
+	printf("X:%.2X ", cpu->old_X);
+	printf("Y:%.2X ", cpu->old_Y);
+	printf("P:%.2X ", cpu->old_P);
+	printf("SP:%.2X ", cpu->old_stack);
+	printf("CPU:%-10u", cpu->old_cycle);
 }
 
 void update_cpu_info(Cpu6502* cpu)

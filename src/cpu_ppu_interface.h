@@ -27,7 +27,6 @@ struct CpuPpuShare {
 	bool suppress_nmi_flag;
 	bool ignore_nmi;
 	bool clear_status;
-	bool write_debug; // Trigger debug og PPU, only when the CPU writes the the logger
 	bool bg_early_enable_mask; // When true this represents the buffered/delayed writes for $2001 when enabling BG rendering
 	bool bg_early_disable_mask; // Same as above except for disabling BG rendering
 	bool ppu_rendering_period; // Set true for scalines 0-239 and pre-render scanline, otherwise false

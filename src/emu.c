@@ -25,10 +25,23 @@
 void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2DisplayOutputs* cnes_windows, const bool no_logging)
 {
 	// 3 : 1 PPU to CPU ratio
-	clock_cpu(cpu, no_logging);
-	clock_ppu(ppu, cpu, cnes_windows, no_logging);
-	clock_ppu(ppu, cpu, cnes_windows, no_logging);
-	clock_ppu(ppu, cpu, cnes_windows, no_logging);
+	clock_cpu(cpu);
+	clock_ppu(ppu, cpu, cnes_windows);
+	clock_ppu(ppu, cpu, cnes_windows);
+	clock_ppu(ppu, cpu, cnes_windows);
+
+	// only used in DEBUG mode, suppress unused variable for RELEASE
+	(void) no_logging;
+
+#ifdef __DEBUG__
+	if (!no_logging && cpu->trigger_trace_logger) {
+		cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+		log_cpu_info(cpu);
+		update_cpu_info(cpu);
+		append_ppu_info(ppu);
+		cpu->trigger_trace_logger = false;
+	}
+#endif /* __DEBUG__ */
 }
 
 void emu_usuage(const char* program_name)

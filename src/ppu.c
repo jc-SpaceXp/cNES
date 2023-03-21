@@ -148,7 +148,7 @@ static void ppu_vblank_warmup_seq(Ppu2C02* p, const Cpu6502* cpu)
 	}
 }
 
-static void append_ppu_info(Ppu2C02* ppu)
+void append_ppu_info(Ppu2C02* ppu)
 {
 	printf(" PPU_CYC: %-3" PRIu16, ppu->old_cycle);
 	printf(" SL: %" PRIu32 "\n", ppu->old_scanline);
@@ -908,18 +908,8 @@ static void sprite_hit_lookahead(Ppu2C02* p)
  * RENDERING             *
  *************************/
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const bool no_logging)
+void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 {
-#ifdef __DEBUG__
-	if (!no_logging && p->cpu_ppu_io->write_debug) {
-		p->cpu_ppu_io->write_debug = false;
-		append_ppu_info(p);
-	}
-#endif /* __DEBUG__ */
-
-	// only used in DEBUG mode, suppress unused variable for RELEASE
-	(void) no_logging;
-
 	p->cpu_ppu_io->nmi_lookahead = false;
 	p->cpu_ppu_io->clear_status = false;
 
