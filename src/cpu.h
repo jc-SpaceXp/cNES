@@ -77,6 +77,7 @@ typedef enum {
 	FETCH,
 	DECODE,
 	EXECUTE,
+	POST_EXECUTE,
 } InstructionStates;
 
 struct Cpu6502 {

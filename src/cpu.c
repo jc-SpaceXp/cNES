@@ -121,7 +121,7 @@ static void execute_BRK(Cpu6502* cpu);
 static void execute_NOP(Cpu6502* cpu);
 static void execute_IRQ(Cpu6502* cpu);  // warning unused function, needed later for audio or other mappers I believe
 static void execute_NMI(Cpu6502* cpu);
-static void execute_DMA(Cpu6502* cpu, const bool no_logging);
+static void execute_DMA(Cpu6502* cpu);
 
 struct InstructionDetails isa_info[256] = {
 	/* 0x00 */ {"BRK", decode_SPECIAL,         execute_BRK, 7 },
@@ -761,57 +761,58 @@ void clock_cpu(Cpu6502* cpu, const bool no_logging)
 		cpu->cpu_ppu_io->ignore_nmi = false;
 	}
 
-	// Handle interrupts first
-	if (!cpu->delay_nmi && cpu->process_interrupt && cpu->instruction_state == FETCH) {
-		// print the disassembly info of the instruction just completed
-		if (cpu->cpu_ppu_io->nmi_cycles_left == 7) {
 #ifdef __DEBUG__
-			cpu->cpu_ppu_io->write_debug = true;
-			cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
-			log_cpu_info(cpu, no_logging);
-			update_cpu_info(cpu);
+	// ignore first cycle when cycle == old_cycle + 1
+	// only equal when POST_EXECUTE updates old_cycle to cycle
+	// otherwise they are always out of sync
+	// essentially this sets write_debug to true after the ppu has
+	// completed its relevant clocks (on the next cpu clock (FETCH))
+	if ((cpu->cycle != 1) && (cpu->cycle == (cpu->old_cycle + 1))) {
+		cpu->cpu_ppu_io->write_debug = true;
+	}
 #endif /* __DEBUG__ */
-		}
-		execute_NMI(cpu);
-		--cpu->cpu_ppu_io->nmi_cycles_left;
-	} else {
-		// Fetch-decode-execute state logic
-		if (cpu->instruction_state == FETCH) {
-			if (cpu->cpu_ppu_io->dma_pending) {
-				execute_DMA(cpu, no_logging);
-				return;
-			}
-			// if not the first instruction print its output
-			if (cpu->instruction_cycles_remaining != 50) {
-#ifdef __DEBUG__
-				cpu->cpu_ppu_io->write_debug = true;
-				cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
-				log_cpu_info(cpu, no_logging);
-				update_cpu_info(cpu);
-#endif /* __DEBUG__ */
-			}
+
+	// Fetch-decode-execute state logic
+	if (cpu->instruction_state == FETCH) {
+		// Handle interrupts first
+		if (!cpu->delay_nmi && cpu->process_interrupt) {
+			execute_NMI(cpu);
+			--cpu->cpu_ppu_io->nmi_cycles_left;
+		} else if (cpu->cpu_ppu_io->dma_pending) {
+			execute_DMA(cpu);
+		} else {
 			fetch_opcode(cpu);
 			cpu->delay_nmi = false; // reset after returning from NMI
-		}  else if (cpu->instruction_state == DECODE) {
-			isa_info[cpu->opcode].decode_opcode(cpu);
 		}
-		if (cpu->instruction_state == EXECUTE) {
-			cpu->instruction_state = FETCH;
-			isa_info[cpu->opcode].execute_opcode(cpu); // can change the PC which the early fetch made!
+	}  else if (cpu->instruction_state == DECODE) {
+		isa_info[cpu->opcode].decode_opcode(cpu);
+	}
 
-			if (cpu->cpu_ppu_io->nmi_pending) {
-				cpu->process_interrupt = true;
-			}
+	if (cpu->instruction_state == EXECUTE) {
+		cpu->instruction_state = POST_EXECUTE;
+		isa_info[cpu->opcode].execute_opcode(cpu); // can change the PC which the early fetch made!
 
-			if (cpu->cpu_ppu_io->nmi_lookahead) {
-				cpu->delay_nmi = true;
-			}
-
-			if (cpu->cpu_ppu_io->nmi_lookahead && cpu->cpu_ignore_fetch_on_nmi) {
-				cpu->delay_nmi = false;
-			}
-			cpu->cpu_ignore_fetch_on_nmi = false;
+		if (cpu->cpu_ppu_io->nmi_pending) {
+			cpu->process_interrupt = true;
 		}
+
+		if (cpu->cpu_ppu_io->nmi_lookahead) {
+			cpu->delay_nmi = true;
+		}
+
+		if (cpu->cpu_ppu_io->nmi_lookahead && cpu->cpu_ignore_fetch_on_nmi) {
+			cpu->delay_nmi = false;
+		}
+		cpu->cpu_ignore_fetch_on_nmi = false;
+	}
+
+	if (cpu->instruction_state == POST_EXECUTE) {
+		cpu->instruction_state = FETCH;
+#ifdef __DEBUG__
+		cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
+		log_cpu_info(cpu, no_logging);
+		update_cpu_info(cpu);
+#endif /* __DEBUG__ */
 	}
 }
 
@@ -942,12 +943,7 @@ static void log_cpu_info(Cpu6502* cpu, const bool no_logging)
 		printf("Y:%.2X ", cpu->old_Y);
 		printf("P:%.2X ", cpu->old_P);
 		printf("SP:%.2X ", cpu->old_stack);
-
-		if (cpu->old_cycle == 0) {
-			printf("CPU:%-10u", cpu->old_cycle);
-		} else { // first cycle = +1 cycles due to the tick() after the instruction executes
-			printf("CPU:%-10u", cpu->old_cycle - 1);
-		}
+		printf("CPU:%-10u", cpu->old_cycle);
 	}
 }
 
@@ -2480,6 +2476,7 @@ static void execute_NMI(Cpu6502* cpu)
 		set_address_bus(cpu, NMI_VECTOR + 1);
 		set_data_bus_via_read(cpu, NMI_VECTOR + 1, ADH);
 		cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
+		cpu->instruction_state = POST_EXECUTE;
 		cpu->cpu_ppu_io->nmi_pending = false;
 		cpu->process_interrupt = false;
 		cpu->cpu_ppu_io->nmi_cycles_left = 8;  // 8 as a decrement occurs after this function is called
@@ -2488,18 +2485,8 @@ static void execute_NMI(Cpu6502* cpu)
 }
 
 
-static void execute_DMA(Cpu6502* cpu, const bool no_logging)
+static void execute_DMA(Cpu6502* cpu)
 {
-	static bool first_cycle = true;
-	if (first_cycle) {
-#ifdef __DEBUG__
-		cpu->cpu_ppu_io->write_debug = true;
-		cpu_debugger(cpu, cpu->instruction, cpu->append_int, cpu->end);
-		log_cpu_info(cpu, no_logging);
-		update_cpu_info(cpu);
-		first_cycle = false;
-#endif /* __DEBUG__ */
-	}
 	/* Triggered by PPU, CPU is suspended */
 	strcpy(cpu->instruction, "DMA");
 	cpu->address_mode = SPECIAL;
@@ -2534,9 +2521,8 @@ static void execute_DMA(Cpu6502* cpu, const bool no_logging)
 
 	// reset static
 	if (cycles_left == 0) {
-		cpu->instruction_state = FETCH;
+		cpu->instruction_state = POST_EXECUTE;
 		cpu->cpu_ppu_io->dma_pending = false;
 		cycles_left = 514;
-		first_cycle = true;
 	}
 }
