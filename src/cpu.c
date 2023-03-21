@@ -755,6 +755,9 @@ void clock_cpu(Cpu6502* cpu, const bool no_logging)
 	++cpu->cycle;
 	--cpu->instruction_cycles_remaining;
 
+	// only used in DEBUG mode, suppress unused variable for RELEASE
+	(void) no_logging;
+
 	// disable any pending interrupts when suppressing an NMI
 	if (cpu->cpu_ppu_io->ignore_nmi) {
 		cpu->process_interrupt = false;

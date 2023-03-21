@@ -917,6 +917,9 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows, const
 	}
 #endif /* __DEBUG__ */
 
+	// only used in DEBUG mode, suppress unused variable for RELEASE
+	(void) no_logging;
+
 	p->cpu_ppu_io->nmi_lookahead = false;
 	p->cpu_ppu_io->clear_status = false;
 
