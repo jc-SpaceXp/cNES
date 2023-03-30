@@ -94,6 +94,4 @@ clean:
 	rm -f $(BINDIR)/cnes
 	rm -rf $(BUILDDIR)
 
--include $(CORE_DEPS)
--include $(UTIL_DEPS)
--include $(TEST_DEPS)
+-include $(CORE_DEPS) $(UTIL_DEPS) $(TEST_DEPS)
