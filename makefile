@@ -94,6 +94,6 @@ clean:
 	rm -f $(BINDIR)/cnes
 	rm -rf $(BUILDDIR)
 
--include $(SRC_DEPS)
--include $(UTL_DEPS)
+-include $(CORE_DEPS)
+-include $(UTIL_DEPS)
 -include $(TEST_DEPS)
