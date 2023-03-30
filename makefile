@@ -20,40 +20,45 @@ else
 endif
 
 SRCDIR := src
-UTLDIR := $(SRCDIR)/util
+COREDIR := $(SRCDIR)/core
+UTILDIR := $(SRCDIR)/util
 BUILDDIR := build
 BINDIR := $(BUILDDIR)/$(CONFIG)/bin
 OBJDIR := $(BUILDDIR)/$(CONFIG)/obj
 DEPDIR := $(BUILDDIR)/$(CONFIG)/dep
 
-UTLS := $(UTLDIR)/bits_and_bytes.c
-UTL_OBJS := $(UTLS:%.c=$(OBJDIR)/%.o)
-UTL_DEPS := $(UTLS:%.c=$(DEPDIR)/%.d)
+INCDIR := include
+INCS_CORE := $(INCDIR)/core
+INCS_UTIL := $(INCDIR)/util
 
-SRCS := $(SRCDIR)/cart.c \
-        $(SRCDIR)/cpu.c \
-        $(SRCDIR)/emu.c \
-        $(SRCDIR)/gui.c \
-        $(SRCDIR)/mappers.c \
-        $(SRCDIR)/ppu.c \
-        $(SRCDIR)/cpu_ppu_interface.c \
-        $(SRCDIR)/cpu_mapper_interface.c
+UTILS := $(UTILDIR)/bits_and_bytes.c
+UTIL_OBJS := $(UTILS:%.c=$(OBJDIR)/%.o)
+UTIL_DEPS := $(UTILS:%.c=$(DEPDIR)/%.d)
 
-SRC_OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
-SRC_DEPS := $(SRCS:%.c=$(DEPDIR)/%.d)
+SRCS_CORE := $(COREDIR)/cart.c \
+             $(COREDIR)/cpu.c \
+             $(COREDIR)/emu.c \
+             $(COREDIR)/gui.c \
+             $(COREDIR)/mappers.c \
+             $(COREDIR)/ppu.c \
+             $(COREDIR)/cpu_ppu_interface.c \
+             $(COREDIR)/cpu_mapper_interface.c
+
+CORE_OBJS := $(SRCS_CORE:%.c=$(OBJDIR)/%.o)
+CORE_DEPS := $(SRCS_CORE:%.c=$(DEPDIR)/%.d)
 
 TSTDIR := tests
 TSTS := $(wildcard $(TSTDIR)/*.c)
 TST_OBJS := $(TSTS:%.c=$(OBJDIR)/%.o)
 TST_DEPS := $(TSTS:%.c=$(DEPDIR)/%.d)
-TST_TMP_OBJS := $(OBJDIR)/$(SRCDIR)/cpu.o \
-                $(OBJDIR)/$(SRCDIR)/mappers.o \
-                $(OBJDIR)/$(SRCDIR)/ppu.o \
-                $(OBJDIR)/$(SRCDIR)/gui.o \
-                $(OBJDIR)/$(SRCDIR)/cart.o \
-                $(OBJDIR)/$(SRCDIR)/cpu_ppu_interface.o \
-                $(OBJDIR)/$(SRCDIR)/cpu_mapper_interface.o \
-                $(OBJDIR)/$(UTLDIR)/bits_and_bytes.o
+TST_TMP_OBJS := $(OBJDIR)/$(COREDIR)/cpu.o \
+                $(OBJDIR)/$(COREDIR)/mappers.o \
+                $(OBJDIR)/$(COREDIR)/ppu.o \
+                $(OBJDIR)/$(COREDIR)/gui.o \
+                $(OBJDIR)/$(COREDIR)/cart.o \
+                $(OBJDIR)/$(COREDIR)/cpu_ppu_interface.o \
+                $(OBJDIR)/$(COREDIR)/cpu_mapper_interface.o \
+                $(OBJDIR)/$(UTILDIR)/bits_and_bytes.o
 
 .PHONY: all
 all: $(BINDIR)/cnes $(BINDIR)/test_all
@@ -61,14 +66,14 @@ all: $(BINDIR)/cnes $(BINDIR)/test_all
 $(OBJDIR)/%.o : %.c
 	@mkdir -p $(@D)
 	@mkdir -p $(DEPDIR)/$(<D)
-	$(CC) $(CFLAGS) $(DEPFLAGS) -I $(SRCDIR) -I $(UTLDIR) -c $< -o $@
+	$(CC) $(CFLAGS) $(DEPFLAGS) -I $(INCS_CORE) -I $(INCS_UTIL) -c $< -o $@
 
 $(BINDIR):
 	mkdir -p $@
 
-$(BINDIR)/cnes: $(SRC_OBJS) $(UTL_OBJS) | $(BINDIR)
+$(BINDIR)/cnes: $(CORE_OBJS) $(UTIL_OBJS) | $(BINDIR)
 	@echo "--- Linking target"
-	$(CC) -o $@ $(SRC_OBJS) $(UTL_OBJS) $(LDFLAGS)
+	$(CC) -o $@ $(CORE_OBJS) $(UTIL_OBJS) $(LDFLAGS)
 	@echo "--- Done: Linking target"
 
 $(BINDIR)/test_all: $(TST_OBJS) $(TST_TMP_OBJS) | $(BINDIR)
