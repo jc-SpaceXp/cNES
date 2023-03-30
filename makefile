@@ -47,18 +47,18 @@ SRCS_CORE := $(COREDIR)/cart.c \
 CORE_OBJS := $(SRCS_CORE:%.c=$(OBJDIR)/%.o)
 CORE_DEPS := $(SRCS_CORE:%.c=$(DEPDIR)/%.d)
 
-TSTDIR := tests
-TSTS := $(wildcard $(TSTDIR)/*.c)
-TST_OBJS := $(TSTS:%.c=$(OBJDIR)/%.o)
-TST_DEPS := $(TSTS:%.c=$(DEPDIR)/%.d)
-TST_TMP_OBJS := $(OBJDIR)/$(COREDIR)/cpu.o \
-                $(OBJDIR)/$(COREDIR)/mappers.o \
-                $(OBJDIR)/$(COREDIR)/ppu.o \
-                $(OBJDIR)/$(COREDIR)/gui.o \
-                $(OBJDIR)/$(COREDIR)/cart.o \
-                $(OBJDIR)/$(COREDIR)/cpu_ppu_interface.o \
-                $(OBJDIR)/$(COREDIR)/cpu_mapper_interface.o \
-                $(OBJDIR)/$(UTILDIR)/bits_and_bytes.o
+TESTDIR := tests
+TESTS := $(wildcard $(TESTDIR)/*.c)
+TEST_OBJS := $(TESTS:%.c=$(OBJDIR)/%.o)
+TEST_DEPS := $(TESTS:%.c=$(DEPDIR)/%.d)
+TEST_DEP_OBJS := $(OBJDIR)/$(COREDIR)/cpu.o \
+                 $(OBJDIR)/$(COREDIR)/mappers.o \
+                 $(OBJDIR)/$(COREDIR)/ppu.o \
+                 $(OBJDIR)/$(COREDIR)/gui.o \
+                 $(OBJDIR)/$(COREDIR)/cart.o \
+                 $(OBJDIR)/$(COREDIR)/cpu_ppu_interface.o \
+                 $(OBJDIR)/$(COREDIR)/cpu_mapper_interface.o \
+                 $(OBJDIR)/$(UTILDIR)/bits_and_bytes.o
 
 .PHONY: all
 all: $(BINDIR)/cnes $(BINDIR)/test_all
@@ -76,7 +76,7 @@ $(BINDIR)/cnes: $(CORE_OBJS) $(UTIL_OBJS) | $(BINDIR)
 	$(CC) -o $@ $(CORE_OBJS) $(UTIL_OBJS) $(LDFLAGS)
 	@echo "--- Done: Linking target"
 
-$(BINDIR)/test_all: $(TST_OBJS) $(TST_TMP_OBJS) | $(BINDIR)
+$(BINDIR)/test_all: $(TEST_OBJS) $(TEST_DEP_OBJS) | $(BINDIR)
 	@echo "--- Linking tests"
 	$(CC) -o $@ $^ $(LIBCHECK_FLAGS) $(LDFLAGS)
 	@echo "--- Done: Linking tests"
@@ -96,4 +96,4 @@ clean:
 
 -include $(SRC_DEPS)
 -include $(UTL_DEPS)
--include $(TST_DEPS)
+-include $(TEST_DEPS)
