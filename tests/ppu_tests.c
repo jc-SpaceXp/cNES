@@ -1303,6 +1303,19 @@ START_TEST (debug_all_nametables)
 }
 
 
+START_TEST (clear_scanline_oam)
+{
+	ppu->scanline_oam[4] = 0x83;
+	uint8_t expected_result[8 * 4];
+	// Clearing scanline/secondary oam should hold all 0xFF's
+	memset(expected_result, 0xFF, sizeof(expected_result));
+
+	reset_secondary_oam(ppu);
+
+	ck_assert_mem_eq(ppu->scanline_oam, expected_result, sizeof(expected_result));
+}
+
+
 Suite* ppu_master_suite(void)
 {
 	Suite* s;
@@ -1380,6 +1393,7 @@ Suite* ppu_rendering_suite(void)
 {
 	Suite* s;
 	TCase* tc_bkg_rendering;
+	TCase* tc_sprite_rendering;
 
 	s = suite_create("Ppu Rendering Related Tests");
 	tc_bkg_rendering = tcase_create("Background Rendering Tests");
@@ -1413,6 +1427,10 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_test(tc_bkg_rendering, pixel_buffer_set_out_of_bounds_allowed);
 	tcase_add_test(tc_bkg_rendering, debug_all_nametables);
 	suite_add_tcase(s, tc_bkg_rendering);
+	tc_sprite_rendering = tcase_create("Sprite Rendering Tests");
+	tcase_add_checked_fixture(tc_sprite_rendering, setup, teardown);
+	tcase_add_test(tc_sprite_rendering, clear_scanline_oam);
+	suite_add_tcase(s, tc_sprite_rendering);
 
 	return s;
 }

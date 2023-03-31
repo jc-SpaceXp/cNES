@@ -163,6 +163,8 @@ void set_rgba_pixel_in_buffer(uint32_t* pixel_buffer, unsigned int max_width
                              , unsigned int x_pos, unsigned int y_pos
                              , unsigned int rgb, uint8_t alpha);
 
+void reset_secondary_oam(Ppu2C02* p);
+
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows);
 

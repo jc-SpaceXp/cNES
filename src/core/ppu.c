@@ -755,7 +755,7 @@ static void ppu_transfer_oam(Ppu2C02* p, const unsigned index)
 	memcpy(&p->scanline_oam[p->sprites_found * 4], &p->oam[index * 4], 4); // Copy remaining bytes
 }
 
-static void reset_secondary_oam(Ppu2C02* p)
+void reset_secondary_oam(Ppu2C02* p)
 {
 	memset(p->scanline_oam, 0xFF, sizeof(p->scanline_oam)); // Reset secondary OAM
 	/* Reset internals */
