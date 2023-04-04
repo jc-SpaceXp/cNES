@@ -765,7 +765,7 @@ void reset_secondary_oam(Ppu2C02* p)
 	p->sprite_zero_scanline = p->sprite_zero_scanline_tmp;
 }
 
-static void sprite_evaluation(Ppu2C02* p)
+void sprite_evaluation(Ppu2C02* p)
 {
 	int y_offset = 0;
 	switch (p->cycle % 2) {

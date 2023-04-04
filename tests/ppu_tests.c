@@ -1316,6 +1316,207 @@ START_TEST (clear_scanline_oam)
 }
 
 
+START_TEST (sprite_eval_odd_cycles_read_only)
+{
+	ppu->stop_early = false;
+	ppu->sprite_index = 0;
+	ppu->sprites_found = 7;
+	ppu->cpu_ppu_io->ppu_ctrl = 0; // sprite height is 8 pixels
+	ppu->scanline = 35;
+	// set y pos of all sprites (and other bytes) to 230 (out of Y range)
+	memset(ppu->oam, 230, sizeof(ppu->oam));
+	uint8_t expected_result[8 * 4];
+	memset(expected_result, 0xB1, sizeof(expected_result));
+	memset(ppu->scanline_oam, 0xB1, sizeof(ppu->scanline_oam));
+
+	// Loop through until cycle 256 has been reached (end of sprite eval)
+	for (int i = 0; i < 192; i++) {
+		bool odd_cycle = !(i & 0x01);
+		if (odd_cycle) {
+			// starting from an odd cycle, odd + even = odd
+			ppu->cycle = 65 + i; // sprite evaluation starts at cycle 65
+			sprite_evaluation(ppu);
+		}
+
+		// Only even cycles change sprite index
+		ck_assert_uint_eq(ppu->sprite_index, 0);
+		ck_assert_uint_eq(ppu->oam_read_buffer, 230);
+		// No oam data should have been transfered
+		ck_assert_mem_eq(ppu->scanline_oam, expected_result, sizeof(expected_result));
+	}
+}
+
+START_TEST (sprite_eval_in_range_oam_transfer)
+{
+	ppu->stop_early = false;
+	ppu->sprite_index = 5;
+	ppu->sprites_found = 2;
+	uint8_t ppu_ctrl_byte[2] = { 0x00, 0x20 };  // 8 and 16 pixel high sprites
+	unsigned y_pos_start[2] = { 30, 20 };  // y pos starts for 8 and 16 pixel high sprites
+	ppu->cpu_ppu_io->ppu_ctrl = ppu_ctrl_byte[_i];
+	ppu->scanline = 35;
+	uint8_t expected_result[8 * 4];
+	memset(expected_result, 0xC2, sizeof(expected_result));
+	memset(ppu->scanline_oam, 0xC2, sizeof(ppu->scanline_oam));
+	// set y pos of all sprites (and other bytes) to be in Y range
+	// in range if y pos (top most sprite pixel) + sprite height overlaps
+	// with the current scanline
+	// Also write unique oam values and check we copy those bytes in the correct order
+	for (int i = 0; i < 4; i++) {
+		ppu->oam[(ppu->sprite_index * 4) + i] = y_pos_start[_i] + i;
+		expected_result[(ppu->sprites_found * 4) + i] = y_pos_start[_i] + i;
+	}
+
+	// Loop enough for one sprite evaluation
+	for (int i = 0; i < 2; i++) {
+		ppu->cycle = 65 + i; // sprite evaluation starts at cycle 65
+
+		sprite_evaluation(ppu);
+	}
+
+	ck_assert_mem_eq(ppu->scanline_oam, expected_result, sizeof(expected_result));
+	ck_assert_uint_eq(ppu->sprites_found, 3);
+}
+
+START_TEST (sprite_eval_none_in_range)
+{
+	ppu->stop_early = false;
+	ppu->sprite_index = 0;
+	ppu->sprites_found = 7;
+	uint8_t ppu_ctrl_byte[2] = { 0x00, 0x20 };  // 8 and 16 pixel high sprites
+	ppu->cpu_ppu_io->ppu_ctrl = ppu_ctrl_byte[_i];
+	ppu->scanline = 35;
+	// set y pos of all sprites (and other bytes) to 230 (out of range)
+	memset(ppu->oam, 230, sizeof(ppu->oam));
+	uint8_t expected_result[8 * 4];
+	memset(expected_result, 0xE3, sizeof(expected_result));
+	memset(ppu->scanline_oam, 0xE3, sizeof(ppu->scanline_oam));
+
+	// Loop through until all 64 sprites have been evaluated
+	for (int i = 0; i < 128; i++) {
+		ppu->cycle = 65 + i; // sprite evaluation starts at cycle 65
+
+		sprite_evaluation(ppu);
+	}
+
+	// No need to check intermediate reads and writes
+	ck_assert_uint_eq(ppu->sprite_index, 0);
+	ck_assert_uint_eq(ppu->sprites_found, 7);
+	ck_assert(ppu->stop_early == true);
+	// No oam data should have been transfered
+	ck_assert_mem_eq(ppu->scanline_oam, expected_result, sizeof(expected_result));
+}
+
+START_TEST (sprite_eval_transfer_oam_on_even_cycles_only)
+{
+	// transfers only happen if sprite is in Y range
+	ppu->stop_early = false;
+	ppu->sprite_index = 0;
+	ppu->sprites_found = 0;
+	ppu->cpu_ppu_io->ppu_ctrl = 0; // sprite height is 8 pixels
+	ppu->scanline = 35;
+	ppu->oam_read_buffer = 32; // even cycles reads from here instead of oam
+	// set y pos of all sprites (and other bytes) to be in Y range
+	memset(ppu->oam, 21, sizeof(ppu->oam));
+	uint8_t expected_result[8 * 4];
+	memset(expected_result, 21, sizeof(expected_result));
+	memset(ppu->scanline_oam, 0xF0, sizeof(ppu->scanline_oam));
+
+	// Loop through until cycle 256 has been reached (end of sprite eval)
+	for (int i = 0; i < 192; i++) {
+		bool even_cycle = i & 0x01;
+		if (even_cycle) {
+			// starting from an odd cycle, odd + odd = even
+			ppu->cycle = 65 + i; // sprite evaluation starts at cycle 65
+			sprite_evaluation(ppu);
+
+			// Only even cycles change sprite index
+			int initial_index = (i & 0x7F) / 2; // keep value between 0 and 63
+			// when we've processed all sprites reset the initial index (0 to 63 = 64 sprites)
+			if (initial_index == 63) { initial_index = -1; }
+
+			ck_assert_uint_eq(ppu->sprite_index, initial_index + 1);
+			ck_assert_uint_eq(ppu->oam_read_buffer, 32);
+		}
+	}
+	// Final oam transfer
+	ck_assert_mem_eq(ppu->scanline_oam, expected_result, sizeof(expected_result));
+}
+
+START_TEST (sprite_eval_sprites_found_behaviour)
+{
+	ppu->stop_early = false;
+	ppu->sprite_index = 0;
+	ppu->sprites_found = 0;
+	ppu->cpu_ppu_io->ppu_ctrl = 0; // sprite height is 8 pixels
+	ppu->scanline = 35;
+	memset(ppu->oam, 31, sizeof(ppu->oam));
+	memset(ppu->oam + 8 * 4, 34, 8); // set 9th and 10th sprites in range to a different value
+	uint8_t expected_result[8 * 4];
+	memset(expected_result, 31, sizeof(expected_result));
+	memset(ppu->scanline_oam, 0xC2, sizeof(ppu->scanline_oam));
+	int loop_index = _i * 2; // 2 cycles needed for each sprite evaluation
+	// _i starts @ 1 (1st index is 2)
+	unsigned sprites_evaluated[10] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 9 };
+
+	// Loop through until we evlauate _i sprites
+	for (int i = 0; i < loop_index; i++) {
+		ppu->cycle = 65 + i; // sprite evaluation starts at cycle 65
+
+		sprite_evaluation(ppu);
+	}
+
+	unsigned bytes_written_to = (_i * 4) & 0x1F; // 4 bytes per oam entry (and keep within 0-31)
+	// values are only 0-9, 8 sprites on scanline, 9th for sprite overflow
+	// after that no more sprites are evaluated
+	ck_assert_uint_eq(ppu->sprites_found, sprites_evaluated[_i - 1]);
+	// This also checks if the 9th sprite found transfers its oam data (since its different)
+	ck_assert_mem_eq(ppu->scanline_oam, expected_result, bytes_written_to);
+}
+
+START_TEST (sprite_eval_sprite_overflow_behaviour)
+{
+	ppu->stop_early = false;
+	ppu->sprite_index = 23;
+	ppu->sprites_found = 7;
+	ppu->cpu_ppu_io->ppu_ctrl = 0; // sprite height is 8 pixels
+	ppu->cpu_ppu_io->ppu_status = 0;
+	ppu->scanline = 35;
+
+	const int sprites_to_check = 6;
+	// expected ppu status on each even cycle, a 2d square array
+	// as we need to verify which sprite caused the sprite overflow (if any)
+	// 1st col is the 1st sprite after the 8th in range, 2nd is the 2nd after etc
+	// a 0x20 indicates that the Xth sprite after the 8th is in range
+	uint8_t expected_ppu_status[6][6] =
+	     { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} // overflow on 8th sprite (shouldn't happen)
+	     , {0x00, 0x20, 0x20, 0x20, 0x20, 0x20} // overflow on 8th + 1 sprite after
+	     , {0x00, 0x00, 0x20, 0x20, 0x20, 0x20} // overflow on 8th + 2 sprite after
+	     , {0x00, 0x00, 0x00, 0x20, 0x20, 0x20} // overflow on 8th + 3 sprite after
+	     , {0x00, 0x00, 0x00, 0x00, 0x20, 0x20} // overflow on 8th + 4 sprite after
+	     , {0x00, 0x00, 0x00, 0x00, 0x00, 0x20} // overflow on 8th + 4 sprite after
+	     };
+	ppu->oam[ppu->sprite_index * 4] = 31; // always make the next sprite (8th) in Y range
+	// offset the 9th sprite in Y range depending on the unit test loop index
+	ppu->oam[(ppu->sprite_index + _i - 1) * 4] = 31;
+
+	// Evaluate the 8th and potentially 9th sprites in Y range
+	for (int i = 0; i < (sprites_to_check * 2); i++) {
+		ppu->cycle = 65 + i; // sprite evaluation starts at cycle 65
+
+		sprite_evaluation(ppu);
+
+		bool even_cycle = i & 0x01; // start on odd cycle, odd + odd = even cycle
+		if (even_cycle) {
+			unsigned sprite_to_eval = i / 2;
+			unsigned ppu_status_results = _i - 1;
+			ck_assert_uint_eq(ppu->cpu_ppu_io->ppu_status
+			                 , expected_ppu_status[ppu_status_results][sprite_to_eval]);
+		}
+	}
+}
+
+
 Suite* ppu_master_suite(void)
 {
 	Suite* s;
@@ -1430,6 +1631,12 @@ Suite* ppu_rendering_suite(void)
 	tc_sprite_rendering = tcase_create("Sprite Rendering Tests");
 	tcase_add_checked_fixture(tc_sprite_rendering, setup, teardown);
 	tcase_add_test(tc_sprite_rendering, clear_scanline_oam);
+	tcase_add_test(tc_sprite_rendering, sprite_eval_odd_cycles_read_only);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_eval_in_range_oam_transfer, 0, 2);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_eval_none_in_range, 0, 2);
+	tcase_add_test(tc_sprite_rendering, sprite_eval_transfer_oam_on_even_cycles_only);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_eval_sprites_found_behaviour, 1, 11);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_eval_sprite_overflow_behaviour, 1, 7);
 	suite_add_tcase(s, tc_sprite_rendering);
 
 	return s;
