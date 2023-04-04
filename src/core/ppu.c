@@ -768,34 +768,48 @@ void reset_secondary_oam(Ppu2C02* p)
 void sprite_evaluation(Ppu2C02* p)
 {
 	int y_offset = 0;
+	static int oam_y_byte_offset = 0;
+	unsigned oam_read_addr = (p->sprite_index * 4) + oam_y_byte_offset;
+
 	switch (p->cycle % 2) {
 	case 1: // Odd cycles
-		p->oam_read_buffer = p->oam[p->sprite_index * 4];
+		p->oam_read_buffer = p->oam[oam_read_addr];
 		break;
 	case 0: //Even cycles
 		y_offset = p->scanline - p->oam_read_buffer;
 		bool sprite_in_y_range = (y_offset >= 0) && (y_offset < ppu_sprite_height(p->cpu_ppu_io));
 
-		if (sprite_in_y_range && (p->sprites_found <= 8) && !p->stop_early) {
+		// Sprite overflow calc
+		if ((p->sprites_found == 8) && !p->stop_early) {
+			if (sprite_in_y_range) {
+				p->sprites_found++; // max val is 9 now
+				p->cpu_ppu_io->ppu_status |= 0x20; // Trigger sprite overflow flag
+				oam_y_byte_offset = 0;
+			} else {
+				++oam_y_byte_offset;
+				if (oam_y_byte_offset == 4) {
+					oam_y_byte_offset = 0;
+				}
+			}
+		}
+
+		if (sprite_in_y_range && (p->sprites_found < 8) && !p->stop_early) {
 			ppu_transfer_oam(p, p->sprite_index); // sprite found load into secondary oam
 
 			// Setting up sprite zero hit detection
 			if (p->sprite_index == 0 && p->cycle == 66) {
 				p->sprite_zero_scanline_tmp = p->scanline + 1;
 			}
-			p->sprites_found++;
+			p->sprites_found++; // max val is 8 now
 		}
 
 		++p->sprite_index;
 		if (p->sprite_index == 64) {
 			p->sprite_index = 0; // above reset should cover this
 			p->stop_early = true;
+			oam_y_byte_offset = 0;
 		}
 
-		if ((p->sprites_found == 9) && sprite_in_y_range) {
-			// Trigger sprite overflow flag
-			p->cpu_ppu_io->ppu_status |= 0x20;
-		}
 		break;
 	}
 }

@@ -1491,14 +1491,16 @@ START_TEST (sprite_eval_sprite_overflow_behaviour)
 	uint8_t expected_ppu_status[6][6] =
 	     { {0x00, 0x00, 0x00, 0x00, 0x00, 0x00} // overflow on 8th sprite (shouldn't happen)
 	     , {0x00, 0x20, 0x20, 0x20, 0x20, 0x20} // overflow on 8th + 1 sprite after
-	     , {0x00, 0x00, 0x20, 0x20, 0x20, 0x20} // overflow on 8th + 2 sprite after
-	     , {0x00, 0x00, 0x00, 0x20, 0x20, 0x20} // overflow on 8th + 3 sprite after
-	     , {0x00, 0x00, 0x00, 0x00, 0x20, 0x20} // overflow on 8th + 4 sprite after
-	     , {0x00, 0x00, 0x00, 0x00, 0x00, 0x20} // overflow on 8th + 4 sprite after
+	     , {0x00, 0x00, 0x20, 0x20, 0x20, 0x20} // overflow on 8th + 2 sprites after
+	     , {0x00, 0x00, 0x00, 0x20, 0x20, 0x20} // overflow on 8th + 3 sprites after
+	     , {0x00, 0x00, 0x00, 0x00, 0x20, 0x20} // overflow on 8th + 4 sprites after
+	     , {0x00, 0x00, 0x00, 0x00, 0x00, 0x20} // overflow on 8th + 5 sprites after
 	     };
+	memset(ppu->oam, 0, sizeof(ppu->oam));
 	ppu->oam[ppu->sprite_index * 4] = 31; // always make the next sprite (8th) in Y range
 	// offset the 9th sprite in Y range depending on the unit test loop index
-	ppu->oam[(ppu->sprite_index + _i - 1) * 4] = 31;
+	unsigned oam_byte_offset[6] = { 0, 0, 1, 2, 3, 0};
+	ppu->oam[((ppu->sprite_index + _i - 1) * 4) + oam_byte_offset[_i - 1]] = 31;
 
 	// Evaluate the 8th and potentially 9th sprites in Y range
 	for (int i = 0; i < (sprites_to_check * 2); i++) {
