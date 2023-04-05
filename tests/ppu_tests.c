@@ -796,6 +796,8 @@ START_TEST (nametable_mirroring_horizontal_read_writes)
 	vram->nametable_1 = &vram->nametable_A;
 	vram->nametable_2 = &vram->nametable_B;
 	vram->nametable_3 = &vram->nametable_B;
+	memset(vram->nametable_A, 0x00, sizeof(vram->nametable_A));
+	memset(vram->nametable_B, 0x00, sizeof(vram->nametable_B));
 
 	write_to_ppu_vram(vram, 0x2000 + 0x0200, 0x23);
 	write_to_ppu_vram(vram, 0x2400 + 0x0110, 0x28);
@@ -832,6 +834,8 @@ START_TEST (nametable_mirroring_vertical_read_writes)
 	vram->nametable_1 = &vram->nametable_B;
 	vram->nametable_2 = &vram->nametable_A;
 	vram->nametable_3 = &vram->nametable_B;
+	memset(vram->nametable_A, 0x00, sizeof(vram->nametable_A));
+	memset(vram->nametable_B, 0x00, sizeof(vram->nametable_B));
 
 	write_to_ppu_vram(vram, 0x2000 + 0x0200, 0x23);
 	write_to_ppu_vram(vram, 0x2800 + 0x0000, 0x17);
@@ -868,6 +872,7 @@ START_TEST (nametable_mirroring_single_screen_A_read_writes)
 	vram->nametable_1 = &vram->nametable_A;
 	vram->nametable_2 = &vram->nametable_A;
 	vram->nametable_3 = &vram->nametable_A;
+	memset(vram->nametable_B, 0x00, sizeof(vram->nametable_B));
 
 	write_to_ppu_vram(vram, 0x2000 + 0x02D0, 0x23);
 	write_to_ppu_vram(vram, 0x2400 + 0x0111, 0x28);
@@ -906,6 +911,7 @@ START_TEST (nametable_mirroring_single_screen_B_read_writes)
 	vram->nametable_1 = &vram->nametable_B;
 	vram->nametable_2 = &vram->nametable_B;
 	vram->nametable_3 = &vram->nametable_B;
+	memset(vram->nametable_A, 0x00, sizeof(vram->nametable_A));
 
 	write_to_ppu_vram(vram, 0x2000 + 0x0086, 0x02);
 	write_to_ppu_vram(vram, 0x2400 + 0x020C, 0x58);
