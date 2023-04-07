@@ -1602,7 +1602,7 @@ Suite* ppu_rendering_suite(void)
 {
 	Suite* s;
 	TCase* tc_bkg_rendering;
-	TCase* tc_sprite_rendering;
+	TCase* tc_sprite_evaluation;
 
 	s = suite_create("Ppu Rendering Related Tests");
 	tc_bkg_rendering = tcase_create("Background Rendering Tests");
@@ -1636,16 +1636,16 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_test(tc_bkg_rendering, pixel_buffer_set_out_of_bounds_allowed);
 	tcase_add_test(tc_bkg_rendering, debug_all_nametables);
 	suite_add_tcase(s, tc_bkg_rendering);
-	tc_sprite_rendering = tcase_create("Sprite Rendering Tests");
-	tcase_add_checked_fixture(tc_sprite_rendering, setup, teardown);
-	tcase_add_test(tc_sprite_rendering, clear_scanline_oam);
-	tcase_add_test(tc_sprite_rendering, sprite_eval_odd_cycles_read_only);
-	tcase_add_loop_test(tc_sprite_rendering, sprite_eval_in_range_oam_transfer, 0, 2);
-	tcase_add_loop_test(tc_sprite_rendering, sprite_eval_none_in_range, 0, 2);
-	tcase_add_test(tc_sprite_rendering, sprite_eval_transfer_oam_on_even_cycles_only);
-	tcase_add_loop_test(tc_sprite_rendering, sprite_eval_sprites_found_behaviour, 1, 11);
-	tcase_add_loop_test(tc_sprite_rendering, sprite_eval_sprite_overflow_behaviour, 1, 7);
-	suite_add_tcase(s, tc_sprite_rendering);
+	tc_sprite_evaluation = tcase_create("Sprite Evaluation Tests");
+	tcase_add_checked_fixture(tc_sprite_evaluation, setup, teardown);
+	tcase_add_test(tc_sprite_evaluation, clear_scanline_oam);
+	tcase_add_test(tc_sprite_evaluation, sprite_eval_odd_cycles_read_only);
+	tcase_add_loop_test(tc_sprite_evaluation, sprite_eval_in_range_oam_transfer, 0, 2);
+	tcase_add_loop_test(tc_sprite_evaluation, sprite_eval_none_in_range, 0, 2);
+	tcase_add_test(tc_sprite_evaluation, sprite_eval_transfer_oam_on_even_cycles_only);
+	tcase_add_loop_test(tc_sprite_evaluation, sprite_eval_sprites_found_behaviour, 1, 11);
+	tcase_add_loop_test(tc_sprite_evaluation, sprite_eval_sprite_overflow_behaviour, 1, 7);
+	suite_add_tcase(s, tc_sprite_evaluation);
 
 	return s;
 }
