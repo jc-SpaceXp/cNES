@@ -757,24 +757,23 @@ static void ppu_transfer_oam(Ppu2C02* p, const unsigned index)
 
 void get_sprite_address(Ppu2C02* ppu, int* y_offset, unsigned count)
 {
+	unsigned tile_number = secondary_oam_tile_number(ppu, count);
 	ppu->sprite_addr = ppu_sprite_pattern_table_addr(ppu->cpu_ppu_io)
-	                 | (uint16_t) secondary_oam_tile_number(ppu, count) << 4;
-	// 8x16 sprites don't use ppu_ctrl to determine base pt address
-	if (ppu_sprite_height(ppu->cpu_ppu_io) == 16) {
-		// Bit 0 determines base pt address, 0x1000 or 0x0000
-		ppu->sprite_addr = (0x1000 * (secondary_oam_tile_number(ppu, count) & 0x01))
-		                 | (uint16_t) (secondary_oam_tile_number(ppu, count) & 0xFE) << 4;
-	}
+	                 | (tile_number << 4);
 
 	*y_offset = ppu->scanline - secondary_oam_y_pos(ppu, count);
 	if (*y_offset < 0) { // Keep address static until we reach the scanline in range
 		*y_offset = 0; // Stops out of bounds access for -1
 	}
 
-	// addr for rows 9-16 of 8x16 sprites
 	if (ppu_sprite_height(ppu->cpu_ppu_io) == 16) {
+		// 8x16 sprites don't use ppu_ctrl to determine base pattern address
+		// Bit 0 determines base pattern address, 0x1000 or 0x0000
+		ppu->sprite_addr = (0x1000 * (tile_number & 0x01)) | ((tile_number & 0xFE) << 4);
+		// addr for rows 9-16 of 8x16 sprites
 		if (*y_offset >= 8) { *y_offset += 8; }
 	}
+
 	ppu->sprite_addr += *y_offset;
 }
 
