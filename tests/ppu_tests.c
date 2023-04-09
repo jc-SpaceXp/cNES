@@ -1525,6 +1525,63 @@ START_TEST (sprite_eval_sprite_overflow_behaviour)
 }
 
 
+START_TEST (sprite_fetch_address_8_pixel_sprites)
+{
+	// 8x8 sprites go from 0x0XX0 to 0x0XX7 (lo) and 0x0XX8 to 0x0XXF (hi)
+	// where XX is the tile number (from oam byte 1)
+	ppu->cpu_ppu_io->ppu_ctrl = 0; // 8x8 sprites
+	// 0x0000 is 0x00 and 0x1000 is 0x08
+	uint16_t pattern_table_start[8] = {0x00, 0x08, 0x08, 0x00, 0x00, 0x00, 0x08, 0x08};
+	ppu->cpu_ppu_io->ppu_ctrl |= pattern_table_start[_i];
+	ppu->scanline = 131 + _i;
+	int y_offset = 0;
+	uint8_t tile_number = _i;
+	ppu->scanline_oam[_i * 4] = 131; // offset is scanline - y_byte
+	ppu->scanline_oam[(_i * 4) + 1] = tile_number;
+	// pattern_table start << 9 is 0x0000 or 0x1000
+	uint16_t res = (pattern_table_start[_i] << 9) | (tile_number << 4);
+	res |= _i; // add sprite Y offset (initial offset was 0)
+
+	get_sprite_address(ppu, &y_offset, _i);
+
+	ck_assert_uint_eq(ppu->sprite_addr, res);
+}
+
+START_TEST (sprite_fetch_address_16_pixel_sprites)
+{
+	// 8x16 sprites go from 0xXXX0 to 0xXX1F (lo and hi bytes)
+	// lo: 0xXXX0 to 0xXXX7 and 0xXX10 to 0xXX17
+	// hi: 0xXXX8 to 0xXXXF and 0xXX18 to 0xXX1F
+	ppu->cpu_ppu_io->ppu_ctrl = 0x20; // 8x16 sprites
+	// 0x0000 is 0x00 and 0x1000 is 0x08, no effect on output
+	uint16_t pattern_table_start[8] = {0x00, 0x08, 0x08, 0x00, 0x00, 0x00, 0x08, 0x08};
+	ppu->cpu_ppu_io->ppu_ctrl |= pattern_table_start[_i & 0x07];
+	// test the tile index offset works correctly (first 16 tests)
+	// and then test different Y offsets (last 16 tests)
+	unsigned scanline[32] = { 131, 131, 131, 131, 131, 131, 131, 131
+	                        , 131, 131, 131, 131, 131, 131, 131, 131
+	                        , 131, 132, 133, 134, 135, 136, 137, 138
+	                        , 139, 140, 141, 142, 143, 144, 145, 146 };
+	ppu->scanline = scanline[_i];
+	// Y offset vals are 0-7 and 16-23
+	// as if we add 8 to the initial value we may end up in the hi pattern table region
+	// e.g. 0x0008 etc.
+	int y_offset = 0;
+	uint8_t tile_number = _i;
+	unsigned sprite_number = _i & 0x07;
+	ppu->scanline_oam[sprite_number * 4] = 131; // offset is scanline - oam Y byte
+	ppu->scanline_oam[(sprite_number * 4) + 1] = tile_number;
+	y_offset = ppu->scanline - ppu->scanline_oam[sprite_number * 4]; // reset in function call
+	if (y_offset >= 8) { y_offset += 8; }
+	uint16_t res = (0x1000 * (tile_number & 0x01)) | ((tile_number >> 1) << 5);
+	res |= y_offset;
+
+	get_sprite_address(ppu, &y_offset, sprite_number);
+
+	ck_assert_uint_eq(ppu->sprite_addr, res);
+}
+
+
 Suite* ppu_master_suite(void)
 {
 	Suite* s;
@@ -1603,6 +1660,7 @@ Suite* ppu_rendering_suite(void)
 	Suite* s;
 	TCase* tc_bkg_rendering;
 	TCase* tc_sprite_evaluation;
+	TCase* tc_sprite_rendering;
 
 	s = suite_create("Ppu Rendering Related Tests");
 	tc_bkg_rendering = tcase_create("Background Rendering Tests");
@@ -1646,6 +1704,11 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_loop_test(tc_sprite_evaluation, sprite_eval_sprites_found_behaviour, 1, 11);
 	tcase_add_loop_test(tc_sprite_evaluation, sprite_eval_sprite_overflow_behaviour, 1, 7);
 	suite_add_tcase(s, tc_sprite_evaluation);
+	tc_sprite_rendering = tcase_create("Sprite Rendering Tests");
+	tcase_add_checked_fixture(tc_sprite_rendering, setup, teardown);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_fetch_address_8_pixel_sprites, 0, 8);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_fetch_address_16_pixel_sprites, 0, 32);
+	suite_add_tcase(s, tc_sprite_rendering);
 
 	return s;
 }
