@@ -755,6 +755,29 @@ static void ppu_transfer_oam(Ppu2C02* p, const unsigned index)
 	memcpy(&p->scanline_oam[p->sprites_found * 4], &p->oam[index * 4], 4); // Copy remaining bytes
 }
 
+void get_sprite_address(Ppu2C02* ppu, int* y_offset, unsigned count)
+{
+	ppu->sprite_addr = ppu_sprite_pattern_table_addr(ppu->cpu_ppu_io)
+	                 | (uint16_t) secondary_oam_tile_number(ppu, count) << 4;
+	// 8x16 sprites don't use ppu_ctrl to determine base pt address
+	if (ppu_sprite_height(ppu->cpu_ppu_io) == 16) {
+		// Bit 0 determines base pt address, 0x1000 or 0x0000
+		ppu->sprite_addr = (0x1000 * (secondary_oam_tile_number(ppu, count) & 0x01))
+		                 | (uint16_t) (secondary_oam_tile_number(ppu, count) & 0xFE) << 4;
+	}
+
+	*y_offset = ppu->scanline - secondary_oam_y_pos(ppu, count);
+	if (*y_offset < 0) { // Keep address static until we reach the scanline in range
+		*y_offset = 0; // Stops out of bounds access for -1
+	}
+
+	// addr for rows 9-16 of 8x16 sprites
+	if (ppu_sprite_height(ppu->cpu_ppu_io) == 16) {
+		if (*y_offset >= 8) { *y_offset += 8; }
+	}
+	ppu->sprite_addr += *y_offset;
+}
+
 void reset_secondary_oam(Ppu2C02* p)
 {
 	memset(p->scanline_oam, 0xFF, sizeof(p->scanline_oam)); // Reset secondary OAM
@@ -1215,26 +1238,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 					// Garbage NT byte - no need to emulate
 					break;
 				case 1:
-					// When not in range the sprite is filled w/ FF
-					p->sprite_addr = ppu_sprite_pattern_table_addr(p->cpu_ppu_io)
-					               | (uint16_t) secondary_oam_tile_number(p, count) << 4;
-					// 8x16 sprites don't use ppu_ctrl to determine base pt address
-					if (ppu_sprite_height(p->cpu_ppu_io) == 16) {
-						// Bit 0 determines base pt address, 0x1000 or 0x000
-						p->sprite_addr = (0x1000 * (secondary_oam_tile_number(p, count) & 0x01))
-					                   | (uint16_t) (secondary_oam_tile_number(p, count) & 0xFE) << 4;
-					}
-					sprite_y_offset = p->scanline - secondary_oam_y_pos(p, count);
-					if (sprite_y_offset < 0) { // Keep address static until we reach the scanline in range
-						sprite_y_offset = 0; // Stops out of bounds access for -1
-					}
-
-					// addr for rows 9-16 of 8x16 sprites
-					if (ppu_sprite_height(p->cpu_ppu_io) == 16) {
-						if (sprite_y_offset >= 8) { sprite_y_offset += 8; }
-					}
-					p->sprite_addr += sprite_y_offset;
-
+					get_sprite_address(p, &sprite_y_offset, count);
 					break;
 				case 2:
 					// Garbage AT byte - no need to emulate
