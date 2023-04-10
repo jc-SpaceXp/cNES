@@ -1613,21 +1613,25 @@ START_TEST (flip_16_pixel_sprites_vertically)
 	ppu->cpu_ppu_io->ppu_ctrl |= pattern_table_start[_i & 0x07];
 	ppu->scanline = 131 + _i;
 	int y_offset = _i;
-	int flipped_offset = 15 - _i;
+	int flipped_offset = 23 - _i;
 	if (y_offset >= 8) {
 		y_offset += 8;
-		flipped_offset += 8; // max val is 23
+		flipped_offset -= 8;
 	}
+	unsigned sprite_number = _i & 0x07;
 	uint8_t tile_number = _i;
-	ppu->scanline_oam[_i * 4] = 131; // offset is scanline - oam Y byte
-	ppu->scanline_oam[(_i * 4) + 1] = tile_number;
+	ppu->scanline_oam[sprite_number * 4] = 131; // offset is scanline - oam Y byte
+	ppu->scanline_oam[(sprite_number * 4) + 1] = tile_number;
 	// pattern_table start << 9 is 0x0000 or 0x1000
 	uint16_t res = (0x1000 * (tile_number & 0x01)) | ((tile_number >> 1) << 5);
-	res |= flipped_offset; // add 15 - sprite Y offset (initial offset was 0)
+	res |= flipped_offset;
 	ppu->sprite_addr = (0x1000 * (tile_number & 0x01)) | ((tile_number >> 1) << 5);
+	unsigned expected_y_offsets[16] = { 23, 22, 21, 20, 19, 18, 17, 16
+	                                  ,  7,  6,  5,  4,  3,  2,  1,  0 };
 
 	flip_sprites_vertically(ppu, y_offset);
 
+	ck_assert_uint_eq(flipped_offset, expected_y_offsets[_i]);
 	ck_assert_uint_eq(ppu->sprite_addr, res);
 }
 
