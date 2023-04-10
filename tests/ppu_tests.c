@@ -1597,7 +1597,6 @@ START_TEST (flip_8_pixel_sprites_vertically)
 	uint16_t res = (pattern_table_start[_i] << 9) | (tile_number << 4);
 	res |= flipped_offset; // add 7 - sprite Y offset (initial offset was 0)
 	ppu->sprite_addr = (pattern_table_start[_i] << 9) | (tile_number << 4);
-	ppu->sprite_addr |= y_offset; // add sprite Y offset, flip_sprites_vertically() undoes this
 	unsigned expected_y_offsets[8] = {7, 6, 5, 4, 3, 2, 1, 0};
 
 	flip_sprites_vertically(ppu, y_offset);
@@ -1626,7 +1625,6 @@ START_TEST (flip_16_pixel_sprites_vertically)
 	uint16_t res = (0x1000 * (tile_number & 0x01)) | ((tile_number >> 1) << 5);
 	res |= flipped_offset; // add 15 - sprite Y offset (initial offset was 0)
 	ppu->sprite_addr = (0x1000 * (tile_number & 0x01)) | ((tile_number >> 1) << 5);
-	ppu->sprite_addr |= y_offset; // add sprite Y offset, flip_sprites_vertically() undoes this
 
 	flip_sprites_vertically(ppu, y_offset);
 
