@@ -784,8 +784,10 @@ void get_sprite_address(Ppu2C02* ppu, int* y_offset, unsigned count)
  */
 void flip_sprites_vertically(Ppu2C02* ppu, int y_offset)
 {
-	ppu->sprite_addr |= ppu_sprite_height(ppu->cpu_ppu_io) - 1
-	                  - (y_offset % ppu_sprite_height(ppu->cpu_ppu_io));
+	unsigned sprite_height = ppu_sprite_height(ppu->cpu_ppu_io);
+	// now flip Y offset, e.g. 0-7 is now flipped to 7-0 (for 8x8 sprites)
+	if (y_offset > 7) { y_offset -= 16; } // for 8x16 sprites
+	ppu->sprite_addr += sprite_height - y_offset - 1;
 }
 
 void reset_secondary_oam(Ppu2C02* p)
