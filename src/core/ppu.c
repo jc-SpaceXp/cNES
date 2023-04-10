@@ -777,6 +777,15 @@ void get_sprite_address(Ppu2C02* ppu, int* y_offset, unsigned count)
 	ppu->sprite_addr += *y_offset;
 }
 
+void flip_sprites_vertically(Ppu2C02* ppu, int y_offset)
+{
+	// undo y_offset, then go from y_offset_max down to 0
+	// e.g. 0-7 is now flipped to 7-0 (for sprites 8px high)
+	ppu->sprite_addr = ppu->sprite_addr - y_offset
+	                 + (ppu_sprite_height(ppu->cpu_ppu_io) - 1)
+	                 - (y_offset % ppu_sprite_height(ppu->cpu_ppu_io));
+}
+
 void reset_secondary_oam(Ppu2C02* p)
 {
 	memset(p->scanline_oam, 0xFF, sizeof(p->scanline_oam)); // Reset secondary OAM
@@ -1243,12 +1252,8 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 					// Garbage AT byte - no need to emulate
 					p->sprite_at_latches[count] = secondary_oam_at_byte(p, count);
 
-					if (p->sprite_at_latches[count] & 0x80) { // Flip vertical pixles
-						// undo y_offset, then go from y_offset_max down to 0
-						// e.g. 0-7 is now flipped to 7-0 (for sprites 8px high)
-						p->sprite_addr = p->sprite_addr - sprite_y_offset
-						                 + (ppu_sprite_height(p->cpu_ppu_io) - 1)
-						                 - (sprite_y_offset % ppu_sprite_height(p->cpu_ppu_io));
+					if (p->sprite_at_latches[count] & 0x80) {
+						flip_sprites_vertically(p, sprite_y_offset);
 					}
 					break;
 				case 3:
