@@ -1581,6 +1581,58 @@ START_TEST (sprite_fetch_address_16_pixel_sprites)
 	ck_assert_uint_eq(ppu->sprite_addr, res);
 }
 
+START_TEST (flip_8_pixel_sprites_vertically)
+{
+	ppu->cpu_ppu_io->ppu_ctrl = 0; // 8x8 sprites
+	// 0x0000 is 0x00 and 0x1000 is 0x08
+	uint16_t pattern_table_start[8] = {0x00, 0x08, 0x08, 0x00, 0x00, 0x00, 0x08, 0x08};
+	ppu->cpu_ppu_io->ppu_ctrl |= pattern_table_start[_i];
+	ppu->scanline = 131 + _i;
+	int y_offset = _i;
+	int flipped_offset = 7 - y_offset;
+	uint8_t tile_number = _i;
+	ppu->scanline_oam[_i * 4] = 131; // offset is scanline - oam Y byte
+	ppu->scanline_oam[(_i * 4) + 1] = tile_number;
+	// pattern_table start << 9 is 0x0000 or 0x1000
+	uint16_t res = (pattern_table_start[_i] << 9) | (tile_number << 4);
+	res |= flipped_offset; // add 7 - sprite Y offset (initial offset was 0)
+	ppu->sprite_addr = (pattern_table_start[_i] << 9) | (tile_number << 4);
+	ppu->sprite_addr |= y_offset; // add sprite Y offset, flip_sprites_vertically() undoes this
+	unsigned expected_y_offsets[8] = {7, 6, 5, 4, 3, 2, 1, 0};
+
+	flip_sprites_vertically(ppu, y_offset);
+
+	ck_assert_uint_eq(flipped_offset, expected_y_offsets[_i]);
+	ck_assert_uint_eq(ppu->sprite_addr, res);
+}
+
+START_TEST (flip_16_pixel_sprites_vertically)
+{
+	ppu->cpu_ppu_io->ppu_ctrl = 0x20; // 8x16 sprites
+	// 0x0000 is 0x00 and 0x1000 is 0x08
+	uint16_t pattern_table_start[8] = {0x00, 0x08, 0x08, 0x00, 0x00, 0x00, 0x08, 0x08};
+	ppu->cpu_ppu_io->ppu_ctrl |= pattern_table_start[_i & 0x07];
+	ppu->scanline = 131 + _i;
+	int y_offset = _i;
+	int flipped_offset = 15 - _i;
+	if (y_offset >= 8) {
+		y_offset += 8;
+		flipped_offset += 8; // max val is 23
+	}
+	uint8_t tile_number = _i;
+	ppu->scanline_oam[_i * 4] = 131; // offset is scanline - oam Y byte
+	ppu->scanline_oam[(_i * 4) + 1] = tile_number;
+	// pattern_table start << 9 is 0x0000 or 0x1000
+	uint16_t res = (0x1000 * (tile_number & 0x01)) | ((tile_number >> 1) << 5);
+	res |= flipped_offset; // add 15 - sprite Y offset (initial offset was 0)
+	ppu->sprite_addr = (0x1000 * (tile_number & 0x01)) | ((tile_number >> 1) << 5);
+	ppu->sprite_addr |= y_offset; // add sprite Y offset, flip_sprites_vertically() undoes this
+
+	flip_sprites_vertically(ppu, y_offset);
+
+	ck_assert_uint_eq(ppu->sprite_addr, res);
+}
+
 
 Suite* ppu_master_suite(void)
 {
@@ -1708,6 +1760,8 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_checked_fixture(tc_sprite_rendering, setup, teardown);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_fetch_address_8_pixel_sprites, 0, 8);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_fetch_address_16_pixel_sprites, 0, 32);
+	tcase_add_loop_test(tc_sprite_rendering, flip_8_pixel_sprites_vertically, 0, 8);
+	tcase_add_loop_test(tc_sprite_rendering, flip_16_pixel_sprites_vertically, 0, 16);
 	suite_add_tcase(s, tc_sprite_rendering);
 
 	return s;
