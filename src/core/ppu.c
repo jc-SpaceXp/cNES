@@ -904,9 +904,10 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 					p->sp_hi_reg = get_nth_bit(tmp_pt_hi, 8 - mask);
 					// flip sprites horizontally
 					if (p->oam[2] & 0x40) {
-						// already fetched pattern table data just reverse it
-						p->sp_lo_reg = reverse_bits[p->sp_lo_reg];
-						p->sp_hi_reg = reverse_bits[p->sp_hi_reg];
+						// already fetched pattern table data
+						// just reverse the order we get the bits (from 7-0 to 0-7 instead)
+						p->sp_lo_reg = get_nth_bit(tmp_pt_lo, mask - 1);
+						p->sp_hi_reg = get_nth_bit(tmp_pt_hi, mask - 1);
 					}
 					// flip sprites vertically
 					if (p->oam[2] & 0x80) {
@@ -920,9 +921,10 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 						p->sp_lo_reg = get_nth_bit(tmp_pt_lo, 8 - mask);
 						p->sp_hi_reg = get_nth_bit(tmp_pt_hi, 8 - mask);
 						if (p->oam[2] & 0x40) {
-							// already fetched pattern table data just reverse it
-							p->sp_lo_reg = reverse_bits[p->sp_lo_reg];
-							p->sp_hi_reg = reverse_bits[p->sp_hi_reg];
+							// already fetched pattern table data
+							// just reverse the order we get the bits (from 7-0 to 0-7 instead)
+							p->sp_lo_reg = get_nth_bit(tmp_pt_lo, mask - 1);
+							p->sp_hi_reg = get_nth_bit(tmp_pt_hi, mask - 1);
 						}
 					}
 					// report if any bg and sprite pixel is non-transparent
