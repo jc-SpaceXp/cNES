@@ -797,6 +797,18 @@ void flip_sprites_vertically(Ppu2C02* ppu, int y_offset)
 	ppu->sprite_addr += flipped_offset;
 }
 
+void load_sprite_pattern_table_data(Ppu2C02* ppu, uint8_t* pattern_shift_reg
+                                   , unsigned sprite_number, uint16_t sprite_addr)
+{
+	pattern_shift_reg[sprite_number]
+                         = reverse_bits[read_from_ppu_vram(&ppu->vram, sprite_addr)];
+	// Flip horizontal pixels
+	if ((ppu->sprite_at_latches[sprite_number] & 0x40)) {
+		// already fetched pattern table data just reverse bits again
+		pattern_shift_reg[sprite_number] = reverse_bits[pattern_shift_reg[sprite_number]];
+	}
+}
+
 void reset_secondary_oam(Ppu2C02* p)
 {
 	memset(p->scanline_oam, 0xFF, sizeof(p->scanline_oam)); // Reset secondary OAM
@@ -1276,20 +1288,14 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 					p->sprite_x_counter[count] = secondary_oam_x_pos(p, count);
 					break;
 				case 4:
-					// Fetch sprite low pt
-					p->sprite_pt_lo_shift_reg[count] = reverse_bits[read_from_ppu_vram(&p->vram, p->sprite_addr)];
-					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
-						// already fetched pattern table data just reverse bits again
-						p->sprite_pt_lo_shift_reg[count] = reverse_bits[p->sprite_pt_lo_shift_reg[count]];
-					}
+					// Fetch sprite lo pattern table
+					load_sprite_pattern_table_data(p, &p->sprite_pt_lo_shift_reg[0], count
+					                              , p->sprite_addr);
 					break;
 				case 6:
-					// Fetch sprite hi pt, turn into function once all attribute data is processed
-					p->sprite_pt_hi_shift_reg[count] = reverse_bits[read_from_ppu_vram(&p->vram, p->sprite_addr + 8)];
-					if ((p->sprite_at_latches[count] & 0x40)) { // Flip horizontal pixels
-						// already fetched pattern table data just reverse bits again
-						p->sprite_pt_hi_shift_reg[count] = reverse_bits[p->sprite_pt_hi_shift_reg[count]];
-					}
+					// Fetch sprite hi pattern table
+					load_sprite_pattern_table_data(p, &p->sprite_pt_hi_shift_reg[0], count
+					                              , p->sprite_addr + 8);
 					break;
 				case 7: // 8th Cycle
 					break;
