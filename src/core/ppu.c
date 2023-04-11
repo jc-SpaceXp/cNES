@@ -800,12 +800,13 @@ void flip_sprites_vertically(Ppu2C02* ppu, int y_offset)
 void load_sprite_pattern_table_data(Ppu2C02* ppu, uint8_t* pattern_shift_reg
                                    , unsigned sprite_number, uint16_t sprite_addr)
 {
-	pattern_shift_reg[sprite_number]
-                         = reverse_bits[read_from_ppu_vram(&ppu->vram, sprite_addr)];
+	uint8_t pattern_data = read_from_ppu_vram(&ppu->vram, sprite_addr);
+
+	pattern_shift_reg[sprite_number] = reverse_bits[pattern_data];
 	// Flip horizontal pixels
 	if ((ppu->sprite_at_latches[sprite_number] & 0x40)) {
 		// already fetched pattern table data just reverse bits again
-		pattern_shift_reg[sprite_number] = reverse_bits[pattern_shift_reg[sprite_number]];
+		pattern_shift_reg[sprite_number] = pattern_data;
 	}
 }
 
