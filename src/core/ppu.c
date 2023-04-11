@@ -1299,6 +1299,13 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 					                              , p->sprite_addr + 8);
 					break;
 				case 7: // 8th Cycle
+					// Missing sprites should have transparent pixels
+					if (p->sprites_found < 8) {
+						memset(&p->sprite_pt_lo_shift_reg[p->sprites_found], 0
+						      , sizeof(p->sprite_pt_lo_shift_reg) - p->sprites_found);
+						memset(&p->sprite_pt_hi_shift_reg[p->sprites_found], 0
+						      , sizeof(p->sprite_pt_lo_shift_reg) - p->sprites_found);
+					}
 					break;
 				}
 			}
