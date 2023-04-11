@@ -1635,6 +1635,46 @@ START_TEST (flip_16_pixel_sprites_vertically)
 	ck_assert_uint_eq(ppu->sprite_addr, res);
 }
 
+START_TEST (sprite_fetch_pattern_tables)
+{
+	ppu->cpu_ppu_io->ppu_ctrl = 0;
+	// 0x0000 is 0x00 and 0x1000 is 0x08
+	uint16_t pattern_table_start[8] = {0x00, 0x08, 0x08, 0x00, 0x00, 0x00, 0x08, 0x08};
+	ppu->cpu_ppu_io->ppu_ctrl |= pattern_table_start[_i];
+	ppu->scanline = 131 + _i;
+	int y_offset = 0;
+	uint8_t tile_number = _i;
+	unsigned sprite_number = _i & 0x07;
+	uint8_t pattern_table_shift_reg[8] = { 0 };
+	ppu->scanline_oam[sprite_number * 4] = 131; // offset is scanline - oam Y byte
+	ppu->scanline_oam[(sprite_number * 4) + 1] = tile_number;
+	get_sprite_address(ppu, &y_offset, sprite_number);
+	// Simulate pattern table lo and hi fetches
+	unsigned address_offsets[8] = {0, 0, 0, 8, 0, 8, 8, 8};
+	ppu->sprite_addr += address_offsets[sprite_number];
+	uint8_t write_val[8] = {0x78, 0x17, 0xE5, 0xCC, 0x4A, 0x01, 0x1F, 0x09};
+	write_to_ppu_vram(&ppu->vram, ppu->sprite_addr, write_val[sprite_number]);
+	// 0x00 no horizontal flip, 0x40 flip sprites horizontally
+	uint8_t attributes_to_results[8][2] = { { 0x00, reverse_bits_in_byte(write_val[sprite_number]) }
+                                          , { 0x40, write_val[sprite_number] }
+                                          , { 0x00, reverse_bits_in_byte(write_val[sprite_number]) }
+                                          , { 0x40, write_val[sprite_number] }
+                                          , { 0x00, reverse_bits_in_byte(write_val[sprite_number]) }
+                                          , { 0x40, write_val[sprite_number] }
+                                          , { 0x00, reverse_bits_in_byte(write_val[sprite_number]) }
+                                          , { 0x40, write_val[sprite_number] }
+                                          };
+	uint8_t attribute = attributes_to_results[sprite_number][0];
+	uint8_t expected_result = attributes_to_results[sprite_number][1];
+	ppu->sprite_at_latches[sprite_number] = attribute;
+
+
+	load_sprite_pattern_table_data(ppu, &pattern_table_shift_reg[0]
+	                              , sprite_number, ppu->sprite_addr);
+
+	ck_assert_uint_eq(pattern_table_shift_reg[sprite_number], expected_result);
+}
+
 
 Suite* ppu_master_suite(void)
 {
@@ -1764,6 +1804,7 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_loop_test(tc_sprite_rendering, sprite_fetch_address_16_pixel_sprites, 0, 32);
 	tcase_add_loop_test(tc_sprite_rendering, flip_8_pixel_sprites_vertically, 0, 8);
 	tcase_add_loop_test(tc_sprite_rendering, flip_16_pixel_sprites_vertically, 0, 16);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_fetch_pattern_tables, 0, 8);
 	suite_add_tcase(s, tc_sprite_rendering);
 
 	return s;
