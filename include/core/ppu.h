@@ -170,6 +170,8 @@ void flip_sprites_vertically(Ppu2C02* ppu, int y_offset);
 void load_sprite_pattern_table_data(Ppu2C02* ppu, uint8_t* pattern_shift_reg
                                    , unsigned sprite_number, uint16_t sprite_addr);
 
+void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref);
+
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows);
 

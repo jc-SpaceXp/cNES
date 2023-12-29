@@ -1283,6 +1283,110 @@ START_TEST (pixel_buffer_set_out_of_bounds_allowed)
 }
 
 
+START_TEST (bkg_render_left_masking_unmasking)
+{
+	// A bit in 0x02 will show the leftmost 8 background pixels, no bit = output the common background 0x3F00
+	uint8_t mask_to_output[9][2] = { {0x00, 24}
+	                               , {0x00, 24}
+	                               , {0x00, 24}
+	                               , {0x00, 24}
+	                               , {0x02, 5}
+	                               , {0x00, 24}
+	                               , {0x00, 24}
+	                               , {0x00, 24}
+	                               , {0x00, 5}  // 9th pixel is outputted regardless of masking (if bkg rendering enabled)
+	};
+	ppu->cycle = _i;
+	ppu->cpu_ppu_io->ppu_mask = mask_to_output[_i][0] | 0x08; // allow rendering of background
+	ppu->fine_x = 0;
+	ppu->bkg_internals.at_hi_shift_reg = 0x00;
+	ppu->bkg_internals.at_lo_shift_reg = 0x00; // 0x00 (hi/lo)
+	ppu->bkg_internals.pt_hi_shift_reg = 0xFF;
+	ppu->bkg_internals.pt_lo_shift_reg = 0x00; // 0x10 (hi/lo)
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 24); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F02, 5); // non-background colour via pt
+
+	uint8_t colour_reference = 0x00;
+	get_bkg_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, mask_to_output[_i][1]);
+}
+
+START_TEST (bkg_render_disabled)
+{
+	// A bit in 0x08 will enable background rendering, no bit == disabled (output common background colour)
+	// A bit in 0x02 will show the leftmost 8 background pixels, no bit = output the common background 0x3F00
+	uint8_t mask_to_output[6][2] = { {0x02, 11} // disabled
+	                               , {0x0A, 3}  // enabled (and not hidden), cycle < 8
+	                               , {0x08, 3}  // enabled, cycle > 8
+	                               , {0x00, 11} // disabled
+	                               , {0x08, 3}  // enabled, cycle > 8
+	                               , {0x0A, 3}  // enabled, cycle > 8
+	};
+	ppu->cycle = _i * 7;
+	ppu->cpu_ppu_io->ppu_mask = mask_to_output[_i][0];
+	ppu->fine_x = 0;
+	ppu->bkg_internals.at_hi_shift_reg = 0x00;
+	ppu->bkg_internals.at_lo_shift_reg = 0x00; // 0x00 (hi/lo)
+	ppu->bkg_internals.pt_hi_shift_reg = 0xFF;
+	ppu->bkg_internals.pt_lo_shift_reg = 0xFF; // 0x11 (hi/lo)
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 11); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F03, 3); // non-background colour via pt
+
+	uint8_t colour_reference = 0x00;
+	get_bkg_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, mask_to_output[_i][1]);
+}
+
+START_TEST (bkg_palette_address)
+{
+	uint8_t output = 15;
+	ppu->cycle = 300;
+	// A bit in 0x08 will enable background rendering, no bit == disabled (output common background colour)
+	ppu->cpu_ppu_io->ppu_mask = 0x08;
+	ppu->fine_x = 4;
+	ppu->bkg_internals.at_hi_shift_reg = 0xFF;
+	ppu->bkg_internals.at_lo_shift_reg = 0x00; // 0x10 (hi/lo)
+	ppu->bkg_internals.pt_hi_shift_reg = 0x00;
+	ppu->bkg_internals.pt_lo_shift_reg = 0x10; // 0x01 (hi/lo) via fine_x
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F09, output); // non-background colour via pt an at (at * 2 plus pt)
+
+	uint8_t colour_reference = 0x00;
+	get_bkg_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, output);
+}
+
+START_TEST (bkg_output_transparent_pixel)
+{
+	// A bit in 0x08 will enable background rendering, no bit == disabled (output common background colour)
+	uint8_t mask_to_output[6][2] = { {0x08, 2}
+	                               , {0x08, 2}
+	                               , {0x08, 2}
+	                               , {0x08, 2}
+	                               , {0x08, 2}
+	                               , {0x08, 2}
+	};
+	ppu->cycle = 300;
+	ppu->cpu_ppu_io->ppu_mask = mask_to_output[_i][0];
+	ppu->fine_x = 7;
+	ppu->bkg_internals.at_hi_shift_reg = 0xFF;
+	ppu->bkg_internals.at_lo_shift_reg = 0x00; // 0x10 (hi/lo)
+	ppu->bkg_internals.pt_hi_shift_reg = 0x00;
+	ppu->bkg_internals.pt_lo_shift_reg = 0x10; // 0x00 (hi/lo, transparent pixel)
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F08, 4); // shouldn't be read back (3F00 should be read instead)
+	write_to_ppu_vram(&ppu->vram, 0x3F09, 15); // non-background colour via pt and at (at * 2 plus pt), missed due to fine_x val
+
+	uint8_t colour_reference = 0x00;
+	get_bkg_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, mask_to_output[_i][1]);
+}
+
+
 START_TEST (debug_all_nametables)
 {
 	uint16_t nametable_addr = 0x2000;
@@ -1786,6 +1890,10 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_test(tc_bkg_rendering, attribute_shift_reg_from_top_left_quadrant);
 	tcase_add_loop_test(tc_bkg_rendering, pixel_buffer_set_corner_pixels, 0, 4);
 	tcase_add_test(tc_bkg_rendering, pixel_buffer_set_out_of_bounds_allowed);
+	tcase_add_loop_test(tc_bkg_rendering, bkg_render_left_masking_unmasking, 0, 9);
+	tcase_add_loop_test(tc_bkg_rendering, bkg_render_disabled, 0, 6);
+	tcase_add_loop_test(tc_bkg_rendering, bkg_palette_address, 0, 6);
+	tcase_add_loop_test(tc_bkg_rendering, bkg_output_transparent_pixel, 0, 6);
 	tcase_add_test(tc_bkg_rendering, debug_all_nametables);
 	suite_add_tcase(s, tc_bkg_rendering);
 	tc_sprite_evaluation = tcase_create("Sprite Evaluation Tests");

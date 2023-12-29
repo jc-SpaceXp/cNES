@@ -634,6 +634,37 @@ static inline bool sprite_is_front_priority(const Ppu2C02* p, unsigned array_ind
 	return (!(p->sprite_at_latches[array_index] & 0x20)) ? 1 : 0;
 }
 
+void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
+{
+	// We don't use fine_x to mux the attribute shift regs as when
+	// we shift out the attribute shift registers the fine_x mux
+	// will lead to a palette address of 3F00 as the upper bits
+	// hold 0 and the mux will select those incorrect bits
+	// Instead we reload the shift registers with new attribute data
+	// when the fine_x will select a new tile to render e.g. moving from
+	// pixels 1-8 in the pipeline to 9-16
+	// They are then reloaded evey 8 cycles after that
+	// (alternatively you can mux w/ fine_x as long as you don't shift
+	// out the attribute shift registers)
+	unsigned bg_palette_addr = (eight_to_one_mux(ppu->bkg_internals.at_hi_shift_reg, 0) << 1)
+	                         |  eight_to_one_mux(ppu->bkg_internals.at_lo_shift_reg, 0);
+	bg_palette_addr <<= 2;
+	bg_palette_addr += 0x3F00; // bg palette mem starts here
+
+	unsigned bg_colour_index = (eight_to_one_mux(ppu->bkg_internals.pt_hi_shift_reg, ppu->fine_x) << 1)
+	                         |  eight_to_one_mux(ppu->bkg_internals.pt_lo_shift_reg, ppu->fine_x);
+	// Override to background colour
+	if ((ppu_mask_left_8px_bg(ppu->cpu_ppu_io) && ppu->cycle < 8)
+	    || !ppu_show_bg(ppu->cpu_ppu_io)
+	    || !bg_colour_index) {
+		bg_palette_addr = 0x3F00;
+		bg_colour_index = 0;
+	}
+
+	*colour_ref = read_from_ppu_vram(&ppu->vram, bg_palette_addr + bg_colour_index);
+	if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
+}
+
 static void render_pixel(Ppu2C02 *p)
 {
 	// We don't use fine_x to mux the attribute shift regs as when
