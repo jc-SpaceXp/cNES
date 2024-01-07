@@ -1780,6 +1780,195 @@ START_TEST (sprite_fetch_pattern_tables)
 }
 
 
+START_TEST (sprite_render_inactive)
+{
+	// If x counter is decremented and non-zero nothing is done
+	for (int i = 7; i >= 0; i--) {
+		ppu->sprite_x_counter[i] = 50 + i;
+		ppu->sprite_pt_hi_shift_reg[i] = 0xFF;
+		ppu->sprite_pt_lo_shift_reg[i] = 0xFF; // pt: 0x11 (hi/lo)
+		ppu->sprite_at_latches[i] = 0;
+	}
+
+	ppu->cycle = 50;
+	ppu->cpu_ppu_io->ppu_mask = 0x10;
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F10, 5); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F13, 15); // non-background colour via pt and at (at * 2 plus pt)
+
+	uint8_t colour_reference = 0x00;
+	get_sprite_pixel(ppu, &colour_reference);
+
+	for (int i = 7; i >= 0; i--) {
+		ck_assert_uint_eq(ppu->sprite_pt_hi_shift_reg[i], 0xFF);
+		ck_assert_uint_eq(ppu->sprite_x_counter[i], 50 + i - 1);
+	}
+}
+
+START_TEST (sprite_render_in_range_shifts_pt_out)
+{
+	// In range when x_counter == 0
+	for (int i = 7; i >= 0; i--) {
+		ppu->sprite_x_counter[i] = 0;
+		ppu->sprite_pt_hi_shift_reg[i] = 0xFF >> _i;
+		ppu->sprite_pt_lo_shift_reg[i] = 0xFF >> _i;
+		ppu->sprite_at_latches[i] = 0;
+	}
+
+	ppu->cycle = 83;
+	ppu->cpu_ppu_io->ppu_mask = 0x10;
+
+	uint8_t colour_reference = 0x00;
+	get_sprite_pixel(ppu, &colour_reference);
+
+	for (int i = 7; i >= 0; i--) {
+		ck_assert_uint_eq(ppu->sprite_pt_hi_shift_reg[i], 0xFF >> (_i + 1));
+	}
+}
+
+START_TEST (sprite_renders_correct_palette_address)
+{
+	// bytes: attribute, pt_hi, pt_lo, palette_offset form $3F10
+	// non-zero offsets, as 0 offsets will render $3F00
+	uint8_t attribute_pattern_offset[12][4] = { {0, 0, 1, 1}
+	                                          , {0, 1, 0, 2}
+	                                          , {0, 1, 1, 3}
+	                                          , {1, 0, 1, 5}
+	                                          , {1, 1, 0, 6}
+	                                          , {1, 1, 1, 7}
+	                                          , {2, 0, 1, 9}
+	                                          , {2, 1, 0, 10}
+	                                          , {2, 1, 1, 11}
+	                                          , {3, 0, 1, 13}
+	                                          , {3, 1, 0, 14}
+	                                          , {3, 1, 1, 15}
+	};
+	unsigned active_sprite = 5;
+	unsigned palette_offset = attribute_pattern_offset[_i][3];
+	// If x counter is decremented and non-zero nothing is done
+	for (int i = 7; i >= 0; i--) {
+		ppu->sprite_x_counter[i] = 250;
+		ppu->sprite_pt_hi_shift_reg[i] = attribute_pattern_offset[_i][1];
+		ppu->sprite_pt_lo_shift_reg[i] = attribute_pattern_offset[_i][2];
+		ppu->sprite_at_latches[i] = attribute_pattern_offset[_i][0];
+	}
+
+
+	ppu->cycle = 12;
+	ppu->cpu_ppu_io->ppu_mask = 0x10;
+	ppu->sprite_x_counter[active_sprite] = 0;
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F10, 5); // background colour, invalid entry
+	write_to_ppu_vram(&ppu->vram, 0x3F10 + palette_offset, 8); // non-background colour via pt and at (at * 2 plus pt)
+
+	uint8_t colour_reference = 0x00;
+	get_sprite_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, 8);
+}
+
+START_TEST (sprite_renders_highest_priority_sprite)
+{
+	// higher priority sprites have a lower index
+	unsigned low_priority = 5;
+	unsigned high_priority = 2;
+	// If x counter is decremented and non-zero nothing is done
+	for (int i = 7; i >= 0; i--) {
+		ppu->sprite_x_counter[i] = 250;
+		ppu->sprite_pt_hi_shift_reg[i] = 0xFF;
+		ppu->sprite_pt_lo_shift_reg[i] = 0xFF;
+		ppu->sprite_at_latches[i] = 0xFF;
+	}
+	// Low priority
+	ppu->sprite_x_counter[low_priority] = 0;
+	ppu->sprite_pt_hi_shift_reg[low_priority] = 1;
+	ppu->sprite_pt_lo_shift_reg[low_priority] = 0;
+	ppu->sprite_at_latches[low_priority] = 0;
+	write_to_ppu_vram(&ppu->vram, 0x3F12, 10); // non-background colour via pt and at (at * 2 plus pt)
+	// High priority
+	ppu->sprite_x_counter[high_priority] = 0;
+	ppu->sprite_pt_hi_shift_reg[high_priority] = 1;
+	ppu->sprite_pt_lo_shift_reg[high_priority] = 1;
+	ppu->sprite_at_latches[high_priority] = 0;
+	write_to_ppu_vram(&ppu->vram, 0x3F13, 7); // non-background colour via pt and at (at * 2 plus pt)
+	ppu->cycle = 50;
+	ppu->cpu_ppu_io->ppu_mask = 0x10;
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F10, 5); // background colour, invalid entry
+
+	uint8_t colour_reference = 0x00;
+	get_sprite_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, 7);
+}
+
+START_TEST (sprite_renders_left_masking)
+{
+	// A bit in 0x04 will show the leftmost 8 pixels containing any sprites
+	// no bit = output the common background 0x3F00
+	uint8_t mask_to_output[9][2] = { {0x00, 2}
+	                               , {0x04, 22}
+	                               , {0x00, 2}
+	                               , {0x04, 22}
+	                               , {0x04, 22}
+	                               , {0x04, 22}
+	                               , {0x00, 2}
+	                               , {0x00, 2}
+	                               , {0x00, 22}  // 9th pixel is outputted regardless of masking (if bkg rendering enabled)
+	};
+	// Force spites in range
+	for (int i = 7; i >= 0; i--) {
+		ppu->sprite_x_counter[i] = 0;
+		ppu->sprite_pt_hi_shift_reg[i] = 0xFF;
+		ppu->sprite_pt_lo_shift_reg[i] = 0; // 10 (pt hi/lo)
+		ppu->sprite_at_latches[i] = 0;
+	}
+	ppu->cycle = _i;
+	ppu->cpu_ppu_io->ppu_mask = mask_to_output[_i][0] | 0x10; // enable sprites
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F10, 5); // background colour, invalid entry
+	write_to_ppu_vram(&ppu->vram, 0x3F12, 22); // non-background colour via pt and at (at * 2 plus pt)
+
+	uint8_t colour_reference = 0x00;
+	get_sprite_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, mask_to_output[_i][1]);
+}
+
+START_TEST (sprite_renders_enabled_disabled)
+{
+	// A bit in 0x04 will show the leftmost 8 pixels containing any sprites
+	// no bit = output the common background 0x3F00
+	// A bit in 0x10 enables sprite rendering, disabled otherwise
+	uint8_t mask_to_output[8][2] = { {0x14, 19}
+	                               , {0x10, 1}
+	                               , {0x14, 19}
+	                               , {0x00, 1}
+	                               , {0x04, 1}
+	                               , {0x10, 19}
+	                               , {0x14, 19}
+	                               , {0x00, 1}
+	};
+	// Force spites in range
+	for (int i = 7; i >= 0; i--) {
+		ppu->sprite_x_counter[i] = 0;
+		ppu->sprite_pt_hi_shift_reg[i] = 0xFF;
+		ppu->sprite_pt_lo_shift_reg[i] = 0; // 10 (pt hi/lo)
+		ppu->sprite_at_latches[i] = 0;
+	}
+	ppu->cycle = _i * 6;
+	ppu->cpu_ppu_io->ppu_mask = mask_to_output[_i][0];
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 1); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F10, 5); // background colour, invalid entry
+	write_to_ppu_vram(&ppu->vram, 0x3F12, 19); // non-background colour via pt and at (at * 2 plus pt)
+
+	uint8_t colour_reference = 0x00;
+	get_sprite_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, mask_to_output[_i][1]);
+}
+
+
 Suite* ppu_master_suite(void)
 {
 	Suite* s;
@@ -1913,6 +2102,12 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_loop_test(tc_sprite_rendering, flip_8_pixel_sprites_vertically, 0, 8);
 	tcase_add_loop_test(tc_sprite_rendering, flip_16_pixel_sprites_vertically, 0, 16);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_fetch_pattern_tables, 0, 8);
+	tcase_add_test(tc_sprite_rendering, sprite_render_inactive);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_render_in_range_shifts_pt_out, 0, 8);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_renders_correct_palette_address, 0, 12);
+	tcase_add_test(tc_sprite_rendering, sprite_renders_highest_priority_sprite);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_renders_left_masking, 0, 9);
+	tcase_add_loop_test(tc_sprite_rendering, sprite_renders_enabled_disabled, 0, 8);
 	suite_add_tcase(s, tc_sprite_rendering);
 
 	return s;
