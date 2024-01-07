@@ -668,32 +668,33 @@ void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 {
 	unsigned sprite_colour_index[8] = {0};
-	// Is sprite active
 	for (int i = 7; i >= 0; i--) { // Low priority sprites first (high priority overwrites them)
-		if (ppu->sprite_x_counter[i] != 0) {
+		if (ppu->sprite_x_counter[i] != 0) { // Is sprite inactive
 			ppu->sprite_x_counter[i] -= 1;
-		} else {
-			sprite_colour_index[i] = ((ppu->sprite_pt_hi_shift_reg[i] & 0x01) << 1)
-			                       |  (ppu->sprite_pt_lo_shift_reg[i] & 0x01);
-
-			unsigned sprite_palette_addr = ppu->sprite_at_latches[i] & 0x03;
-			sprite_palette_addr <<= 2;
-			sprite_palette_addr += 0x3F10;
-
-			// Override to background colour
-			if ((ppu_mask_left_8px_sprite(ppu->cpu_ppu_io) && ppu->cycle < 8)
-			    || !ppu_show_sprite(ppu->cpu_ppu_io)
-			    || !sprite_colour_index[i]) {
-				sprite_palette_addr = 0x3F00;
-				sprite_colour_index[i] = 0;
-			}
-
-			*colour_ref = read_from_ppu_vram(&ppu->vram, sprite_palette_addr + sprite_colour_index[i]); // Output sprite
-			if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
-
-			ppu->sprite_pt_lo_shift_reg[i] >>= 1;
-			ppu->sprite_pt_hi_shift_reg[i] >>= 1;
+			continue;
 		}
+
+		// Active sprites
+		sprite_colour_index[i] = ((ppu->sprite_pt_hi_shift_reg[i] & 0x01) << 1)
+		                       |  (ppu->sprite_pt_lo_shift_reg[i] & 0x01);
+
+		unsigned sprite_palette_addr = ppu->sprite_at_latches[i] & 0x03;
+		sprite_palette_addr <<= 2;
+		sprite_palette_addr += 0x3F10;
+
+		// Override to background colour
+		if ((ppu_mask_left_8px_sprite(ppu->cpu_ppu_io) && ppu->cycle < 8)
+		    || !ppu_show_sprite(ppu->cpu_ppu_io)
+		    || !sprite_colour_index[i]) {
+			sprite_palette_addr = 0x3F00;
+			sprite_colour_index[i] = 0;
+		}
+
+		*colour_ref = read_from_ppu_vram(&ppu->vram, sprite_palette_addr + sprite_colour_index[i]); // Output sprite
+		if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
+
+		ppu->sprite_pt_lo_shift_reg[i] >>= 1;
+		ppu->sprite_pt_hi_shift_reg[i] >>= 1;
 	}
 }
 

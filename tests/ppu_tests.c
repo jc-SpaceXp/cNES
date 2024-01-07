@@ -1782,9 +1782,9 @@ START_TEST (sprite_fetch_pattern_tables)
 
 START_TEST (sprite_render_inactive)
 {
-	// If x counter is decremented and non-zero nothing is done
+	// If x counter is non-zero (inactive) it should only be decremented once
 	for (int i = 7; i >= 0; i--) {
-		ppu->sprite_x_counter[i] = 50 + i;
+		ppu->sprite_x_counter[i] = 1 + i; // highest: 8, lowest: 1
 		ppu->sprite_pt_hi_shift_reg[i] = 0xFF;
 		ppu->sprite_pt_lo_shift_reg[i] = 0xFF; // pt: 0x11 (hi/lo)
 		ppu->sprite_at_latches[i] = 0;
@@ -1801,7 +1801,7 @@ START_TEST (sprite_render_inactive)
 
 	for (int i = 7; i >= 0; i--) {
 		ck_assert_uint_eq(ppu->sprite_pt_hi_shift_reg[i], 0xFF);
-		ck_assert_uint_eq(ppu->sprite_x_counter[i], 50 + i - 1);
+		ck_assert_uint_eq(ppu->sprite_x_counter[i], i);
 	}
 }
 
@@ -1823,6 +1823,7 @@ START_TEST (sprite_render_in_range_shifts_pt_out)
 
 	for (int i = 7; i >= 0; i--) {
 		ck_assert_uint_eq(ppu->sprite_pt_hi_shift_reg[i], 0xFF >> (_i + 1));
+		ck_assert_uint_eq(ppu->sprite_x_counter[i], 0); // no decrement should happen
 	}
 }
 
