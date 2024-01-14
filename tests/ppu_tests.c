@@ -1406,29 +1406,31 @@ START_TEST (bkg_palette_address_offsets_with_fine_x)
 
 START_TEST (bkg_output_transparent_pixel)
 {
-	// A bit in 0x08 will enable background rendering, no bit == disabled (output common background colour)
-	uint8_t mask_to_output[6][2] = { {0x08, 2}
-	                               , {0x08, 2}
-	                               , {0x08, 2}
-	                               , {0x08, 2}
-	                               , {0x08, 2}
-	                               , {0x08, 2}
+	// bytes: at_hi, at_lo, pt_hi, pt_lo, palette_offset from $3F00 (ignore for pt_lo && pt_hi == 0)
+	uint8_t attribute_pattern_offsets[6][5] = { {0, 0, 0, 0, 1}
+	                                          , {0, 0, 1, 0, 2}
+	                                          , {0, 1, 0, 0, 6}
+	                                          , {1, 0, 0, 0, 9}
+	                                          , {1, 0, 1, 1, 11}
+	                                          , {1, 1, 0, 0, 13}
 	};
-	ppu->cycle = 300;
-	ppu->cpu_ppu_io->ppu_mask = mask_to_output[_i][0];
-	ppu->fine_x = 7;
-	ppu->bkg_internals.at_hi_shift_reg = 0xFF;
-	ppu->bkg_internals.at_lo_shift_reg = 0x00; // 0x10 (hi/lo)
-	ppu->bkg_internals.pt_hi_shift_reg = 0x00;
-	ppu->bkg_internals.pt_lo_shift_reg = 0x10; // 0x00 (hi/lo, transparent pixel)
-	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
+	uint8_t output = 11;
+	ppu->cycle = 45;
+	// A bit in 0x08 will enable background rendering, no bit == disabled (output common background colour)
+	ppu->cpu_ppu_io->ppu_mask = 0x08;
+	ppu->fine_x = _i; // fine_x should always select 0 bits for pt_hi and pt_lo
+	ppu->bkg_internals.pt_hi_shift_reg = attribute_pattern_offsets[_i][0];
+	ppu->bkg_internals.pt_lo_shift_reg = attribute_pattern_offsets[_i][1];
+	ppu->bkg_internals.pt_hi_shift_reg = attribute_pattern_offsets[_i][2];
+	ppu->bkg_internals.pt_lo_shift_reg = attribute_pattern_offsets[_i][3];
+	write_to_ppu_vram(&ppu->vram, 0x3F00, output); // background colour
 	write_to_ppu_vram(&ppu->vram, 0x3F08, 4); // shouldn't be read back (3F00 should be read instead)
-	write_to_ppu_vram(&ppu->vram, 0x3F09, 15); // non-background colour via pt and at (at * 2 plus pt), missed due to fine_x val
+	write_to_ppu_vram(&ppu->vram, 0x3F00 + attribute_pattern_offsets[_i][4], 15); // non-background colour via pt and at (at * 2 plus pt), missed due to fine_x val
 
 	uint8_t colour_reference = 0x00;
 	get_bkg_pixel(ppu, &colour_reference);
 
-	ck_assert_uint_eq(colour_reference, mask_to_output[_i][1]);
+	ck_assert_uint_eq(colour_reference, output);
 }
 
 
