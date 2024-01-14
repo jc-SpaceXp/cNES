@@ -1312,7 +1312,7 @@ START_TEST (bkg_render_left_masking_unmasking)
 	ck_assert_uint_eq(colour_reference, mask_to_output[_i][1]);
 }
 
-START_TEST (bkg_render_disabled)
+START_TEST (bkg_render_enabled_or_disabled)
 {
 	// A bit in 0x08 will enable background rendering, no bit == disabled (output common background colour)
 	// A bit in 0x02 will show the leftmost 8 background pixels, no bit = output the common background 0x3F00
@@ -2128,7 +2128,7 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_loop_test(tc_bkg_rendering, pixel_buffer_set_corner_pixels, 0, 4);
 	tcase_add_test(tc_bkg_rendering, pixel_buffer_set_out_of_bounds_allowed);
 	tcase_add_loop_test(tc_bkg_rendering, bkg_render_left_masking_unmasking, 0, 9);
-	tcase_add_loop_test(tc_bkg_rendering, bkg_render_disabled, 0, 6);
+	tcase_add_loop_test(tc_bkg_rendering, bkg_render_enabled_or_disabled, 0, 6);
 	tcase_add_loop_test(tc_bkg_rendering, bkg_palette_address_non_zero_offsets_no_fine_x, 0, 12);
 	tcase_add_loop_test(tc_bkg_rendering, bkg_palette_address_offsets_with_fine_x, 0, 8);
 	tcase_add_loop_test(tc_bkg_rendering, bkg_output_transparent_pixel, 0, 6);
