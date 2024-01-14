@@ -1339,19 +1339,64 @@ START_TEST (bkg_render_disabled)
 	ck_assert_uint_eq(colour_reference, mask_to_output[_i][1]);
 }
 
-START_TEST (bkg_palette_address)
+START_TEST (bkg_palette_address_non_zero_offsets_no_fine_x)
 {
+	// bytes: at_hi, at_lo, pt_hi, pt_lo, palette_offset from $3F00
+	// non-zero offsets, as 0 offsets will render $3F00
+	uint8_t attribute_pattern_offsets[12][5] = { {0, 0, 0, 1, 1}
+	                                           , {0, 0, 1, 0, 2}
+	                                           , {0, 0, 1, 1, 3}
+	                                           , {0, 1, 0, 1, 5}
+	                                           , {0, 1, 1, 0, 6}
+	                                           , {0, 1, 1, 1, 7}
+	                                           , {1, 0, 0, 1, 9}
+	                                           , {1, 0, 1, 0, 10}
+	                                           , {1, 0, 1, 1, 11}
+	                                           , {1, 1, 0, 1, 13}
+	                                           , {1, 1, 1, 0, 14}
+	                                           , {1, 1, 1, 1, 15}
+	};
 	uint8_t output = 15;
 	ppu->cycle = 300;
 	// A bit in 0x08 will enable background rendering, no bit == disabled (output common background colour)
 	ppu->cpu_ppu_io->ppu_mask = 0x08;
-	ppu->fine_x = 4;
-	ppu->bkg_internals.at_hi_shift_reg = 0xFF;
-	ppu->bkg_internals.at_lo_shift_reg = 0x00; // 0x10 (hi/lo)
-	ppu->bkg_internals.pt_hi_shift_reg = 0x00;
-	ppu->bkg_internals.pt_lo_shift_reg = 0x10; // 0x01 (hi/lo) via fine_x
+	ppu->bkg_internals.at_hi_shift_reg = attribute_pattern_offsets[_i][0];
+	ppu->bkg_internals.at_lo_shift_reg = attribute_pattern_offsets[_i][1];
+	ppu->bkg_internals.pt_hi_shift_reg = attribute_pattern_offsets[_i][2];
+	ppu->bkg_internals.pt_lo_shift_reg = attribute_pattern_offsets[_i][3];
 	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
-	write_to_ppu_vram(&ppu->vram, 0x3F09, output); // non-background colour via pt an at (at * 2 plus pt)
+	write_to_ppu_vram(&ppu->vram, 0x3F00 + attribute_pattern_offsets[_i][4], output); // non-background colour via pt an at (at * 2 plus pt)
+
+	uint8_t colour_reference = 0x00;
+	get_bkg_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, output);
+}
+
+START_TEST (bkg_palette_address_offsets_with_fine_x)
+{
+	// bytes: pt_hi, pt_lo, palette_offset from $3F00
+	uint8_t attribute_pattern_offsets[8][3] = { {0, 1, 1}
+	                                          , {1, 0, 2}
+	                                          , {1, 1, 3}
+	                                          , {0, 1, 1}
+	                                          , {1, 0, 2}
+	                                          , {1, 1, 3}
+	                                          , {0, 1, 1}
+	                                          , {1, 0, 2}
+	};
+	uint8_t output = 3;
+	ppu->cycle = 280;
+	ppu->fine_x = _i;
+	// A bit in 0x08 will enable background rendering, no bit == disabled (output common background colour)
+	ppu->cpu_ppu_io->ppu_mask = 0x08;
+	ppu->bkg_internals.at_hi_shift_reg = 0;
+	ppu->bkg_internals.at_lo_shift_reg = 0;
+	// pt bits will be placed into the fine_x bit position, all other bits are 0's
+	ppu->bkg_internals.pt_hi_shift_reg = attribute_pattern_offsets[_i][0] << _i;
+	ppu->bkg_internals.pt_lo_shift_reg = attribute_pattern_offsets[_i][1] << _i;
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F00 + attribute_pattern_offsets[_i][2], output); // non-background colour via pt an at (at * 2 plus pt)
 
 	uint8_t colour_reference = 0x00;
 	get_bkg_pixel(ppu, &colour_reference);
@@ -2082,7 +2127,8 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_test(tc_bkg_rendering, pixel_buffer_set_out_of_bounds_allowed);
 	tcase_add_loop_test(tc_bkg_rendering, bkg_render_left_masking_unmasking, 0, 9);
 	tcase_add_loop_test(tc_bkg_rendering, bkg_render_disabled, 0, 6);
-	tcase_add_loop_test(tc_bkg_rendering, bkg_palette_address, 0, 6);
+	tcase_add_loop_test(tc_bkg_rendering, bkg_palette_address_non_zero_offsets_no_fine_x, 0, 12);
+	tcase_add_loop_test(tc_bkg_rendering, bkg_palette_address_offsets_with_fine_x, 0, 8);
 	tcase_add_loop_test(tc_bkg_rendering, bkg_output_transparent_pixel, 0, 6);
 	tcase_add_test(tc_bkg_rendering, debug_all_nametables);
 	suite_add_tcase(s, tc_bkg_rendering);
