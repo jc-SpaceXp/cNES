@@ -2017,6 +2017,77 @@ START_TEST (sprite_renders_enabled_disabled)
 }
 
 
+START_TEST (bkg_and_sprite_transparent_pixels)
+{
+	ppu->current_pixel.bkg_pattern_index = 0;
+	ppu->current_pixel.sprite_pattern_index = 0;
+	ppu->current_pixel.bkg_col = 4; // output of $3F00
+	ppu->current_pixel.sprite_col = 10; // random output, should also be $3F00
+	ppu->current_pixel.scanline_sprite = 2; // scanline sprite being rendered
+	ppu->sprite_at_latches[ppu->current_pixel.scanline_sprite] = 0x00; // sprite is ahead of bkg (ingored)
+
+	get_pixel(&ppu->current_pixel, sprite_is_front_priority(ppu, ppu->current_pixel.scanline_sprite));
+
+	ck_assert_uint_eq(ppu->current_pixel.output_col, 4);
+}
+
+START_TEST (bkg_transparent_sprite_not_transparent)
+{
+	ppu->current_pixel.bkg_pattern_index = 0;
+	ppu->current_pixel.sprite_pattern_index = 3;
+	ppu->current_pixel.bkg_col = 1; // output of $3F00
+	ppu->current_pixel.sprite_col = 31;
+	ppu->current_pixel.scanline_sprite = 4; // scanline sprite being rendered
+	ppu->sprite_at_latches[ppu->current_pixel.scanline_sprite] = 0x20; // sprite is behing bkg (ingored)
+
+	get_pixel(&ppu->current_pixel, sprite_is_front_priority(ppu, ppu->current_pixel.scanline_sprite));
+
+	ck_assert_uint_eq(ppu->current_pixel.output_col, 31);
+}
+
+START_TEST (bkg_not_transparent_sprite_transparent)
+{
+	ppu->current_pixel.bkg_pattern_index = 1;
+	ppu->current_pixel.sprite_pattern_index = 0;
+	ppu->current_pixel.bkg_col = 19;
+	ppu->current_pixel.sprite_col = 5; // output of $3F00
+	ppu->current_pixel.scanline_sprite = 0; // scanline sprite being rendered
+	ppu->sprite_at_latches[ppu->current_pixel.scanline_sprite] = 0x00; // sprite is ahead of bkg (ignore)
+
+	get_pixel(&ppu->current_pixel, sprite_is_front_priority(ppu, ppu->current_pixel.scanline_sprite));
+
+	ck_assert_uint_eq(ppu->current_pixel.output_col, 19);
+}
+
+START_TEST (sprite_priority_ahead_of_bkg)
+{
+	ppu->current_pixel.bkg_pattern_index = 1;
+	ppu->current_pixel.sprite_pattern_index = 1;
+	ppu->current_pixel.bkg_col = 25;
+	ppu->current_pixel.sprite_col = 28;
+	ppu->current_pixel.scanline_sprite = 6; // scanline sprite being rendered
+	ppu->sprite_at_latches[ppu->current_pixel.scanline_sprite] = 0x00; // sprite is ahead of bkg
+
+	get_pixel(&ppu->current_pixel, sprite_is_front_priority(ppu, ppu->current_pixel.scanline_sprite));
+
+	ck_assert_uint_eq(ppu->current_pixel.output_col, 28);
+}
+
+START_TEST (sprite_priority_behind_bkg)
+{
+	ppu->current_pixel.bkg_pattern_index = 3;
+	ppu->current_pixel.sprite_pattern_index = 1;
+	ppu->current_pixel.bkg_col = 7;
+	ppu->current_pixel.sprite_col = 13;
+	ppu->current_pixel.scanline_sprite = 7; // scanline sprite being rendered
+	ppu->sprite_at_latches[ppu->current_pixel.scanline_sprite] = 0x20; // sprite is behind bkg
+
+	get_pixel(&ppu->current_pixel, sprite_is_front_priority(ppu, ppu->current_pixel.scanline_sprite));
+
+	ck_assert_uint_eq(ppu->current_pixel.output_col, 7);
+}
+
+
 Suite* ppu_master_suite(void)
 {
 	Suite* s;
@@ -2096,6 +2167,7 @@ Suite* ppu_rendering_suite(void)
 	TCase* tc_bkg_rendering;
 	TCase* tc_sprite_evaluation;
 	TCase* tc_sprite_rendering;
+	TCase* tc_bkg_sprite_priority;
 
 	s = suite_create("Ppu Rendering Related Tests");
 	tc_bkg_rendering = tcase_create("Background Rendering Tests");
@@ -2158,6 +2230,14 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_loop_test(tc_sprite_rendering, sprite_renders_left_masking, 0, 9);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_renders_enabled_disabled, 0, 8);
 	suite_add_tcase(s, tc_sprite_rendering);
+	tc_bkg_sprite_priority = tcase_create("Background vs Sprite Rendering Tests");
+	tcase_add_checked_fixture(tc_bkg_sprite_priority, setup, teardown);
+	tcase_add_test(tc_bkg_sprite_priority, bkg_and_sprite_transparent_pixels);
+	tcase_add_test(tc_bkg_sprite_priority, bkg_transparent_sprite_not_transparent);
+	tcase_add_test(tc_bkg_sprite_priority, bkg_not_transparent_sprite_transparent);
+	tcase_add_test(tc_bkg_sprite_priority, sprite_priority_ahead_of_bkg);
+	tcase_add_test(tc_bkg_sprite_priority, sprite_priority_behind_bkg);
+	suite_add_tcase(s, tc_bkg_sprite_priority);
 
 	return s;
 }

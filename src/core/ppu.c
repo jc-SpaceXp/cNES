@@ -663,6 +663,8 @@ void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 
 	*colour_ref = read_from_ppu_vram(&ppu->vram, bg_palette_addr + bg_colour_index);
 	if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
+	ppu->current_pixel.bkg_pattern_index = bg_colour_index;
+	ppu->current_pixel.bkg_col = *colour_ref;
 }
 
 void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
@@ -692,9 +694,37 @@ void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 
 		*colour_ref = read_from_ppu_vram(&ppu->vram, sprite_palette_addr + sprite_colour_index[i]); // Output sprite
 		if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
+		ppu->current_pixel.scanline_sprite = i;
+		ppu->current_pixel.sprite_pattern_index = sprite_colour_index[i];
+		ppu->current_pixel.sprite_col = *colour_ref;
 
 		ppu->sprite_pt_lo_shift_reg[i] >>= 1;
 		ppu->sprite_pt_hi_shift_reg[i] >>= 1;
+	}
+}
+
+/* Summary of which pixel is chosen (BG or sprite):
+ *
+ * Regardless of sprite priority:
+ *   If bg_colour_index is non-zero and sprites colour index is 0, output BG
+ *   If sprite colour index is non-zero and bg_colour_index is 0, output sprite
+ *   If both sprite and bg colour indexes are 0, output BG @ 0x3F00
+ *
+ * Othwerwise the pixel output is determined by sprite priority
+ */
+void get_pixel(struct CurrentPixel* current_pixel, bool sprite_in_front_of_bkg)
+{
+	if (!current_pixel->bkg_pattern_index || !current_pixel->sprite_pattern_index) {
+		current_pixel->output_col = current_pixel->sprite_col;
+		if (!current_pixel->sprite_pattern_index) {
+			current_pixel->output_col = current_pixel->bkg_col; // will match $3F00
+		}
+	} else {
+		current_pixel->output_col = current_pixel->bkg_col;
+		// overwrite pixel via sprite priority if necessary
+		if (sprite_in_front_of_bkg) {
+			current_pixel->output_col = current_pixel->sprite_col;
+		}
 	}
 }
 

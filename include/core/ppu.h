@@ -67,6 +67,15 @@ struct BackgroundRenderingInternals {
 	uint16_t nt_addr_current; // Current tile address for pixels 1-8 in pipeline
 };
 
+struct CurrentPixel {
+	unsigned int bkg_pattern_index;
+	unsigned int sprite_pattern_index;
+	unsigned int scanline_sprite; // which scanline sprite is being output (0-7)
+	uint8_t bkg_col;
+	uint8_t sprite_col;
+	uint8_t output_col;
+};
+
 struct Ppu2C02 {
 	// Memory mapped I/O
 	CpuPpuShare* cpu_ppu_io;
@@ -98,6 +107,7 @@ struct Ppu2C02 {
 	uint8_t fine_x; // Fine X Scroll - only lower 4 bits are used
 
 	struct BackgroundRenderingInternals bkg_internals;
+	struct CurrentPixel current_pixel;
 
 	PpuNametableMirroringType nametable_mirroring;
 
@@ -173,6 +183,7 @@ bool sprite_is_front_priority(const Ppu2C02* ppu, unsigned scanline_sprite_index
 
 void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref);
 void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref);
+void get_pixel(struct CurrentPixel* current_pixel, bool sprite_in_front_of_bkg);
 
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows);
