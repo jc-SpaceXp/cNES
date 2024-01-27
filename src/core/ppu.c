@@ -674,7 +674,7 @@ void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 
 void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 {
-	unsigned sprite_colour_index[8] = {0};
+	unsigned sprite_colour_index = 0;
 	for (int i = 7; i >= 0; i--) { // Low priority sprites first (high priority overwrites them)
 		if (ppu->sprite_x_counter[i] != 0) { // Is sprite inactive
 			ppu->sprite_x_counter[i] -= 1;
@@ -682,8 +682,8 @@ void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 		}
 
 		// Active sprites
-		sprite_colour_index[i] = ((ppu->sprite_pt_hi_shift_reg[i] & 0x01) << 1)
-		                       |  (ppu->sprite_pt_lo_shift_reg[i] & 0x01);
+		sprite_colour_index = ((ppu->sprite_pt_hi_shift_reg[i] & 0x01) << 1)
+		                    |  (ppu->sprite_pt_lo_shift_reg[i] & 0x01);
 
 		unsigned sprite_palette_addr = ppu->sprite_at_latches[i] & 0x03;
 		sprite_palette_addr <<= 2;
@@ -692,15 +692,15 @@ void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 		// Override to background colour
 		if ((ppu_mask_left_8px_sprite(ppu->cpu_ppu_io) && ppu->cycle < 8)
 		    || !ppu_show_sprite(ppu->cpu_ppu_io)
-		    || !sprite_colour_index[i]) {
+		    || !sprite_colour_index) {
 			sprite_palette_addr = 0x3F00;
-			sprite_colour_index[i] = 0;
+			sprite_colour_index = 0;
 		}
 
-		*colour_ref = read_from_ppu_vram(&ppu->vram, sprite_palette_addr + sprite_colour_index[i]); // Output sprite
+		*colour_ref = read_from_ppu_vram(&ppu->vram, sprite_palette_addr + sprite_colour_index); // Output sprite
 		if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
 		ppu->current_pixel.scanline_sprite = i;
-		ppu->current_pixel.sprite_pattern_index = sprite_colour_index[i];
+		ppu->current_pixel.sprite_pattern_index = sprite_colour_index;
 		ppu->current_pixel.sprite_col = *colour_ref;
 
 		ppu->sprite_pt_lo_shift_reg[i] >>= 1;
