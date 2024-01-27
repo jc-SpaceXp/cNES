@@ -665,6 +665,11 @@ void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 	if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
 	ppu->current_pixel.bkg_pattern_index = bg_colour_index;
 	ppu->current_pixel.bkg_col = *colour_ref;
+
+	ppu->bkg_internals.pt_hi_shift_reg >>= 1;
+	ppu->bkg_internals.pt_lo_shift_reg >>= 1;
+	ppu->bkg_internals.at_hi_shift_reg >>= 1;
+	ppu->bkg_internals.at_lo_shift_reg >>= 1;
 }
 
 void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
