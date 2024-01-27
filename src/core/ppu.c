@@ -628,10 +628,10 @@ static unsigned eight_to_one_mux(uint16_t input, unsigned select_lines)
 	return get_nth_bit(input, select_lines);
 }
 
-static inline bool sprite_is_front_priority(const Ppu2C02* p, unsigned array_index)
+bool sprite_is_front_priority(const Ppu2C02* ppu, unsigned scanline_sprite_index)
 {
 	// if mask w/ 0x20 is zero then sprite is front priority
-	return (!(p->sprite_at_latches[array_index] & 0x20)) ? 1 : 0;
+	return (!(ppu->sprite_at_latches[scanline_sprite_index] & 0x20)) ? 1 : 0;
 }
 
 void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref)

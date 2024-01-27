@@ -169,6 +169,7 @@ void get_sprite_address(Ppu2C02* ppu, int* y_offset, unsigned count);
 void flip_sprites_vertically(Ppu2C02* ppu, int y_offset);
 void load_sprite_pattern_table_data(Ppu2C02* ppu, uint8_t* pattern_shift_reg
                                    , unsigned sprite_number, uint16_t sprite_addr);
+bool sprite_is_front_priority(const Ppu2C02* ppu, unsigned scanline_sprite_index);
 
 void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref);
 void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref);
