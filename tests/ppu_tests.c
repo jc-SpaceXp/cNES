@@ -1950,6 +1950,43 @@ START_TEST (sprite_renders_highest_priority_sprite)
 	ck_assert_uint_eq(colour_reference, 7);
 }
 
+START_TEST (sprite_renders_highest_priority_non_transparent_sprite)
+{
+	// higher priority sprites have a lower index
+	unsigned low_priority = 6;
+	unsigned high_priority = 2;
+	// If x counter is decremented and non-zero nothing is done
+	for (int i = 7; i >= 0; i--) {
+		ppu->sprite_x_counter[i] = 250; // force sprites out of range
+		ppu->sprite_pt_hi_shift_reg[i] = 0xFF;
+		ppu->sprite_pt_lo_shift_reg[i] = 0xFF;
+		ppu->sprite_at_latches[i] = 0xFF;
+	}
+	// Low priority (non-transparent)
+	ppu->sprite_x_counter[low_priority] = 0; // make sure sprites are overlapping
+	ppu->sprite_pt_hi_shift_reg[low_priority] = 0;
+	ppu->sprite_pt_lo_shift_reg[low_priority] = 1;
+	ppu->sprite_at_latches[low_priority] = 0;
+	write_to_ppu_vram(&ppu->vram, 0x3F11, 11); // non-background colour via pt and at (at * 2 plus pt)
+	// High priority (transparent)
+	ppu->sprite_x_counter[high_priority] = 0; // make sure sprites are overlapping
+	ppu->sprite_pt_hi_shift_reg[high_priority] = 0;
+	ppu->sprite_pt_lo_shift_reg[high_priority] = 0;
+	ppu->sprite_at_latches[high_priority] = 0;
+	ppu->cycle = 21;
+	ppu->cpu_ppu_io->ppu_mask = 0x10;
+	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F10, 5); // background colour, invalid entry
+
+	uint8_t colour_reference = 0x00;
+	get_sprite_pixel(ppu, &colour_reference);
+
+	ck_assert_uint_eq(colour_reference, 11);
+	ck_assert_uint_eq(ppu->current_pixel.sprite_col, 11);
+	ck_assert_uint_eq(ppu->current_pixel.sprite_pattern_index, 1);
+	ck_assert_uint_eq(ppu->current_pixel.scanline_sprite, low_priority);
+}
+
 START_TEST (sprite_renders_left_masking)
 {
 	// A bit in 0x04 will show the leftmost 8 pixels containing any sprites
@@ -2227,6 +2264,7 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_loop_test(tc_sprite_rendering, sprite_render_in_range_shifts_pt_out, 0, 8);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_renders_correct_palette_address, 0, 12);
 	tcase_add_test(tc_sprite_rendering, sprite_renders_highest_priority_sprite);
+	tcase_add_test(tc_sprite_rendering, sprite_renders_highest_priority_non_transparent_sprite);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_renders_left_masking, 0, 9);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_renders_enabled_disabled, 0, 8);
 	suite_add_tcase(s, tc_sprite_rendering);

@@ -685,17 +685,27 @@ void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 		sprite_colour_index = ((ppu->sprite_pt_hi_shift_reg[i] & 0x01) << 1)
 		                    |  (ppu->sprite_pt_lo_shift_reg[i] & 0x01);
 
+		// Always shift out active sprites
+		ppu->sprite_pt_lo_shift_reg[i] >>= 1;
+		ppu->sprite_pt_hi_shift_reg[i] >>= 1;
+
+		// ignore tranparent sprites, they are either out of range, another lower
+		// priority sprite is rendered if its overlapping or the background is output
+		if (!sprite_colour_index) {
+			continue;
+		}
+
 		unsigned sprite_palette_addr = ppu->sprite_at_latches[i] & 0x03;
 		sprite_palette_addr <<= 2;
 		sprite_palette_addr += 0x3F10;
 
 		// Override to background colour
 		if ((ppu_mask_left_8px_sprite(ppu->cpu_ppu_io) && ppu->cycle < 8)
-		    || !ppu_show_sprite(ppu->cpu_ppu_io)
-		    || !sprite_colour_index) {
+		    || !ppu_show_sprite(ppu->cpu_ppu_io)) {
 			sprite_palette_addr = 0x3F00;
 			sprite_colour_index = 0;
 		}
+
 
 		*colour_ref = read_from_ppu_vram(&ppu->vram, sprite_palette_addr + sprite_colour_index); // Output sprite
 		if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
@@ -703,8 +713,6 @@ void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 		ppu->current_pixel.sprite_pattern_index = sprite_colour_index;
 		ppu->current_pixel.sprite_col = *colour_ref;
 
-		ppu->sprite_pt_lo_shift_reg[i] >>= 1;
-		ppu->sprite_pt_hi_shift_reg[i] >>= 1;
 	}
 }
 
