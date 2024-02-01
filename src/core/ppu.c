@@ -743,7 +743,7 @@ void get_pixel(struct CurrentPixel* current_pixel, bool sprite_in_front_of_bkg)
 	if (!current_pixel->bkg_pattern_index || !current_pixel->sprite_pattern_index) {
 		current_pixel->output_col = current_pixel->sprite_col;
 		if (!current_pixel->sprite_pattern_index) {
-			current_pixel->output_col = current_pixel->bkg_col; // will match $3F00
+			current_pixel->output_col = current_pixel->bkg_col; // may match $3F00
 		}
 	} else {
 		current_pixel->output_col = current_pixel->bkg_col;
