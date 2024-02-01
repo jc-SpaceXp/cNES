@@ -675,6 +675,8 @@ void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 {
 	unsigned sprite_colour_index = 0;
+	ppu->current_pixel.scanline_sprite = 0;
+	ppu->current_pixel.sprite_col = 100;
 	for (int i = 7; i >= 0; i--) { // Low priority sprites first (high priority overwrites them)
 		if (ppu->sprite_x_counter[i] != 0) { // Is sprite inactive
 			ppu->sprite_x_counter[i] -= 1;
@@ -713,6 +715,15 @@ void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 		ppu->current_pixel.sprite_pattern_index = sprite_colour_index;
 		ppu->current_pixel.sprite_col = *colour_ref;
 
+	}
+
+	// If no sprite is rendered force to $3F00
+	if (ppu->current_pixel.sprite_col == 100) {
+		*colour_ref = read_from_ppu_vram(&ppu->vram, 0x3F00);
+		if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
+		//ppu->current_pixel.scanline_sprite = 20;
+		ppu->current_pixel.sprite_pattern_index = 0;
+		ppu->current_pixel.sprite_col = *colour_ref;
 	}
 }
 
