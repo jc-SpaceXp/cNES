@@ -99,6 +99,8 @@ int ppu_init(Ppu2C02* ppu, CpuPpuShare* cp)
 	/* Sprite stuff */
 	ppu->sprites_found = 0;
 	ppu->sprite_index = 0; // Fetch sprite #0 1st
+	ppu->current_pixel.scanline_sprite = 0;
+	ppu->current_pixel.output_col = 0;
 	ppu->stop_early = false;
 	ppu->sprite_zero_hit = false;
 	ppu->sprite_zero_scanline = 600;
