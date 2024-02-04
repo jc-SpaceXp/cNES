@@ -1827,7 +1827,7 @@ START_TEST (sprite_fetch_pattern_tables)
 }
 
 
-START_TEST (sprite_render_inactive)
+START_TEST (sprite_render_all_inactive)
 {
 	// If x counter is non-zero (inactive) it should only be decremented once
 	for (int i = 7; i >= 0; i--) {
@@ -1840,7 +1840,7 @@ START_TEST (sprite_render_inactive)
 	ppu->cycle = 50;
 	ppu->cpu_ppu_io->ppu_mask = 0x10;
 	write_to_ppu_vram(&ppu->vram, 0x3F00, 2); // background colour
-	write_to_ppu_vram(&ppu->vram, 0x3F10, 5); // background colour
+	write_to_ppu_vram(&ppu->vram, 0x3F10, 5); // background colour, invalid entry
 	write_to_ppu_vram(&ppu->vram, 0x3F13, 15); // non-background colour via pt and at (at * 2 plus pt)
 
 	uint8_t colour_reference = 0x00;
@@ -1850,6 +1850,9 @@ START_TEST (sprite_render_inactive)
 		ck_assert_uint_eq(ppu->sprite_pt_hi_shift_reg[i], 0xFF);
 		ck_assert_uint_eq(ppu->sprite_x_counter[i], i);
 	}
+	// check that $3F00 is output on the sprite if no sprite has been found
+	ck_assert_uint_eq(ppu->current_pixel.sprite_pattern_index, 0);
+	ck_assert_uint_eq(ppu->current_pixel.sprite_col, 2);
 }
 
 START_TEST (sprite_render_in_range_shifts_pt_out)
@@ -2260,7 +2263,7 @@ Suite* ppu_rendering_suite(void)
 	tcase_add_loop_test(tc_sprite_rendering, flip_8_pixel_sprites_vertically, 0, 8);
 	tcase_add_loop_test(tc_sprite_rendering, flip_16_pixel_sprites_vertically, 0, 16);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_fetch_pattern_tables, 0, 8);
-	tcase_add_test(tc_sprite_rendering, sprite_render_inactive);
+	tcase_add_test(tc_sprite_rendering, sprite_render_all_inactive);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_render_in_range_shifts_pt_out, 0, 8);
 	tcase_add_loop_test(tc_sprite_rendering, sprite_renders_correct_palette_address, 0, 12);
 	tcase_add_test(tc_sprite_rendering, sprite_renders_highest_priority_sprite);
