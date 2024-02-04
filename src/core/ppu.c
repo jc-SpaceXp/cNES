@@ -1224,7 +1224,10 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 	// Fill pixel buffer and then render frame
 	if (p->scanline <= 239) { // Visible scanlines
 		if (p->cycle <= 256 && (p->cycle != 0)) { // 0 is an idle cycle
-			render_pixel(p); // Render pixel every cycle
+			get_bkg_pixel(p, &p->current_pixel.bkg_col);
+			get_sprite_pixel(p, &p->current_pixel.sprite_col);
+			get_pixel(&p->current_pixel, sprite_is_front_priority(p, p->current_pixel.scanline_sprite));
+			set_rgba_pixel_in_buffer(pixels, 256, p->cycle - 1, p->scanline, palette[p->current_pixel.output_col], 0xFF);
 		}
 	} else if (p->scanline == 240 && p->cycle == 0) {
 		draw_pixels(pixels, DEFAULT_WIDTH, cnes_windows->cnes_main);  // Render frame
