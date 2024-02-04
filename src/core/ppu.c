@@ -723,7 +723,6 @@ void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref)
 	if (ppu->current_pixel.sprite_col == 100) {
 		*colour_ref = read_from_ppu_vram(&ppu->vram, 0x3F00);
 		if (ppu_show_greyscale(ppu->cpu_ppu_io)) { *colour_ref &= 0x30; }
-		//ppu->current_pixel.scanline_sprite = 20;
 		ppu->current_pixel.sprite_pattern_index = 0;
 		ppu->current_pixel.sprite_col = *colour_ref;
 	}
