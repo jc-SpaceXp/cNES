@@ -6307,6 +6307,39 @@ START_TEST (nmi_t2_state_check_branches)
 }
 END_TEST
 
+START_TEST (nmi_t2_state_check_non_branches)
+{
+	// Check that non-branched instructions don't detect NMIs
+	struct OpcodeCyclesLeft {
+		uint8_t opcode;
+		unsigned int cycles_left;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0018;
+	cpu->instruction_state = DECODE;
+	char ins[3][4] = { "AND", "ASL", "ADC" };
+	struct OpcodeCyclesLeft inputs_to_outputs[5] = {
+	                       // Don't include T0 states!
+	                         {reverse_opcode_lut(&ins[0], INDX), 6}
+	                       , {reverse_opcode_lut(&ins[0], ABSY), 5}
+	                       , {reverse_opcode_lut(&ins[1], ABSX), 7}
+	                       , {reverse_opcode_lut(&ins[1], ZPX), 6}
+	                       , {reverse_opcode_lut(&ins[2], ABS), 4}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == false);
+}
+END_TEST
+
 
 /* Trace logger unit tests
  */
@@ -7802,6 +7835,7 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_special_opcodes, 0, 19);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_jump_opcodes, 0, 7);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t2_state_check_branches, 0, 4);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_t2_state_check_non_branches, 0, 5);
 	suite_add_tcase(s, tc_cpu_nmi);
 
 	return s;
