@@ -38,6 +38,7 @@ int cpu_ppu_io_init(CpuPpuShare* cpu_ppu_io)
 	cpu_ppu_io->suppress_nmi_flag = false;
 	cpu_ppu_io->ignore_nmi = false;
 	cpu_ppu_io->nmi_lookahead = false;
+	cpu_ppu_io->nmi_signal_low = false;
 
 	cpu_ppu_io->nmi_cycles_left = 7;
 

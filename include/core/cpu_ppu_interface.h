@@ -31,6 +31,8 @@ struct CpuPpuShare {
 	bool bg_early_disable_mask; // Same as above except for disabling BG rendering
 	bool ppu_rendering_period; // Set true for scalines 0-239 and pre-render scanline, otherwise false
 
+	bool nmi_signal_low;
+
 	// cpu/ppu nmi synchronisation, when the cpu runs its clock it can be
 	// out odf sync with the ppu by 3 ppu clocks, this is set to true for
 	// the last 3 ppu clocks before a nmi is latched

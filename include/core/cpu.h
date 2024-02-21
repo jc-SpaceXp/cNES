@@ -113,8 +113,12 @@ struct Cpu6502 {
 	int8_t offset;  // used in branch and indexed addressing modes
 	unsigned instruction_cycles_remaining; // initial value = max number of cycles
 
+	// Interrupts
 	bool delay_nmi;  // only true when enabling NMI via $2000 during VBlank
 	bool cpu_ignore_fetch_on_nmi;
+	bool process_interrupt;
+	bool trigger_trace_logger;
+	bool nmi_pending;
 
 	// Instruction trace logger
 	char instruction[18]; // complete instruction e.g. LDA $2000
@@ -137,8 +141,6 @@ struct Cpu6502 {
 	uint16_t old_PC;
 	int old_stack;
 	unsigned old_cycle;
-	bool process_interrupt;
-	bool trigger_trace_logger;
 };
 
 struct InstructionDetails {
@@ -151,6 +153,9 @@ extern struct InstructionDetails isa_info[256];
 
 Cpu6502* cpu_allocator(void);
 int cpu_init(Cpu6502* cpu, uint16_t pc, CpuPpuShare* cp, CpuMapperShare* cm);
+
+void poll_nmi_signal(Cpu6502* cpu);
+void sample_nmi_interrupt(Cpu6502* cpu);
 
 void clock_cpu(Cpu6502* cpu);
 extern void (*hardware_interrupts[3])(Cpu6502* cpu); // used for unit tests of DMA/IRQ/NMI (non opcode interrupts)

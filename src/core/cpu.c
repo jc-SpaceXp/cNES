@@ -432,6 +432,7 @@ int cpu_init(Cpu6502* cpu, uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm
 	cpu->delay_nmi = false;
 	cpu->cpu_ignore_fetch_on_nmi = false;
 	cpu->process_interrupt = false;
+	cpu->nmi_pending = false;
 
 	cpu->controller_latch = 0;
 	cpu->player_1_controller = 0;
@@ -746,6 +747,22 @@ void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_
 		}
 		start_addr += 16;
 		printf("\n");
+	}
+}
+
+void poll_nmi_signal(Cpu6502* cpu)
+{
+	if (cpu->cpu_ppu_io->nmi_signal_low) {
+		cpu->nmi_pending = true;
+	}
+}
+
+void sample_nmi_interrupt(Cpu6502* cpu)
+{
+	cpu->process_interrupt = false;
+	// Load NMI on IR (instruction register) on next T2 state
+	if (cpu->nmi_pending) {
+		cpu->process_interrupt = true;
 	}
 }
 
