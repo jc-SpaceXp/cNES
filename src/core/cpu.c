@@ -803,7 +803,9 @@ void clock_cpu(Cpu6502* cpu)
 		bool t0_state_branched = (cpu->address_mode == REL)
 		                         && (cpu->instruction_cycles_remaining == 2)
 		                         && (cpu->instruction_state != EXECUTE);
-		if (t0_state_non_branched || t0_state_branched) {
+		bool t2_state_branched = (cpu->address_mode == REL)
+		                         && (cpu->instruction_cycles_remaining == 3);
+		if (t0_state_non_branched || t0_state_branched || t2_state_branched) {
 			sample_nmi_interrupt(cpu);
 		}
 	}

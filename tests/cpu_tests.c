@@ -6163,9 +6163,9 @@ START_TEST (nmi_t0_state_check_branches)
 	cpu->P = ~FLAG_C; // branch not taken (for cycles_left more than 2)
 	cpu->instruction_state = DECODE;
 	char ins[4] = "BCS";
-	struct BranchCyclesLeftOffsetResult inputs_to_outputs[5] = {
-	                         {reverse_opcode_lut(&ins, REL), 4, 0, false} // branch not taken
-	                       , {reverse_opcode_lut(&ins, REL), 3, 9, false} // page cross = false
+	struct BranchCyclesLeftOffsetResult inputs_to_outputs[4] = {
+	                       // Ignore T2 state as 6502 will poll for an interrupt here too
+	                         {reverse_opcode_lut(&ins, REL), 3, 9, false} // page cross = false
 	                       , {reverse_opcode_lut(&ins, REL), 3, 80, true} // page cross = true
 	                       , {reverse_opcode_lut(&ins, REL), 2, 80, false} // last cycle = false
 	                       , {reverse_opcode_lut(&ins, REL), 1, 44, false}
@@ -6261,6 +6261,45 @@ START_TEST (nmi_t0_state_check_jump_opcodes)
 	// clock_cpu() will decrement immediately
 	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
 	cpu->opcode = inputs_to_outputs[_i].opcode;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
+
+START_TEST (nmi_t2_state_check_branches)
+{
+	// T2 state is the first cycle of a branch instruction
+	// interrupts are polled here to avoid an infinite loop
+	// of 2/3 cycle branches as they never enter the T0 state
+	struct BranchCyclesLeftOffsetResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		int8_t offset;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x00F2;
+	cpu->P &= ~FLAG_N; // branch taken (not important)
+	cpu->instruction_state = DECODE;
+	char ins[4] = "BPL";
+	struct BranchCyclesLeftOffsetResult inputs_to_outputs[4] = {
+	                         {reverse_opcode_lut(&ins, REL), 4, 0, true} // T2 state
+	                       , {reverse_opcode_lut(&ins, REL), 3, 9, false} // page cross = false
+	                       // Ignore T0 state (branch taken w/ page cross)
+	                       , {reverse_opcode_lut(&ins, REL), 2, 80, false} // last cycle = false
+	                       , {reverse_opcode_lut(&ins, REL), 1, 44, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+	cpu->offset = inputs_to_outputs[_i].offset;
+	write_to_cpu(cpu, cpu->PC, 0x03);
 
 	clock_cpu(cpu);
 
@@ -7759,9 +7798,10 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_post_execute);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_2_cycle_opcode_check, 0, 6);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check, 0, 5);
-	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_branches, 0, 5);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_branches, 0, 4);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_special_opcodes, 0, 19);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_jump_opcodes, 0, 7);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_t2_state_check_branches, 0, 4);
 	suite_add_tcase(s, tc_cpu_nmi);
 
 	return s;
