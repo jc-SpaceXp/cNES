@@ -6160,7 +6160,7 @@ START_TEST (nmi_t0_state_check_branches)
 	cpu->cpu_ppu_io->nmi_signal_low = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
 	cpu->PC = 0x00F0;
-	cpu->P = ~FLAG_C; // branch not taken (for cycles_left more than 2)
+	cpu->P |= FLAG_C; // branch taken (not important)
 	cpu->instruction_state = DECODE;
 	char ins[4] = "BCS";
 	struct BranchCyclesLeftOffsetResult inputs_to_outputs[4] = {
