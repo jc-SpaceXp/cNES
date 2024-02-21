@@ -6182,6 +6182,93 @@ START_TEST (nmi_t0_state_check_branches)
 }
 END_TEST
 
+START_TEST (nmi_t0_state_check_special_opcodes)
+{
+	// T0 state is the 2nd last cycle of an opcode
+	struct OpcodeCyclesLeftResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0086;
+	cpu->stack = 0x2F;
+	cpu->instruction_state = EXECUTE;
+	char ins[3][4] = { "RTI", "BRK", "JSR" };
+	// RTI, BRK, JSR = SPECIAL
+	// JMP = ABS_JMP or IND JMP
+	struct OpcodeCyclesLeftResult inputs_to_outputs[19] = {
+	                         {reverse_opcode_lut(&ins[0], SPECIAL), 6, false}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 5, false}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 4, false}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 3, true}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 2, false}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 1, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 7, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 6, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 5, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 4, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 3, true}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 2, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 1, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 6, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 5, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 4, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 3, true}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 2, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 1, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+	write_to_cpu(cpu, cpu->PC, 0x01);
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
+
+START_TEST (nmi_t0_state_check_jump_opcodes)
+{
+	// T0 state is the 2nd last cycle of an opcode
+	struct OpcodeCyclesLeftResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0008;
+	cpu->instruction_state = DECODE;
+	char ins[4] = "JMP";
+	struct OpcodeCyclesLeftResult inputs_to_outputs[7] = {
+	                         {reverse_opcode_lut(&ins, ABS), 3, true}
+	                       , {reverse_opcode_lut(&ins, ABS), 2, false}
+	                       , {reverse_opcode_lut(&ins, ABS), 1, false}
+	                       , {reverse_opcode_lut(&ins, IND), 4, false}
+	                       , {reverse_opcode_lut(&ins, IND), 3, true}
+	                       , {reverse_opcode_lut(&ins, IND), 2, false}
+	                       , {reverse_opcode_lut(&ins, IND), 1, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
+
+
 /* Trace logger unit tests
  */
 START_TEST (log_adc)
@@ -7673,6 +7760,8 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_2_cycle_opcode_check, 0, 6);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check, 0, 5);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_branches, 0, 5);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_special_opcodes, 0, 19);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_jump_opcodes, 0, 7);
 	suite_add_tcase(s, tc_cpu_nmi);
 
 	return s;

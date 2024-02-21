@@ -812,6 +812,13 @@ void clock_cpu(Cpu6502* cpu)
 		cpu->instruction_state = POST_EXECUTE;
 		isa_info[cpu->opcode].execute_opcode(cpu); // can change the PC which the early fetch made!
 
+		// Includes BRK, JMP, JSR and RTI opcodes
+		bool t0_state_execute_special_opcodes = (cpu->address_mode != REL)
+		                                        && (cpu->instruction_cycles_remaining == 2);
+		if (t0_state_execute_special_opcodes) {
+			sample_nmi_interrupt(cpu);
+		}
+
 		if (cpu->cpu_ppu_io->nmi_pending) {
 			cpu->process_interrupt = true;
 		}
