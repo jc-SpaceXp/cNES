@@ -815,6 +815,9 @@ void clock_cpu(Cpu6502* cpu)
 		cpu->instruction_state = FETCH;
 		cpu->trigger_trace_logger = true;
 	}
+
+	// NMI and IRQ edge detectors are polled every phi2
+	poll_nmi_signal(cpu);
 }
 
 // true if branch not taken based on opcode

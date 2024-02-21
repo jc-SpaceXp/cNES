@@ -6016,6 +6016,73 @@ START_TEST (irq_correct_interrupt_vector)
 }
 END_TEST
 
+START_TEST (nmi_signal_polled_each_phi2_fetch)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0004;
+	write_to_cpu(cpu, cpu->PC, 0x05); // opcode
+	cpu->instruction_state = FETCH;
+	cpu->instruction_cycles_remaining = 10;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->nmi_pending == true);
+}
+END_TEST
+
+START_TEST (nmi_signal_polled_each_phi2_decode)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0006;
+	cpu->instruction_state = DECODE;
+	cpu->instruction_cycles_remaining = 231; // force no decoding by setting an out of bounds val
+	cpu->opcode = 0x16;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->nmi_pending == true);
+}
+END_TEST
+
+START_TEST (nmi_signal_polled_each_phi2_execute)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0007;
+	cpu->instruction_state = EXECUTE;
+	cpu->instruction_cycles_remaining = 231; // force no decoding by setting an out of bounds val
+	cpu->opcode = 0xEA; // NOP
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->nmi_pending == true);
+}
+END_TEST
+
+START_TEST (nmi_signal_polled_each_phi2_post_execute)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0008;
+	cpu->instruction_state = POST_EXECUTE;
+	cpu->instruction_cycles_remaining = 231; // force no decoding by setting an out of bounds val
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->nmi_pending == true);
+}
+END_TEST
+
 
 /* Trace logger unit tests
  */
@@ -7491,6 +7558,7 @@ Suite* cpu_hardware_interrupts_suite(void)
 {
 	Suite* s;
 	TCase* tc_cpu_hardware_interrupts;
+	TCase* tc_cpu_nmi;
 
 	s = suite_create("Cpu Hardware Interrupt Tests");
 
@@ -7498,6 +7566,13 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tcase_add_checked_fixture(tc_cpu_hardware_interrupts, setup, teardown);
 	tcase_add_test(tc_cpu_hardware_interrupts, irq_correct_interrupt_vector);
 	suite_add_tcase(s, tc_cpu_hardware_interrupts);
+	tc_cpu_nmi = tcase_create("Cpu NMI Tests");
+	tcase_add_checked_fixture(tc_cpu_nmi, setup, teardown);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_fetch);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_decode);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_execute);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_post_execute);
+	suite_add_tcase(s, tc_cpu_nmi);
 
 	return s;
 }
