@@ -788,6 +788,10 @@ void clock_cpu(Cpu6502* cpu)
 		} else {
 			fetch_opcode(cpu);
 			cpu->delay_nmi = false; // reset after returning from NMI
+			// T0 state for 2 cycle opcodes, poll NMI
+			if (isa_info[cpu->opcode].max_cycles == 2) {
+				sample_nmi_interrupt(cpu);
+			}
 		}
 	}  else if (cpu->instruction_state == DECODE) {
 		isa_info[cpu->opcode].decode_opcode(cpu);

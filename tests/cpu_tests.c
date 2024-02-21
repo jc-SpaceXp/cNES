@@ -6083,6 +6083,33 @@ START_TEST (nmi_signal_polled_each_phi2_post_execute)
 }
 END_TEST
 
+START_TEST (nmi_t0_state_2_cycle_opcode_check)
+{
+	// T0 state is the 2nd last cycle of an opcode, for 2 cycle opcodes this is also true
+	// but it is a special T0 T2 state
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0024;
+	cpu->instruction_state = FETCH;
+	cpu->instruction_cycles_remaining = 10;
+	unsigned int opcode_to_bool[6][2] = { {0x09, 1} // 1 == 2 cycle opcode
+		                                , {0x01, 0} // 0 == non 2 cycle opcode
+		                                , {0x2C, 0}
+		                                , {0x2A, 1}
+		                                , {0x58, 1}
+		                                , {0x70, 0} // branch instructions have an additional check
+	};
+	write_to_cpu(cpu, cpu->PC, opcode_to_bool[_i][0]);
+
+	clock_cpu(cpu);
+
+	ck_assert_uint_eq(cpu->process_interrupt, opcode_to_bool[_i][1]);
+}
+END_TEST
+
 
 /* Trace logger unit tests
  */
@@ -7572,6 +7599,7 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_decode);
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_execute);
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_post_execute);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_2_cycle_opcode_check, 0, 6);
 	suite_add_tcase(s, tc_cpu_nmi);
 
 	return s;
