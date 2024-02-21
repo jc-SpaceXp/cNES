@@ -795,6 +795,17 @@ void clock_cpu(Cpu6502* cpu)
 		}
 	}  else if (cpu->instruction_state == DECODE) {
 		isa_info[cpu->opcode].decode_opcode(cpu);
+
+		bool t0_state_non_branched = (cpu->address_mode != REL)
+		                             && (cpu->instruction_cycles_remaining == 2);
+		// Early terminations of branched instructions are indicated by an
+		// early switch to the EXECUTE enum e.g. branch not taken etc.
+		bool t0_state_branched = (cpu->address_mode == REL)
+		                         && (cpu->instruction_cycles_remaining == 2)
+		                         && (cpu->instruction_state != EXECUTE);
+		if (t0_state_non_branched || t0_state_branched) {
+			sample_nmi_interrupt(cpu);
+		}
 	}
 
 	if (cpu->instruction_state == EXECUTE) {

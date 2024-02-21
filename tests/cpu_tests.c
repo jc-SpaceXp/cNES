@@ -6110,6 +6110,77 @@ START_TEST (nmi_t0_state_2_cycle_opcode_check)
 }
 END_TEST
 
+START_TEST (nmi_t0_state_check)
+{
+	// T0 state is the 2nd last cycle of an opcode
+	struct OpcodeCyclesLeftResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0033;
+	cpu->instruction_state = DECODE;
+	char ins[4] = "AND";
+	struct OpcodeCyclesLeftResult inputs_to_outputs[5] = {
+	                         {reverse_opcode_lut(&ins, INDX), 3, true}
+	                       , {reverse_opcode_lut(&ins, INDX), 4, false}
+	                       , {reverse_opcode_lut(&ins, ZP), 4, false}
+	                       , {reverse_opcode_lut(&ins, ZP), 3, true}
+	                       , {reverse_opcode_lut(&ins, ZPX), 2, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
+
+START_TEST (nmi_t0_state_check_branches)
+{
+	// T0 state is the 2nd last cycle of a branch instruction
+	// only if a branch is taken w/ a page cross (max possible cycles)
+	// otherwise a T0 state is never called from a branching instruction
+	struct BranchCyclesLeftOffsetResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		int8_t offset;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x00F0;
+	cpu->P = ~FLAG_C; // branch not taken (for cycles_left more than 2)
+	cpu->instruction_state = DECODE;
+	char ins[4] = "BCS";
+	struct BranchCyclesLeftOffsetResult inputs_to_outputs[5] = {
+	                         {reverse_opcode_lut(&ins, REL), 4, 0, false} // branch not taken
+	                       , {reverse_opcode_lut(&ins, REL), 3, 9, false} // page cross = false
+	                       , {reverse_opcode_lut(&ins, REL), 3, 80, true} // page cross = true
+	                       , {reverse_opcode_lut(&ins, REL), 2, 80, false} // last cycle = false
+	                       , {reverse_opcode_lut(&ins, REL), 1, 44, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+	cpu->offset = inputs_to_outputs[_i].offset;
+	write_to_cpu(cpu, cpu->PC, 0x03);
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
 
 /* Trace logger unit tests
  */
@@ -7600,6 +7671,8 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_execute);
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_post_execute);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_2_cycle_opcode_check, 0, 6);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check, 0, 5);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_branches, 0, 5);
 	suite_add_tcase(s, tc_cpu_nmi);
 
 	return s;
