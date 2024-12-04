@@ -159,10 +159,15 @@ void ppu_vblank_logic(Ppu2C02* ppu)
 		}
 	} else if (ppu->scanline == (ppu->nmi_start - 1)) {
 		if (ppu->cycle == 339) {
-			ppu->cpu_ppu_io->nmi_lookahead = true;
+			if (ppu_ctrl_gen_nmi_bit_set(ppu->cpu_ppu_io)) {
+				ppu->cpu_ppu_io->nmi_lookahead = true;
+			}
 			ppu->cpu_ppu_io->suppress_vbl_status = true;
 		} else if (ppu->cycle == 340) {
 			ppu->cpu_ppu_io->suppress_vbl_status = true;
+			if (ppu_ctrl_gen_nmi_bit_set(ppu->cpu_ppu_io)) {
+				ppu->cpu_ppu_io->nmi_lookahead = true;
+			}
 		}
 	}
 
