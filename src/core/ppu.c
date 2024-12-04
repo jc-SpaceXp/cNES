@@ -150,6 +150,41 @@ static void ppu_vblank_warmup_seq(Ppu2C02* p, const Cpu6502* cpu)
 	}
 }
 
+void ppu_vblank_logic(Ppu2C02* ppu)
+{
+	if (ppu->scanline == ppu->nmi_start) {
+		if (ppu->cycle == 0) {
+			set_ppu_status_vblank_bit(ppu->cpu_ppu_io); // In VBlank
+			ppu->cpu_ppu_io->nmi_lookahead = true;
+			ppu->cpu_ppu_io->clear_status = true;
+		}
+		if (ppu_ctrl_gen_nmi_bit_set(ppu->cpu_ppu_io)) {
+			if (ppu->cycle == 1) {
+				ppu->cpu_ppu_io->nmi_pending = true;
+				ppu->cpu_ppu_io->nmi_lookahead = true; // nmi is delayed
+			} else if (ppu->cycle == 2) {
+				ppu->cpu_ppu_io->nmi_lookahead = true;
+			}
+			if (ppu->cpu_ppu_io->suppress_nmi_flag
+			    && (ppu->cycle == 1 || ppu->cycle == 2 || ppu->cycle == 3)) {
+				ppu->cpu_ppu_io->ignore_nmi = true;
+			}
+		}
+
+		if (ppu->cpu_ppu_io->ignore_nmi) {
+			ppu->cpu_ppu_io->nmi_pending = false;
+		}
+
+		// Must also disable NMI after disabling NMI flag
+		if (!ppu_ctrl_gen_nmi_bit_set(ppu->cpu_ppu_io) && ppu->cpu_ppu_io->nmi_pending) {
+			if (ppu->cycle < 5) {
+				ppu->cpu_ppu_io->ignore_nmi = true;
+				ppu->cpu_ppu_io->nmi_pending = false;
+			}
+		}
+	}
+}
+
 void append_ppu_info(Ppu2C02* ppu)
 {
 	printf(" PPU_CYC: %-3" PRIu16, ppu->old_cycle);
@@ -1079,45 +1114,17 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 		}
 	}
 
+	ppu_vblank_logic(p);
 
-	/* NMI, VBlank and ppu_status register handling */
 	if (p->scanline == p->nmi_start) {
-		if (p->cycle == 0) {
-			set_ppu_status_vblank_bit(p->cpu_ppu_io); // In VBlank
-			p->cpu_ppu_io->nmi_lookahead = true;
-			p->cpu_ppu_io->clear_status = true;
-		}
-		if (ppu_ctrl_gen_nmi_bit_set(p->cpu_ppu_io)) {
-			if (p->cycle == 1) {
-				p->cpu_ppu_io->nmi_pending = true;
-				p->cpu_ppu_io->nmi_lookahead = true; // nmi is delayed
-			} else if (p->cycle == 2) {
-				p->cpu_ppu_io->nmi_lookahead = true;
-			}
-			if (p->cpu_ppu_io->suppress_nmi_flag
-			    && (p->cycle == 1 || p->cycle == 2 || p->cycle == 3)) {
-				p->cpu_ppu_io->ignore_nmi = true;
-			}
-		}
-
-		if (p->cpu_ppu_io->ignore_nmi) {
-			p->cpu_ppu_io->nmi_pending = false;
-		}
-
-		// Must also disable NMI after disabling NMI flag
-		if (!ppu_ctrl_gen_nmi_bit_set(p->cpu_ppu_io) && p->cpu_ppu_io->nmi_pending) {
-			if (p->cycle < 5) {
-				p->cpu_ppu_io->ignore_nmi = true;
-				p->cpu_ppu_io->nmi_pending = false;
-			}
-		}
-
 		// clear VBlank flag if cpu clock is aligned w/ the ppu clock
 		// hard coded for NTSC currently
 		if (p->cpu_ppu_io->suppress_nmi_flag && (cpu->cycle % 3 == 0)) {
 			clear_ppu_status_vblank_bit(p->cpu_ppu_io);
 		}
-	} else if (p->scanline == 261 && p->cycle == 0) { // Pre-render scanline
+	}
+
+	if (p->scanline == 261 && p->cycle == 0) { // Pre-render scanline
 		p->cpu_ppu_io->ppu_status &= ~0x40;
 	} else if (p->scanline == 261 && p->cycle == 1) { // Pre-render scanline
 		// Clear VBlank, sprite hit and sprite overflow flags
