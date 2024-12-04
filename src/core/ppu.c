@@ -154,33 +154,7 @@ void ppu_vblank_logic(Ppu2C02* ppu)
 {
 	if (ppu->scanline == ppu->nmi_start) {
 		if (ppu->cycle == 0) {
-			set_ppu_status_vblank_bit(ppu->cpu_ppu_io); // In VBlank
-			ppu->cpu_ppu_io->nmi_lookahead = true;
-			ppu->cpu_ppu_io->clear_status = true;
-		}
-		if (ppu_ctrl_gen_nmi_bit_set(ppu->cpu_ppu_io)) {
-			if (ppu->cycle == 1) {
-				ppu->cpu_ppu_io->nmi_pending = true;
-				ppu->cpu_ppu_io->nmi_lookahead = true; // nmi is delayed
-			} else if (ppu->cycle == 2) {
-				ppu->cpu_ppu_io->nmi_lookahead = true;
-			}
-			if (ppu->cpu_ppu_io->suppress_nmi_flag
-			    && (ppu->cycle == 1 || ppu->cycle == 2 || ppu->cycle == 3)) {
-				ppu->cpu_ppu_io->ignore_nmi = true;
-			}
-		}
-
-		if (ppu->cpu_ppu_io->ignore_nmi) {
-			ppu->cpu_ppu_io->nmi_pending = false;
-		}
-
-		// Must also disable NMI after disabling NMI flag
-		if (!ppu_ctrl_gen_nmi_bit_set(ppu->cpu_ppu_io) && ppu->cpu_ppu_io->nmi_pending) {
-			if (ppu->cycle < 5) {
-				ppu->cpu_ppu_io->ignore_nmi = true;
-				ppu->cpu_ppu_io->nmi_pending = false;
-			}
+			set_ppu_status_vblank_bit(ppu->cpu_ppu_io);
 		}
 	}
 }
