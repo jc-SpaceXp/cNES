@@ -114,7 +114,6 @@ struct Cpu6502 {
 	unsigned instruction_cycles_remaining; // initial value = max number of cycles
 
 	// Interrupts
-	bool delay_nmi;  // only true when enabling NMI via $2000 during VBlank
 	bool process_interrupt;
 	bool trigger_trace_logger;
 	bool nmi_pending;

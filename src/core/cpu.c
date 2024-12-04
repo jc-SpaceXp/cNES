@@ -429,7 +429,6 @@ int cpu_init(Cpu6502* cpu, uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm
 	cpu->instruction_state = FETCH;
 	cpu->instruction_cycles_remaining = 51; // initial value doesn't matter as LUT will set it after first instruction is read
 
-	cpu->delay_nmi = false;
 	cpu->process_interrupt = false;
 	cpu->nmi_pending = false;
 
@@ -622,7 +621,6 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 		    && !ppu_ctrl_gen_nmi_bit_set(cpu->cpu_ppu_io)
 		    && (data & 0x80)) {
 			cpu->cpu_ppu_io->nmi_pending = true;
-			cpu->delay_nmi = true;
 		}
 
 		cpu->cpu_ppu_io->ppu_ctrl = data;
@@ -779,14 +777,13 @@ void clock_cpu(Cpu6502* cpu)
 	// Fetch-decode-execute state logic
 	if (cpu->instruction_state == FETCH) {
 		// Handle interrupts first
-		if (!cpu->delay_nmi && cpu->process_interrupt) {
+		if (cpu->process_interrupt) {
 			execute_NMI(cpu);
 			--cpu->cpu_ppu_io->nmi_cycles_left;
 		} else if (cpu->cpu_ppu_io->dma_pending) {
 			execute_DMA(cpu);
 		} else {
 			fetch_opcode(cpu);
-			cpu->delay_nmi = false; // reset after returning from NMI
 			// T0 state for 2 cycle opcodes, poll NMI
 			if (isa_info[cpu->opcode].max_cycles == 2) {
 				sample_nmi_interrupt(cpu);
@@ -820,9 +817,6 @@ void clock_cpu(Cpu6502* cpu)
 			sample_nmi_interrupt(cpu);
 		}
 
-		if (cpu->cpu_ppu_io->nmi_lookahead) {
-			cpu->delay_nmi = true;
-		}
 	}
 
 	if (cpu->instruction_state == POST_EXECUTE) {
@@ -830,6 +824,9 @@ void clock_cpu(Cpu6502* cpu)
 		cpu->trigger_trace_logger = true;
 	}
 
+	if (cpu->cpu_ppu_io->nmi_lookahead) {
+		cpu->cpu_ppu_io->nmi_signal_low = true;
+	}
 	// NMI and IRQ edge detectors are polled every phi2
 	poll_nmi_signal(cpu);
 }
