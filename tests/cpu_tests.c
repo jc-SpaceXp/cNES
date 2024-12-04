@@ -6083,6 +6083,27 @@ START_TEST (nmi_signal_polled_each_phi2_post_execute)
 }
 END_TEST
 
+START_TEST (nmi_signal_set_too_late_for_edge_detector)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->ignore_nmi = true;
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0008;
+	cpu->instruction_state = DECODE;
+	cpu->instruction_cycles_remaining = 4; // branched instructions
+	// T2 is when cycles == 3 (after clock_cpu() is called)
+	char ins[4] = "BCS";
+	cpu->opcode = reverse_opcode_lut(&ins, REL);
+
+	clock_cpu(cpu);
+
+	// NMI is seen but will not be acknowledged until another T0 or T2 state occurs
+	ck_assert(cpu->nmi_pending == true);
+	ck_assert(cpu->process_interrupt == false);
+}
+END_TEST
+
 START_TEST (nmi_lo_before_t0_state_2_cycle_opcode_check)
 {
 	// T0 state is the 2nd last cycle of an opcode, for 2 cycle opcodes this is also true
@@ -7829,6 +7850,7 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_decode);
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_execute);
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_post_execute);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_set_too_late_for_edge_detector);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_2_cycle_opcode_check, 0, 6);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check, 0, 5);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check_branches, 0, 4);
