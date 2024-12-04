@@ -48,7 +48,7 @@ int cpu_ppu_io_init(CpuPpuShare* cpu_ppu_io)
 	cpu_ppu_io->buffer_value = 0;
 
 	// Ppu related stuff
-	cpu_ppu_io->clear_status = false;
+	cpu_ppu_io->suppress_vbl_status = false;
 	cpu_ppu_io->bg_early_disable_mask = false;
 	cpu_ppu_io->bg_early_enable_mask = false;
 	cpu_ppu_io->ppu_rendering_period = false;
@@ -138,9 +138,9 @@ void read_2002(CpuPpuShare* cpu_ppu_io)
 	cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
 	cpu_ppu_io->suppress_nmi_flag = true;
 
-	if (cpu_ppu_io->clear_status) {
+	if (cpu_ppu_io->suppress_vbl_status) {
 		cpu_ppu_io->return_value &= ~0x80;
-		cpu_ppu_io->clear_status = false;
+		cpu_ppu_io->suppress_vbl_status = false;
 	}
 }
 

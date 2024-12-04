@@ -1035,7 +1035,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 {
 	p->cpu_ppu_io->nmi_lookahead = false;
-	p->cpu_ppu_io->clear_status = false;
+	p->cpu_ppu_io->suppress_vbl_status = false;
 
 	p->cycle++;
 	if (p->cycle > 340) {
@@ -1111,7 +1111,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 	} else if (p->scanline == 240 && p->cycle == 340) {
 		p->cpu_ppu_io->nmi_lookahead = true;
 	} else if (p->scanline == 240 && (p->cycle == 339 || p->cycle == 340)) {
-		p->cpu_ppu_io->clear_status = true;
+		p->cpu_ppu_io->suppress_vbl_status = true;
 	}
 
 
