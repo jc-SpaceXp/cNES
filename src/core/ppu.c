@@ -155,6 +155,14 @@ void ppu_vblank_logic(Ppu2C02* ppu)
 	if (ppu->scanline == ppu->nmi_start) {
 		if (ppu->cycle == 0) {
 			set_ppu_status_vblank_bit(ppu->cpu_ppu_io);
+			ppu->cpu_ppu_io->suppress_vbl_status = true;
+		}
+	} else if (ppu->scanline == (ppu->nmi_start - 1)) {
+		if (ppu->cycle == 339) {
+			ppu->cpu_ppu_io->nmi_lookahead = true;
+			ppu->cpu_ppu_io->suppress_vbl_status = true;
+		} else if (ppu->cycle == 340) {
+			ppu->cpu_ppu_io->suppress_vbl_status = true;
 		}
 	}
 
@@ -1108,10 +1116,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 	} else if (p->scanline == 261 && p->cycle == 1) { // Pre-render scanline
 		// Clear VBlank, sprite hit and sprite overflow flags
 		p->cpu_ppu_io->ppu_status &= ~0xE0;
-	} else if (p->scanline == 240 && p->cycle == 340) {
-		p->cpu_ppu_io->nmi_lookahead = true;
-	} else if (p->scanline == 240 && (p->cycle == 339 || p->cycle == 340)) {
-		p->cpu_ppu_io->suppress_vbl_status = true;
 	}
 
 
