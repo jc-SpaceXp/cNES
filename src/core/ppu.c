@@ -157,6 +157,11 @@ void ppu_vblank_logic(Ppu2C02* ppu)
 			set_ppu_status_vblank_bit(ppu->cpu_ppu_io);
 		}
 	}
+
+	if (ppu_status_vblank_bit_set(ppu->cpu_ppu_io)
+	   && ppu_ctrl_gen_nmi_bit_set(ppu->cpu_ppu_io)) {
+		ppu->cpu_ppu_io->nmi_signal_low = true;
+	}
 }
 
 void append_ppu_info(Ppu2C02* ppu)

@@ -2149,6 +2149,20 @@ START_TEST (vblank_set_timing_ntsc)
 	ck_assert_uint_eq(ppu->cpu_ppu_io->ppu_status & 0x80, cycle_scanline_result[_i][2]);
 }
 
+START_TEST (in_vblank_and_nmi_bit_set_ntsc)
+{
+	unsigned int vblank_ntsc_scanline = 241;
+	ppu->nmi_start = vblank_ntsc_scanline;
+	ppu->cycle = 200;
+	ppu->scanline = vblank_ntsc_scanline;
+	ppu->cpu_ppu_io->ppu_status = 0x80; // VBLank flag set
+	ppu->cpu_ppu_io->ppu_ctrl = 0x80; // Generate NMI in vblank
+
+	ppu_vblank_logic(ppu);
+
+	ck_assert(ppu->cpu_ppu_io->nmi_signal_low == true);
+}
+
 
 Suite* ppu_master_suite(void)
 {
@@ -2314,6 +2328,7 @@ Suite* ppu_vblank_suite(void)
 	tc_ppu_vblank_ntsc = tcase_create("NTSC VBLank Tests");
 	tcase_add_checked_fixture(tc_ppu_vblank_ntsc, setup, teardown);
 	tcase_add_loop_test(tc_ppu_vblank_ntsc, vblank_set_timing_ntsc, 0, 7);
+	tcase_add_test(tc_ppu_vblank_ntsc, in_vblank_and_nmi_bit_set_ntsc);
 	suite_add_tcase(s, tc_ppu_vblank_ntsc);
 	return s;
 }
