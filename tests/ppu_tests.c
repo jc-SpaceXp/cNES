@@ -2149,18 +2149,25 @@ START_TEST (vblank_set_timing_ntsc)
 	ck_assert_uint_eq(ppu->cpu_ppu_io->ppu_status & 0x80, cycle_scanline_result[_i][2]);
 }
 
-START_TEST (in_vblank_and_nmi_bit_set_ntsc)
+START_TEST (nmi_enabled_with_vblank_and_nmi_bits_ntsc)
 {
 	unsigned int vblank_ntsc_scanline = 241;
 	ppu->nmi_start = vblank_ntsc_scanline;
-	ppu->cycle = 200;
-	ppu->scanline = vblank_ntsc_scanline;
-	ppu->cpu_ppu_io->ppu_status = 0x80; // VBLank flag set
-	ppu->cpu_ppu_io->ppu_ctrl = 0x80; // Generate NMI in vblank
+	unsigned int cycle_scanline_vbl_nmi_result[6][5] = { {200, 241, 0x80, 0x80, 1}
+	                                                   , {1, 241, 0x80, 0x80, 1}
+	                                                   , {1, 241, 0x80, 0x00, 0}
+	                                                   , {200, 201, 0x00, 0x80, 0}
+	                                                   , {19, 201, 0x00, 0x00, 0}
+	                                                   , {339, 254, 0x80, 0x80, 1}
+	};
+	ppu->cycle = cycle_scanline_vbl_nmi_result[_i][0];
+	ppu->scanline = cycle_scanline_vbl_nmi_result[_i][1];
+	ppu->cpu_ppu_io->ppu_status = cycle_scanline_vbl_nmi_result[_i][2];
+	ppu->cpu_ppu_io->ppu_ctrl = cycle_scanline_vbl_nmi_result[_i][3];
 
 	ppu_vblank_logic(ppu);
 
-	ck_assert(ppu->cpu_ppu_io->nmi_signal_low == true);
+	ck_assert(ppu->cpu_ppu_io->nmi_signal_low == (bool) cycle_scanline_vbl_nmi_result[_i][4]);
 }
 
 
@@ -2328,7 +2335,7 @@ Suite* ppu_vblank_suite(void)
 	tc_ppu_vblank_ntsc = tcase_create("NTSC VBLank Tests");
 	tcase_add_checked_fixture(tc_ppu_vblank_ntsc, setup, teardown);
 	tcase_add_loop_test(tc_ppu_vblank_ntsc, vblank_set_timing_ntsc, 0, 7);
-	tcase_add_test(tc_ppu_vblank_ntsc, in_vblank_and_nmi_bit_set_ntsc);
+	tcase_add_loop_test(tc_ppu_vblank_ntsc, nmi_enabled_with_vblank_and_nmi_bits_ntsc, 0, 6);
 	suite_add_tcase(s, tc_ppu_vblank_ntsc);
 	return s;
 }
