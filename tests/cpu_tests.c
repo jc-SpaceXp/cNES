@@ -6083,7 +6083,7 @@ START_TEST (nmi_signal_polled_each_phi2_post_execute)
 }
 END_TEST
 
-START_TEST (nmi_t0_state_2_cycle_opcode_check)
+START_TEST (nmi_lo_before_t0_state_2_cycle_opcode_check)
 {
 	// T0 state is the 2nd last cycle of an opcode, for 2 cycle opcodes this is also true
 	// but it is a special T0 T2 state
@@ -6110,7 +6110,7 @@ START_TEST (nmi_t0_state_2_cycle_opcode_check)
 }
 END_TEST
 
-START_TEST (nmi_t0_state_check)
+START_TEST (nmi_lo_before_t0_state_check)
 {
 	// T0 state is the 2nd last cycle of an opcode
 	struct OpcodeCyclesLeftResult {
@@ -6143,7 +6143,7 @@ START_TEST (nmi_t0_state_check)
 }
 END_TEST
 
-START_TEST (nmi_t0_state_check_branches)
+START_TEST (nmi_lo_before_t0_state_check_branches)
 {
 	// T0 state is the 2nd last cycle of a branch instruction
 	// only if a branch is taken w/ a page cross (max possible cycles)
@@ -6182,7 +6182,7 @@ START_TEST (nmi_t0_state_check_branches)
 }
 END_TEST
 
-START_TEST (nmi_t0_state_check_special_opcodes)
+START_TEST (nmi_lo_before_t0_state_check_special_opcodes)
 {
 	// T0 state is the 2nd last cycle of an opcode
 	struct OpcodeCyclesLeftResult {
@@ -6233,7 +6233,7 @@ START_TEST (nmi_t0_state_check_special_opcodes)
 }
 END_TEST
 
-START_TEST (nmi_t0_state_check_jump_opcodes)
+START_TEST (nmi_lo_before_t0_state_check_jump_opcodes)
 {
 	// T0 state is the 2nd last cycle of an opcode
 	struct OpcodeCyclesLeftResult {
@@ -6268,7 +6268,7 @@ START_TEST (nmi_t0_state_check_jump_opcodes)
 }
 END_TEST
 
-START_TEST (nmi_t2_state_check_branches)
+START_TEST (nmi_lo_before_t2_state_check_branches)
 {
 	// T2 state is the first cycle of a branch instruction
 	// interrupts are polled here to avoid an infinite loop
@@ -6307,7 +6307,7 @@ START_TEST (nmi_t2_state_check_branches)
 }
 END_TEST
 
-START_TEST (nmi_t2_state_check_non_branches)
+START_TEST (nmi_lo_before_t2_state_check_non_branches)
 {
 	// Check that non-branched instructions don't detect NMIs
 	struct OpcodeCyclesLeft {
@@ -7829,13 +7829,13 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_decode);
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_execute);
 	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_post_execute);
-	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_2_cycle_opcode_check, 0, 6);
-	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check, 0, 5);
-	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_branches, 0, 4);
-	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_special_opcodes, 0, 19);
-	tcase_add_loop_test(tc_cpu_nmi, nmi_t0_state_check_jump_opcodes, 0, 7);
-	tcase_add_loop_test(tc_cpu_nmi, nmi_t2_state_check_branches, 0, 4);
-	tcase_add_loop_test(tc_cpu_nmi, nmi_t2_state_check_non_branches, 0, 5);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_2_cycle_opcode_check, 0, 6);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check, 0, 5);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check_branches, 0, 4);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check_special_opcodes, 0, 19);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check_jump_opcodes, 0, 7);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t2_state_check_branches, 0, 4);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t2_state_check_non_branches, 0, 5);
 	suite_add_tcase(s, tc_cpu_nmi);
 
 	return s;
