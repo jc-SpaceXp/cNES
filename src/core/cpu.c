@@ -821,10 +821,6 @@ void clock_cpu(Cpu6502* cpu)
 			sample_nmi_interrupt(cpu);
 		}
 
-		if (cpu->cpu_ppu_io->nmi_pending) {
-			cpu->process_interrupt = true;
-		}
-
 		if (cpu->cpu_ppu_io->nmi_lookahead) {
 			cpu->delay_nmi = true;
 		}
