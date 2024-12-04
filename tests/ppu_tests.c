@@ -2131,13 +2131,22 @@ START_TEST (sprite_priority_behind_bkg)
 START_TEST (vblank_set_timing_ntsc)
 {
 	unsigned int vblank_ntsc_scanline = 241;
-	ppu->cycle = 0;
-	ppu->scanline = vblank_ntsc_scanline;
 	ppu->nmi_start = vblank_ntsc_scanline;
+	ppu->cpu_ppu_io->ppu_status = 0;
+	unsigned int cycle_scanline_result[7][3] = { {0, 241, 0x80}
+	                                           , {1, 241, 0x00}
+	                                           , {340, 240, 0x00}
+	                                           , {2, 241, 0x00}
+	                                           , {180, 259, 0x00}
+	                                           , {1, 1, 0x00}
+	                                           , {77, 249, 0x00}
+	};
+	ppu->cycle = cycle_scanline_result[_i][0];
+	ppu->scanline = cycle_scanline_result[_i][1];
 
 	ppu_vblank_logic(ppu);
 
-	ck_assert_uint_eq(ppu->cpu_ppu_io->ppu_status & 0x80, 0x80);
+	ck_assert_uint_eq(ppu->cpu_ppu_io->ppu_status & 0x80, cycle_scanline_result[_i][2]);
 }
 
 
@@ -2304,7 +2313,7 @@ Suite* ppu_vblank_suite(void)
 	s = suite_create("Ppu VBLank Tests");
 	tc_ppu_vblank_ntsc = tcase_create("NTSC VBLank Tests");
 	tcase_add_checked_fixture(tc_ppu_vblank_ntsc, setup, teardown);
-	tcase_add_test(tc_ppu_vblank_ntsc, vblank_set_timing_ntsc);
+	tcase_add_loop_test(tc_ppu_vblank_ntsc, vblank_set_timing_ntsc, 0, 7);
 	suite_add_tcase(s, tc_ppu_vblank_ntsc);
 	return s;
 }
