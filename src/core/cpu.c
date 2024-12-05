@@ -617,9 +617,9 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 	switch (addr) {
 	case 0x2000:
 		// PPU_CTRL
+		pull_nmi_low_after_nmi_bit_set_during_vblank(cpu->cpu_ppu_io, data);
 		cpu->cpu_ppu_io->ppu_ctrl = data;
 		write_2000(data, cpu->cpu_ppu_io);
-		pull_nmi_low_after_nmi_bit_set_during_vblank(cpu->cpu_ppu_io, data);
 		break;
 	case 0x2001:
 		// PPU_MASK

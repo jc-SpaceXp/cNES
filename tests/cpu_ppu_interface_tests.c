@@ -313,7 +313,7 @@ START_TEST (write_ppu_ctrl_2000_vblank_period_toggling_nmi_bit)
 	cpu_ppu_tester->ppu_ctrl = 0x00; // NMI not set
 	set_ppu_status_vblank_bit(cpu_ppu_tester);
 
-	pull_nmi_low_after_nmi_bit_set_during_vblank(cpu_ppu_tester, 0x80);
+	write_ppu_reg(0x2000, 0x80, cpio_cpu);
 
 	ck_assert(cpu_ppu_tester->nmi_signal_low == true);
 }
