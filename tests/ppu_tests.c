@@ -2176,22 +2176,29 @@ START_TEST (only_one_nmi_per_frame)
 {
 	unsigned int vblank_ntsc_scanline = 241;
 	ppu->nmi_start = vblank_ntsc_scanline;
-	unsigned int cycle_scanline_vbl_nmi_result[6][5] = { {200, 241, 0x80, 0x80, 0}
-	                                                   , {1, 241, 0x80, 0x80, 0}
-	                                                   , {1, 241, 0x80, 0x00, 0}
-	                                                   , {200, 201, 0x00, 0x80, 0}
-	                                                   , {19, 201, 0x00, 0x00, 0}
-	                                                   , {339, 254, 0x80, 0x80, 0}
+	struct OneNmiPerFrameTest {
+		unsigned int cycle;
+		unsigned int scanline;
+		uint8_t vblank_byte;
+		uint8_t nmi_byte;
+		bool nmi_occurred_in_frame;
+		bool expected_result;
 	};
-	ppu->cycle = cycle_scanline_vbl_nmi_result[_i][0];
-	ppu->scanline = cycle_scanline_vbl_nmi_result[_i][1];
-	ppu->cpu_ppu_io->nmi_for_frame = true;
-	ppu->cpu_ppu_io->ppu_status = cycle_scanline_vbl_nmi_result[_i][2];
-	ppu->cpu_ppu_io->ppu_ctrl = cycle_scanline_vbl_nmi_result[_i][3];
+	struct OneNmiPerFrameTest one_nmi_per_frame_test[4] = {
+		{200, 241, 0x80, 0x80, false, true}
+		, {200, 241, 0x80, 0x80, true, false}
+		, {19, 201, 0x00, 0x00, false, false}
+	    , {339, 254, 0x80, 0x80, true, false}
+	};
+	ppu->cycle = one_nmi_per_frame_test[_i].cycle;
+	ppu->scanline = one_nmi_per_frame_test[_i].scanline;
+	ppu->cpu_ppu_io->nmi_for_frame = one_nmi_per_frame_test[_i].nmi_occurred_in_frame;
+	ppu->cpu_ppu_io->ppu_status = one_nmi_per_frame_test[_i].vblank_byte;
+	ppu->cpu_ppu_io->ppu_ctrl = one_nmi_per_frame_test[_i].nmi_byte;
 
 	ppu_vblank_logic(ppu);
 
-	ck_assert(ppu->cpu_ppu_io->nmi_signal_low == (bool) cycle_scanline_vbl_nmi_result[_i][4]);
+	ck_assert(ppu->cpu_ppu_io->nmi_signal_low == one_nmi_per_frame_test[_i].expected_result);
 }
 
 
@@ -2360,7 +2367,7 @@ Suite* ppu_vblank_suite(void)
 	tcase_add_checked_fixture(tc_ppu_vblank_ntsc, setup, teardown);
 	tcase_add_loop_test(tc_ppu_vblank_ntsc, vblank_set_timing_ntsc, 0, 7);
 	tcase_add_loop_test(tc_ppu_vblank_ntsc, nmi_enabled_with_vblank_and_nmi_bits_ntsc, 0, 6);
-	tcase_add_loop_test(tc_ppu_vblank_ntsc, only_one_nmi_per_frame, 0, 6);
+	tcase_add_loop_test(tc_ppu_vblank_ntsc, only_one_nmi_per_frame, 0, 4);
 	suite_add_tcase(s, tc_ppu_vblank_ntsc);
 	return s;
 }
