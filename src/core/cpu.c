@@ -620,7 +620,7 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 		if (ppu_status_vblank_bit_set(cpu->cpu_ppu_io)
 		    && !ppu_ctrl_gen_nmi_bit_set(cpu->cpu_ppu_io)
 		    && (data & 0x80)) {
-			cpu->cpu_ppu_io->nmi_pending = true;
+			cpu->cpu_ppu_io->nmi_signal_low = true;
 		}
 
 		cpu->cpu_ppu_io->ppu_ctrl = data;
