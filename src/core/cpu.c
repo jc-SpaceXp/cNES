@@ -2478,13 +2478,14 @@ static void execute_NMI(Cpu6502* cpu)
 	case 2: // T5
 		set_address_bus(cpu, NMI_VECTOR);
 		set_data_bus_via_read(cpu, NMI_VECTOR, ADL);
+		cpu->nmi_pending = false;
+		cpu->cpu_ppu_io->nmi_signal_low = false;
 		break;
 	case 1: // T6
 		set_address_bus(cpu, NMI_VECTOR + 1);
 		set_data_bus_via_read(cpu, NMI_VECTOR + 1, ADH);
 		cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		cpu->instruction_state = POST_EXECUTE;
-		cpu->cpu_ppu_io->nmi_pending = false;
 		cpu->process_interrupt = false;
 		cpu->cpu_ppu_io->nmi_cycles_left = 8;  // 8 as a decrement occurs after this function is called
 		break;
