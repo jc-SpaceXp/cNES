@@ -99,6 +99,15 @@ bool ppu_mask_bg_or_sprite_enabled(const CpuPpuShare* cpu_ppu_io)
 	return ((cpu_ppu_io->ppu_mask & 0x18) ? 1 : 0);
 }
 
+void pull_nmi_low_after_nmi_bit_set_during_vblank(CpuPpuShare* cpu_ppu_io, uint8_t data)
+{
+	if (ppu_status_vblank_bit_set(cpu_ppu_io)
+	   && !ppu_ctrl_gen_nmi_bit_set(cpu_ppu_io)
+	   && (data & 0x80)) {
+		cpu_ppu_io->nmi_signal_low = true;
+	}
+}
+
 // Called from CPU
 void cpu_writes_to_vram(uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io)
 {

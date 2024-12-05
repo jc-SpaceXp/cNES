@@ -67,6 +67,7 @@ bool ppu_ctrl_gen_nmi_bit_set(const CpuPpuShare* cpu_ppu_io);
 void clear_ppu_status_vblank_bit(CpuPpuShare* cpu_ppu_io);
 void set_ppu_status_vblank_bit(CpuPpuShare* cpu_ppu_io);
 bool ppu_mask_bg_or_sprite_enabled(const CpuPpuShare* cpu_ppu_io);
+void pull_nmi_low_after_nmi_bit_set_during_vblank(CpuPpuShare* cpu_ppu_io, uint8_t data);
 
 void cpu_writes_to_vram(uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io);
 
