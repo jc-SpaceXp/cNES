@@ -152,6 +152,9 @@ static void ppu_vblank_warmup_seq(Ppu2C02* p, const Cpu6502* cpu)
 
 void ppu_vblank_logic(Ppu2C02* ppu)
 {
+	ppu->cpu_ppu_io->nmi_lookahead = false;
+	ppu->cpu_ppu_io->suppress_vbl_status = false;
+
 	if (ppu->scanline == ppu->nmi_start) {
 		if (ppu->cycle == 0) {
 			set_ppu_status_vblank_bit(ppu->cpu_ppu_io);
@@ -1047,9 +1050,6 @@ static void sprite_hit_lookahead(Ppu2C02* p)
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 {
-	p->cpu_ppu_io->nmi_lookahead = false;
-	p->cpu_ppu_io->suppress_vbl_status = false;
-
 	p->cycle++;
 	if (p->cycle > 340) {
 		p->cycle = 0; // Reset cycle count to 0, max val = 340
