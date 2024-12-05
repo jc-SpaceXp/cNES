@@ -6016,6 +6016,24 @@ START_TEST (irq_correct_interrupt_vector)
 }
 END_TEST
 
+START_TEST (nmi_sets_edge_detector_stage_1)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	bool nmi_lo_to_result[2][2] = {
+		{true, true}
+		, {false, false}
+	};
+	cpu->cpu_ppu_io->nmi_signal_low = nmi_lo_to_result[_i][0];
+
+	poll_nmi_signal(cpu);
+
+	// if NMI is low, edge detector is true
+	// which also sets the nmi_for_frame bool as the NMI will not be suppressed
+	ck_assert(cpu->nmi_pending == nmi_lo_to_result[_i][1]);
+	ck_assert(cpu->cpu_ppu_io->nmi_for_frame == nmi_lo_to_result[_i][1]);
+}
+END_TEST
+
 START_TEST (nmi_signal_polled_each_phi2_fetch)
 {
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
@@ -7887,6 +7905,7 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tc_cpu_hardware_interrupts = tcase_create("Cpu Hardware Interrupts (no opcodes e.g. IRQ)");
 	tcase_add_checked_fixture(tc_cpu_hardware_interrupts, setup, teardown);
 	tcase_add_test(tc_cpu_hardware_interrupts, irq_correct_interrupt_vector);
+	tcase_add_test(tc_cpu_hardware_interrupts, nmi_sets_edge_detector_stage_1);
 	suite_add_tcase(s, tc_cpu_hardware_interrupts);
 	tc_cpu_nmi = tcase_create("Cpu NMI Tests");
 	tcase_add_checked_fixture(tc_cpu_nmi, setup, teardown);

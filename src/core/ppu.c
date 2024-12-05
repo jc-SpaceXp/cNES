@@ -174,7 +174,8 @@ void ppu_vblank_logic(Ppu2C02* ppu)
 		}
 	}
 
-	if (ppu_status_vblank_bit_set(ppu->cpu_ppu_io)
+	if (!ppu->cpu_ppu_io->nmi_for_frame
+	   && ppu_status_vblank_bit_set(ppu->cpu_ppu_io)
 	   && ppu_ctrl_gen_nmi_bit_set(ppu->cpu_ppu_io)) {
 		ppu->cpu_ppu_io->nmi_signal_low = true;
 	}
@@ -1058,6 +1059,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 		if (p->scanline > 261) {
 			p->scanline = 0; // Reset scanline to 0, max val == 261
 			p->odd_frame = !p->odd_frame;
+			p->cpu_ppu_io->nmi_for_frame = false;
 		}
 	}
 

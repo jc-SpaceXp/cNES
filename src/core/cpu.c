@@ -746,6 +746,7 @@ void poll_nmi_signal(Cpu6502* cpu)
 {
 	if (cpu->cpu_ppu_io->nmi_signal_low) {
 		cpu->nmi_pending = true;
+		cpu->cpu_ppu_io->nmi_for_frame = true;
 	}
 }
 

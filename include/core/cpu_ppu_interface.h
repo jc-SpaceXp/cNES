@@ -32,6 +32,7 @@ struct CpuPpuShare {
 	bool ppu_rendering_period; // Set true for scalines 0-239 and pre-render scanline, otherwise false
 
 	bool nmi_signal_low;
+	bool nmi_for_frame; // typically only one NMI should happen per frame
 
 	// cpu/ppu nmi synchronisation, when the cpu runs its clock it can be
 	// out odf sync with the ppu by 3 ppu clocks, this is set to true for
