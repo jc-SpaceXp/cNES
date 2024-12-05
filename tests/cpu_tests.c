@@ -6383,6 +6383,28 @@ START_TEST (nmi_stage_1_signals_cleared_on_t0_state)
 }
 END_TEST
 
+START_TEST (nmi_stage_2_signal_cleared_on_last_cycle)
+{
+	// stage 2 detection is the sampling of the NMI edge detector
+	// nesdev: 6502 Interrupt Recognition Stages and Tolerances
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->cpu_ppu_io->nmi_lookahead = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->instruction_state = FETCH;
+	// last cycle is T+ [T1], 2nd last cycle is T0, 3rd last is T6
+	// on the 6502 it's actually cleared on T6 rather than T+ [T1]
+	// however, this detail isn't critical, using bool to stay in NMI
+	cpu->PC = 0x0011;
+	cpu->process_interrupt = true;
+	cpu->cpu_ppu_io->nmi_cycles_left = 1;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == false);
+}
+END_TEST
+
 
 /* Trace logger unit tests
  */
@@ -7881,6 +7903,7 @@ Suite* cpu_hardware_interrupts_suite(void)
 	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t2_state_check_branches, 0, 4);
 	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t2_state_check_non_branches, 0, 5);
 	tcase_add_test(tc_cpu_nmi, nmi_stage_1_signals_cleared_on_t0_state);
+	tcase_add_test(tc_cpu_nmi, nmi_stage_2_signal_cleared_on_last_cycle);
 	suite_add_tcase(s, tc_cpu_nmi);
 
 	return s;
