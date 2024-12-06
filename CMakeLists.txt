@@ -148,7 +148,9 @@ add_custom_command(TARGET ${TSTTARGET} POST_BUILD
 	COMMENT "Executable size (unit tests)"
 )
 
-add_custom_command(TARGET ${TSTTARGET} POST_BUILD
+# if custom_command() fails test executable is deleted using custom_target() instead
+add_custom_target(runtests ALL
+	DEPENDS ${TSTTARGET}
 	COMMAND ctest --test-dir "${CMAKE_BINARY_DIR}"
 	COMMENT "Execute tests"
 )
