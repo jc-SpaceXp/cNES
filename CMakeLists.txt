@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.21)
 project(cNES LANGUAGES C)
+enable_testing()
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED sdl2)
@@ -70,6 +71,8 @@ if (${DEBUG_CMAKE})
 		"COMMON_CFLAGS ${COMMON_CFLAGS}\n"
 		"SDL2_CFLAGS ${SDL2_CFLAGS_OTHER}\n"
 		"SDL2_LDFLAGS -l${SDL2_LIBRARIES}\n"
+		"LIBCHECK_CFLAGS ${LIBCHECK_CFLAGS_OTHER}\n"
+		"LIBCHECK_LDFLAGS -l${LIBCHECK_LIBRARIES}\n"
 	)
 
 	message("DEBUG_VAR (FILES): \n"
@@ -115,6 +118,31 @@ target_link_libraries(${SRCTARGET} PRIVATE common utilsrcs coresrcs)
 add_custom_command(TARGET ${SRCTARGET} POST_BUILD
 	COMMAND ${CMAKE_SIZE_UTIL} "$<TARGET_FILE_NAME:${SRCTARGET}>"
 	COMMENT "Executable size"
+)
+
+
+# Unit test section
+add_executable(${TSTTARGET} ${TSTSRCS})
+add_test(NAME ${TSTTARGET} COMMAND ${TSTTARGET})
+
+target_compile_options(${TSTTARGET} PRIVATE
+	${COMMON_CFLAGS}
+	${LIBCHECK_CFLAGS_OTHER}
+	${ASAN_FLAGS}
+)
+
+target_link_options(${TSTTARGET} PRIVATE ${ASAN_FLAGS})
+
+target_include_directories(${TSTTARGET} PRIVATE
+	${INCCOREDIR}
+	${INCUTILDIR}
+)
+
+target_link_libraries(${TSTTARGET} PRIVATE ${LIBCHECK_LIBRARIES} coresrcs utilsrcs)
+
+add_custom_command(TARGET ${TSTTARGET} POST_BUILD
+	COMMAND ${CMAKE_SIZE_UTIL} "$<TARGET_FILE_NAME:${TSTTARGET}>"
+	COMMENT "Executable size (unit tests)"
 )
 
 unset(DEBUG_CMAKE CACHE)
