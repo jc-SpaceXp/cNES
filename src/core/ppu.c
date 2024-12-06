@@ -1054,34 +1054,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
 		p->cpu_ppu_io->ppu_rendering_period = false;
 	}
 
-	// cpu is clocked first, ppu must be updated after the ppu runs its clock
-	// as the ppu is supposed to be running at the same time the write to the ppu reg occurs
-	// this means a buffer system needs to be implemented to preserve this behaviour
-	if (p->cpu_ppu_io->buffer_write) {
-		--p->cpu_ppu_io->buffer_counter;
-		// buffering a write to enable bg render sets flag
-		if (p->cpu_ppu_io->buffer_address == 0x2001 && (p->cpu_ppu_io->buffer_value & 0x08)) {
-			if (p->cpu_ppu_io->buffer_counter == 3) {
-				p->cpu_ppu_io->bg_early_enable_mask = true;
-			}
-		}
-
-		// buffering a write to disable bg render sets flag
-		if (p->cpu_ppu_io->buffer_address == 0x2001 && !(p->cpu_ppu_io->buffer_value & 0x08)) {
-			if (p->cpu_ppu_io->buffer_counter == 3) {
-				p->cpu_ppu_io->bg_early_disable_mask = true;
-			}
-		}
-		if (!p->cpu_ppu_io->buffer_counter) {
-			write_ppu_reg(p->cpu_ppu_io->buffer_address, p->cpu_ppu_io->buffer_value, cpu);
-			p->cpu_ppu_io->buffer_write = false;
-			p->cpu_ppu_io->buffer_counter = 6; // reset to non-zero value
-			// clear flags about buffered writes to enable/disable bg rendering
-			p->cpu_ppu_io->bg_early_enable_mask = false;
-			p->cpu_ppu_io->bg_early_disable_mask = false;
-		}
-	}
-
 	// odd frame skip
 	if (!p->cpu_ppu_io->bg_early_disable_mask
 		&& (p->cpu_ppu_io->bg_early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
