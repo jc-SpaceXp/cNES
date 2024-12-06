@@ -3,7 +3,6 @@
 
 #include "ppu_fwd.h"
 #include "cpu_fwd.h"
-#include "gui_fwd.h"
 #include "cpu_ppu_interface_fwd.h"
 
 #include <stdbool.h>

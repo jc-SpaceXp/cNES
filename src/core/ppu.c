@@ -1,10 +1,10 @@
 #include "ppu.h"
 #include "cpu.h"
-#include "gui.h"
 #include "cpu_ppu_interface.h"
 #include "bits_and_bytes.h"
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <inttypes.h>
 
