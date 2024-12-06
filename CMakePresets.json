@@ -1,0 +1,131 @@
+{
+	"version": 3,
+	"cmakeMinimumRequired": {
+		"major": 3,
+		"minor": 21,
+		"patch": 0
+	},
+	"configurePresets": [
+		{
+			"name": "release",
+			"binaryDir": "${sourceDir}/build/${presetName}"
+		},
+		{
+			"name": "debug",
+			"binaryDir": "${sourceDir}/build/${presetName}",
+			"cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+		},
+		{
+			"name": "debug-asan",
+			"inherits": "debug",
+			"binaryDir": "${sourceDir}/build/${presetName}",
+			"cacheVariables": { "ASAN": "ON" }
+		},
+		{
+			"name": "release-clang",
+			"inherits": "release",
+			"cacheVariables": { "CMAKE_C_COMPILER": "clang" }
+		},
+		{
+			"name": "release-gcc",
+			"inherits": "release",
+			"cacheVariables": { "CMAKE_C_COMPILER": "gcc" }
+		},
+		{
+			"name": "debug-clang",
+			"inherits": "debug",
+			"cacheVariables": { "CMAKE_C_COMPILER": "clang" }
+		},
+		{
+			"name": "debug-gcc",
+			"inherits": "debug",
+			"cacheVariables": { "CMAKE_C_COMPILER": "gcc" }
+		},
+		{
+			"name": "debug-asan-clang",
+			"inherits": "debug-asan",
+			"cacheVariables": { "CMAKE_C_COMPILER": "clang" }
+		},
+		{
+			"name": "debug-asan-gcc",
+			"inherits": "debug-asan",
+			"cacheVariables": { "CMAKE_C_COMPILER": "gcc" }
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "release",
+			"configurePreset": "release"
+		},
+		{
+			"name": "debug",
+			"configurePreset": "debug"
+		},
+		{
+			"name": "release-clang",
+			"configurePreset": "release-clang"
+		},
+		{
+			"name": "release-gcc",
+			"configurePreset": "release-gcc"
+		},
+		{
+			"name": "debug-gcc",
+			"configurePreset": "debug-gcc"
+		},
+		{
+			"name": "debug-clang",
+			"configurePreset": "debug-clang"
+		},
+		{
+			"name": "debug-asan",
+			"configurePreset": "debug-asan"
+		},
+		{
+			"name": "debug-asan-clang",
+			"configurePreset": "debug-asan-clang"
+		},
+		{
+			"name": "debug-asan-gcc",
+			"configurePreset": "debug-asan-gcc"
+		}
+	],
+	"testPresets": [
+		{
+			"name": "release",
+			"configurePreset": "release"
+		},
+		{
+			"name": "debug",
+			"configurePreset": "debug"
+		},
+		{
+			"name": "release-clang",
+			"configurePreset": "release-clang"
+		},
+		{
+			"name": "release-gcc",
+			"configurePreset": "release-gcc"
+		},
+		{
+			"name": "debug-gcc",
+			"configurePreset": "debug-gcc"
+		},
+		{
+			"name": "debug-clang",
+			"configurePreset": "debug-clang"
+		},
+		{
+			"name": "debug-asan",
+			"configurePreset": "debug-asan"
+		},
+		{
+			"name": "debug-asan-clang",
+			"configurePreset": "debug-asan-clang"
+		},
+		{
+			"name": "debug-asan-gcc",
+			"configurePreset": "debug-asan-gcc"
+		}
+	]
+}
