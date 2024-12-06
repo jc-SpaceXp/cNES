@@ -24,6 +24,7 @@
 extern uint32_t pixels[256 * 240];
 extern uint32_t nt_pixels[512 * 480];
 
+
 static void check_if_ppu_should_render_to_screen(uint32_t* main_pixels, uint32_t* nt_pixels
                                                 , Ppu2C02* ppu
                                                 , Sdl2DisplayOutputs* cnes_windows)
@@ -42,6 +43,21 @@ static void check_if_ppu_should_render_to_screen(uint32_t* main_pixels, uint32_t
 	}
  }
 
+// Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
+static void ppu_vblank_warmup_seq(const Cpu6502* cpu)
+{
+	static unsigned count = 0;
+	if (!count) {
+		clear_ppu_status_vblank_bit(cpu->cpu_ppu_io);
+		++count;
+	} else if ((count == 1) && cpu->cycle >= 27383) {
+		set_ppu_status_vblank_bit(cpu->cpu_ppu_io);
+		++count;
+	} else if ((count == 2) && cpu->cycle >= 57164) {
+		set_ppu_status_vblank_bit(cpu->cpu_ppu_io);
+		++count;
+	}
+}
 
 
 void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, uint32_t* pixels, uint32_t* nt_pixels
@@ -49,6 +65,7 @@ void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, uint32_t* pixels, uint32_t* nt_
 {
 	// 3 : 1 PPU to CPU ratio
 	clock_cpu(cpu);
+	ppu_vblank_warmup_seq(cpu);
 	clock_ppu(ppu, cpu);
 	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
 	clock_ppu(ppu, cpu);

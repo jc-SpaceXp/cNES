@@ -134,22 +134,6 @@ int ppu_init(Ppu2C02* ppu, CpuPpuShare* cp)
 }
 
 
-// Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
-static void ppu_vblank_warmup_seq(Ppu2C02* p, const Cpu6502* cpu)
-{
-	static unsigned count = 0;
-	if (!count) {
-		clear_ppu_status_vblank_bit(p->cpu_ppu_io);
-		++count;
-	} else if ((count == 1) && cpu->cycle >= 27383) {
-		set_ppu_status_vblank_bit(p->cpu_ppu_io);
-		++count;
-	} else if ((count == 2) && cpu->cycle >= 57164) {
-		set_ppu_status_vblank_bit(p->cpu_ppu_io);
-		++count;
-	}
-}
-
 void ppu_vblank_logic(Ppu2C02* ppu)
 {
 	ppu->cpu_ppu_io->nmi_lookahead = false;
@@ -1069,8 +1053,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
 	} else if (p->scanline == 240) { // only set once, no need for >=
 		p->cpu_ppu_io->ppu_rendering_period = false;
 	}
-
-	ppu_vblank_warmup_seq(p, cpu);
 
 	// cpu is clocked first, ppu must be updated after the ppu runs its clock
 	// as the ppu is supposed to be running at the same time the write to the ppu reg occurs
