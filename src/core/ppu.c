@@ -1080,14 +1080,14 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
 		// buffering a write to enable bg render sets flag
 		if (p->cpu_ppu_io->buffer_address == 0x2001 && (p->cpu_ppu_io->buffer_value & 0x08)) {
 			if (p->cpu_ppu_io->buffer_counter == 3) {
-				cpu->cpu_ppu_io->bg_early_enable_mask = true;
+				p->cpu_ppu_io->bg_early_enable_mask = true;
 			}
 		}
 
 		// buffering a write to disable bg render sets flag
 		if (p->cpu_ppu_io->buffer_address == 0x2001 && !(p->cpu_ppu_io->buffer_value & 0x08)) {
 			if (p->cpu_ppu_io->buffer_counter == 3) {
-				cpu->cpu_ppu_io->bg_early_disable_mask = true;
+				p->cpu_ppu_io->bg_early_disable_mask = true;
 			}
 		}
 		if (!p->cpu_ppu_io->buffer_counter) {
@@ -1095,14 +1095,14 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
 			p->cpu_ppu_io->buffer_write = false;
 			p->cpu_ppu_io->buffer_counter = 6; // reset to non-zero value
 			// clear flags about buffered writes to enable/disable bg rendering
-			cpu->cpu_ppu_io->bg_early_enable_mask = false;
-			cpu->cpu_ppu_io->bg_early_disable_mask = false;
+			p->cpu_ppu_io->bg_early_enable_mask = false;
+			p->cpu_ppu_io->bg_early_disable_mask = false;
 		}
 	}
 
 	// odd frame skip
-	if (!cpu->cpu_ppu_io->bg_early_disable_mask
-		&& (cpu->cpu_ppu_io->bg_early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
+	if (!p->cpu_ppu_io->bg_early_disable_mask
+		&& (p->cpu_ppu_io->bg_early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
 		if (p->odd_frame && p->scanline == 261 && p->cycle == 339) {
 			++p->cycle;
 		}
@@ -1368,7 +1368,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
 	}
 
 	// increment coarse X and Y scrolling pos on visible scanlines and if rendering is enabled
-	if (cpu->cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)) {
+	if (p->cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(p->cpu_ppu_io)) {
 		if (p->cycle <= 256 && (p->cycle != 0)) {
 			if (((p->cycle - 1) & 0x07) == 0x07) { // cycles divisble by 8
 				inc_horz_scroll(p->cpu_ppu_io);
