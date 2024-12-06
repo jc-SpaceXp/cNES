@@ -88,6 +88,7 @@ add_library(common INTERFACE)
 target_compile_options(common INTERFACE
 	${COMMON_CFLAGS}
 	"$<$<CONFIG:DEBUG>:-g>"
+	${ASAN_FLAGS}
 )
 target_compile_definitions(common INTERFACE "$<$<CONFIG:DEBUG>:__DEBUG__>")
 
@@ -116,6 +117,7 @@ target_include_directories(${SRCTARGET} PRIVATE
 target_link_libraries(utilsrcs PRIVATE common)
 target_link_libraries(coresrcs PRIVATE common ${SDL2_LIBRARIES})
 target_link_libraries(${SRCTARGET} PRIVATE common utilsrcs coresrcs)
+target_link_options(${SRCTARGET} PRIVATE ${ASAN_FLAGS})
 
 add_custom_command(TARGET ${SRCTARGET} POST_BUILD
 	COMMAND ${CMAKE_SIZE_UTIL} "$<TARGET_FILE_NAME:${SRCTARGET}>"
