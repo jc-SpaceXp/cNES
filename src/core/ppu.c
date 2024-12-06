@@ -1,5 +1,4 @@
 #include "ppu.h"
-#include "cpu.h"
 #include "cpu_ppu_interface.h"
 #include "bits_and_bytes.h"
 
@@ -1033,7 +1032,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
  * RENDERING             *
  *************************/
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
+void clock_ppu(Ppu2C02* p)
 {
 	p->cycle++;
 	if (p->cycle > 340) {

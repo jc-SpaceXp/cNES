@@ -100,15 +100,15 @@ void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, uint32_t* pixels, uint32_t* nt_
 	ppu_vblank_warmup_seq(cpu);
 
 	cpu_ppu_buffered_writes(ppu->cpu_ppu_io, cpu);
-	clock_ppu(ppu, cpu);
+	clock_ppu(ppu);
 	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
 
 	cpu_ppu_buffered_writes(ppu->cpu_ppu_io, cpu);
-	clock_ppu(ppu, cpu);
+	clock_ppu(ppu);
 	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
 
 	cpu_ppu_buffered_writes(ppu->cpu_ppu_io, cpu);
-	clock_ppu(ppu, cpu);
+	clock_ppu(ppu);
 	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
 
 	// only used in DEBUG mode, suppress unused variable for RELEASE
