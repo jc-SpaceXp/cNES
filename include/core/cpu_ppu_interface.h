@@ -25,7 +25,6 @@ struct CpuPpuShare {
 	bool nmi_pending; // PPU indicates if a NMI is pending, CPU then services that request
 	bool dma_pending; // PPU indicates if a DMA is pending, CPU then services that request
 	bool suppress_nmi_flag;
-	bool ignore_nmi;
 	bool suppress_vbl_status;
 	bool bg_early_enable_mask; // When true this represents the buffered/delayed writes for $2001 when enabling BG rendering
 	bool bg_early_disable_mask; // Same as above except for disabling BG rendering

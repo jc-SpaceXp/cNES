@@ -2154,6 +2154,7 @@ START_TEST (nmi_enabled_with_vblank_and_nmi_bits_ntsc)
 {
 	unsigned int vblank_ntsc_scanline = 241;
 	ppu->nmi_start = vblank_ntsc_scanline;
+	ppu->cpu_ppu_io->nmi_signal_low = false;
 	unsigned int cycle_scanline_vbl_nmi_result[6][5] = { {200, 241, 0x80, 0x80, 1}
 	                                                   , {1, 241, 0x80, 0x80, 1}
 	                                                   , {1, 241, 0x80, 0x00, 0}
@@ -2176,6 +2177,7 @@ START_TEST (only_one_nmi_per_frame)
 {
 	unsigned int vblank_ntsc_scanline = 241;
 	ppu->nmi_start = vblank_ntsc_scanline;
+	ppu->cpu_ppu_io->nmi_signal_low = false;
 	struct OneNmiPerFrameTest {
 		unsigned int cycle;
 		unsigned int scanline;

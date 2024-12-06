@@ -764,12 +764,6 @@ void clock_cpu(Cpu6502* cpu)
 	++cpu->cycle;
 	--cpu->instruction_cycles_remaining;
 
-	// disable any pending interrupts when suppressing an NMI
-	if (cpu->cpu_ppu_io->ignore_nmi) {
-		cpu->process_interrupt = false;
-		cpu->cpu_ppu_io->ignore_nmi = false;
-	}
-
 	// Fetch-decode-execute state logic
 	if (cpu->instruction_state == FETCH) {
 		// Handle interrupts first
