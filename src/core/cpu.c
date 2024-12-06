@@ -429,9 +429,8 @@ int cpu_init(Cpu6502* cpu, uint16_t pc_init, CpuPpuShare* cp, CpuMapperShare* cm
 	cpu->instruction_state = FETCH;
 	cpu->instruction_cycles_remaining = 51; // initial value doesn't matter as LUT will set it after first instruction is read
 
-	cpu->delay_nmi = false;
-	cpu->cpu_ignore_fetch_on_nmi = false;
 	cpu->process_interrupt = false;
+	cpu->nmi_pending = false;
 
 	cpu->controller_latch = 0;
 	cpu->player_1_controller = 0;
@@ -618,13 +617,7 @@ void write_ppu_reg(const uint16_t addr, const uint8_t data, Cpu6502* cpu)
 	switch (addr) {
 	case 0x2000:
 		// PPU_CTRL
-		if (ppu_status_vblank_bit_set(cpu->cpu_ppu_io)
-		    && !ppu_ctrl_gen_nmi_bit_set(cpu->cpu_ppu_io)
-		    && (data & 0x80)) {
-			cpu->cpu_ppu_io->nmi_pending = true;
-			cpu->delay_nmi = true;
-		}
-
+		pull_nmi_low_after_nmi_bit_set_during_vblank(cpu->cpu_ppu_io, data);
 		cpu->cpu_ppu_io->ppu_ctrl = data;
 		write_2000(data, cpu->cpu_ppu_io);
 		break;
@@ -749,55 +742,83 @@ void cpu_mem_hexdump_addr_range(const Cpu6502* cpu, uint16_t start_addr, uint16_
 	}
 }
 
+void poll_nmi_signal(Cpu6502* cpu)
+{
+	if (cpu->cpu_ppu_io->nmi_signal_low) {
+		cpu->nmi_pending = true;
+		cpu->cpu_ppu_io->nmi_for_frame = true;
+	}
+}
+
+void sample_nmi_interrupt(Cpu6502* cpu)
+{
+	cpu->process_interrupt = false;
+	// Load NMI on IR (instruction register) on next T2 state
+	if (cpu->nmi_pending) {
+		cpu->process_interrupt = true;
+	}
+}
+
 void clock_cpu(Cpu6502* cpu)
 {
 	++cpu->cycle;
 	--cpu->instruction_cycles_remaining;
 
-	// disable any pending interrupts when suppressing an NMI
-	if (cpu->cpu_ppu_io->ignore_nmi) {
-		cpu->process_interrupt = false;
-		cpu->cpu_ppu_io->ignore_nmi = false;
-	}
-
 	// Fetch-decode-execute state logic
 	if (cpu->instruction_state == FETCH) {
 		// Handle interrupts first
-		if (!cpu->delay_nmi && cpu->process_interrupt) {
+		if (cpu->process_interrupt) {
 			execute_NMI(cpu);
 			--cpu->cpu_ppu_io->nmi_cycles_left;
 		} else if (cpu->cpu_ppu_io->dma_pending) {
 			execute_DMA(cpu);
 		} else {
 			fetch_opcode(cpu);
-			cpu->delay_nmi = false; // reset after returning from NMI
+			// T0 state for 2 cycle opcodes, poll NMI
+			if (isa_info[cpu->opcode].max_cycles == 2) {
+				sample_nmi_interrupt(cpu);
+			}
 		}
 	}  else if (cpu->instruction_state == DECODE) {
 		isa_info[cpu->opcode].decode_opcode(cpu);
+
+		bool t0_state_non_branched = (cpu->address_mode != REL)
+		                             && (cpu->instruction_cycles_remaining == 2);
+		// Early terminations of branched instructions are indicated by an
+		// early switch to the EXECUTE enum e.g. branch not taken etc.
+		bool t0_state_branched = (cpu->address_mode == REL)
+		                         && (cpu->instruction_cycles_remaining == 2)
+		                         && (cpu->instruction_state != EXECUTE);
+		bool t2_state_branched = (cpu->address_mode == REL)
+		                         && (cpu->instruction_cycles_remaining == 3);
+		if (t0_state_non_branched || t0_state_branched || t2_state_branched) {
+			sample_nmi_interrupt(cpu);
+		}
 	}
 
 	if (cpu->instruction_state == EXECUTE) {
 		cpu->instruction_state = POST_EXECUTE;
 		isa_info[cpu->opcode].execute_opcode(cpu); // can change the PC which the early fetch made!
 
-		if (cpu->cpu_ppu_io->nmi_pending) {
-			cpu->process_interrupt = true;
+		// Includes BRK, JMP, JSR and RTI opcodes
+		bool t0_state_execute_special_opcodes = (cpu->address_mode != REL)
+		                                        && (cpu->instruction_cycles_remaining == 2);
+		if (t0_state_execute_special_opcodes) {
+			sample_nmi_interrupt(cpu);
 		}
 
-		if (cpu->cpu_ppu_io->nmi_lookahead) {
-			cpu->delay_nmi = true;
-		}
-
-		if (cpu->cpu_ppu_io->nmi_lookahead && cpu->cpu_ignore_fetch_on_nmi) {
-			cpu->delay_nmi = false;
-		}
-		cpu->cpu_ignore_fetch_on_nmi = false;
 	}
 
 	if (cpu->instruction_state == POST_EXECUTE) {
 		cpu->instruction_state = FETCH;
 		cpu->trigger_trace_logger = true;
 	}
+
+	if (cpu->cpu_ppu_io->nmi_lookahead) {
+		cpu->cpu_ppu_io->nmi_signal_low = true;
+	}
+	// NMI and IRQ edge detectors are polled every phi2
+	poll_nmi_signal(cpu);
 }
 
 // true if branch not taken based on opcode
@@ -1371,7 +1392,6 @@ static void decode_ZPY_read_store(Cpu6502* cpu)
 static void decode_ABS_JMP(Cpu6502* cpu)
 {
 	cpu->address_mode = ABS;
-	cpu->cpu_ignore_fetch_on_nmi = true;
 	// opcode fetched: T0
 	cpu->instruction_state = EXECUTE;
 }
@@ -2453,13 +2473,14 @@ static void execute_NMI(Cpu6502* cpu)
 	case 2: // T5
 		set_address_bus(cpu, NMI_VECTOR);
 		set_data_bus_via_read(cpu, NMI_VECTOR, ADL);
+		cpu->nmi_pending = false;
+		cpu->cpu_ppu_io->nmi_signal_low = false;
 		break;
 	case 1: // T6
 		set_address_bus(cpu, NMI_VECTOR + 1);
 		set_data_bus_via_read(cpu, NMI_VECTOR + 1, ADH);
 		cpu->PC = append_hi_byte_to_lo_byte(cpu->addr_hi, cpu->addr_lo);
 		cpu->instruction_state = POST_EXECUTE;
-		cpu->cpu_ppu_io->nmi_pending = false;
 		cpu->process_interrupt = false;
 		cpu->cpu_ppu_io->nmi_cycles_left = 8;  // 8 as a decrement occurs after this function is called
 		break;

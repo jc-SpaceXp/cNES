@@ -25,11 +25,13 @@ struct CpuPpuShare {
 	bool nmi_pending; // PPU indicates if a NMI is pending, CPU then services that request
 	bool dma_pending; // PPU indicates if a DMA is pending, CPU then services that request
 	bool suppress_nmi_flag;
-	bool ignore_nmi;
-	bool clear_status;
+	bool suppress_vbl_status;
 	bool bg_early_enable_mask; // When true this represents the buffered/delayed writes for $2001 when enabling BG rendering
 	bool bg_early_disable_mask; // Same as above except for disabling BG rendering
 	bool ppu_rendering_period; // Set true for scalines 0-239 and pre-render scanline, otherwise false
+
+	bool nmi_signal_low;
+	bool nmi_for_frame; // typically only one NMI should happen per frame
 
 	// cpu/ppu nmi synchronisation, when the cpu runs its clock it can be
 	// out odf sync with the ppu by 3 ppu clocks, this is set to true for
@@ -65,6 +67,7 @@ bool ppu_ctrl_gen_nmi_bit_set(const CpuPpuShare* cpu_ppu_io);
 void clear_ppu_status_vblank_bit(CpuPpuShare* cpu_ppu_io);
 void set_ppu_status_vblank_bit(CpuPpuShare* cpu_ppu_io);
 bool ppu_mask_bg_or_sprite_enabled(const CpuPpuShare* cpu_ppu_io);
+void pull_nmi_low_after_nmi_bit_set_during_vblank(CpuPpuShare* cpu_ppu_io, uint8_t data);
 
 void cpu_writes_to_vram(uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io);
 

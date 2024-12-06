@@ -6016,6 +6016,401 @@ START_TEST (irq_correct_interrupt_vector)
 }
 END_TEST
 
+START_TEST (nmi_sets_edge_detector_stage_1)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	bool nmi_lo_to_result[2][2] = {
+		{true, true}
+		, {false, false}
+	};
+	cpu->cpu_ppu_io->nmi_signal_low = nmi_lo_to_result[_i][0];
+
+	poll_nmi_signal(cpu);
+
+	// if NMI is low, edge detector is true
+	// which also sets the nmi_for_frame bool as the NMI will not be suppressed
+	ck_assert(cpu->nmi_pending == nmi_lo_to_result[_i][1]);
+	ck_assert(cpu->cpu_ppu_io->nmi_for_frame == nmi_lo_to_result[_i][1]);
+}
+END_TEST
+
+START_TEST (nmi_signal_polled_each_phi2_fetch)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0004;
+	write_to_cpu(cpu, cpu->PC, 0x05); // opcode
+	cpu->instruction_state = FETCH;
+	cpu->instruction_cycles_remaining = 10;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->nmi_pending == true);
+}
+END_TEST
+
+START_TEST (nmi_signal_polled_each_phi2_decode)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0006;
+	cpu->instruction_state = DECODE;
+	cpu->instruction_cycles_remaining = 231; // force no decoding by setting an out of bounds val
+	cpu->opcode = 0x16;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->nmi_pending == true);
+}
+END_TEST
+
+START_TEST (nmi_signal_polled_each_phi2_execute)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0007;
+	cpu->instruction_state = EXECUTE;
+	cpu->instruction_cycles_remaining = 231; // force no decoding by setting an out of bounds val
+	cpu->opcode = 0xEA; // NOP
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->nmi_pending == true);
+}
+END_TEST
+
+START_TEST (nmi_signal_polled_each_phi2_post_execute)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0008;
+	cpu->instruction_state = POST_EXECUTE;
+	cpu->instruction_cycles_remaining = 231; // force no decoding by setting an out of bounds val
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->nmi_pending == true);
+}
+END_TEST
+
+START_TEST (nmi_signal_set_too_late_for_edge_detector)
+{
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->PC = 0x0008;
+	cpu->instruction_state = DECODE;
+	cpu->instruction_cycles_remaining = 4; // branched instructions
+	// T2 is when cycles == 3 (after clock_cpu() is called)
+	char ins[4] = "BCS";
+	cpu->opcode = reverse_opcode_lut(&ins, REL);
+
+	clock_cpu(cpu);
+
+	// NMI is seen but will not be acknowledged until another T0 or T2 state occurs
+	ck_assert(cpu->nmi_pending == true);
+	ck_assert(cpu->process_interrupt == false);
+}
+END_TEST
+
+START_TEST (nmi_lo_before_t0_state_2_cycle_opcode_check)
+{
+	// T0 state is the 2nd last cycle of an opcode, for 2 cycle opcodes this is also true
+	// but it is a special T0 T2 state
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0024;
+	cpu->instruction_state = FETCH;
+	cpu->instruction_cycles_remaining = 10;
+	unsigned int opcode_to_bool[6][2] = { {0x09, 1} // 1 == 2 cycle opcode
+		                                , {0x01, 0} // 0 == non 2 cycle opcode
+		                                , {0x2C, 0}
+		                                , {0x2A, 1}
+		                                , {0x58, 1}
+		                                , {0x70, 0} // branch instructions have an additional check
+	};
+	write_to_cpu(cpu, cpu->PC, opcode_to_bool[_i][0]);
+
+	clock_cpu(cpu);
+
+	ck_assert_uint_eq(cpu->process_interrupt, opcode_to_bool[_i][1]);
+}
+END_TEST
+
+START_TEST (nmi_lo_before_t0_state_check)
+{
+	// T0 state is the 2nd last cycle of an opcode
+	struct OpcodeCyclesLeftResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0033;
+	cpu->instruction_state = DECODE;
+	char ins[4] = "AND";
+	struct OpcodeCyclesLeftResult inputs_to_outputs[5] = {
+	                         {reverse_opcode_lut(&ins, INDX), 3, true}
+	                       , {reverse_opcode_lut(&ins, INDX), 4, false}
+	                       , {reverse_opcode_lut(&ins, ZP), 4, false}
+	                       , {reverse_opcode_lut(&ins, ZP), 3, true}
+	                       , {reverse_opcode_lut(&ins, ZPX), 2, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
+
+START_TEST (nmi_lo_before_t0_state_check_branches)
+{
+	// T0 state is the 2nd last cycle of a branch instruction
+	// only if a branch is taken w/ a page cross (max possible cycles)
+	// otherwise a T0 state is never called from a branching instruction
+	struct BranchCyclesLeftOffsetResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		int8_t offset;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x00F0;
+	cpu->P |= FLAG_C; // branch taken (not important)
+	cpu->instruction_state = DECODE;
+	char ins[4] = "BCS";
+	struct BranchCyclesLeftOffsetResult inputs_to_outputs[4] = {
+	                       // Ignore T2 state as 6502 will poll for an interrupt here too
+	                         {reverse_opcode_lut(&ins, REL), 3, 9, false} // page cross = false
+	                       , {reverse_opcode_lut(&ins, REL), 3, 80, true} // page cross = true
+	                       , {reverse_opcode_lut(&ins, REL), 2, 80, false} // last cycle = false
+	                       , {reverse_opcode_lut(&ins, REL), 1, 44, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+	cpu->offset = inputs_to_outputs[_i].offset;
+	write_to_cpu(cpu, cpu->PC, 0x03);
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
+
+START_TEST (nmi_lo_before_t0_state_check_special_opcodes)
+{
+	// T0 state is the 2nd last cycle of an opcode
+	struct OpcodeCyclesLeftResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0086;
+	cpu->stack = 0x2F;
+	cpu->instruction_state = EXECUTE;
+	char ins[3][4] = { "RTI", "BRK", "JSR" };
+	// RTI, BRK, JSR = SPECIAL
+	// JMP = ABS_JMP or IND JMP
+	struct OpcodeCyclesLeftResult inputs_to_outputs[19] = {
+	                         {reverse_opcode_lut(&ins[0], SPECIAL), 6, false}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 5, false}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 4, false}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 3, true}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 2, false}
+	                       , {reverse_opcode_lut(&ins[0], SPECIAL), 1, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 7, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 6, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 5, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 4, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 3, true}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 2, false}
+	                       , {reverse_opcode_lut(&ins[1], SPECIAL), 1, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 6, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 5, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 4, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 3, true}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 2, false}
+	                       , {reverse_opcode_lut(&ins[2], SPECIAL), 1, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+	write_to_cpu(cpu, cpu->PC, 0x01);
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
+
+START_TEST (nmi_lo_before_t0_state_check_jump_opcodes)
+{
+	// T0 state is the 2nd last cycle of an opcode
+	struct OpcodeCyclesLeftResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0008;
+	cpu->instruction_state = DECODE;
+	char ins[4] = "JMP";
+	struct OpcodeCyclesLeftResult inputs_to_outputs[7] = {
+	                         {reverse_opcode_lut(&ins, ABS), 3, true}
+	                       , {reverse_opcode_lut(&ins, ABS), 2, false}
+	                       , {reverse_opcode_lut(&ins, ABS), 1, false}
+	                       , {reverse_opcode_lut(&ins, IND), 4, false}
+	                       , {reverse_opcode_lut(&ins, IND), 3, true}
+	                       , {reverse_opcode_lut(&ins, IND), 2, false}
+	                       , {reverse_opcode_lut(&ins, IND), 1, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
+
+START_TEST (nmi_lo_before_t2_state_check_branches)
+{
+	// T2 state is the first cycle of a branch instruction
+	// interrupts are polled here to avoid an infinite loop
+	// of 2/3 cycle branches as they never enter the T0 state
+	struct BranchCyclesLeftOffsetResult {
+		uint8_t opcode;
+		unsigned int cycles_left;
+		int8_t offset;
+		bool nmi;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x00F2;
+	cpu->P &= ~FLAG_N; // branch taken (not important)
+	cpu->instruction_state = DECODE;
+	char ins[4] = "BPL";
+	struct BranchCyclesLeftOffsetResult inputs_to_outputs[4] = {
+	                         {reverse_opcode_lut(&ins, REL), 4, 0, true} // T2 state
+	                       , {reverse_opcode_lut(&ins, REL), 3, 9, false} // page cross = false
+	                       // Ignore T0 state (branch taken w/ page cross)
+	                       , {reverse_opcode_lut(&ins, REL), 2, 80, false} // last cycle = false
+	                       , {reverse_opcode_lut(&ins, REL), 1, 44, false}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+	cpu->offset = inputs_to_outputs[_i].offset;
+	write_to_cpu(cpu, cpu->PC, 0x03);
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+}
+END_TEST
+
+START_TEST (nmi_lo_before_t2_state_check_non_branches)
+{
+	// Check that non-branched instructions don't detect NMIs
+	struct OpcodeCyclesLeft {
+		uint8_t opcode;
+		unsigned int cycles_left;
+	};
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->dma_pending = false;
+	cpu->cpu_ppu_io->nmi_signal_low = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->PC = 0x0018;
+	cpu->instruction_state = DECODE;
+	char ins[3][4] = { "AND", "ASL", "ADC" };
+	struct OpcodeCyclesLeft inputs_to_outputs[5] = {
+	                       // Don't include T0 states!
+	                         {reverse_opcode_lut(&ins[0], INDX), 6}
+	                       , {reverse_opcode_lut(&ins[0], ABSY), 5}
+	                       , {reverse_opcode_lut(&ins[1], ABSX), 7}
+	                       , {reverse_opcode_lut(&ins[1], ZPX), 6}
+	                       , {reverse_opcode_lut(&ins[2], ABS), 4}
+	};
+	// clock_cpu() will decrement immediately
+	cpu->instruction_cycles_remaining = inputs_to_outputs[_i].cycles_left;
+	cpu->opcode = inputs_to_outputs[_i].opcode;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == false);
+}
+END_TEST
+
+START_TEST (nmi_stage_1_signals_cleared_on_t0_state)
+{
+	// stage 1 is the NMI edge detector, my nmi_pending bool
+	// stage 0 is the NMI signal itself, which is also cleared around the same time
+	// nesdev: 6502 Interrupt Recognition Stages and Tolerances
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->cpu_ppu_io->nmi_lookahead = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->instruction_state = FETCH;
+	// last cycle is T+ [T1], 2nd last cycle is T0
+	cpu->PC = 0x0011;
+	cpu->process_interrupt = true;
+	cpu->cpu_ppu_io->nmi_cycles_left = 2;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->cpu_ppu_io->nmi_pending == false);
+	ck_assert(cpu->cpu_ppu_io->nmi_signal_low == false);
+}
+END_TEST
+
+START_TEST (nmi_stage_2_signal_cleared_on_last_cycle)
+{
+	// stage 2 detection is the sampling of the NMI edge detector
+	// nesdev: 6502 Interrupt Recognition Stages and Tolerances
+	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_signal_low = true;
+	cpu->cpu_ppu_io->nmi_lookahead = false;
+	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->instruction_state = FETCH;
+	// last cycle is T+ [T1], 2nd last cycle is T0, 3rd last is T6
+	// on the 6502 it's actually cleared on T6 rather than T+ [T1]
+	// however, this detail isn't critical, using bool to stay in NMI
+	cpu->PC = 0x0011;
+	cpu->process_interrupt = true;
+	cpu->cpu_ppu_io->nmi_cycles_left = 1;
+
+	clock_cpu(cpu);
+
+	ck_assert(cpu->process_interrupt == false);
+}
+END_TEST
+
 
 /* Trace logger unit tests
  */
@@ -7491,13 +7886,32 @@ Suite* cpu_hardware_interrupts_suite(void)
 {
 	Suite* s;
 	TCase* tc_cpu_hardware_interrupts;
+	TCase* tc_cpu_nmi;
 
 	s = suite_create("Cpu Hardware Interrupt Tests");
 
 	tc_cpu_hardware_interrupts = tcase_create("Cpu Hardware Interrupts (no opcodes e.g. IRQ)");
 	tcase_add_checked_fixture(tc_cpu_hardware_interrupts, setup, teardown);
 	tcase_add_test(tc_cpu_hardware_interrupts, irq_correct_interrupt_vector);
+	tcase_add_test(tc_cpu_hardware_interrupts, nmi_sets_edge_detector_stage_1);
 	suite_add_tcase(s, tc_cpu_hardware_interrupts);
+	tc_cpu_nmi = tcase_create("Cpu NMI Tests");
+	tcase_add_checked_fixture(tc_cpu_nmi, setup, teardown);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_fetch);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_decode);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_execute);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_polled_each_phi2_post_execute);
+	tcase_add_test(tc_cpu_nmi, nmi_signal_set_too_late_for_edge_detector);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_2_cycle_opcode_check, 0, 6);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check, 0, 5);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check_branches, 0, 4);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check_special_opcodes, 0, 19);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t0_state_check_jump_opcodes, 0, 7);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t2_state_check_branches, 0, 4);
+	tcase_add_loop_test(tc_cpu_nmi, nmi_lo_before_t2_state_check_non_branches, 0, 5);
+	tcase_add_test(tc_cpu_nmi, nmi_stage_1_signals_cleared_on_t0_state);
+	tcase_add_test(tc_cpu_nmi, nmi_stage_2_signal_cleared_on_last_cycle);
+	suite_add_tcase(s, tc_cpu_nmi);
 
 	return s;
 }

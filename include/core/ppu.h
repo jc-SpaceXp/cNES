@@ -185,6 +185,7 @@ void get_bkg_pixel(Ppu2C02* ppu, uint8_t* colour_ref);
 void get_sprite_pixel(Ppu2C02* ppu, uint8_t* colour_ref);
 void get_pixel(struct CurrentPixel* current_pixel, bool sprite_in_front_of_bkg);
 
+void ppu_vblank_logic(Ppu2C02* ppu);
 
 void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows);
 

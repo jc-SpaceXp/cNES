@@ -36,8 +36,9 @@ int cpu_ppu_io_init(CpuPpuShare* cpu_ppu_io)
 	cpu_ppu_io->nmi_pending = false;
 	cpu_ppu_io->dma_pending = false;
 	cpu_ppu_io->suppress_nmi_flag = false;
-	cpu_ppu_io->ignore_nmi = false;
 	cpu_ppu_io->nmi_lookahead = false;
+	cpu_ppu_io->nmi_signal_low = false;
+	cpu_ppu_io->nmi_for_frame = false;
 
 	cpu_ppu_io->nmi_cycles_left = 7;
 
@@ -47,7 +48,7 @@ int cpu_ppu_io_init(CpuPpuShare* cpu_ppu_io)
 	cpu_ppu_io->buffer_value = 0;
 
 	// Ppu related stuff
-	cpu_ppu_io->clear_status = false;
+	cpu_ppu_io->suppress_vbl_status = false;
 	cpu_ppu_io->bg_early_disable_mask = false;
 	cpu_ppu_io->bg_early_enable_mask = false;
 	cpu_ppu_io->ppu_rendering_period = false;
@@ -98,6 +99,15 @@ bool ppu_mask_bg_or_sprite_enabled(const CpuPpuShare* cpu_ppu_io)
 	return ((cpu_ppu_io->ppu_mask & 0x18) ? 1 : 0);
 }
 
+void pull_nmi_low_after_nmi_bit_set_during_vblank(CpuPpuShare* cpu_ppu_io, uint8_t data)
+{
+	if (ppu_status_vblank_bit_set(cpu_ppu_io)
+	   && !ppu_ctrl_gen_nmi_bit_set(cpu_ppu_io)
+	   && (data & 0x80)) {
+		cpu_ppu_io->nmi_signal_low = true;
+	}
+}
+
 // Called from CPU
 void cpu_writes_to_vram(uint8_t data, unsigned chr_ram_size, CpuPpuShare* cpu_ppu_io)
 {
@@ -137,9 +147,9 @@ void read_2002(CpuPpuShare* cpu_ppu_io)
 	cpu_ppu_io->write_toggle = false; // Clear latch used by PPUSCROLL & PPUADDR
 	cpu_ppu_io->suppress_nmi_flag = true;
 
-	if (cpu_ppu_io->clear_status) {
+	if (cpu_ppu_io->suppress_vbl_status) {
 		cpu_ppu_io->return_value &= ~0x80;
-		cpu_ppu_io->clear_status = false;
+		cpu_ppu_io->suppress_vbl_status = false;
 	}
 }
 

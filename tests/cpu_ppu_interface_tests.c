@@ -307,6 +307,38 @@ START_TEST (write_ppu_ctrl_2000_scrolling_sets_specific_bits)
 	ck_assert_uint_eq(0x0C00, *(cpu_ppu_tester->vram_tmp_addr));
 }
 
+START_TEST (write_ppu_ctrl_2000_vblank_period_toggling_nmi_bit)
+{
+	struct TogglingNmiBitTest {
+		uint8_t initial_ppu_ctrl;
+		uint8_t final_ppu_ctrl;
+		bool in_vblank_period;
+		bool nmi_low;
+	};
+
+	struct TogglingNmiBitTest toggling_nmi_bit_test[8] = {
+		{0x00, 0x80, true, true}
+		, {0x80, 0x80, true, false}
+		, {0x80, 0x00, true, false}
+		, {0x00, 0x00, true, false}
+		, {0x00, 0x80, false, false}
+		, {0x80, 0x80, false, false}
+		, {0x80, 0x00, false, false}
+		, {0x00, 0x00, false, false}
+	};
+
+	// NMI is pulled low if writing to NMI during VBLank
+	cpu_ppu_tester->ppu_ctrl = toggling_nmi_bit_test[_i].initial_ppu_ctrl;
+	clear_ppu_status_vblank_bit(cpu_ppu_tester);
+	if (toggling_nmi_bit_test[_i].in_vblank_period) {
+		set_ppu_status_vblank_bit(cpu_ppu_tester);
+	}
+
+	write_ppu_reg(0x2000, toggling_nmi_bit_test[_i].final_ppu_ctrl, cpio_cpu);
+
+	ck_assert(cpu_ppu_tester->nmi_signal_low == toggling_nmi_bit_test[_i].nmi_low);
+}
+
 START_TEST (write_oam_addr_2003_sets_oam_address)
 {
 	// Writes to $2003 set the OAMADDR
@@ -686,6 +718,8 @@ Suite* ppu_registers_read_write_suite(void)
 	tcase_add_checked_fixture(tc_ppu_register_writes, setup, teardown);
 	tcase_add_test(tc_ppu_register_writes, write_ppu_ctrl_2000_scrolling_clears_specific_bits);
 	tcase_add_test(tc_ppu_register_writes, write_ppu_ctrl_2000_scrolling_sets_specific_bits);
+	tcase_add_loop_test(tc_ppu_register_writes
+	                   , write_ppu_ctrl_2000_vblank_period_toggling_nmi_bit, 0, 8);
 	tcase_add_test(tc_ppu_register_writes, write_oam_addr_2003_sets_oam_address);
 	tcase_add_test(tc_ppu_register_writes, write_oam_data_2004_outside_rendering_period);
 	tcase_add_test(tc_ppu_register_writes, write_oam_data_2004_during_rendering_period);
