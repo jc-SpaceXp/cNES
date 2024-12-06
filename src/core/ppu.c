@@ -1110,14 +1110,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
 
 	ppu_vblank_logic(p);
 
-	if (p->scanline == p->nmi_start) {
-		// clear VBlank flag if cpu clock is aligned w/ the ppu clock
-		// hard coded for NTSC currently
-		if (p->cpu_ppu_io->suppress_nmi_flag && (cpu->cycle % 3 == 0)) {
-			clear_ppu_status_vblank_bit(p->cpu_ppu_io);
-		}
-	}
-
 	if (p->scanline == 261 && p->cycle == 0) { // Pre-render scanline
 		p->cpu_ppu_io->ppu_status &= ~0x40;
 	} else if (p->scanline == 261 && p->cycle == 1) { // Pre-render scanline
