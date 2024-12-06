@@ -17,11 +17,13 @@ that I'm proud of!
 
 ** Building cNES
 
-cNES is built using make on Linux. It could also be built using the Windows Subsytem for Linux (WSL) on newer builds of Windows (10 and above).
+cNES supports multiple OSes via cmake or can be built using make on Linux. I
+primarily develop on Linux however cNES can be ported over to other
+platforms via cmake.
 
 *Prerequisites:*
-- make
-- [[https://gcc.gnu.org/][gcc]] or [[https://clang.llvm.org/][clang]] compilers
+- cmake (or make for older builds)
+- [[https://gcc.gnu.org/][gcc]] or [[https://clang.llvm.org/][clang]] compilers (or any compiler supported by cmake)
   - gcc versions >= 4.8 or clang versions >= 3.1 are required to use the address sanitizer compile option ([[https://github.com/google/sanitizers/wiki/AddressSanitizer][ASan]])
 - [[https://libcheck.github.io/check/][libcheck]] (currently unit tests are always run when compiling cNES)
 - [[https://wiki.libsdl.org/SDL2/Introduction][SDL2]]
@@ -29,6 +31,12 @@ cNES is built using make on Linux. It could also be built using the Windows Subs
 With the prerequisites satisfied, it is as simple as:
 
 #+BEGIN_EXAMPLE bash
+# New cmake preset builds (see CMakePresets.json)
+$ cmake --preset release
+
+$ cmake --build --preset release
+
+# OLD MAKE BUILDS
 # Build cnes
 $ make
 
@@ -55,7 +63,11 @@ $ make CC=clang
 $ make CC=clang DEBUG=1 ASAN=1
 #+END_EXAMPLE
 
-The compiled binary will either end up in =./build/release/bin/= or =./build/debug/bin/=
+For cmake: the compiled binary will either end up in =./build/<PRESET_NAME>=
+
+
+For make: the compiled binary will either end up in =./build/release/bin/=
+or =./build/debug/bin/=
 
 ** Running cNES
 
