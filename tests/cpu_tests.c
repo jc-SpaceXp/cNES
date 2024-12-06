@@ -1,12 +1,10 @@
 #include <check.h>
 
 #include <ctype.h>
+#include <stdlib.h>
 
-#include "mappers.h"
 #include "cpu.h"
-#include "ppu.h"  // needed for cpu/ppu read/write functions
-#include "gui.h"  // needed for cpu/ppu read/write functions (due to ppu.h)
-#include "cpu_ppu_interface.h" // needed for NMI
+#include "cpu_ppu_interface.h" // needed for NMI signals and cpu/ppu registers
 #include "cpu_mapper_interface.h" // needed for open bus tests
 #include "bits_and_bytes.h"
 
