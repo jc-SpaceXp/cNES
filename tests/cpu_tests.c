@@ -6031,6 +6031,7 @@ START_TEST (nmi_sets_edge_detector_stage_1)
 	// which also sets the nmi_for_frame bool as the NMI will not be suppressed
 	ck_assert(cpu->nmi_pending == nmi_lo_to_result[_i][1]);
 	ck_assert(cpu->cpu_ppu_io->nmi_for_frame == nmi_lo_to_result[_i][1]);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6047,6 +6048,7 @@ START_TEST (nmi_signal_polled_each_phi2_fetch)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->nmi_pending == true);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6063,6 +6065,7 @@ START_TEST (nmi_signal_polled_each_phi2_decode)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->nmi_pending == true);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6079,6 +6082,7 @@ START_TEST (nmi_signal_polled_each_phi2_execute)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->nmi_pending == true);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6094,6 +6098,7 @@ START_TEST (nmi_signal_polled_each_phi2_post_execute)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->nmi_pending == true);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6114,6 +6119,7 @@ START_TEST (nmi_signal_set_too_late_for_edge_detector)
 	// NMI is seen but will not be acknowledged until another T0 or T2 state occurs
 	ck_assert(cpu->nmi_pending == true);
 	ck_assert(cpu->process_interrupt == false);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6140,6 +6146,7 @@ START_TEST (nmi_lo_before_t0_state_2_cycle_opcode_check)
 	clock_cpu(cpu);
 
 	ck_assert_uint_eq(cpu->process_interrupt, opcode_to_bool[_i][1]);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6172,6 +6179,7 @@ START_TEST (nmi_lo_before_t0_state_check)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6210,6 +6218,7 @@ START_TEST (nmi_lo_before_t0_state_check_branches)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6260,6 +6269,7 @@ START_TEST (nmi_lo_before_t0_state_check_special_opcodes)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6294,6 +6304,7 @@ START_TEST (nmi_lo_before_t0_state_check_jump_opcodes)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6332,6 +6343,7 @@ START_TEST (nmi_lo_before_t2_state_check_branches)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->process_interrupt == inputs_to_outputs[_i].nmi);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6364,6 +6376,7 @@ START_TEST (nmi_lo_before_t2_state_check_non_branches)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->process_interrupt == false);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6374,7 +6387,6 @@ START_TEST (nmi_stage_1_signals_cleared_on_t0_state)
 	// nesdev: 6502 Interrupt Recognition Stages and Tolerances
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
 	cpu->cpu_ppu_io->nmi_signal_low = true;
-	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
 	cpu->instruction_state = FETCH;
 	// last cycle is T+ [T1], 2nd last cycle is T0
@@ -6386,6 +6398,7 @@ START_TEST (nmi_stage_1_signals_cleared_on_t0_state)
 
 	ck_assert(cpu->cpu_ppu_io->nmi_pending == false);
 	ck_assert(cpu->cpu_ppu_io->nmi_signal_low == false);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
@@ -6395,7 +6408,6 @@ START_TEST (nmi_stage_2_signal_cleared_on_last_cycle)
 	// nesdev: 6502 Interrupt Recognition Stages and Tolerances
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
 	cpu->cpu_ppu_io->nmi_signal_low = true;
-	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
 	cpu->instruction_state = FETCH;
 	// last cycle is T+ [T1], 2nd last cycle is T0, 3rd last is T6
@@ -6408,6 +6420,7 @@ START_TEST (nmi_stage_2_signal_cleared_on_last_cycle)
 	clock_cpu(cpu);
 
 	ck_assert(cpu->process_interrupt == false);
+	free(cpu->cpu_ppu_io);
 }
 END_TEST
 
