@@ -28,6 +28,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${LIBDIR})
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${LIBDIR})
 
 set(COMMON_CFLAGS "-Wall;-Wextra")
+if (DEFINED ASAN)
+	unset(ASAN)
+	set(ASAN_FLAGS -fsanitize=address,undefined)
+endif()
 
 
 set(UTILSRCS "${UTILDIR}/bits_and_bytes.c")
@@ -47,10 +51,6 @@ string(APPEND TSTSRCS ";${TSTDIR}/mappers_tests.c")
 string(APPEND TSTSRCS ";${TSTDIR}/ppu_tests.c")
 string(APPEND TSTSRCS ";${TSTDIR}/cpu_ppu_interface_tests.c")
 string(APPEND TSTSRCS ";${TSTDIR}/util_tests.c")
-if (DEFINED ASAN)
-	unset(ASAN)
-	set(ASAN_FLAGS -fsanitize=address,undefined)
-endif()
 
 # Sanity checks
 if (${DEBUG_CMAKE})
