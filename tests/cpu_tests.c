@@ -6038,6 +6038,7 @@ END_TEST
 START_TEST (nmi_signal_polled_each_phi2_fetch)
 {
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = true;
 	cpu->PC = 0x0004;
@@ -6055,6 +6056,7 @@ END_TEST
 START_TEST (nmi_signal_polled_each_phi2_decode)
 {
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = true;
 	cpu->PC = 0x0006;
@@ -6072,6 +6074,7 @@ END_TEST
 START_TEST (nmi_signal_polled_each_phi2_execute)
 {
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = true;
 	cpu->PC = 0x0007;
@@ -6089,6 +6092,7 @@ END_TEST
 START_TEST (nmi_signal_polled_each_phi2_post_execute)
 {
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = true;
 	cpu->PC = 0x0008;
@@ -6105,6 +6109,7 @@ END_TEST
 START_TEST (nmi_signal_set_too_late_for_edge_detector)
 {
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = true;
 	cpu->PC = 0x0008;
@@ -6128,6 +6133,7 @@ START_TEST (nmi_lo_before_t0_state_2_cycle_opcode_check)
 	// T0 state is the 2nd last cycle of an opcode, for 2 cycle opcodes this is also true
 	// but it is a special T0 T2 state
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
@@ -6159,6 +6165,7 @@ START_TEST (nmi_lo_before_t0_state_check)
 		bool nmi;
 	};
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
@@ -6195,6 +6202,7 @@ START_TEST (nmi_lo_before_t0_state_check_branches)
 		bool nmi;
 	};
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
@@ -6231,6 +6239,7 @@ START_TEST (nmi_lo_before_t0_state_check_special_opcodes)
 		bool nmi;
 	};
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
@@ -6282,6 +6291,7 @@ START_TEST (nmi_lo_before_t0_state_check_jump_opcodes)
 		bool nmi;
 	};
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
@@ -6320,6 +6330,7 @@ START_TEST (nmi_lo_before_t2_state_check_branches)
 		bool nmi;
 	};
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
@@ -6355,6 +6366,7 @@ START_TEST (nmi_lo_before_t2_state_check_non_branches)
 		unsigned int cycles_left;
 	};
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->dma_pending = false;
 	cpu->cpu_ppu_io->nmi_signal_low = false;
 	cpu->nmi_pending = true;  // already seen NMI active low
@@ -6388,6 +6400,7 @@ START_TEST (nmi_stage_1_signals_cleared_on_t0_state)
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
 	cpu->cpu_ppu_io->nmi_signal_low = true;
 	cpu->nmi_pending = true;  // already seen NMI active low
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->instruction_state = FETCH;
 	// last cycle is T+ [T1], 2nd last cycle is T0
 	cpu->PC = 0x0011;
@@ -6407,6 +6420,7 @@ START_TEST (nmi_stage_2_signal_cleared_on_last_cycle)
 	// stage 2 detection is the sampling of the NMI edge detector
 	// nesdev: 6502 Interrupt Recognition Stages and Tolerances
 	cpu->cpu_ppu_io = cpu_ppu_io_allocator();
+	cpu->cpu_ppu_io->nmi_lookahead = false;
 	cpu->cpu_ppu_io->nmi_signal_low = true;
 	cpu->nmi_pending = true;  // already seen NMI active low
 	cpu->instruction_state = FETCH;
