@@ -87,7 +87,9 @@ endif()
 add_library(common INTERFACE)
 target_compile_options(common INTERFACE
 	${COMMON_CFLAGS}
+	"$<$<CONFIG:DEBUG>:-g>"
 )
+target_compile_definitions(common INTERFACE "$<$<CONFIG:DEBUG>:__DEBUG__>")
 
 
 add_library(utilsrcs ${UTILSRCS})
@@ -127,6 +129,7 @@ add_test(NAME ${TSTTARGET} COMMAND ${TSTTARGET})
 
 target_compile_options(${TSTTARGET} PRIVATE
 	${COMMON_CFLAGS}
+	"$<$<CONFIG:DEBUG>:-g>"
 	${LIBCHECK_CFLAGS_OTHER}
 	${ASAN_FLAGS}
 )
