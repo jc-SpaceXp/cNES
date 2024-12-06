@@ -24,6 +24,7 @@
 extern uint32_t pixels[256 * 240];
 extern uint32_t nt_pixels[512 * 480];
 
+
 static void check_if_ppu_should_render_to_screen(uint32_t* main_pixels, uint32_t* nt_pixels
                                                 , Ppu2C02* ppu
                                                 , Sdl2DisplayOutputs* cnes_windows)
@@ -42,6 +43,53 @@ static void check_if_ppu_should_render_to_screen(uint32_t* main_pixels, uint32_t
 	}
  }
 
+// Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
+static void ppu_vblank_warmup_seq(const Cpu6502* cpu)
+{
+	static unsigned count = 0;
+	if (!count) {
+		clear_ppu_status_vblank_bit(cpu->cpu_ppu_io);
+		++count;
+	} else if ((count == 1) && cpu->cycle >= 27383) {
+		set_ppu_status_vblank_bit(cpu->cpu_ppu_io);
+		++count;
+	} else if ((count == 2) && cpu->cycle >= 57164) {
+		set_ppu_status_vblank_bit(cpu->cpu_ppu_io);
+		++count;
+	}
+}
+
+static void cpu_ppu_buffered_writes(CpuPpuShare* cpu_ppu_io, Cpu6502* cpu)
+{
+	// cpu is clocked first, ppu must be updated after the ppu runs its clock
+	// as the ppu is supposed to be running at the same time the write to the ppu reg occurs
+	// this means a buffer system needs to be implemented to preserve this behaviour
+	if (cpu_ppu_io->buffer_write) {
+		--cpu_ppu_io->buffer_counter;
+		// buffering a write to enable bg render sets flag
+		if (cpu_ppu_io->buffer_address == 0x2001 && (cpu_ppu_io->buffer_value & 0x08)) {
+			if (cpu_ppu_io->buffer_counter == 3) {
+				cpu_ppu_io->bg_early_enable_mask = true;
+			}
+		}
+
+		// buffering a write to disable bg render sets flag
+		if (cpu_ppu_io->buffer_address == 0x2001 && !(cpu_ppu_io->buffer_value & 0x08)) {
+			if (cpu_ppu_io->buffer_counter == 3) {
+				cpu_ppu_io->bg_early_disable_mask = true;
+			}
+		}
+		if (!cpu_ppu_io->buffer_counter) {
+			write_ppu_reg(cpu_ppu_io->buffer_address, cpu_ppu_io->buffer_value, cpu);
+			cpu_ppu_io->buffer_write = false;
+			cpu_ppu_io->buffer_counter = 6; // reset to non-zero value
+			// clear flags about buffered writes to enable/disable bg rendering
+			cpu_ppu_io->bg_early_enable_mask = false;
+			cpu_ppu_io->bg_early_disable_mask = false;
+		}
+	}
+}
+
 
 
 void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, uint32_t* pixels, uint32_t* nt_pixels
@@ -49,11 +97,18 @@ void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, uint32_t* pixels, uint32_t* nt_
 {
 	// 3 : 1 PPU to CPU ratio
 	clock_cpu(cpu);
-	clock_ppu(ppu, cpu);
+	ppu_vblank_warmup_seq(cpu);
+
+	cpu_ppu_buffered_writes(ppu->cpu_ppu_io, cpu);
+	clock_ppu(ppu);
 	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
-	clock_ppu(ppu, cpu);
+
+	cpu_ppu_buffered_writes(ppu->cpu_ppu_io, cpu);
+	clock_ppu(ppu);
 	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
-	clock_ppu(ppu, cpu);
+
+	cpu_ppu_buffered_writes(ppu->cpu_ppu_io, cpu);
+	clock_ppu(ppu);
 	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
 
 	// only used in DEBUG mode, suppress unused variable for RELEASE

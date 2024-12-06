@@ -1,5 +1,4 @@
 #include "ppu.h"
-#include "cpu.h"
 #include "cpu_ppu_interface.h"
 #include "bits_and_bytes.h"
 
@@ -133,22 +132,6 @@ int ppu_init(Ppu2C02* ppu, CpuPpuShare* cp)
 	return return_code;
 }
 
-
-// Reset/Warm-up function, clears and sets VBL flag at certain CPU cycles
-static void ppu_vblank_warmup_seq(Ppu2C02* p, const Cpu6502* cpu)
-{
-	static unsigned count = 0;
-	if (!count) {
-		clear_ppu_status_vblank_bit(p->cpu_ppu_io);
-		++count;
-	} else if ((count == 1) && cpu->cycle >= 27383) {
-		set_ppu_status_vblank_bit(p->cpu_ppu_io);
-		++count;
-	} else if ((count == 2) && cpu->cycle >= 57164) {
-		set_ppu_status_vblank_bit(p->cpu_ppu_io);
-		++count;
-	}
-}
 
 void ppu_vblank_logic(Ppu2C02* ppu)
 {
@@ -1049,7 +1032,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
  * RENDERING             *
  *************************/
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
+void clock_ppu(Ppu2C02* p)
 {
 	p->cycle++;
 	if (p->cycle > 340) {
@@ -1070,53 +1053,15 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
 		p->cpu_ppu_io->ppu_rendering_period = false;
 	}
 
-	ppu_vblank_warmup_seq(p, cpu);
-
-	// cpu is clocked first, ppu must be updated after the ppu runs its clock
-	// as the ppu is supposed to be running at the same time the write to the ppu reg occurs
-	// this means a buffer system needs to be implemented to preserve this behaviour
-	if (p->cpu_ppu_io->buffer_write) {
-		--p->cpu_ppu_io->buffer_counter;
-		// buffering a write to enable bg render sets flag
-		if (p->cpu_ppu_io->buffer_address == 0x2001 && (p->cpu_ppu_io->buffer_value & 0x08)) {
-			if (p->cpu_ppu_io->buffer_counter == 3) {
-				cpu->cpu_ppu_io->bg_early_enable_mask = true;
-			}
-		}
-
-		// buffering a write to disable bg render sets flag
-		if (p->cpu_ppu_io->buffer_address == 0x2001 && !(p->cpu_ppu_io->buffer_value & 0x08)) {
-			if (p->cpu_ppu_io->buffer_counter == 3) {
-				cpu->cpu_ppu_io->bg_early_disable_mask = true;
-			}
-		}
-		if (!p->cpu_ppu_io->buffer_counter) {
-			write_ppu_reg(p->cpu_ppu_io->buffer_address, p->cpu_ppu_io->buffer_value, cpu);
-			p->cpu_ppu_io->buffer_write = false;
-			p->cpu_ppu_io->buffer_counter = 6; // reset to non-zero value
-			// clear flags about buffered writes to enable/disable bg rendering
-			cpu->cpu_ppu_io->bg_early_enable_mask = false;
-			cpu->cpu_ppu_io->bg_early_disable_mask = false;
-		}
-	}
-
 	// odd frame skip
-	if (!cpu->cpu_ppu_io->bg_early_disable_mask
-		&& (cpu->cpu_ppu_io->bg_early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
+	if (!p->cpu_ppu_io->bg_early_disable_mask
+		&& (p->cpu_ppu_io->bg_early_enable_mask || (p->cpu_ppu_io->ppu_mask & 0x08))) {
 		if (p->odd_frame && p->scanline == 261 && p->cycle == 339) {
 			++p->cycle;
 		}
 	}
 
 	ppu_vblank_logic(p);
-
-	if (p->scanline == p->nmi_start) {
-		// clear VBlank flag if cpu clock is aligned w/ the ppu clock
-		// hard coded for NTSC currently
-		if (p->cpu_ppu_io->suppress_nmi_flag && (cpu->cycle % 3 == 0)) {
-			clear_ppu_status_vblank_bit(p->cpu_ppu_io);
-		}
-	}
 
 	if (p->scanline == 261 && p->cycle == 0) { // Pre-render scanline
 		p->cpu_ppu_io->ppu_status &= ~0x40;
@@ -1368,7 +1313,7 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
 	}
 
 	// increment coarse X and Y scrolling pos on visible scanlines and if rendering is enabled
-	if (cpu->cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(cpu->cpu_ppu_io)) {
+	if (p->cpu_ppu_io->ppu_rendering_period && ppu_mask_bg_or_sprite_enabled(p->cpu_ppu_io)) {
 		if (p->cycle <= 256 && (p->cycle != 0)) {
 			if (((p->cycle - 1) & 0x07) == 0x07) { // cycles divisble by 8
 				inc_horz_scroll(p->cpu_ppu_io);
