@@ -145,4 +145,9 @@ add_custom_command(TARGET ${TSTTARGET} POST_BUILD
 	COMMENT "Executable size (unit tests)"
 )
 
+add_custom_command(TARGET ${TSTTARGET} POST_BUILD
+	COMMAND ctest --test-dir "${CMAKE_BINARY_DIR}"
+	COMMENT "Execute tests"
+)
+
 unset(DEBUG_CMAKE CACHE)
