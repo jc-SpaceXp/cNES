@@ -3,3 +3,4 @@ build/
 *.txt
 emu
 *~
+!CMakeLists.txt
