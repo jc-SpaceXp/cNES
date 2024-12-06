@@ -21,14 +21,40 @@
 #define LEFT_BUTTON   0x40U
 #define RIGHT_BUTTON  0x80U
 
+extern uint32_t pixels[256 * 240];
+extern uint32_t nt_pixels[512 * 480];
 
-void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, Sdl2DisplayOutputs* cnes_windows, const bool logging_cpu_instructions)
+static void check_if_ppu_should_render_to_screen(uint32_t* main_pixels, uint32_t* nt_pixels
+                                                , Ppu2C02* ppu
+                                                , Sdl2DisplayOutputs* cnes_windows)
+{
+	// only used in DEBUG mode, suppress unused variable for RELEASE
+	(void) nt_pixels;
+	if (ppu->scanline == 240 && (ppu->cycle == 0)) {
+		draw_pixels(main_pixels, DEFAULT_WIDTH, cnes_windows->cnes_main);  // Render frame
+#ifdef __DEBUG__
+		// The for loop is expensive don't execute if necessary
+		if (cnes_windows->cnes_nt_viewer->window) {
+			all_nametables_fill_pixel_buffer(ppu);
+		}
+		draw_pixels(nt_pixels, DEFAULT_WIDTH * 2, cnes_windows->cnes_nt_viewer);  // Render frame
+#endif /*__DEBUG__ */
+	}
+ }
+
+
+
+void clock_all_units(Cpu6502* cpu, Ppu2C02* ppu, uint32_t* pixels, uint32_t* nt_pixels
+                    , Sdl2DisplayOutputs* cnes_windows, const bool logging_cpu_instructions)
 {
 	// 3 : 1 PPU to CPU ratio
 	clock_cpu(cpu);
-	clock_ppu(ppu, cpu, cnes_windows);
-	clock_ppu(ppu, cpu, cnes_windows);
-	clock_ppu(ppu, cpu, cnes_windows);
+	clock_ppu(ppu, cpu);
+	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
+	clock_ppu(ppu, cpu);
+	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
+	clock_ppu(ppu, cpu);
+	check_if_ppu_should_render_to_screen(pixels, nt_pixels, ppu, cnes_windows);
 
 	// only used in DEBUG mode, suppress unused variable for RELEASE
 	(void) logging_cpu_instructions;
@@ -302,7 +328,7 @@ int main(int argc, char** argv)
 #endif/* __DEBUG__ */
 			}
 		}
-		clock_all_units(cpu, ppu, &cnes_windows, logging_cpu_instructions);
+		clock_all_units(cpu, ppu, pixels, nt_pixels, &cnes_windows, logging_cpu_instructions);
 	}
 
 	SDL_Quit();
