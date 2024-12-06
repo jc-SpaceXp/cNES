@@ -135,7 +135,7 @@ Ppu2C02* ppu_allocator(void);
 int ppu_init(Ppu2C02* ppu, CpuPpuShare* cp);
 
 /* Debug Functions */
-void append_ppu_info(Ppu2C02* cpu);
+void append_ppu_info(Ppu2C02* ppu);
 void ppu_mem_hexdump_addr_range(const Ppu2C02* p, const enum PpuMemoryTypes ppu_mem, unsigned start_addr, uint16_t end_addr);
 uint16_t nametable_x_offset_address(const unsigned coarse_x);
 uint16_t nametable_y_offset_address(const unsigned coarse_y);
