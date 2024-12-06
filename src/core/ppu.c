@@ -454,7 +454,7 @@ uint16_t nametable_y_offset_address(const unsigned coarse_y)
 	return (coarse_y % 30) << 5;
 }
 
-static void all_nametables_fill_pixel_buffer(Ppu2C02* ppu)
+void all_nametables_fill_pixel_buffer(Ppu2C02* ppu)
 {
 	uint16_t base_nametable_address = 0x2000;
 	uint16_t render_nametable_address = base_nametable_address;
@@ -1049,7 +1049,7 @@ static void sprite_hit_lookahead(Ppu2C02* p)
  * RENDERING             *
  *************************/
 
-void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
+void clock_ppu(Ppu2C02* p, Cpu6502* cpu)
 {
 	p->cycle++;
 	if (p->cycle > 340) {
@@ -1146,16 +1146,6 @@ void clock_ppu(Ppu2C02* p, Cpu6502* cpu, Sdl2DisplayOutputs* cnes_windows)
 			get_pixel(&p->current_pixel, sprite_is_front_priority(p, p->current_pixel.scanline_sprite));
 			set_rgba_pixel_in_buffer(pixels, 256, p->cycle - 1, p->scanline, palette[p->current_pixel.output_col], 0xFF);
 		}
-	} else if (p->scanline == 240 && p->cycle == 0) {
-		draw_pixels(pixels, DEFAULT_WIDTH, cnes_windows->cnes_main);  // Render frame
-
-#ifdef __DEBUG__
-		// The for loop is expensive don't execute if necessary
-		if (cnes_windows->cnes_nt_viewer->window) {
-			all_nametables_fill_pixel_buffer(p);
-		}
-		draw_pixels(nt_pixels, DEFAULT_WIDTH * 2, cnes_windows->cnes_nt_viewer);  // Render frame
-#endif /*__DEBUG__ */
 	}
 
 	/* Process BG Scanlines */
