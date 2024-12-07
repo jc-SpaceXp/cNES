@@ -120,10 +120,10 @@ target_include_directories(${SRCTARGET} PRIVATE
 	${SDL2_INCLUDE_DIRS}
 )
 
-target_link_libraries(utilsrcs PRIVATE common)
-target_link_libraries(coresrcs PRIVATE common ${SDL2_LIBRARIES})
+target_link_libraries(utilsrcs PRIVATE common ${COVERAGE_FLAGS})
+target_link_libraries(coresrcs PRIVATE common ${SDL2_LIBRARIES} ${COVERAGE_FLAGS})
 target_link_libraries(${SRCTARGET} PRIVATE common utilsrcs coresrcs)
-target_link_options(${SRCTARGET} PRIVATE ${ASAN_FLAGS} ${COVERAGE_FLAGS})
+target_link_options(${SRCTARGET} PRIVATE ${ASAN_FLAGS})
 
 add_custom_command(TARGET ${SRCTARGET} POST_BUILD
 	COMMAND ${CMAKE_SIZE_UTIL} "$<TARGET_FILE_NAME:${SRCTARGET}>"
@@ -140,10 +140,9 @@ target_compile_options(${TSTTARGET} PRIVATE
 	"$<$<CONFIG:DEBUG>:-g>"
 	${LIBCHECK_CFLAGS_OTHER}
 	${ASAN_FLAGS}
-	${COVERAGE_FLAGS}
 )
 
-target_link_options(${TSTTARGET} PRIVATE ${ASAN_FLAGS} ${COVERAGE_FLAGS})
+target_link_options(${TSTTARGET} PRIVATE ${ASAN_FLAGS})
 
 target_include_directories(${TSTTARGET} PRIVATE
 	${INCCOREDIR}
