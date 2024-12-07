@@ -22,9 +22,14 @@
 			"cacheVariables": { "ASAN": "ON" }
 		},
 		{
-			"name": "debug-coverage",
+			"name": "coverage-debug",
 			"inherits": "debug",
 			"cacheVariables": { "COVERAGE": "ON" }
+		},
+		{
+			"name": "coverage-debug-and-tests",
+			"inherits": "coverage-debug",
+			"cacheVariables": { "TSTSRCCOVERAGE": "ON" }
 		},
 		{
 			"name": "release-clang",
@@ -67,8 +72,12 @@
 			"configurePreset": "debug"
 		},
 		{
-			"name": "debug-coverage",
-			"configurePreset": "debug-coverage"
+			"name": "coverage-debug",
+			"configurePreset": "coverage-debug"
+		},
+		{
+			"name": "coverage-debug-and-tests",
+			"configurePreset": "coverage-debug-and-tests"
 		},
 		{
 			"name": "release-clang",
@@ -109,8 +118,12 @@
 			"configurePreset": "debug"
 		},
 		{
-			"name": "debug-coverage",
-			"configurePreset": "debug-coverage"
+			"name": "coverage-debug",
+			"configurePreset": "coverage-debug"
+		},
+		{
+			"name": "coverage-debug-and-tests",
+			"configurePreset": "coverage-debug-and-tests"
 		},
 		{
 			"name": "release-clang",

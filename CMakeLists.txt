@@ -140,9 +140,13 @@ target_compile_options(${TSTTARGET} PRIVATE
 	"$<$<CONFIG:DEBUG>:-g>"
 	${LIBCHECK_CFLAGS_OTHER}
 	${ASAN_FLAGS}
+	"$<$<BOOL:${TSTSRCCOVERAGE}>:${COVERAGE_FLAGS}>"
 )
 
-target_link_options(${TSTTARGET} PRIVATE ${ASAN_FLAGS})
+target_link_options(${TSTTARGET} PRIVATE
+	${ASAN_FLAGS}
+	"$<$<BOOL:${TSTSRCCOVERAGE}>:${COVERAGE_FLAGS}>"
+)
 
 target_include_directories(${TSTTARGET} PRIVATE
 	${INCCOREDIR}
