@@ -35,10 +35,7 @@ if (DEFINED ASAN)
 endif()
 
 if (DEFINED COVERAGE)
-	unset(COVERAGE)
 	set(COVERAGE_FLAGS "-coverage;-O0")
-
-	set(CTEST_BINARY_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 
 
@@ -166,5 +163,15 @@ add_custom_target(runtests ALL
 	COMMAND ctest --test-dir "${CMAKE_BINARY_DIR}"
 	COMMENT "Execute tests"
 )
+
+if (DEFINED COVERAGE)
+	unset(COVERAGE)
+
+	add_custom_target(runcoveragedata ALL
+		DEPENDS ${TSTTARGET}
+		COMMAND ctest -T Coverage --test-dir "${CMAKE_BINARY_DIR}"
+		COMMENT "Coverage of tests"
+	)
+endif()
 
 unset(DEBUG_CMAKE CACHE)
