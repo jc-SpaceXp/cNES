@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.21)
 project(cNES LANGUAGES C)
 enable_testing()
+include(CTest)
 
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED sdl2)
@@ -31,6 +32,10 @@ set(COMMON_CFLAGS "-Wall;-Wextra")
 if (DEFINED ASAN)
 	unset(ASAN)
 	set(ASAN_FLAGS -fsanitize=address,undefined)
+endif()
+
+if (DEFINED COVERAGE)
+	set(COVERAGE_FLAGS "-coverage;-O0")
 endif()
 
 
@@ -89,6 +94,7 @@ target_compile_options(common INTERFACE
 	${COMMON_CFLAGS}
 	"$<$<CONFIG:DEBUG>:-g>"
 	${ASAN_FLAGS}
+	${COVERAGE_FLAGS}
 )
 target_compile_definitions(common INTERFACE "$<$<CONFIG:DEBUG>:__DEBUG__>")
 
@@ -114,8 +120,8 @@ target_include_directories(${SRCTARGET} PRIVATE
 	${SDL2_INCLUDE_DIRS}
 )
 
-target_link_libraries(utilsrcs PRIVATE common)
-target_link_libraries(coresrcs PRIVATE common ${SDL2_LIBRARIES})
+target_link_libraries(utilsrcs PRIVATE common ${COVERAGE_FLAGS})
+target_link_libraries(coresrcs PRIVATE common ${SDL2_LIBRARIES} ${COVERAGE_FLAGS})
 target_link_libraries(${SRCTARGET} PRIVATE common utilsrcs coresrcs)
 target_link_options(${SRCTARGET} PRIVATE ${ASAN_FLAGS})
 
@@ -134,9 +140,13 @@ target_compile_options(${TSTTARGET} PRIVATE
 	"$<$<CONFIG:DEBUG>:-g>"
 	${LIBCHECK_CFLAGS_OTHER}
 	${ASAN_FLAGS}
+	"$<$<BOOL:${TSTSRCCOVERAGE}>:${COVERAGE_FLAGS}>"
 )
 
-target_link_options(${TSTTARGET} PRIVATE ${ASAN_FLAGS})
+target_link_options(${TSTTARGET} PRIVATE
+	${ASAN_FLAGS}
+	"$<$<BOOL:${TSTSRCCOVERAGE}>:${COVERAGE_FLAGS}>"
+)
 
 target_include_directories(${TSTTARGET} PRIVATE
 	${INCCOREDIR}
@@ -156,5 +166,15 @@ add_custom_target(runtests ALL
 	COMMAND ctest --test-dir "${CMAKE_BINARY_DIR}"
 	COMMENT "Execute tests"
 )
+
+if (DEFINED COVERAGE)
+	unset(COVERAGE)
+
+	add_custom_target(runcoveragedata ALL
+		DEPENDS ${TSTTARGET}
+		COMMAND ctest -T Coverage --test-dir "${CMAKE_BINARY_DIR}"
+		COMMENT "Coverage of tests"
+	)
+endif()
 
 unset(DEBUG_CMAKE CACHE)

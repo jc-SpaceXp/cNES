@@ -22,6 +22,16 @@
 			"cacheVariables": { "ASAN": "ON" }
 		},
 		{
+			"name": "coverage-debug",
+			"inherits": "debug",
+			"cacheVariables": { "COVERAGE": "ON" }
+		},
+		{
+			"name": "coverage-debug-and-tests",
+			"inherits": "coverage-debug",
+			"cacheVariables": { "TSTSRCCOVERAGE": "ON" }
+		},
+		{
 			"name": "release-clang",
 			"inherits": "release",
 			"cacheVariables": { "CMAKE_C_COMPILER": "clang" }
@@ -62,6 +72,14 @@
 			"configurePreset": "debug"
 		},
 		{
+			"name": "coverage-debug",
+			"configurePreset": "coverage-debug"
+		},
+		{
+			"name": "coverage-debug-and-tests",
+			"configurePreset": "coverage-debug-and-tests"
+		},
+		{
 			"name": "release-clang",
 			"configurePreset": "release-clang"
 		},
@@ -98,6 +116,14 @@
 		{
 			"name": "debug",
 			"configurePreset": "debug"
+		},
+		{
+			"name": "coverage-debug",
+			"configurePreset": "coverage-debug"
+		},
+		{
+			"name": "coverage-debug-and-tests",
+			"configurePreset": "coverage-debug-and-tests"
 		},
 		{
 			"name": "release-clang",
