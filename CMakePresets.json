@@ -66,57 +66,57 @@
 		{
 			"name": "release",
 			"configurePreset": "release",
-			"targets": "runtests"
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug",
 			"configurePreset": "debug",
-			"targets": "runtests"
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "coverage-debug",
 			"configurePreset": "coverage-debug",
-			"targets": [ "runtests", "runcoveragedata" ]
+			"targets": [ "all", "runtests", "runcoveragedata" ]
 		},
 		{
 			"name": "coverage-debug-and-tests",
 			"configurePreset": "coverage-debug-and-tests",
-			"targets": [ "runtests", "runcoveragedata" ]
+			"targets": [ "all", "runtests", "runcoveragedata" ]
 		},
 		{
 			"name": "release-clang",
 			"configurePreset": "release-clang",
-			"targets": "runtests"
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "release-gcc",
 			"configurePreset": "release-gcc",
-			"targets": "runtests"
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-gcc",
 			"configurePreset": "debug-gcc",
-			"targets": "runtests"
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-clang",
 			"configurePreset": "debug-clang",
-			"targets": "runtests"
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-asan",
 			"configurePreset": "debug-asan",
-			"targets": "runtests"
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-asan-clang",
 			"configurePreset": "debug-asan-clang",
-			"targets": "runtests"
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-asan-gcc",
 			"configurePreset": "debug-asan-gcc",
-			"targets": "runtests"
+			"targets": [ "all", "runtests" ]
 		}
 	],
 	"testPresets": [
