@@ -17,13 +17,13 @@ that I'm proud of!
 
 ** Building cNES
 
-cNES supports multiple OSes via cmake or can be built using make on Linux. I
+cNES supports multiple OSes via CMake or can be built using Make on Linux. I
 primarily develop on Linux however cNES can be ported over to other
-platforms via cmake.
+platforms via CMake.
 
 *Prerequisites:*
-- cmake (or make for older builds)
-- [[https://gcc.gnu.org/][gcc]] or [[https://clang.llvm.org/][clang]] compilers (or any compiler supported by cmake)
+- CMake (or Make for older builds) (with CMake SDL and libcheck can be downloaded and built from source if not present on your machine)
+- [[https://gcc.gnu.org/][gcc]] or [[https://clang.llvm.org/][clang]] compilers (or any compiler supported by CMake)
   - gcc versions >= 4.8 or clang versions >= 3.1 are required to use the address sanitizer compile option ([[https://github.com/google/sanitizers/wiki/AddressSanitizer][ASan]])
 - [[https://libcheck.github.io/check/][libcheck]] (currently unit tests are always run when compiling cNES)
 - [[https://wiki.libsdl.org/SDL2/Introduction][SDL2]]
@@ -63,11 +63,10 @@ $ make CC=clang
 $ make CC=clang DEBUG=1 ASAN=1
 #+END_EXAMPLE
 
-For cmake: the compiled binary will either end up in =./build/<PRESET_NAME>=
+For CMake: the compiled binary will end up in =./build/<PRESET_NAME>=
 
 
-For make: the compiled binary will either end up in =./build/release/bin/=
-or =./build/debug/bin/=
+For Make: the compiled binary will either end up in =./build/release/bin/= or =./build/debug/bin/=
 
 ** Running cNES
 
