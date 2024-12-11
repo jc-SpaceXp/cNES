@@ -131,7 +131,7 @@ add_library(coresrcs ${CORESRCS})
 target_include_directories(coresrcs PRIVATE
 	${INCCOREDIR}
 	${INCUTILDIR}
-	SDL2::Headers
+	"$<$<BOOL:${sdl2_BINARY_DIR}>:${sdl2_BINARY_DIR}/include>"
 )
 target_compile_options(coresrcs PRIVATE)
 
@@ -141,7 +141,8 @@ target_include_directories(${SRCTARGET} PRIVATE
 	${INCDIR}
 	${INCUTILDIR}
 	${INCCOREDIR}
-	SDL2::Headers
+	"$<$<BOOL:${sdl2_BINARY_DIR}>:${sdl2_BINARY_DIR}/include>"
+	"$<$<BOOL:${sdl2_SOURCE_DIR}>:${sdl2_SOURCE_DIR}/include>"
 )
 
 target_link_libraries(utilsrcs PRIVATE common ${COVERAGE_FLAGS})
