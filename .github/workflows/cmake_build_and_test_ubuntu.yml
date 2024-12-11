@@ -1,0 +1,21 @@
+name: CMake build and test (Ubuntu latest)
+
+on:
+  push:
+    branches: [ "libcheck_unit_tests" ]
+  pull_request:
+    branches: [ "libcheck_unit_tests" ]
+
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: CMake configuration step
+        run: cmake --preset debug
+
+      - name: CMake build and test step
+        run: cmake --build --preset debug
