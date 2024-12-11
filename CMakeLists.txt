@@ -131,7 +131,6 @@ add_library(coresrcs ${CORESRCS})
 target_include_directories(coresrcs PRIVATE
 	${INCCOREDIR}
 	${INCUTILDIR}
-	SDL2::Headers
 )
 target_compile_options(coresrcs PRIVATE)
 
@@ -141,7 +140,6 @@ target_include_directories(${SRCTARGET} PRIVATE
 	${INCDIR}
 	${INCUTILDIR}
 	${INCCOREDIR}
-	SDL2::Headers
 )
 
 target_link_libraries(utilsrcs PRIVATE common ${COVERAGE_FLAGS})
