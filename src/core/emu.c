@@ -10,6 +10,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <SDL2/SDL_keycode.h>
 
 #define A_BUTTON      0x01U
