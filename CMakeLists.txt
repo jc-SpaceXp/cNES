@@ -1,11 +1,34 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.24)
 project(cNES LANGUAGES C)
 enable_testing()
 include(CTest)
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(SDL2 REQUIRED sdl2)
-pkg_check_modules(LIBCHECK REQUIRED check)
+include(FetchContent)
+
+set(FETCHCONTENT_BASE_DIR ${CMAKE_SOURCE_DIR}/deps)
+
+set(sdl2_version 2.30.9)
+set(sdl2_release_link "https://github.com/libsdl-org/SDL/releases/download/")
+string(APPEND sdl2_release_link "release-${sdl2_version}/SDL2-${sdl2_version}.tar.gz")
+
+FetchContent_Declare(
+	SDL2
+	URL ${sdl2_release_link}
+	URL_HASH MD5=57393a5e1a46dd19ae40968a301c70a3
+	DOWNLOAD_EXTRACT_TIMESTAMP True
+	FIND_PACKAGE_ARGS
+)
+
+FetchContent_Declare(
+	LIBCHECK
+	GIT_REPOSITORY https://github.com/libcheck/check.git
+	# Latest master commit
+	GIT_TAG 455005dc29dc6727de7ee36fee4b49a13b39f73f
+	FIND_PACKAGE_ARGS NAMES check
+)
+
+FetchContent_MakeAvailable(SDL2 LIBCHECK)
+
 
 set(CMAKE_C_STANDARD 99)
 
@@ -108,8 +131,9 @@ add_library(coresrcs ${CORESRCS})
 target_include_directories(coresrcs PRIVATE
 	${INCCOREDIR}
 	${INCUTILDIR}
+	SDL2::Headers
 )
-target_compile_options(coresrcs PRIVATE ${SDL2_CFLAGS_OTHER})
+target_compile_options(coresrcs PRIVATE)
 
 
 add_executable(${SRCTARGET} ${CORESRCS})
@@ -117,11 +141,11 @@ target_include_directories(${SRCTARGET} PRIVATE
 	${INCDIR}
 	${INCUTILDIR}
 	${INCCOREDIR}
-	${SDL2_INCLUDE_DIRS}
+	SDL2::Headers
 )
 
 target_link_libraries(utilsrcs PRIVATE common ${COVERAGE_FLAGS})
-target_link_libraries(coresrcs PRIVATE common ${SDL2_LIBRARIES} ${COVERAGE_FLAGS})
+target_link_libraries(coresrcs PRIVATE common SDL2::SDL2 ${COVERAGE_FLAGS})
 target_link_libraries(${SRCTARGET} PRIVATE common utilsrcs coresrcs)
 target_link_options(${SRCTARGET} PRIVATE ${ASAN_FLAGS})
 
@@ -138,7 +162,6 @@ add_test(NAME ${TSTTARGET} COMMAND ${TSTTARGET})
 target_compile_options(${TSTTARGET} PRIVATE
 	${COMMON_CFLAGS}
 	"$<$<CONFIG:DEBUG>:-g>"
-	${LIBCHECK_CFLAGS_OTHER}
 	${ASAN_FLAGS}
 	"$<$<BOOL:${TSTSRCCOVERAGE}>:${COVERAGE_FLAGS}>"
 )
@@ -151,9 +174,10 @@ target_link_options(${TSTTARGET} PRIVATE
 target_include_directories(${TSTTARGET} PRIVATE
 	${INCCOREDIR}
 	${INCUTILDIR}
+	${libcheck_BINARY_DIR}
 )
 
-target_link_libraries(${TSTTARGET} PRIVATE ${LIBCHECK_LIBRARIES} coresrcs utilsrcs)
+target_link_libraries(${TSTTARGET} PRIVATE check coresrcs utilsrcs)
 
 add_custom_command(TARGET ${TSTTARGET} POST_BUILD
 	COMMAND ${CMAKE_SIZE_UTIL} "$<TARGET_FILE_NAME:${TSTTARGET}>"
