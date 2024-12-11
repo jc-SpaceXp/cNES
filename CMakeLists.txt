@@ -185,16 +185,16 @@ add_custom_command(TARGET ${TSTTARGET} POST_BUILD
 )
 
 # if custom_command() fails test executable is deleted using custom_target() instead
-add_custom_target(runtests ALL
+add_custom_target(runtests
 	DEPENDS ${TSTTARGET}
-	COMMAND ctest --test-dir "${CMAKE_BINARY_DIR}"
+	COMMAND ctest --test-dir "${CMAKE_BINARY_DIR}" --output-on-failure
 	COMMENT "Execute tests"
 )
 
 if (DEFINED COVERAGE)
 	unset(COVERAGE)
 
-	add_custom_target(runcoveragedata ALL
+	add_custom_target(runcoveragedata
 		DEPENDS ${TSTTARGET}
 		COMMAND ctest -T Coverage --test-dir "${CMAKE_BINARY_DIR}"
 		COMMENT "Coverage of tests"

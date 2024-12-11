@@ -65,93 +65,115 @@
 	"buildPresets": [
 		{
 			"name": "release",
-			"configurePreset": "release"
+			"configurePreset": "release",
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug",
-			"configurePreset": "debug"
+			"configurePreset": "debug",
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "coverage-debug",
-			"configurePreset": "coverage-debug"
+			"configurePreset": "coverage-debug",
+			"targets": [ "all", "runtests", "runcoveragedata" ]
 		},
 		{
 			"name": "coverage-debug-and-tests",
-			"configurePreset": "coverage-debug-and-tests"
+			"configurePreset": "coverage-debug-and-tests",
+			"targets": [ "all", "runtests", "runcoveragedata" ]
 		},
 		{
 			"name": "release-clang",
-			"configurePreset": "release-clang"
+			"configurePreset": "release-clang",
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "release-gcc",
-			"configurePreset": "release-gcc"
+			"configurePreset": "release-gcc",
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-gcc",
-			"configurePreset": "debug-gcc"
+			"configurePreset": "debug-gcc",
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-clang",
-			"configurePreset": "debug-clang"
+			"configurePreset": "debug-clang",
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-asan",
-			"configurePreset": "debug-asan"
+			"configurePreset": "debug-asan",
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-asan-clang",
-			"configurePreset": "debug-asan-clang"
+			"configurePreset": "debug-asan-clang",
+			"targets": [ "all", "runtests" ]
 		},
 		{
 			"name": "debug-asan-gcc",
-			"configurePreset": "debug-asan-gcc"
+			"configurePreset": "debug-asan-gcc",
+			"targets": [ "all", "runtests" ]
 		}
 	],
 	"testPresets": [
 		{
 			"name": "release",
-			"configurePreset": "release"
+			"configurePreset": "release",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "debug",
-			"configurePreset": "debug"
+			"configurePreset": "debug",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "coverage-debug",
-			"configurePreset": "coverage-debug"
+			"configurePreset": "coverage-debug",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "coverage-debug-and-tests",
-			"configurePreset": "coverage-debug-and-tests"
+			"configurePreset": "coverage-debug-and-tests",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "release-clang",
-			"configurePreset": "release-clang"
+			"configurePreset": "release-clang",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "release-gcc",
-			"configurePreset": "release-gcc"
+			"configurePreset": "release-gcc",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "debug-gcc",
-			"configurePreset": "debug-gcc"
+			"configurePreset": "debug-gcc",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "debug-clang",
-			"configurePreset": "debug-clang"
+			"configurePreset": "debug-clang",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "debug-asan",
-			"configurePreset": "debug-asan"
+			"configurePreset": "debug-asan",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "debug-asan-clang",
-			"configurePreset": "debug-asan-clang"
+			"configurePreset": "debug-asan-clang",
+			"output": { "outputOnFailure": true }
 		},
 		{
 			"name": "debug-asan-gcc",
-			"configurePreset": "debug-asan-gcc"
+			"configurePreset": "debug-asan-gcc",
+			"output": { "outputOnFailure": true }
 		}
 	]
 }
